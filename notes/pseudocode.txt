@@ -1,0 +1,88 @@
+//==Load level==
+	//Load textures
+	//Load shaders
+	//Attach textures and shaders with items
+	
+	//Setup framebuffers
+	framebuffer1 = ...
+	wholescreensprite1 = ..., 
+
+	framebuffer2 = ...
+	wholescreensprite2 = ...
+
+	item = (..., batch1)
+	item = (..., batch1)
+	item = (..., batch1)
+	...
+	item = (..., batch2)
+	item = (..., batch2)
+	item = (..., batch2)
+	...
+	item = (..., batch3)
+	item = (..., batch3)
+	item = (..., batch3)
+	...
+	item = (..., batch4)
+	item = (..., batch4)
+	item = (..., batch4)
+	...
+
+//==game loop==
+
+	//manipulate items already in batches
+
+	//Pick framebuffer/composite usage for this frame
+	//Note: if there are no wholescreenshaders at play, skip the framebuffer inbetweens, and draw the batches straight to the window.
+
+	//WITHOUT SCREEN SHADERS
+
+		//composite (From background to foreground)
+
+		window.clear()
+
+		batch1shader.use()
+		batch1.draw()
+		batch2shader.use()
+		batch2.draw()
+		batch3shader.use()
+		batch3.draw()
+		batch4shader.use()
+		batch4.draw()
+
+		//Note: otherwise minimize shader swap in general
+		//  window.clear()
+    //  defaultshader.use()
+    //  batch1.draw()
+    //  batch2.draw()
+    //  batch3.draw()
+    //  batch4.draw()
+
+	//WITH SCREEN SHADERS render the layers as offscreen frames
+
+		//Prep offscreen buffers
+		framebuffer1.bind()
+		batch1shader.use()
+		batch1.draw()
+		batch2shader.use()
+		batch2.draw()
+		framebuffer1.unbind()
+
+		framebuffer2.bind()
+		batch3shader.use()
+		batch3.draw()
+		batch4shader.use()
+		batch4.draw()
+		framebuffer2.unbind()
+
+		//composite (From background to foreground)
+
+		window.clear()
+
+		wholescreenshader1.use()
+		wholescreensprite1.draw()
+
+		wholescreenshader2.use()
+		wholescreensprite2.draw()
+
+		flip()	//flush openGL command buffer
+

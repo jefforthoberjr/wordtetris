@@ -1,0 +1,21 @@
+//==TECH STACK==
+
+[DONE] Graphics: Pyglet (hardware accelerated, OpenGL)
+[DONE] Architecture: MVC pattern
+[DONE] State management: Distributed (each model owns its state)
+[DONE] Configuration: JSON file (src/assets/config.json)
+[DONE] Game loop: Pyglet scheduled callbacks
+[DONE] Audio: Pyglet built-in
+[DONE] Packaging: PyInstaller
+[DONE] Platforms: macOS, Windows
+[DONE] Distribution: Steam
+
+//==SCAFFOLDING==
+
+[DONE] Project structure created
+[DONE] Pyglet window opens
+[DONE] Config loads from JSON
+[DONE] Batch rendering setup
+[DONE] ESC closes window
+[TODO] PyInstaller build tested
+[TODO] Steam upload tested

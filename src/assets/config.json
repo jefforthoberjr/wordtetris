@@ -1,0 +1,10 @@
+{
+    "window": {
+        "width": 800,
+        "height": 600,
+        "title": "Word Tetris"
+    },
+    "audio": {
+        "master_volume": 0.8
+    }
+}

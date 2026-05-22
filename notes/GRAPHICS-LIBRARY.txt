@@ -1,0 +1,714 @@
+GRAPHICS-LIBRARY
+	considerations why pyglet was choosen
+	considerations why openGL was choosen
+	understanding graphics pipeline basics
+	forecasting good graphics performance practices
+
+Rules:
+* Avoid glReadPixels unless necessary (to prevent stalls of the GPU pipeline)
+	* Avoid openGL "readback" from VRAM
+	(Is this an openGL call)
+	
+* Use a texture atlas, instead of many small textures (for better GPU caching)
+* Use Batch() tries to combine draws (minimize number of openGL draw calls), instead of individual draw calls
+	
+
+STYLE
+	There are two ways to specify shaders
+
+		1) Using shader.use() before .draw() events (and relying on the shader to affect all objects with the default shader specified). 
+		Thus, specify shader when items are created).
+		//Using this approach for now
+
+		2) Specifying shaders explicitly on each obj created. Putting objects into "Group" objects: specifying batch and group for each obj created
+
+	There are two ways to add items to batches
+
+		1) item = (..., batch)
+			//This is used for adding sprites and common drawn obj types
+
+			Alternate syntax (specify batch later)
+			item = (...)
+			item.batch = mybatch
+
+			Sprites can only be part of one batch at a time
+			Assigning a sprite to another batch automatically removes it from its previous batch.
+
+			//Using this approach for the most part
+
+		2) batch.add(...)
+			//This is only to add 'raw vertex data'
+
+	No worry about static vertex buffers
+		If you only have a few static objects, just put them on a dynamic vertex buffer (with others items of the same format combo). Otherwise this would likely cause a separate vertex buffer in
+
+		A static vertex buffer is otherwise just to save time how openGL syncs the vertex buffers between RAM and VRAM (saving a little RAM)
+
+
+Idea: 
+* Avoid textures for UI/menu elements. Can I get these to be drawn objs instead?
+* How can I do pre-compilate the shaders (early in the game), to prevent shader compilation during the gaeme execution?
+
+Overview:
+
+	Pyglet seems to give me the most 'out of the box' performance, but also allows me direct access to openGL I want to.
+
+
+
+1st order knowledge:
+
+Packaging of the executable
+	.exe on Windows, .app on macOS
+
+	Build with PyInstaller
+	PyInstall cannot cross-compile
+	(so run it once on mac and windows machine)
+
+	Will I ship the application as pre-compiled python byte code (.pyc?)
+		It could be python source or .pyc bytecode
+
+		.pyc is probably the best way to go.
+
+	Does the python interpreter virtual machine ship with the game?
+		Yes
+
+	Will libraries ship with the game?
+		Yes
+
+	What is the size of
+		• Python interpreter: ~15-30 MB
+  	• Pyglet + dependencies: ~5-10 MB
+
+	.pyc bytecode could be decompiled
+
+Software Rendering vs. Hardware Accellerated
+
+	Hardward Accellrated is GPU parallelization.
+
+	GPU can only do a specific few low level math graphics operations, for the final parts of software rendering.
+	GPU is given a list of verticies and trianges (indicies), it converts it to per-pixel drawing.
+
+	prep-work for the verticies and trianges (indecies) is done by the application/openGL
+
+	The GPU has its own caches.
+
+openGL driver
+	How/where is this installed?
+	
+	Does my application/game have control of the driver installed? 
+		No.
+		The OpenGL driver is part of the operating system / GPU vendor software. It's not something you ship or install.
+
+	But I can control which version of openGL is targetted.
+		I can specify minimum (e.g. openGL 3.3)
+
+			The version that gets picked up at runtime could otherwise very.
+
+		OpenGL 4.1
+			//The last version supported by Mac.
+
+		OpenGL 4.5
+			//The version used by most PC users
+
+		How do machines handle multiple versions of openGL drivers?
+			There's only one driver installed at a time. 
+			That driver supports multiple OpenGL versions simultaneously (i.e. has backwards compatibility).
+
+		TODO What is the specific feature difference between v4.1 and 4.5?
+
+			Q: Anything I would use or care about?
+
+		Q: Which version of openGL should I target?
+
+			Q: Should I hardcode 1 specific version? or just specify minimum (and have it grab more up to date versions).
+
+	OpenGL "Profiles"
+		"Compatibility" profile:
+			used by windows (not used by mac)
+
+		"Core" profile: 
+			used by mac and windows
+
+		TODO learn more about this "Core" profile. What is the implication?
+	
+	Does the user have to do anything? pre-install the openGL driver?
+		Mac: No. No user installation, automaticly built into the OS; software updates.
+			In house drivers.
+		PC: Maybe. A windows software update may include it by default, or user should do an installation. 
+			GPU drivers from NVIDIA
+
+		Missing openGL driver?
+			openGL driver is such a basic thing "Any system with a display has an OpenGL driver."
+
+		Old openGL driver?
+			This is a likely scenario on a PC.
+
+
+"Shaders are compiled"
+
+	A shader compiled into GPU machine code.
+	Shaders are compiled at runtime.
+	Shaders are compiled by the openGL driver.
+	
+	Shaders cannot be pre-compiled.
+		GPU vendor (NVIDIA, AMD, Intel, Apple) has proprietary instruction sets that aren't public. Unlike CPUs, which have established instruction sets e.g x86/ARM)
+
+		Shader actually could be pre-compile: some games ship "shader caches" - pre-compiled binaries for common GPU/driver combos. But they still need runtime fallback for unknown configurations.
+
+	Shaders compilation is triggered the application level (pyglet)
+		trigger on first use of any shape/obj using that shader
+		otherwise shaders are generic algorithm that can applied to any shape/vertex set.
+	
+	Shaders are written at the openGL level.
+	But ultimately shader compilation may be triggered at the application/pyglet level.
+
+	Shaders are written in GLSL (OpenGL Shading Language)
+		I can write custom GLSL; or use some of pyglet's default provided shaders.
+
+Caching
+	
+	Q: At what level does the caching occur? At what level does my application code effect caching?
+
+		application level (pyglet)
+			explicit delete or garbage collect
+
+			Keep/re-use the python objects as much as possible
+
+		  # Bad - creates new Circle every frame
+		  def on_draw():
+		      shapes.Circle(100, 100, 50).draw()
+
+		  # Good - reuse the object
+		  self.circle = shapes.Circle(100, 100, 50)
+		  def on_draw():
+		      self.circle.draw()
+
+		??? In your example of calling draw_circle twice; "Reuses cached resources, just queues draw command"
+
+		textures cached: image.load(): texture loaded into VRAM
+
+			Q: So is it pyglet or openGL that is managing textures in the VRAM?
+
+			"Uploaded to VRAM, stay there until you delete them. Driver may evict to RAM under memory pressure"
+
+	The GPU/graphics card itself has L2 cache, for its own texture cache and vector cache.
+
+		AI advice: "use texture atlases (one big image instead of many small ones) so sampling stays local", presumably this is for L2 cache reasons.
+
+python's "garbage collector"
+	
+	Python would normally delete objects with refcount zero.
+
+	Python does ref counting.
+		This is the primary method for objects to cleanup.
+		Objects with ref count 0 are immediately cleaned up
+
+		Coder does not explicitly allocation/delete mem.
+
+		Code can be concious of the refcounting behavior though.
+			Can peek at the ref count
+			sys.getrefcount(x)
+				//Note calling "sys.getrefcount(x)" creates a temp +1 reference
+
+			Ref counts are implements are the actualy obj in memory. If two variables points to the same in-mem obj, they will have the same ref count.
+
+			Setting foo = None, is setting a variable to a null reference. This will decrease the in-mem obj's by 1. This is the equivalent of setting to "null".
+		
+
+	Python otherwise have a garbage colelctor that regularly/automatically runs, to catch the more complicated circular references (or dangling refcounted objects) that should otherwise be deleted.
+
+		This is a secondary mechanism, to catch what isn't already automatically cleaned up by ref counting.
+
+	I can override the default garabage collection if I want.
+		* reconfigure the thesholds by which garabage collect automatically triggers
+		* manually force a garbage collect event
+		* disable garbage collect
+		* peek at an object's ref count
+
+	It is possible to create a python app that doesn't need garbage collect?
+		Through coding style alone, can I reduce my dependency on a garbage collector?
+
+	How much performance saving can there be for disabling garbage collect?
+
+	Q: What is the best practices for my gaming code's interaction with the garbage collector?
+
+
+
+"batching" "draw"
+
+	Batching is primarily the coder's responsibility.
+
+	Batching techniques
+
+		Prevent accidentally over-batching, and items getting drawn on top of each other
+
+		Purposefully, group by layer 
+			Background batch, game board batch, UI batch. Draw in order.
+
+			If you put everything in one batch, Pyglet might draw them in any order (it optimizes for fewer state changes, not visual layering). A UI element could render behind the game board.
+
+	Application level (pyglet)
+		Batch()
+		Groups multiple shapes into one draw call
+
+		"You decide what goes into a Batch(). Pyglet combines compatible objects into fewer draw calls."
+
+		What is the art of decide what to batch in a draw call?
+
+		Batch size: At what point/size must a draw call be split into multiple calls? At what point is a batch too big? 
+
+			Resource limits is not the primary reason to split batches.
+
+			Practically, batched can be very big. Maximizing the batch size is actually a good idea, to keep the GPU busy/non-idle.
+
+			Too big would have to be on the order of millions of vertex; using GB+ of VRAM per batch call.
+
+	openGL doesn't otherwise do automatic batching.
+		Some openGL drivers may auto batch, but I shouldn't rely on this.
+
+	Batch together what GPUs can run within the same draw call
+
+	One batch.draw() at the Pyglet level can result in one or more draw calls at the GPU level.
+		As grouped by the feature combos. Pyglet groups items within a batch by compatible state.
+
+		The Pyglet level Batch object allows you to add multiple feature combos.
+
+		1 pyglet batch causing 2 GPU draws is otherwise the same performance as 2 pyglet batches each doing 1 GPU draw.
+
+		Otherwise, preportedly, large mixed batches is a feature of pyglet. There's no penalty for breaking out each feature combo into their own batch; it's just an organizational choice (maybe you want the flexibility to toss objects into a batch without any prior knowledge of its resulting feature combo)
+
+		Pyglet other recommends Batch by "layers"
+
+		Rules of thumb
+		  Same feature combo + same draw order = same batch.
+		  (And using mixed batches is ok too)
+
+		  Otherwise Split into separate batches only when:
+		  • You need different draw order (layering)
+		  • You need different framebuffer targets
+		  • You need to draw them conditionally (e.g., pause menu batch only drawn when paused)
+
+	Batching and vertex buffers
+		automatically groups compatible objects and issues one draw call per unique state combination
+
+		I should minimize the number of shaders I'm using at the same time
+
+		Each pyglet Batch objs gets 1 vertex buffer, even if the items are of mixed feature type. The only time a mixed batch gets allocated multiple vertex buffers is if there are multiple "vertex types" being used in the same batch.
+
+		Also, if you mix Sprites and primatives (e.g. shapes.Circle) in one batch, Pyglet maintains separate vertex buffers for each format within that batch.
+
+		Separate vertex buffers neccessarily result in separate GPU draw calls
+
+	Vertex Format
+		The number of attributes per vertex
+		Sprites: position (x,y), texture coords (u,v), color (rgba)
+		shapes.* : position (x,y), color (rgba) - no texture coords
+		myCustomShape : could have any number of attributes attached to the vertex
+
+	All things being equal, is it better for performance to have 1 large GPU draw call, instead of separate smaller GPU draw calls?
+		Yes
+
+		Physical limits of GPU parallelization (i.e. physical limitation of GPU draw size)
+			GPUs process vertices in batches called warps.
+			Each warp is 32 verticies.
+			A GPU has many "cores" aka "shader cores"
+			100 cores(low end card) - 10000 cores (high-end card)
+
+
+	GPU limitations (drawing batching) (feature groupings)
+
+		Groupings are defined at openGL level (but also represents a universal GPU standard). GPU designers try to optimize this.
+			The rules for what can share a draw call are defined by OpenGL
+
+		1) only run one shader per draw call
+		2) only one texture binding per draw call (hence use an atlas)
+		3) only one blend mode per draw call
+			//~20 options, openGL defined
+		4) only one vertex format per draw call
+			//vertex formats are user definded
+
+			Q: What is an example vertex formats?
+
+		Q: Are these the only 4? 
+
+			These are the four main ones.
+
+			There are others:
+				Depth testing mode
+				Depth write mode
+				Stencil testing mode
+				Face culling mode
+				polygon mode
+				scissor test mode
+				viewport 
+				framebuffer
+				uniform values (shader parameters)
+				...
+
+		Do all GPUs have the same batch/draw limitation? Do all GPUs have the same dimensions to determine batch combos? 
+			Pretty much, yes
+
+		Could the same game running on different machines end up performing different number of draws for the same batch() call?
+			No.
+
+Interaction between Batch and VRAM?
+	
+	Draw calls are made at the batch level
+		batch.draw()
+
+	Without Batching, each obj/sprite would get its own vertex buffer in the VRAM.
+
+	A batched set of objs/sprites share 1 vertex buffer
+
+	As objects in Pyglet get Batched, it collects all their vertex data into a single vertex buffer.
+		(Over multiple buffer calls?)
+		(Flushed from the application batch to the VRAM when?)
+
+	Is a batch one large chunk written to VRAM?
+		"Essentially yes"
+
+	But it is more dynamic than that.
+	There is a lot of re-use of items in the VRAM, between draw calls
+
+		The full list of vertecies in the vertex buffer is not drained during a draw. Instead, only verticies that have been touched/moved (and explicitly marked by Pyglet) are updated in the VRAM
+
+		The vertex buffer may grow, shrink, or be re-allocated, depending on the volume of changes.
+
+		Is it pyglet or openGL that does all the buffer re-use/re-allocation?
+
+	Application level recommendations to maximize VRAM re-usage between frames:
+		reduce creating/delete of sprites. Instead, re-use them, or change their .visible property. Try to create all sprites up front at level load time.
+
+index buffers and VRAM
+	Index buffers are used when shapes share vertices
+	Otherwise its usage and optimization at the application level is the same as vertex buffers. They really go hand in hand.
+
+uniform buffers and VRAM
+	Uniform buffers contain small data sent to shaders. Time based stuff for shaders.
+
+textures and VRAM
+	textures stay loaded in VRAM forever (until you delete it or program exits)
+	so I assume I need to explicitly delete unused textures in the VRAM.
+
+shaders and VRAM
+	shaders also stay loaded in VRAM forever (until you delete it or program exits)
+	so I assume I need to explicitly delete unused shaders from the VRAM.
+	
+framebuffers and VRAM
+	Textures and shaders are shared across framebuffers. (There isn't separate copies of them for different framebuffers.
+
+	A framebuffer is just a destination for rendering, it otherwise doesn't "own" the items in the VRAM.
+
+	myframebuffer.bind()
+	mybatch.draw()
+	myframebuffer.unbind()
+
+Q: Shaders can be applied to individual items, or a whole framebuffer?
+	Yes.
+
+	Shaders are applied at the batch level. It's one of the dimentions for feature-grouping of the draw operations.
+
+	I can add multiple different items to the same batch, with different shaders (and thus being sorted into different 'internal groups'
+		
+		When you call batch.draw(), Pyglet handles the shader binding per group internally.
+
+	So a shader could be applied to the output of a framebuffer, in a little hacky way
+		batch.draw()
+		...
+		shader.use()
+		onebigsprite.image=framebuffer
+		framebuffer.draw()
+
+	This is the trick for full screen distortions
+
+Compositing batches onto the window
+	The window is a special object.
+	The window is the default framebuffer.
+	Drawing batches will default to going into the window, unless I specify another framebuffer beforehand in a bind operation.
+
+	All non-window framebuffers are considered "offscreen" framebuffers.
+
+	Drawing striaght to the window is common, unless I want to apply screenwide blur effects, then I need to use an offscreen framebuffer as a middle process.
+
+
+batch management
+	When do I decide to add/remove/move sprites in a batch?
+		Are there optimizations like keep off-screen sprints in the batch, for better performance?
+		Yes
+	
+	At the application, it sounds like we can make multiple calls to pyglet Batch() before we make the draw call?
+
+		And each batch() call prepares a portion of the VRAM?
+
+	batch.draw()
+
+	Draw calls are 
+
+	Q: Between frames/draws are portions of the batch/VRAM re-used; or it is a complete re-allocation of VRAM? Are "buffers" re-used between frames?
+
+
+Q: If part of a screen is showing static stuff, is it still calling draw calls for every frame? How to prevent unnecessary draws? Can frames/draws be skipped if there is no change in that frame in time? (e.g. game is paused)?
+
+Pyglet uses "dynamic" vertex buffers
+
+
+The openGL/GPU driver is smart, it skips redundant calls t
+	Is this a runtime operation, or is this a pre-compiled, compiler optimization?
+
+"Loading"
+
+	I choose "batching" at the application level (pyglet)
+
+	drawing primatives: pyglet offloads "automatically"
+
+
+Q: What is VRAM? 
+	
+	Physically, is VRAM part of the graphics card?
+		On an integrated GPU, VRAM isn't actually its own hardware, but a part of the RAM partitioned to be used as VRAM. "unified memory"
+
+		Otherwise, VRAM is on the graphics card, separate from RAM. 
+			If there is a lot of VRAM <-> CPU communication, then this can actually be slower. That is, if the application is doing a lot of VRAM readback, then it will actually run faster on integrated graphics than 
+
+			Q: What is an example situation when the CPU/RAM needs to read from VRAM? Otherwise, from my understanding (with this game), VRAM should mostly be a one-way operation: CPU/RAM writing to VRAM.
+
+		Q: Is there any different in how I write my application level code, when optimizing for a machine with separate VRAM vs. unified memory RAM partition?
+
+	Q: Managed by application/pyglet or openGL or GPU?
+		openGL and its driver manage it.
+
+		We can request allocation at the application/pyglet level, but not guaranteed
+			TODO learn more about this
+
+	What all is stored in VRAM?
+		Textures
+		Vertex buffers
+		Index buffers (verticies => triangles)
+		Shaders (compiled into GPU code)
+
+		"Uniform buffers"
+			How are these used?
+
+	VRAM is meant to be a one-way operation
+		openGL --(write)--> VRAM --(read)--> GPU
+
+		This relationship allows CPU level to 'pipeline' (prep the work for the next frame which the GPU is working on the current frame).
+
+		GPU will write to the "framebuffer" in the VRAM
+
+		If the application/openGL reads from VRAM, this is called "readback"
+
+			For example if I ever needed to verify "what is actually on screen" (either to double check the application level state/logic or some other state/side-effect not easily predictable at the application level.
+
+	Q: Compete with other programs for VRAM? How does VRAM allocation work?
+
+	Q: How much VRAM do machines have? What should be my target VRAM usage?
+		My Apple has integrated GPU, and no separate VRAM. uses RAM
+
+		Integrated GPUs allocate 1-4 GB from system RAM.
+		Modern GPUs have 4-16+ GB. 
+
+		My game should only be using ~10-50MB
+
+
+
+
+
+
+To measure performance
+
+	Size of the final binary should be larger than 300 MB
+
+	How many draw calls per frame.
+		Try to keep under 1000, or even under 100
+
+	"CPU vs. GPU" offloading
+
+	Many many "forces sync" in the code?
+
+	cache utilization
+
+	when do shaders get compiled
+		Do I force a pre-load of shaders at the start of the game
+		(to prevent a spinup load of a shader mid-game?)
+
+	VRAM usage
+		any VRAM -> RAM thrashing?
+
+	Garbage collecting
+
+	Size of the different VRAM buffers
+
+	Size of the compiled shaders (in GPU code)
+		shader compilation duration/time
+			A good benchmark for shader compilation time is 10-100ms
+
+	How often shaders got compiled (or re-compiled)?
+		A shader should ideally only be compiled once at startup.
+
+	Number of forced CPU / VRAM "syncs" (pipeline stalls)
+
+	python garbage collect profiling
+
+	Batch size()
+		maximize batch size, as long as we're not getting into GB range
+
+	How many batch() state combos are there?
+		//try to minimize
+
+	How many GPU state changes occur per frame
+
+	How many GPU pipeline flushes occur per frame
+
+	GPU idle time
+
+	Minimize number of draw calls
+	Q: Rule of thumb: hundreds of draw calls is fine, thousands starts hurting, tens of thousands is a problem.
+		Does this mean 100 draw calls per frame?
+
+	Amount of VRAM / vertex buffer re-use during a game run.
+		Minimize the number of vertex buffer re-allocation
+		Application level recommendations to maximize VRAM re-usage between frames:
+		reduce creating/delete of sprites. Instead, re-use them, or change their .visible property. Try to create all sprites up front at level load time.
+		"don't delete, just hide"
+
+		Avoid re-assigning a sprite back and forth between batches. Instead just have a separate copy of the sprite between batches. optimizes the vertex buffers in each batch.
+
+	Don't forget to delete textures from VRAM
+	(but also) minimize reloaing the same texture into VRAM (the same texture could chill out in the VRAM and be re-used)
+
+	Avoid unnecssary framebuffers (more drawing directly to the window)
+		Fewer framebuffers is better, since each 'target' swtich (between framebuffers and/or between window) causes a GPU pipeline flush.
+
+	Minimize the number of "layers" (from a programmatic abstract)
+	Thus, minimize the number of batches (don't be afraid to use mixed batches)
+
+	Minimize the number of vertex formats being used
+		(helps minimize the number of extra vertex buffers and extra GPU draw calls)
+
+	GPU code utilization
+
+	I wont necessarily have to do full screen clears all the time
+	or at the very least I could keep some slow moving background layers remain (so I don't have to re-render them. (keep some framebuffers between frames)
+
+GPU state change
+	* switch a texture
+	* switch a shader
+
+Overall Pipeline
+
+	python -> pythongraphics lib -> openGL (OS's openGL driver)
+
+	... -> OpenGL API (C library calls) -> OpenGL Driver (vendor-specific: NVIDIA, AMD, Intel, Apple)
+
+	Pyglet builds vertex data
+
+	OpenGL API calls get buffered on the "command buffer"
+		The OpenGL driver decides how to batch commands in the command buffer
+		The OpenGL driver decides when to actually flush commands to the GPU
+		The GPU then does parallel execution of batched operations.
+
+		All openGL prep-work (between reading the command buffer and flushing to the GPU) is done on the CPU
+
+			variable manipulation of sprites (e.g. moving sprites) doesn't trigger any commands on the command buffer, instead this is just stored in RAM. Then when a draw command is invoked, it syncs the RAM with the VRAM (for all the vertecies affected in the verticies buffer)
+
+			There's an effective copy of the vertex buffer in both RAM and VRAM. This is called a dynamic buffer. (as opposed to a static buffer "for geometry that never changes")
+
+			Pyglet uses dynamic buffers for sprites/shapes because you can change .x, .y, .color at any time.
+
+			Minimize using a dynamic buffer when a static buffer will do (i.e reduce RAM usage).
+
+			On unified memory systems (Apple Silicon), RAM and VRAM are physically the same, but the driver still maintains this abstraction for API compatibility.
+
+			Pyglet decides static/dynamic buffer type based on the object type
+				Sprite: dynamic
+				shape.*: dynamic
+				custom geometry, can specify static within batch.add() call
+
+			Otherwise "The overhead of dynamic buffers is minimal"
+		
+		Mixing a Batch with both dynamic vertex buffered object and static vertex buffer object will "most likely" end up on the VRAM as separate buffers and therefore separate draw calls.
+			Therefore, if you only have a few static objects, just put them on a dynamic vertex buffer (with others items of the same format combo)
+
+		Most pyglet level calls cause one or more openGL command onto the command buffer
+		the command buffer fills up, until "end of frame" is called, flushing the commadn buffer.
+
+		Calculating some primatives can be offloaded to openGL
+		then openGL converts to triangles/vertex for the GPU
+
+
+
+	OpenGL "manages GPU memory allocation"
+
+	The driver flushes to the GPU when:
+		• You call swap buffers (present frame)
+		• The buffer gets full
+		• You explicitly request it (glFlush, glFinish)
+		• You read data back from GPU (forces sync)
+
+Q: How much control do I have to worry about the specific implementations of OpenGL drivers? 
+
+Having the ability to access openGL calls sounds good, but it this really just a choice for how something makes it onto the command buffer? If I manually put something onto the command buffer, is this bad because I don't know how to optimize the command for its batching, and otherwise coordination/optimization with the openGL driver.
+
+
+
+Operations offloaded onto the GPU
+
+	GPU: "Vertex shaders": Shaders run "once per vertex"
+			e.g. make blocks wobble
+
+	GPU: "Fragment shaders" (aka "Pixel shaders"): run "once per pixel"
+			e.g. color shimmer effects
+
+	GPU: Texture sampling
+
+	GPU: opengl 'blend modes'
+		-color blends for glows, shadows
+
+	GPU: Framebuffer
+		rendering to a temp off-screen, as a middleman step to the final screen display; for applying, screen wide post-processing (e.g. blur; fade between two different screens)
+
+		Q: Would an example of this be a pause menu?
+
+
+	GPU: advanced extra features "OpenGL compute shaders"
+		Particle simulations, pathfinding for thousands of units, procedural generation
+		OpenGL compute shaders require GL 4.3+, which macOS doesn't support (stuck at 4.1)
+
+	GPU: instanced rendering
+		batching many copies of the same geometry obj with different positions; one call instead of 1000 calls.
+
+
+Q: So far I've been using the terms openGL and GPU offloading synonmously. When I invoke an openGL operation (e.g. pyglet.shapes, pyglet.image.Framebuffer) how much "work" is openGL doing (at the CPU level)? Or is this call a small wrappen upon GPU operations? How 'close' is an open GL call to the GPU? 
+
+Q:
+You've described "offloading automatically", is the algorithm how openGL does this known? This feels like I low level detail that I would like to understand, since during gameplay, suddenly the offloading algorithm may switch between offloading a lot or a little, causing a sudden change in performance.
+
+
+
+Q: Comparison with 
+
+I college, I once had to write a ray-tracer from scratch, all at the application level, without the use of any drivers/openGL/GPU. This included manually doing the low level math of defining the size of primatives, performaing translation, scaling, placing objects in the scene, definition lighting styles (e.g. spot, ambient), defining reflectiveness of obj surfaces, defining transparent objects, calculating interfactions, overlaps, manually determining the color value of each pixel. This was of course a learning exercise, to understand the lower level components. My education in graphics never got to the point of understanding the modern state of GPUs, and how/what can be offloaded to the GPU.
+
+For each of things that can be offloaded to the GPU, could they also be chosen to be rendered at the application software level? How does an application using pyglet choose which of the GPU offloading features.
+
+
+
+
+
+Which version of openGL I target becomes important for compatibility
+Q: How do I select version of openGL?
+Q: How should I decide which version of openGL for distribution on steam?
+
+
+OpenGL still works on macOS
+
+Q: Alternatives to openGL; is openGL the only option?
+	macOs: Metal/Vulkan
+
+
+
+I am curious about performance; it's good to know that the libraries can abstract away these details, but I'd still like to be concious of them.
+
+
+GPU rasterizes (figures out which pixels are covered)
