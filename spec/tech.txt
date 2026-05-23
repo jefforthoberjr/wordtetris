@@ -21,3 +21,4 @@
 [TODO] Setup with Steamworks
 [TODO] Steam upload tested
 [TODO] Add logging
+[TODO] Setup apitrace; debug sessions for gl_* call counts

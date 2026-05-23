@@ -720,3 +720,36 @@ I am curious about performance; it's good to know that the libraries can abstrac
 
 
 GPU rasterizes (figures out which pixels are covered)
+
+
+
+
+Profiling openGL
+
+	application -> pyglet
+		//How I chose to batch
+	pyglet -> openGL
+		//How pyglet splits into openGL calls
+	openGL -> GPU
+		//How openGL driver optimizes more
+
+		(would require vendor specific tools)
+		• NVIDIA: Nsight
+  	• AMD: Radeon GPU Profiler
+
+
+	apitrace  (pyglet -> openGL profiling)
+
+		apitrace sits between your application and the OpenGL driver
+
+			It wouldn't show the comms between the driver and the GPU.
+			So we wouldn't see
+				batch optimizations
+				GPU flush events
+				'dirty' vertex management
+
+		Just a real-time logger of events
+		Then you do analysis after the fact
+		Not a real-time profiler.
+
+		15% performance hit
