@@ -2,7 +2,8 @@
     "window": {
         "width": 800,
         "height": 600,
-        "title": "Word Tetris"
+        "title": "Word Tetris",
+        "fps": 60
     },
     "audio": {
         "master_volume": 0.8
