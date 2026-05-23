@@ -38,4 +38,4 @@ In front of each line in the spec will be a status.
 "[TODO]" or "[DONE]".
 
 ## NOTES
-The notes folder is just for my personal notes. Do not refer to this at all. This is just brainstormed ideas that many contradict what is being developed.
+The notes folder is just for my personal notes. Do not refer to this at all. This is just brainstormed ideas that may contradict what is being developed.

@@ -1,0 +1,69 @@
+A dictionary db to accompany the players
+	track across all games
+		a completed game saves which words were used
+		keep track of an ongoign 'percentage' of the dictionary used
+		meant to be something to brag about, comparing each other's dictionaries
+		use the dictionary to give a silly/funny label to the player's word 'style'
+			(e.g. obscure short words, long everyday words, science words, etc.)
+
+	Quiz the players on word definitions
+		Prevent users from guessing obscure words
+
+		A pop quiz at the end, otherwise lose dictionary coverage
+
+		A pop quiz at time of word completion, otherwise lose points
+
+
+	Dictionary completion as side goal, or take over as the main goal?
+
+		If coverage is the main goal, then "points" within each bottle round become more meaningless
+
+
+Anything unlocked with "points"?
+	Different game modes unlocked?
+
+	Different blocks unlocked?
+		longer grams?
+		more obscure grams?
+
+
+Different ways for the blocks to "drop"
+
+	Normal "bottle" drop
+
+		Make sure it's wide enough to support long word setup
+
+	An asteroid forming in the center
+		blocks are allowed to orbit around the side
+		blocks can dropin from any angle
+		have to somehow have more dynamic angles than just the 4 directions to come from
+		dropping acts mor elike gravity towards the center
+
+		Octagon may be the better tile shape for this
+		The straight "direction" of a finished word may be less obvious
+		May need to have the player select the word, snaking paths to complete the words
+
+
+	Collecting on the sides of the 4 walls
+		No gravity at play
+		Players can just direct then to which ever side they want
+		A bit more casual play
+
+		It gives the player the ability to sort their blocks, and prep prefixes and suffixes on opposite sides of the wall.
+
+
+Blocks could "wedge" inbetween other blocks
+	
+	Blocks have pointy sides
+
+	Blocks can 'crater' in, pushing out the other
+
+
+Complete word selection
+
+	Do not automatically remove words
+		(then you get a cascade of obscure word clears)
+		(then long words can never build)
+
+	User to select words explicitly
+		Pause between block drops
