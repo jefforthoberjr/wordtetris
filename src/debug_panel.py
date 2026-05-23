@@ -1,5 +1,7 @@
+import sys
 import time
 import pyglet
+from pyglet.gl import gl_info
 
 
 draw_times = []
@@ -20,31 +22,42 @@ idle_percent = 0
 batch = None
 panel = None
 label = None
+system_info = None
 
 
 def init(window):
-    global batch, panel, label, start_time
+    global batch, panel, label, start_time, system_info
     
     start_time = time.perf_counter()
     batch = pyglet.graphics.Batch()
     
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    system_info = (
+        f"-- System --\n"
+        f"  Python: {python_version}\n"
+        f"  Pyglet: {pyglet.version}\n"
+        f"  OpenGL: {gl_info.get_version()}\n"
+        f"  Vendor: {gl_info.get_vendor()}\n"
+        f"  GPU: {gl_info.get_renderer()}\n"
+    )
+    
     panel = pyglet.shapes.Rectangle(
-        x=window.width - 220,
-        y=window.height - 200,
-        width=210,
-        height=190,
+        x=window.width - 420,
+        y=window.height - 560,
+        width=410,
+        height=550,
         color=(200, 200, 200, 180),
         batch=batch
     )
     
     label = pyglet.text.Label(
         "",
-        font_size=12,
-        x=window.width - 210,
-        y=window.height - 20,
+        font_size=24,
+        x=window.width - 410,
+        y=window.height - 40,
         color=(0, 0, 0, 255),
         multiline=True,
-        width=200,
+        width=400,
         batch=batch
     )
 
@@ -61,7 +74,8 @@ def prepare():
         f"-- Update (UPS: {ups}) --\n"
         f"  Min: {update_stats['min']:.2f} ms\n"
         f"  Avg: {update_stats['avg']:.2f} ms\n"
-        f"  Max: {update_stats['max']:.2f} ms"
+        f"  Max: {update_stats['max']:.2f} ms\n"
+        f"{system_info}"
     )
 
 

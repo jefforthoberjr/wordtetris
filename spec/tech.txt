@@ -20,3 +20,4 @@
 [TODO] PyInstaller build tested
 [TODO] Setup with Steamworks
 [TODO] Steam upload tested
+[TODO] Add logging
