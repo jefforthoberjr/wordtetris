@@ -29,6 +29,7 @@ batch = None
 panel = None
 label = None
 system_info = None
+ram_overhead_info = None
 process = None
 has_nvidia_vram = False
 has_ati_vram = False
@@ -42,8 +43,8 @@ GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX = 0x9048
 GL_TEXTURE_FREE_MEMORY_ATI = 0x87FC
 
 
-def init(window):
-    global batch, panel, label, start_time, system_info, process
+def init(window, ram_deltas=None):
+    global batch, panel, label, start_time, system_info, ram_overhead_info, process
     global has_nvidia_vram, has_ati_vram, vram_type
     
     start_time = time.perf_counter()
@@ -71,6 +72,16 @@ def init(window):
         f"  Vendor: {gl_info.get_vendor()}\n"
         f"  GPU: {gl_info.get_renderer()}\n"
     )
+    
+    if ram_deltas:
+        ram_overhead_info = (
+            f"-- RAM Overhead --\n"
+            f"  Python: {ram_deltas.get('baseline', 0) + ram_deltas.get('after_psutil', 0):.1f} MB\n"
+            f"  Pyglet: {ram_deltas.get('after_pyglet', 0):.1f} MB\n"
+            f"  OpenGL: {ram_deltas.get('after_window', 0):.1f} MB\n"
+        )
+    else:
+        ram_overhead_info = ""
     
     panel = pyglet.shapes.Rectangle(
         x=window.width - 420,
@@ -124,6 +135,7 @@ def prepare():
         f"  Min: {ram_stats['min']:.1f} MB\n"
         f"  Avg: {ram_stats['avg']:.1f} MB\n"
         f"  Max: {ram_stats['max']:.1f} MB\n"
+        f"{ram_overhead_info}"
         f"{vram_section}"
         f"{system_info}"
     )

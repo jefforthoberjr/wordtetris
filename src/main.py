@@ -1,8 +1,12 @@
+import ram_overhead
+ram_overhead.measure("after_psutil")
+
 import time
 import pyglet
+ram_overhead.measure("after_pyglet")
+
 from config import CONFIG
 import debug_panel
-
 
 window = pyglet.window.Window(
     width=CONFIG["window"]["width"],
@@ -22,8 +26,10 @@ label = pyglet.text.Label(
     batch=batch
 )
 
+ram_overhead.measure("after_window")
+
 debug_visible = False
-debug_panel.init(window)
+debug_panel.init(window, ram_overhead.get_deltas())
 
 
 #vsync enabled (the default), on_draw() is called once per monitor refresh
