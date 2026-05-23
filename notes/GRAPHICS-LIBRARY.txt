@@ -13,6 +13,8 @@ Rules:
 * Use Batch() tries to combine draws (minimize number of openGL draw calls), instead of individual draw calls
 	
 
+* pyglet.clock.get_frequency() measure internal 'wake up and handle something' events, it handled per second. These wake up events is a combinations of scheduled ticket, and input events (keyboard and mouse).
+
 STYLE
 	There are two ways to specify shaders
 
@@ -45,6 +47,7 @@ STYLE
 		A static vertex buffer is otherwise just to save time how openGL syncs the vertex buffers between RAM and VRAM (saving a little RAM)
 
 
+
 Idea: 
 * Avoid textures for UI/menu elements. Can I get these to be drawn objs instead?
 * How can I do pre-compilate the shaders (early in the game), to prevent shader compilation during the gaeme execution?
@@ -56,6 +59,11 @@ Overview:
 
 
 1st order knowledge:
+
+Pyglet is single threaded
+	ticks (i.e. input and physics updates) and draws (frame renders) happen as needed, independent of each other
+	tick rate is not fixed, it will only be as fast as input occurs (or otherwise effectively falls back to the draw rate
+	the tick rate will always be equal to or greater than the draw rate
 
 Packaging of the executable
 	.exe on Windows, .app on macOS

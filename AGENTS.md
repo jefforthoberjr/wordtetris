@@ -22,6 +22,11 @@ Refer to document TECH.md for other opinions on coding style.
 
 Do not automatically update a library/dependency version unless you ask first.
 
+## WE BOTH EDIT THE CODE
+Sometimes, between your edits of code, I will manually make some small changes. For example, add a line of commenting. Since you may not see these edits in your context, please re-read files that have an updated timestamp newer than when you touched them last.
+
+When refactoring, try to preserve my manual comments in the code (unless of course, the relevant code is deleted).
+
 ## SPEC
 This will contain many text decriptions on the rules of the game. This serves as documentation, and a TODO list.
 This will contain many single line sentences about the logic / rules / physics of the game. It will also contain descriptions about how the UI works, and how files and data are handled.
