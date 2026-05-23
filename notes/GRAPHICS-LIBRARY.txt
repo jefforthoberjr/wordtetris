@@ -13,7 +13,7 @@ Rules:
 * Use Batch() tries to combine draws (minimize number of openGL draw calls), instead of individual draw calls
 	
 
-* pyglet.clock.get_frequency() measure internal 'wake up and handle something' events, it handled per second. These wake up events is a combinations of scheduled ticket, and input events (keyboard and mouse).
+* pyglet.clock.get_frequency() measure internal 'wake up and handle something' events, it handled per second. These wake up events is a combinations of scheduled ticket, and input events (keyboard and mouse). Not a really useful metric for me otherwise
 
 STYLE
 	There are two ways to specify shaders
