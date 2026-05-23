@@ -29,9 +29,5 @@ Bundling as .pyc files
 using pyinstaller
 `pyinstaller --onedir --windowed main.py`
 
-Setup for steam distribution
-  1. Create a Steamworks developer account ($100 one-time fee)
-  2. Create your app in Steamworks
-  3. Set up depots for Windows and macOS
-  4. Use Steamworks SDK's upload tool to push builds
-  5. Configure store page, release
+Avoid python decorators. No need to the syntax sugar.
+

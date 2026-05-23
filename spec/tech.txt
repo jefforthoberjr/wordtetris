@@ -18,4 +18,5 @@
 [DONE] Batch rendering setup
 [DONE] ESC closes window
 [TODO] PyInstaller build tested
+[TODO] Setup with Steamworks
 [TODO] Steam upload tested

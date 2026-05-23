@@ -21,13 +21,11 @@ label = pyglet.text.Label(
 )
 
 
-@window.event
 def on_draw():
     window.clear()
     batch.draw()
 
 
-@window.event
 def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.ESCAPE:
         window.close()
@@ -37,5 +35,9 @@ def update(dt):
     pass
 
 
+window.push_handlers(
+    on_draw=on_draw,
+    on_key_press=on_key_press
+)
 pyglet.clock.schedule_interval(update, 1 / 60)
 pyglet.app.run()
