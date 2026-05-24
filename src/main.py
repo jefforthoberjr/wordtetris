@@ -50,10 +50,10 @@ def on_key_press(symbol, modifiers):
     
     if symbol == pyglet.window.key.F3:
         debug_visible = not debug_visible
-        debug_panel.end_event()
-        return True
+        result = True
+    else:
+        result = screen_manager.on_key_press(symbol, modifiers)
     
-    result = screen_manager.on_key_press(symbol, modifiers)
     debug_panel.end_event()
     return result
 
@@ -81,5 +81,6 @@ window.push_handlers(
     on_mouse_press=on_mouse_press,
     on_mouse_motion=on_mouse_motion
 )
-pyglet.clock.schedule_interval(update_game_tick, 1 / CONFIG["game"]["ups"]) #Updates Per Second
+ups = 1 / CONFIG["game"]["ups"]
+pyglet.clock.schedule_interval(update_game_tick, ups) #Updates Per Second
 pyglet.app.run()

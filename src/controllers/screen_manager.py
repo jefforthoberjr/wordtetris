@@ -1,9 +1,9 @@
-from enum import Enum, auto
+from enum import Enum
 
 class ScreenType(Enum):
-    TITLE = auto()
-    MAIN_MENU = auto()
-    GAME = auto()
+    TITLE = 1
+    MAIN_MENU = 2
+    GAME = 3
 
 
 class ScreenManager:

@@ -1,3 +1,5 @@
+
+# TECH STACK and DEV OPS
 We are using python3.
 
 We are using the "C" version of python (i.e. not Java or .Net)
@@ -29,5 +31,11 @@ Bundling as .pyc files
 using pyinstaller
 `pyinstaller --onedir --windowed main.py`
 
+
+# PYTHON STYLE
 Avoid python decorators. No need to the syntax sugar.
+
+Avoid multiple return statements in a function. This will make embedding wrappers more easily during future refactors.
+
+
 
