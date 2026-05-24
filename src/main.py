@@ -1,12 +1,15 @@
 import ram_overhead
 ram_overhead.measure("after_psutil")
 
-import time
 import pyglet
 ram_overhead.measure("after_pyglet")
 
 from config import CONFIG
 import debug_panel
+from controllers.screen_manager import ScreenManager, ScreenType
+from views.title_screen import TitleScreen
+from views.main_menu_screen import MainMenuScreen
+from views.game_screen import GameScreen
 
 window = pyglet.window.Window(
     width=CONFIG["window"]["width"],
@@ -14,19 +17,16 @@ window = pyglet.window.Window(
     caption=CONFIG["window"]["title"]
 )
 
-batch = pyglet.graphics.Batch()
-
-label = pyglet.text.Label(
-    "Hello, World!",
-    font_size=36,
-    x=window.width // 2,
-    y=window.height // 2,
-    anchor_x="center",
-    anchor_y="center",
-    batch=batch
-)
-
 ram_overhead.measure("after_window")
+
+screen_manager = ScreenManager()
+title_screen = TitleScreen(window, screen_manager, ScreenType.MAIN_MENU)
+main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.GAME)
+game_screen = GameScreen(window, screen_manager)
+screen_manager.register(ScreenType.TITLE, title_screen)
+screen_manager.register(ScreenType.MAIN_MENU, main_menu_screen)
+screen_manager.register(ScreenType.GAME, game_screen)
+screen_manager.switch_to(ScreenType.TITLE)
 
 debug_visible = False
 debug_panel.init(window, ram_overhead.get_deltas())
@@ -36,8 +36,7 @@ debug_panel.init(window, ram_overhead.get_deltas())
 def on_draw():
     debug_panel.start_draw()
     
-    window.clear()
-    batch.draw()
+    screen_manager.draw()
     
     if debug_visible:
         debug_panel.draw()
@@ -49,25 +48,38 @@ def on_key_press(symbol, modifiers):
     global debug_visible
     debug_panel.start_event()
     
-    if symbol == pyglet.window.key.ESCAPE:
-        window.close()
-    elif symbol == pyglet.window.key.F3:
+    if symbol == pyglet.window.key.F3:
         debug_visible = not debug_visible
+        debug_panel.end_event()
+        return True
     
+    result = screen_manager.on_key_press(symbol, modifiers)
     debug_panel.end_event()
+    return result
+
+
+def on_mouse_press(x, y, button, modifiers):
+    debug_panel.start_event()
+    screen_manager.on_mouse_press(x, y, button, modifiers)
+    debug_panel.end_event()
+
+
+def on_mouse_motion(x, y, dx, dy):
+    screen_manager.on_mouse_motion(x, y, dx, dy)
+
 
 #update_game_tick is called at the frequency we decide
 def update_game_tick(dt):
     debug_panel.start_update()
-    
-    # Game logic goes here
-    
+    screen_manager.update(dt)
     debug_panel.end_update()
 
 
 window.push_handlers(
     on_draw=on_draw,
-    on_key_press=on_key_press
+    on_key_press=on_key_press,
+    on_mouse_press=on_mouse_press,
+    on_mouse_motion=on_mouse_motion
 )
 pyglet.clock.schedule_interval(update_game_tick, 1 / CONFIG["game"]["ups"]) #Updates Per Second
 pyglet.app.run()
