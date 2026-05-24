@@ -1,3 +1,8 @@
+GAME NAMES
+* vocabu-blast
+* blast-tionary
+
+
 
 Setup for steam distribution
   1. Create a Steamworks developer account ($100 one-time fee)
