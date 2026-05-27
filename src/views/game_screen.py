@@ -27,6 +27,7 @@ class GameScreen:
             "move_down": _get_key("move_down"),
             "rotate_clockwise": _get_key("rotate_clockwise"),
             "rotate_counterclockwise": _get_key("rotate_counterclockwise"),
+            "place": _get_key("place"),
             "pause": _get_key("pause"),
         }
         self._menu_open = False
@@ -84,6 +85,18 @@ class GameScreen:
     def _current_block(self):
         return self._block_pool[self._current_block_index]
     
+    def _place_current_block(self):
+        block = self._current_block()
+        block.place()
+        
+        self._current_block_index += 1
+        if self._current_block_index < self.BLOCK_POOL_SIZE:
+            next_block = self._current_block()
+            center_x = self.GRID_WIDTH // 2 - 1
+            center_y = self._grid_height // 2
+            next_block.set_position(center_x, center_y)
+            next_block.set_visible(True)
+    
     def on_enter(self):
         self._menu_open = False
         self._ingame_menu.reset()
@@ -124,23 +137,31 @@ class GameScreen:
             self._menu_open = True
             self._ingame_menu.reset()
             return True
-        elif symbol == self._keys["move_left"]:
-            self._current_block().move(-1, 0)
+        
+        block = self._current_block()
+        if block.placed:
+            return False
+        
+        if symbol == self._keys["move_left"]:
+            block.move(-1, 0)
             return True
         elif symbol == self._keys["move_right"]:
-            self._current_block().move(1, 0)
+            block.move(1, 0)
             return True
         elif symbol == self._keys["move_up"]:
-            self._current_block().move(0, 1)
+            block.move(0, 1)
             return True
         elif symbol == self._keys["move_down"]:
-            self._current_block().move(0, -1)
+            block.move(0, -1)
             return True
         elif symbol == self._keys["rotate_clockwise"]:
-            self._current_block().rotate_cw()
+            block.rotate_cw()
             return True
         elif symbol == self._keys["rotate_counterclockwise"]:
-            self._current_block().rotate_ccw()
+            block.rotate_ccw()
+            return True
+        elif symbol == self._keys["place"]:
+            self._place_current_block()
             return True
         
         return False

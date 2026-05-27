@@ -10,6 +10,7 @@ class Block:
         self._grid_x = 0
         self._grid_y = 0
         self._visible = visible
+        self._placed = False
         
         self._squares = []
         for _ in shapes_data:
@@ -74,3 +75,10 @@ class Block:
             new_shapes_data.append((-dy, dx))
         self._shapes_data = new_shapes_data
         self._update_positions()
+    
+    @property
+    def placed(self):
+        return self._placed
+    
+    def place(self):
+        self._placed = True

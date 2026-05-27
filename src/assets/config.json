@@ -17,6 +17,7 @@
         "move_down": "S",
         "rotate_clockwise": "LEFT",
         "rotate_counterclockwise": "RIGHT",
+        "place": "SPACE",
         "pause": "ESCAPE"
     }
 }
