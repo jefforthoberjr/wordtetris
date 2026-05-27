@@ -4,7 +4,7 @@ from views.ingame_menu import IngameMenu
 from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
 from models.block import Block
-from models.tetrimino import TetriminoType, TETRIMINO_SHAPES
+from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from models.grid import Grid
 from config import CONFIG
 
@@ -77,7 +77,7 @@ class GameScreen:
         
         for _ in range(self.BLOCK_POOL_SIZE):
             t_type = random.choice(tetrimino_types)
-            shapes_data = TETRIMINO_SHAPES[t_type]
+            shapes_data = TETRIMINO_ROTATIONS[t_type][0]
             block = Block(t_type, shapes_data, self._cell_size, self._block_batch, visible=True)
             self._block_pool.append(block)
         
