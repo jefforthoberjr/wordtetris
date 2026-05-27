@@ -4,6 +4,12 @@ from views.ingame_menu import IngameMenu
 from controllers.screen_manager import ScreenType
 from models.block import Block
 from models.tetrimino import TetriminoType, TETRIMINO_SHAPES
+from config import CONFIG
+
+
+def _get_key(action):
+    key_name = CONFIG["controls"][action]
+    return getattr(pyglet.window.key, key_name)
 
 
 class GameScreen:
@@ -13,6 +19,15 @@ class GameScreen:
     def __init__(self, window, screen_manager):
         self._window = window
         self._screen_manager = screen_manager
+        
+        self._keys = {
+            "move_left": _get_key("move_left"),
+            "move_right": _get_key("move_right"),
+            "move_up": _get_key("move_up"),
+            "move_down": _get_key("move_down"),
+            "rotate": _get_key("rotate"),
+            "pause": _get_key("pause"),
+        }
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
         
@@ -104,23 +119,23 @@ class GameScreen:
                 self._handle_menu_action(action)
             return True
         
-        if symbol == pyglet.window.key.ESCAPE:
+        if symbol == self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
             return True
-        elif symbol == pyglet.window.key.LEFT:
+        elif symbol == self._keys["move_left"]:
             self._current_block().move(-1, 0)
             return True
-        elif symbol == pyglet.window.key.RIGHT:
+        elif symbol == self._keys["move_right"]:
             self._current_block().move(1, 0)
             return True
-        elif symbol == pyglet.window.key.UP:
+        elif symbol == self._keys["move_up"]:
             self._current_block().move(0, 1)
             return True
-        elif symbol == pyglet.window.key.DOWN:
+        elif symbol == self._keys["move_down"]:
             self._current_block().move(0, -1)
             return True
-        elif symbol == pyglet.window.key.SPACE:
+        elif symbol == self._keys["rotate"]:
             self._current_block().rotate_cw()
             return True
         
