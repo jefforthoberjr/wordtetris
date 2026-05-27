@@ -25,3 +25,5 @@
 [DONE] Selected menu item is highlighted
 [DONE] "Main Menu" returns to main menu screen
 [DONE] "Exit" closes the application
+
+[TODO] A unittest screen, to quickly run hardcoded scenarios

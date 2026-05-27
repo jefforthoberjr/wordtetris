@@ -1,12 +1,14 @@
 import pyglet
 from models.letter_picker import pick_letters
+from models.tetrimino import TETRIMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 
 
 class Block:
     def __init__(self, tetrimino_type, shapes_data, cell_size, batch, visible=False):
         self._tetrimino_type = tetrimino_type
-        self._shapes_data = shapes_data
+        self._shapes_data = list(shapes_data)
+        self._rotation_state = 0
         self._cell_size = cell_size
         self._batch = batch
         self._grid_x = 0
@@ -87,19 +89,17 @@ class Block:
             label.visible = visible
     
     def rotate_cw(self):
-        # rotate 90 degrees clockwise
-        new_shapes_data = []
-        for dx, dy in self._shapes_data:
-            new_shapes_data.append((dy, -dx))
-        self._shapes_data = new_shapes_data
+        # rotate 90 degrees clockwise using predefined rotation states
+        rotations = TETRIMINO_ROTATIONS[self._tetrimino_type]
+        self._rotation_state = (self._rotation_state + 1) % 4
+        self._shapes_data = list(rotations[self._rotation_state])
         self._update_positions()
     
     def rotate_ccw(self):
-        # rotate 90 degrees counterclockwise
-        new_shapes_data = []
-        for dx, dy in self._shapes_data:
-            new_shapes_data.append((-dy, dx))
-        self._shapes_data = new_shapes_data
+        # rotate 90 degrees counterclockwise using predefined rotation states
+        rotations = TETRIMINO_ROTATIONS[self._tetrimino_type]
+        self._rotation_state = (self._rotation_state - 1) % 4
+        self._shapes_data = list(rotations[self._rotation_state])
         self._update_positions()
     
     @property
