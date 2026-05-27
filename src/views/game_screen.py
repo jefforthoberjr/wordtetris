@@ -25,7 +25,8 @@ class GameScreen:
             "move_right": _get_key("move_right"),
             "move_up": _get_key("move_up"),
             "move_down": _get_key("move_down"),
-            "rotate": _get_key("rotate"),
+            "rotate_clockwise": _get_key("rotate_clockwise"),
+            "rotate_counterclockwise": _get_key("rotate_counterclockwise"),
             "pause": _get_key("pause"),
         }
         self._menu_open = False
@@ -135,8 +136,11 @@ class GameScreen:
         elif symbol == self._keys["move_down"]:
             self._current_block().move(0, -1)
             return True
-        elif symbol == self._keys["rotate"]:
+        elif symbol == self._keys["rotate_clockwise"]:
             self._current_block().rotate_cw()
+            return True
+        elif symbol == self._keys["rotate_counterclockwise"]:
+            self._current_block().rotate_ccw()
             return True
         
         return False

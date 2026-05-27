@@ -87,3 +87,9 @@ Rotate the blocks
 
 	Around which block should the blocks rotate
 		(i.e. big swing rotate, or small swing rotate)
+
+	Avoid making it look like it's rotating around an empty place
+
+		MAoe it look like rotate arpmd a point
+
+	Measure the rotation footprint of each block s

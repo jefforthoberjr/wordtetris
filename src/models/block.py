@@ -66,3 +66,11 @@ class Block:
             new_shapes_data.append((dy, -dx))
         self._shapes_data = new_shapes_data
         self._update_positions()
+    
+    def rotate_ccw(self):
+        # rotate 90 degrees counterclockwise
+        new_shapes_data = []
+        for dx, dy in self._shapes_data:
+            new_shapes_data.append((-dy, dx))
+        self._shapes_data = new_shapes_data
+        self._update_positions()
