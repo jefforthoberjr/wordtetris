@@ -1,6 +1,7 @@
 import random
 import pyglet
 from views.ingame_menu import IngameMenu
+from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
 from models.block import Block
 from models.tetrimino import TetriminoType, TETRIMINO_SHAPES
@@ -48,12 +49,14 @@ class GameScreen:
     
     def _create_grid(self):
         line_color = (200, 200, 200)
+        shape_shader = get_shape_shader()
         
         for x in range(self.GRID_WIDTH + 1):
             px = x * self._cell_size
             line = pyglet.shapes.Line(
                 px, 0, px, self._window.height,
-                thickness=1, color=line_color, batch=self._grid_batch
+                thickness=1, color=line_color, batch=self._grid_batch,
+                program=shape_shader
             )
             self._grid_lines.append(line)
         
@@ -61,7 +64,8 @@ class GameScreen:
             py = y * self._cell_size
             line = pyglet.shapes.Line(
                 0, py, self._window.width, py,
-                thickness=1, color=line_color, batch=self._grid_batch
+                thickness=1, color=line_color, batch=self._grid_batch,
+                program=shape_shader
             )
             self._grid_lines.append(line)
     

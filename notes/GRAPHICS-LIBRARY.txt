@@ -811,3 +811,10 @@ Double buffering (or circular buffering)
 Keypress handling
 
 	returning True from event handlers (get onkeypress) tells Pyglet that the event was consumed and shouldn't be passed to other handlers (like Pyglet's default Escape-to-close behavior). Otherwise a keypress like "escape" can be interpretted twice, and end up being interpretted by pyglet's default handling (and close the app)
+
+
+===
+
+Text
+
+	Text is implemented as textures, from 1 texture atlas

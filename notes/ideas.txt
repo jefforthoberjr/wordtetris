@@ -42,6 +42,9 @@ Anything unlocked with "points"?
 
 Different ways for the blocks to "drop"
 
+	No collision?
+		Allow the blocks to just override each other?
+
 	Normal "bottle" drop
 
 		Make sure it's wide enough to support long word setup
