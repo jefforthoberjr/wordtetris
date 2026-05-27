@@ -523,7 +523,7 @@ Q: What is VRAM?
 
 
 
-To measure performance
+To measure performance ===PERFORMANCE===
 
 	Size of the final binary should be larger than 300 MB
 
@@ -598,6 +598,29 @@ To measure performance
 
 	I wont necessarily have to do full screen clears all the time
 	or at the very least I could keep some slow moving background layers remain (so I don't have to re-render them. (keep some framebuffers between frames)
+
+	Too many glBufferSubData calls
+		If pyglet is doing too many small "dirty marking" subsections of a vertex buffer, these will not be autogrouped by the subsystems. I would have to choose at the application level, to just refresh the whole buffer is a better approach
+
+		Try this when approx. 30%+ of the buffer is being updated at the same time (as in literally being updated within the same frame/draw)
+
+		So now we are optimizing the tradeoff of overhead CPU time vs. VRAM re-usage.
+
+			For integrated graphics, the transfer time between RAM and VRAM is basically 0. So doing full vertex buffer updates is less expensive.
+
+			Otherwise, for separate VRAM:
+				Each call to glBufferSubData is 20 microseconds
+				Each call to glBufferData is 20 microseconds
+				//The same overhead for both types of calls, but the actual timing depends wilds on the driver implementation (could by 2-20 microseconds)
+
+				A full buffer update (RAM -> VRAM) is 100 microseconds (per 1MB)
+					RAM -> VRAM transfer time otherwise scales linearly.
+
+			So the tipping point to consider 1 large buffer update is around 20-40 glBufferSubData.
+
+			Thus, the tipping point is around 20-40 objects moving at the same time in the same frame.
+
+				If I hit this point, consider optimizing the number of moving objs at the same time.
 
 GPU state change
 	* switch a texture
@@ -759,6 +782,29 @@ Profiling openGL
 A sprite is marked "dirty"
 	The pyglet primative objects will automatically mark themselves dirty, when you change their .x or .y property.
 
+OpenGL supports partial buffer updates
+
+	Pyglet's batch system tracks dirtyness at the 'shape' level (not at the per vertex level). Thus, when you update any part of a shape, all vertecies involved with that shape are marked dirty
+
+Pyglet tries to keep the buffers / dirty marking as tight as possible.
+	A vertecies for a shape are allocated next to each other in the buffer. So updating all vertecies in a shape is 1 subsection update.
+
+	Is it a performance problem to update too many small sub regions of the buffer?
+		Marking subsections of the buffer has overhead:
+		  • Each glBufferSubData call has driver overhead
+		  • If you move 10 shapes in one frame, that's 10 separate glBufferSubData calls
+		  • At some point, many small updates become slower than one large update
+
+		This is an application level concern to optimize
+			Neither Pyglet, OpenGL, nor the GPU will automatically coalesce many small updates into
+   		one larger update.
+
+	The alternative to many subsections is replacing the whole vertex buffer
+		One contiguous glBufferData call (instead of many small glBufferSubData)
+
+Double buffering (or circular buffering)
+	An architectural decision at the application level.
+	If I ever get into a mode where every vertex buffer is being fully replaced in every frame. Don't update 1 buffer over and over, instead have multple buffers, and have the GPU rotate between them.
 
 ===
 

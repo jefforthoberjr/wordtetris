@@ -120,6 +120,9 @@ class GameScreen:
         elif symbol == pyglet.window.key.DOWN:
             self._current_block().move(0, -1)
             return True
+        elif symbol == pyglet.window.key.SPACE:
+            self._current_block().rotate_cw()
+            return True
         
         return False
     

@@ -80,3 +80,10 @@ Complete word selection
 
 	User to select words explicitly
 		Pause between block drops
+
+Rotate the blocks
+
+	Allow rotate both ways?
+
+	Around which block should the blocks rotate
+		(i.e. big swing rotate, or small swing rotate)

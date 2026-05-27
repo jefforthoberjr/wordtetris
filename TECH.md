@@ -37,5 +37,6 @@ Avoid python decorators. No need to the syntax sugar.
 
 Avoid multiple return statements in a function. This will make embedding wrappers more easily during future refactors.
 
+Prefer clear multiline loops over "list comprehension"
 
 

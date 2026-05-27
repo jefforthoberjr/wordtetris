@@ -23,3 +23,5 @@
 [TODO] Add logging
 [TODO] Setup apitrace; debug sessions for gl_* call counts
 [TODO] Implement versioning x.y.z
+[TODO] Customizable controls menu; assign keys
+[TODO] Sprite counts in debug menu

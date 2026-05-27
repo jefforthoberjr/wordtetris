@@ -58,3 +58,11 @@ class Block:
         self._visible = visible
         for square in self._squares:
             square.visible = visible
+    
+    def rotate_cw(self):
+        # rotate 90 degrees clockwise
+        new_shapes_data = []
+        for dx, dy in self._shapes_data:
+            new_shapes_data.append((dy, -dx))
+        self._shapes_data = new_shapes_data
+        self._update_positions()
