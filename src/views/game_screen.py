@@ -5,6 +5,7 @@ from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
 from models.block import Block
 from models.tetrimino import TetriminoType, TETRIMINO_SHAPES
+from models.grid import Grid
 from config import CONFIG
 
 
@@ -42,6 +43,8 @@ class GameScreen:
         
         self._grid_lines = []
         self._create_grid()
+        
+        self._placement_grid = Grid(self.GRID_WIDTH, self._grid_height)
         
         self._block_pool = []
         self._current_block_index = 0
@@ -89,9 +92,40 @@ class GameScreen:
     def _current_block(self):
         return self._block_pool[self._current_block_index]
     
+    def _update_hover_visibility(self):
+        block = self._current_block()
+        if block.placed:
+            return
+        positions = block.get_cell_positions()
+        self._placement_grid.hide_cells_for_hover(positions)
+    
+    def _clear_hover_visibility(self):
+        block = self._current_block()
+        positions = block.get_cell_positions()
+        self._placement_grid.restore_cells_from_hover(positions)
+    
+    def _move_block(self, dx, dy):
+        self._clear_hover_visibility()
+        self._current_block().move(dx, dy)
+        self._update_hover_visibility()
+    
+    def _rotate_block_cw(self):
+        self._clear_hover_visibility()
+        self._current_block().rotate_cw()
+        self._update_hover_visibility()
+    
+    def _rotate_block_ccw(self):
+        self._clear_hover_visibility()
+        self._current_block().rotate_ccw()
+        self._update_hover_visibility()
+    
     def _place_current_block(self):
+        self._clear_hover_visibility()
         block = self._current_block()
         block.place()
+        
+        for gx, gy, square, label in block.get_cell_data():
+            self._placement_grid.place(gx, gy, square, label)
         
         self._current_block_index += 1
         if self._current_block_index < self.BLOCK_POOL_SIZE:
@@ -100,6 +134,7 @@ class GameScreen:
             center_y = self._grid_height // 2
             next_block.set_position(center_x, center_y)
             next_block.set_visible(True)
+            self._update_hover_visibility()
     
     def on_enter(self):
         self._menu_open = False
@@ -142,27 +177,26 @@ class GameScreen:
             self._ingame_menu.reset()
             return True
         
-        block = self._current_block()
-        if block.placed:
+        if self._current_block().placed:
             return False
         
         if symbol == self._keys["move_left"]:
-            block.move(-1, 0)
+            self._move_block(-1, 0)
             return True
         elif symbol == self._keys["move_right"]:
-            block.move(1, 0)
+            self._move_block(1, 0)
             return True
         elif symbol == self._keys["move_up"]:
-            block.move(0, 1)
+            self._move_block(0, 1)
             return True
         elif symbol == self._keys["move_down"]:
-            block.move(0, -1)
+            self._move_block(0, -1)
             return True
         elif symbol == self._keys["rotate_clockwise"]:
-            block.rotate_cw()
+            self._rotate_block_cw()
             return True
         elif symbol == self._keys["rotate_counterclockwise"]:
-            block.rotate_ccw()
+            self._rotate_block_ccw()
             return True
         elif symbol == self._keys["place"]:
             self._place_current_block()

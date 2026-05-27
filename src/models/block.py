@@ -108,3 +108,19 @@ class Block:
     
     def place(self):
         self._placed = True
+    
+    def get_cell_positions(self):
+        """Returns list of (grid_x, grid_y) for each cell in this block."""
+        positions = []
+        for dx, dy in self._shapes_data:
+            positions.append((self._grid_x + dx, self._grid_y + dy))
+        return positions
+    
+    def get_cell_data(self):
+        """Returns list of (grid_x, grid_y, square, label) for each cell."""
+        data = []
+        for i, (dx, dy) in enumerate(self._shapes_data):
+            gx = self._grid_x + dx
+            gy = self._grid_y + dy
+            data.append((gx, gy, self._squares[i], self._labels[i]))
+        return data
