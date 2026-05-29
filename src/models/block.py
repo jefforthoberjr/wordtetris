@@ -1,3 +1,4 @@
+import math
 import pyglet
 from models.letter_picker import pick_letters
 from models.tetrimino import TETRIMINO_ROTATIONS
@@ -56,8 +57,8 @@ class Block:
             py = (self._grid_y + dy) * self._cell_size
             self._squares[i].x = px
             self._squares[i].y = py
-            self._labels[i].x = px + self._cell_size // 2
-            self._labels[i].y = py + self._cell_size // 2
+            self._labels[i].x = px + math.floor(self._cell_size / 2)
+            self._labels[i].y = py + math.floor(self._cell_size / 2)
     
     @property
     def tetrimino_type(self):

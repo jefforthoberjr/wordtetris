@@ -1,3 +1,4 @@
+import math
 import pyglet
 
 
@@ -14,14 +15,14 @@ class MainMenuScreen:
         self._highlight_color = (255, 255, 0, 255)
         self._normal_color = (255, 255, 255, 255)
         
-        start_y = window.height // 2 + 30
+        start_y = math.floor(window.height / 2) + 30
         spacing = 60
         
         for i, item_text in enumerate(self._menu_items):
             label = pyglet.text.Label(
                 item_text,
                 font_size=32,
-                x=window.width // 2,
+                x=math.floor(window.width / 2),
                 y=start_y - i * spacing,
                 anchor_x="center",
                 anchor_y="center",
@@ -46,8 +47,8 @@ class MainMenuScreen:
     
     def _get_item_at(self, x, y):
         for i, label in enumerate(self._labels):
-            half_width = label.content_width // 2
-            half_height = label.content_height // 2
+            half_width = math.floor(label.content_width / 2)
+            half_height = math.floor(label.content_height / 2)
             if (label.x - half_width <= x <= label.x + half_width and
                 label.y - half_height <= y <= label.y + half_height):
                 return i

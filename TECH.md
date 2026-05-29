@@ -39,4 +39,6 @@ Avoid multiple return statements in a function. This will make embedding wrapper
 
 Prefer clear multiline loops over "list comprehension"
 
+Avoid "//" operator, use math.floor instead
+
 

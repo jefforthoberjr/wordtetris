@@ -1,3 +1,4 @@
+import math
 import random
 import pyglet
 from views.ingame_menu import IngameMenu
@@ -35,8 +36,8 @@ class GameScreen:
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
         
-        self._cell_size = window.width // self.GRID_WIDTH
-        self._grid_height = window.height // self._cell_size
+        self._cell_size = math.floor(window.width / self.GRID_WIDTH)
+        self._grid_height = math.floor(window.height / self._cell_size)
         
         self._grid_batch = pyglet.graphics.Batch()
         self._block_batch = pyglet.graphics.Batch()
@@ -81,8 +82,8 @@ class GameScreen:
             block = Block(t_type, shapes_data, self._cell_size, self._block_batch, visible=True)
             self._block_pool.append(block)
         
-        center_x = self.GRID_WIDTH // 2 - 1
-        center_y = self._grid_height // 2
+        center_x = math.floor(self.GRID_WIDTH / 2) - 1
+        center_y = math.floor(self._grid_height / 2)
         self._block_pool[0].set_position(center_x, center_y)
         self._block_pool[0].set_visible(True)
         
@@ -130,8 +131,8 @@ class GameScreen:
         self._current_block_index += 1
         if self._current_block_index < self.BLOCK_POOL_SIZE:
             next_block = self._current_block()
-            center_x = self.GRID_WIDTH // 2 - 1
-            center_y = self._grid_height // 2
+            center_x = math.floor(self.GRID_WIDTH / 2) - 1
+            center_y = math.floor(self._grid_height / 2)
             next_block.set_position(center_x, center_y)
             next_block.set_visible(True)
             self._update_hover_visibility()

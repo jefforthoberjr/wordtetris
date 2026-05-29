@@ -1,3 +1,4 @@
+import math
 import pyglet
 
 
@@ -11,8 +12,8 @@ class TitleScreen:
         self._title_label = pyglet.text.Label(
             "WordTetris!",
             font_size=48,
-            x=window.width // 2,
-            y=window.height // 2 + 50,
+            x=math.floor(window.width / 2),
+            y=math.floor(window.height / 2) + 50,
             anchor_x="center",
             anchor_y="center",
             batch=self._batch
@@ -21,8 +22,8 @@ class TitleScreen:
         self._prompt_label = pyglet.text.Label(
             "press any button to continue",
             font_size=20,
-            x=window.width // 2,
-            y=window.height // 2 - 50,
+            x=math.floor(window.width / 2),
+            y=math.floor(window.height / 2) - 50,
             anchor_x="center",
             anchor_y="center",
             batch=self._batch

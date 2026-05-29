@@ -1,3 +1,4 @@
+import math
 import pyglet
 
 
@@ -16,8 +17,8 @@ class IngameMenu:
         
         panel_width = 300
         panel_height = 200
-        panel_x = (window.width - panel_width) // 2
-        panel_y = (window.height - panel_height) // 2
+        panel_x = math.floor((window.width - panel_width) / 2)
+        panel_y = math.floor((window.height - panel_height) / 2)
         
         self._background = pyglet.shapes.Rectangle(
             panel_x, panel_y, panel_width, panel_height,
@@ -26,14 +27,14 @@ class IngameMenu:
         )
         self._background.opacity = 220
         
-        start_y = window.height // 2 + 30
+        start_y = math.floor(window.height / 2) + 30
         spacing = 60
         
         for i, item_text in enumerate(self._menu_items):
             label = pyglet.text.Label(
                 item_text,
                 font_size=28,
-                x=window.width // 2,
+                x=math.floor(window.width / 2),
                 y=start_y - i * spacing,
                 anchor_x="center",
                 anchor_y="center",
@@ -59,8 +60,8 @@ class IngameMenu:
     
     def _get_item_at(self, x, y):
         for i, label in enumerate(self._labels):
-            half_width = label.content_width // 2
-            half_height = label.content_height // 2
+            half_width = math.floor(label.content_width / 2)
+            half_height = math.floor(label.content_height / 2)
             if (label.x - half_width <= x <= label.x + half_width and
                 label.y - half_height <= y <= label.y + half_height):
                 return i
