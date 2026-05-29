@@ -1,6 +1,6 @@
 RULESENGINE.txt
 
-RULES
+LOGIC_RULES
 
 What pieces look like
 
@@ -8,7 +8,26 @@ Where to spawn pieces
 
 The distribution of spawned pieces
 
-GRAPHICS
+GRAPHICS_RULES
 
 How the piece rotates
+
+
+How to create the piece_pool
+	(i.e random? preplanned? adaptive?)
+
+How to display the piece_pool
+	(i.e. do/don't preview the next pieces)
+
+def _create_piece_pool(self):
+	_piece_pool
+
+Do I bury the rules the individual objects? Or have them at the screen level?
+
+	Have the rules listable, in a versioned way, in a configuration file.
+
+	What does the code have to look like, to do this level of configuration?
+	(and how do I make sure this doesn't break my graphics optimizations?)
+
+	graphics/batch optimizations should live at the screen level, other other details should be outside of the screen.
 

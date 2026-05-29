@@ -22,7 +22,7 @@ Refer to document TECH.md for other opinions on coding style.
 
 Do not automatically update a library/dependency version unless you ask first.
 
-## REFACTOR CODE
+## REFACTOR CODE - RULES ENGINE
 When we first implement a feature, it will be usualy be very basic (e.g. low animation, low physics, low logic). 
 Then, as we refactor code, to add more complexity to the feature, I was to preserver the more primative version of the feature in the code (in case I want to uncomment it / restore it in the future). 
 
@@ -31,6 +31,8 @@ When refactoring code, keep the old version of the feature in the code, but disa
 When I ask you to refactor a feature, in a major way, ask me to confirm if I want to stash a copy of the old way in the code. I will be rare that I want to completely abandon an old feature.
 
 Thus, our overall coding style will end up with many objects or logic rules in the game will be swappable/configurable. The code will be a lot like a 'rules engine' format.
+
+Functions we extract as configurable features should have the word "rule" in it.
 
 ## WE BOTH EDIT THE CODE
 Sometimes, between your edits of code, I will manually make some small changes. For example, add a line of commenting. Since you may not see these edits in your context, please re-read files that have an updated timestamp newer than when you touched them last.

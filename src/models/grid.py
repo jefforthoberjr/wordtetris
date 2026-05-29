@@ -1,3 +1,7 @@
+import pyglet
+from views.shaders import get_shape_shader
+
+
 class GridCell:
     def __init__(self):
         self.square = None
@@ -39,15 +43,41 @@ class GridCell:
 
 
 class Grid:
-    def __init__(self, width, height):
+    def __init__(self, width, height, cell_size, window_width, window_height, batch):
         self._width = width
         self._height = height
+        self._cell_size = cell_size
         self._cells = []
         for _ in range(height):
             row = []
             for _ in range(width):
                 row.append(GridCell())
             self._cells.append(row)
+        
+        self._lines = []
+        self._create_lines(window_width, window_height, batch)
+    
+    def _create_lines(self, window_width, window_height, batch):
+        line_color = (200, 200, 200)
+        shape_shader = get_shape_shader()
+        
+        for x in range(self._width + 1):
+            px = x * self._cell_size
+            line = pyglet.shapes.Line(
+                px, 0, px, window_height,
+                thickness=1, color=line_color, batch=batch,
+                program=shape_shader
+            )
+            self._lines.append(line)
+        
+        for y in range(self._height + 1):
+            py = y * self._cell_size
+            line = pyglet.shapes.Line(
+                0, py, window_width, py,
+                thickness=1, color=line_color, batch=batch,
+                program=shape_shader
+            )
+            self._lines.append(line)
     
     @property
     def width(self):

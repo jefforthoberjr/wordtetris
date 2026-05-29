@@ -1,9 +1,8 @@
 import math
 import pyglet
 from views.ingame_menu import IngameMenu
-from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
-from models.piece import Piece
+from models.piece_pool import PiecePool
 from models.grid import Grid
 from config import CONFIG
 
@@ -40,64 +39,35 @@ class GameScreen:
         self._grid_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         
-        self._grid_lines = []
-        self._create_grid()
+        self._grid = Grid(
+            self.GRID_WIDTH, self._grid_height, self._cell_size,
+            window.width, window.height, self._grid_batch
+        )
         
-        self._placement_grid = Grid(self.GRID_WIDTH, self._grid_height)
-        
-        self._piece_pool = []
-        self._current_piece_index = 0
-        self._create_piece_pool()
+        self._piece_pool = PiecePool(self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch)
+        self._init_first_piece()
     
-    def _create_grid(self):
-        line_color = (200, 200, 200)
-        shape_shader = get_shape_shader()
-        
-        for x in range(self.GRID_WIDTH + 1):
-            px = x * self._cell_size
-            line = pyglet.shapes.Line(
-                px, 0, px, self._window.height,
-                thickness=1, color=line_color, batch=self._grid_batch,
-                program=shape_shader
-            )
-            self._grid_lines.append(line)
-        
-        for y in range(self._grid_height + 1):
-            py = y * self._cell_size
-            line = pyglet.shapes.Line(
-                0, py, self._window.width, py,
-                thickness=1, color=line_color, batch=self._grid_batch,
-                program=shape_shader
-            )
-            self._grid_lines.append(line)
-    
-    def _create_piece_pool(self):
-        for _ in range(self.PIECE_POOL_SIZE):
-            piece = Piece.create(self._cell_size, self._piece_batch, visible=True)
-            self._piece_pool.append(piece)
-        
+    def _init_first_piece(self):
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
         center_y = math.floor(self._grid_height / 2)
-        self._piece_pool[0].set_position(center_x, center_y)
-        self._piece_pool[0].set_visible(True)
-        
-        for i in range(1, self.PIECE_POOL_SIZE):
-            self._piece_pool[i].set_visible(False)
+        piece = self._piece_pool.current_piece()
+        piece.set_position(center_x, center_y)
+        piece.set_visible(True)
     
     def _current_piece(self):
-        return self._piece_pool[self._current_piece_index]
+        return self._piece_pool.current_piece()
     
     def _update_hover_visibility(self):
         piece = self._current_piece()
         if piece.placed:
             return
         positions = piece.get_cell_positions()
-        self._placement_grid.hide_cells_for_hover(positions)
+        self._grid.hide_cells_for_hover(positions)
     
     def _clear_hover_visibility(self):
         piece = self._current_piece()
         positions = piece.get_cell_positions()
-        self._placement_grid.restore_cells_from_hover(positions)
+        self._grid.restore_cells_from_hover(positions)
     
     def _move_piece(self, dx, dy):
         self._clear_hover_visibility()
@@ -120,11 +90,10 @@ class GameScreen:
         piece.place()
         
         for gx, gy, square, label in piece.get_cell_data():
-            self._placement_grid.place(gx, gy, square, label)
+            self._grid.place(gx, gy, square, label)
         
-        self._current_piece_index += 1
-        if self._current_piece_index < self.PIECE_POOL_SIZE:
-            next_piece = self._current_piece()
+        next_piece = self._piece_pool.advance()
+        if next_piece:
             center_x = math.floor(self.GRID_WIDTH / 2) - 1
             center_y = math.floor(self._grid_height / 2)
             next_piece.set_position(center_x, center_y)
