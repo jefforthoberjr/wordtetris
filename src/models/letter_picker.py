@@ -4,7 +4,7 @@ import string
 
 def pick_letters(count):
     """
-    Pick letters for a tetrimino block.
+    Pick letters for a tetrimino piece.
     
     Args:
         count: Number of letters needed (typically 4 for standard tetriminos)

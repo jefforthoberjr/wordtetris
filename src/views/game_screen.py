@@ -4,7 +4,7 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
-from models.block import Block
+from models.piece import Piece
 from models.tetrimino import TetriminoType
 from models.grid import Grid
 from config import CONFIG
@@ -17,7 +17,7 @@ def _get_key(action):
 
 class GameScreen:
     GRID_WIDTH = 20
-    BLOCK_POOL_SIZE = 100
+    PIECE_POOL_SIZE = 100
     
     def __init__(self, window, screen_manager):
         self._window = window
@@ -40,16 +40,16 @@ class GameScreen:
         self._grid_height = math.floor(window.height / self._cell_size)
         
         self._grid_batch = pyglet.graphics.Batch()
-        self._block_batch = pyglet.graphics.Batch()
+        self._piece_batch = pyglet.graphics.Batch()
         
         self._grid_lines = []
         self._create_grid()
         
         self._placement_grid = Grid(self.GRID_WIDTH, self._grid_height)
         
-        self._block_pool = []
-        self._current_block_index = 0
-        self._create_block_pool()
+        self._piece_pool = []
+        self._current_piece_index = 0
+        self._create_piece_pool()
     
     def _create_grid(self):
         line_color = (200, 200, 200)
@@ -73,67 +73,67 @@ class GameScreen:
             )
             self._grid_lines.append(line)
     
-    def _create_block_pool(self):
+    def _create_piece_pool(self):
         tetrimino_types = list(TetriminoType)
         
-        for _ in range(self.BLOCK_POOL_SIZE):
+        for _ in range(self.PIECE_POOL_SIZE):
             t_type = random.choice(tetrimino_types)
-            block = Block(t_type, self._cell_size, self._block_batch, visible=True)
-            self._block_pool.append(block)
+            piece = Piece(t_type, self._cell_size, self._piece_batch, visible=True)
+            self._piece_pool.append(piece)
         
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
         center_y = math.floor(self._grid_height / 2)
-        self._block_pool[0].set_position(center_x, center_y)
-        self._block_pool[0].set_visible(True)
+        self._piece_pool[0].set_position(center_x, center_y)
+        self._piece_pool[0].set_visible(True)
         
-        for i in range(1, self.BLOCK_POOL_SIZE):
-            self._block_pool[i].set_visible(False)
+        for i in range(1, self.PIECE_POOL_SIZE):
+            self._piece_pool[i].set_visible(False)
     
-    def _current_block(self):
-        return self._block_pool[self._current_block_index]
+    def _current_piece(self):
+        return self._piece_pool[self._current_piece_index]
     
     def _update_hover_visibility(self):
-        block = self._current_block()
-        if block.placed:
+        piece = self._current_piece()
+        if piece.placed:
             return
-        positions = block.get_cell_positions()
+        positions = piece.get_cell_positions()
         self._placement_grid.hide_cells_for_hover(positions)
     
     def _clear_hover_visibility(self):
-        block = self._current_block()
-        positions = block.get_cell_positions()
+        piece = self._current_piece()
+        positions = piece.get_cell_positions()
         self._placement_grid.restore_cells_from_hover(positions)
     
-    def _move_block(self, dx, dy):
+    def _move_piece(self, dx, dy):
         self._clear_hover_visibility()
-        self._current_block().move(dx, dy)
+        self._current_piece().move(dx, dy)
         self._update_hover_visibility()
     
-    def _rotate_block_cw(self):
+    def _rotate_piece_cw(self):
         self._clear_hover_visibility()
-        self._current_block().rotate_cw()
+        self._current_piece().rotate_cw()
         self._update_hover_visibility()
     
-    def _rotate_block_ccw(self):
+    def _rotate_piece_ccw(self):
         self._clear_hover_visibility()
-        self._current_block().rotate_ccw()
+        self._current_piece().rotate_ccw()
         self._update_hover_visibility()
     
-    def _place_current_block(self):
+    def _place_current_piece(self):
         self._clear_hover_visibility()
-        block = self._current_block()
-        block.place()
+        piece = self._current_piece()
+        piece.place()
         
-        for gx, gy, square, label in block.get_cell_data():
+        for gx, gy, square, label in piece.get_cell_data():
             self._placement_grid.place(gx, gy, square, label)
         
-        self._current_block_index += 1
-        if self._current_block_index < self.BLOCK_POOL_SIZE:
-            next_block = self._current_block()
+        self._current_piece_index += 1
+        if self._current_piece_index < self.PIECE_POOL_SIZE:
+            next_piece = self._current_piece()
             center_x = math.floor(self.GRID_WIDTH / 2) - 1
             center_y = math.floor(self._grid_height / 2)
-            next_block.set_position(center_x, center_y)
-            next_block.set_visible(True)
+            next_piece.set_position(center_x, center_y)
+            next_piece.set_visible(True)
             self._update_hover_visibility()
     
     def on_enter(self):
@@ -149,7 +149,7 @@ class GameScreen:
         pyglet.gl.glClearColor(0, 0, 0, 1)
         
         self._grid_batch.draw()
-        self._block_batch.draw()
+        self._piece_batch.draw()
         
         if self._menu_open:
             self._ingame_menu.draw()
@@ -177,29 +177,29 @@ class GameScreen:
             self._ingame_menu.reset()
             return True
         
-        if self._current_block().placed:
+        if self._current_piece().placed:
             return False
         
         if symbol == self._keys["move_left"]:
-            self._move_block(-1, 0)
+            self._move_piece(-1, 0)
             return True
         elif symbol == self._keys["move_right"]:
-            self._move_block(1, 0)
+            self._move_piece(1, 0)
             return True
         elif symbol == self._keys["move_up"]:
-            self._move_block(0, 1)
+            self._move_piece(0, 1)
             return True
         elif symbol == self._keys["move_down"]:
-            self._move_block(0, -1)
+            self._move_piece(0, -1)
             return True
         elif symbol == self._keys["rotate_clockwise"]:
-            self._rotate_block_cw()
+            self._rotate_piece_cw()
             return True
         elif symbol == self._keys["rotate_counterclockwise"]:
-            self._rotate_block_ccw()
+            self._rotate_piece_ccw()
             return True
         elif symbol == self._keys["place"]:
-            self._place_current_block()
+            self._place_current_piece()
             return True
         
         return False

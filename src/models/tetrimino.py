@@ -36,7 +36,7 @@ TETRIMINO_SHAPES = {
 # Rotation states for each tetrimino (4 states: 0, 90, 180, 270 degrees CW)
 # IMPORTANT: Each index must represent the same logical cell across all states
 # so that letters stay attached to the correct cell when rotating
-# Blocks spawn at state 0
+# Pieces spawn at state 0
 TETRIMINO_ROTATIONS = {
     # I piece: pivot around cell 1 which stays at (1,1)
     TetriminoType.I: [

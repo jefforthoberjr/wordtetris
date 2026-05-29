@@ -1,19 +1,19 @@
-//==BLOCKS==
+//==PIECES==
 
-[DONE] Blocks use standard tetrimino shapes (I, O, T, S, Z, J, L)
-[DONE] Block pool of 100 created at game start
-[TODO] Handle reaching the end of the block pool
-[DONE] Blocks randomly assigned tetrimino types
-[DONE] One new block becomes visible at a time
-[DONE] Block spawns in center of grid
-[DONE] Arrow keys move block (up/down/left/right)
-[DONE] Block can rotate clockwise
-[DONE] Block can rotate counterclockwise
+[DONE] Pieces use standard tetrimino shapes (I, O, T, S, Z, J, L)
+[DONE] Piece pool of 100 created at game start
+[TODO] Handle reaching the end of the piece pool
+[DONE] Pieces randomly assigned tetrimino types
+[DONE] One new piece becomes visible at a time
+[DONE] Piece spawns in center of grid
+[DONE] Arrow keys move piece (up/down/left/right)
+[DONE] Piece can rotate clockwise
+[DONE] Piece can rotate counterclockwise
 [TODO] Little rotation animation, that takes multiple frames
-[DONE] Place control locks current block in position
-[DONE] Placed block no longer responds to movement controls
-[DONE] Next block becomes visible after placing
-[TODO] Hovering/moving block visually distinct from placed blocks
+[DONE] Place control locks current piece in position
+[DONE] Placed piece no longer responds to movement controls
+[DONE] Next piece becomes visible after placing
+[TODO] Hovering/moving piece visually distinct from placed pieces
 
 //==GRID==
 
