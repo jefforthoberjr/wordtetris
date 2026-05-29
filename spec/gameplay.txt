@@ -9,7 +9,7 @@
 [DONE] Arrow keys move block (up/down/left/right)
 [DONE] Block can rotate clockwise
 [DONE] Block can rotate counterclockwise
-[TODO] Little rotation animation
+[TODO] Little rotation animation, that takes multiple frames
 [DONE] Place control locks current block in position
 [DONE] Placed block no longer responds to movement controls
 [DONE] Next block becomes visible after placing

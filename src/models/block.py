@@ -6,10 +6,10 @@ from views.shaders import get_shape_shader, get_text_shader
 
 
 class Block:
-    def __init__(self, tetrimino_type, shapes_data, cell_size, batch, visible=False):
+    def __init__(self, tetrimino_type, cell_size, batch, visible=False):
         self._tetrimino_type = tetrimino_type
-        self._shapes_data = list(shapes_data)
         self._rotation_state = 0
+        self._shapes_data = list(TETRIMINO_ROTATIONS[tetrimino_type][self._rotation_state])
         self._cell_size = cell_size
         self._batch = batch
         self._grid_x = 0
@@ -17,7 +17,7 @@ class Block:
         self._visible = visible
         self._placed = False
         
-        self._letters = pick_letters(len(shapes_data))
+        self._letters = pick_letters(len(self._shapes_data))
         
         shape_shader = get_shape_shader()
         
@@ -25,7 +25,7 @@ class Block:
         self._labels = []
         font_size = int(cell_size * 0.6)
         
-        for i, _ in enumerate(shapes_data):
+        for i, _ in enumerate(self._shapes_data):
             square = pyglet.shapes.BorderedRectangle(
                 0, 0, cell_size, cell_size,
                 border=2,
