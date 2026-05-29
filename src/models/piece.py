@@ -1,11 +1,18 @@
 import math
+import random
 import pyglet
 from models.letter_picker import pick_letters
-from models.tetrimino import TETRIMINO_ROTATIONS
+from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 
 
 class Piece:
+    @classmethod
+    def create_random(cls, cell_size, batch, visible=False):
+        """Create a piece with a random tetrimino type."""
+        t_type = random.choice(list(TetriminoType))
+        return cls(t_type, cell_size, batch, visible)
+
     def __init__(self, tetrimino_type, cell_size, batch, visible=False):
         self._tetrimino_type = tetrimino_type
         self._rotation_state = 0

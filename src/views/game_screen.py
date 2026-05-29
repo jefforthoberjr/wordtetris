@@ -1,11 +1,9 @@
 import math
-import random
 import pyglet
 from views.ingame_menu import IngameMenu
 from views.shaders import get_shape_shader
 from controllers.screen_manager import ScreenType
 from models.piece import Piece
-from models.tetrimino import TetriminoType
 from models.grid import Grid
 from config import CONFIG
 
@@ -74,11 +72,8 @@ class GameScreen:
             self._grid_lines.append(line)
     
     def _create_piece_pool(self):
-        tetrimino_types = list(TetriminoType)
-        
         for _ in range(self.PIECE_POOL_SIZE):
-            t_type = random.choice(tetrimino_types)
-            piece = Piece(t_type, self._cell_size, self._piece_batch, visible=True)
+            piece = Piece.create_random(self._cell_size, self._piece_batch, visible=True)
             self._piece_pool.append(piece)
         
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
