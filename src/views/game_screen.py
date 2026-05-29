@@ -73,7 +73,7 @@ class GameScreen:
     
     def _create_piece_pool(self):
         for _ in range(self.PIECE_POOL_SIZE):
-            piece = Piece.create_random(self._cell_size, self._piece_batch, visible=True)
+            piece = Piece.create(self._cell_size, self._piece_batch, visible=True)
             self._piece_pool.append(piece)
         
         center_x = math.floor(self.GRID_WIDTH / 2) - 1

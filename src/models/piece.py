@@ -8,7 +8,12 @@ from views.shaders import get_shape_shader, get_text_shader
 
 class Piece:
     @classmethod
-    def create_random(cls, cell_size, batch, visible=False):
+    def create(cls, cell_size, batch, visible=False):
+        """Create a new piece using the current spawn algorithm."""
+        return cls._create_random(cell_size, batch, visible)
+    
+    @classmethod
+    def _create_random(cls, cell_size, batch, visible=False):
         """Create a piece with a random tetrimino type."""
         t_type = random.choice(list(TetriminoType))
         return cls(t_type, cell_size, batch, visible)
