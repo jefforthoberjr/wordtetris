@@ -50,8 +50,8 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        # self._board = self._rule_use_square_grid(window)
-        self._board = self._rule_use_hex_grid(window)
+        self._board = self._rule_use_square_grid(window)
+        # self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
