@@ -2,13 +2,16 @@ import math
 import pyglet
 from models.letter_picker import rule_random_letters
 from models.letter_picker import rule_scrabble_distribution
-from models.tetrimino import TETRIMINO_ROTATIONS
-from models.domino import DOMINO_ROTATIONS
+from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
+from models.domino import DominoType, DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 
-# Configuration: which rotation set to use
-PIECE_ROTATIONS = TETRIMINO_ROTATIONS
-# PIECE_ROTATIONS = DOMINO_ROTATIONS
+# Configuration: which piece set to use
+# PIECE_TYPES = TetriminoType
+# PIECE_ROTATIONS = TETRIMINO_ROTATIONS
+
+PIECE_TYPES = DominoType
+PIECE_ROTATIONS = DOMINO_ROTATIONS
 
 
 class Piece:

@@ -1,11 +1,5 @@
 import random
-from models.piece import Piece
-from models.tetrimino import TetriminoType
-from models.domino import DominoType
-
-# Configuration: which piece types to use
-PIECE_TYPES = TetriminoType
-# PIECE_TYPES = DominoType
+from models.piece import Piece, PIECE_TYPES
 
 
 class PiecePool:
@@ -20,13 +14,13 @@ class PiecePool:
     
     def _rule_fixed_size(self):
         """Populate pool with a fixed number of pieces."""
-        # tetrimino_types = self._rule_create_pure_random()
-        # tetrimino_types = self._rule_create_fixed_roundrobin()
-        tetrimino_types = self._rule_create_shuffled_roundrobin()
-        # tetrimino_types = self._rule_create_random_even_distribution()
+        # piece_types = self._rule_create_pure_random()
+        # piece_types = self._rule_create_fixed_roundrobin()
+        piece_types = self._rule_create_shuffled_roundrobin()
+        # piece_types = self._rule_create_random_even_distribution()
         
-        for t_type in tetrimino_types:
-            piece = Piece(t_type, self._cell_size, self._batch, visible=False)
+        for p_type in piece_types:
+            piece = Piece(p_type, self._cell_size, self._batch, visible=False)
             self._pieces.append(piece)
     
     def _rule_create_pure_random(self):
