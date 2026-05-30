@@ -2,9 +2,9 @@ import random
 import string
 
 
-def pick_letters(count):
+def rule_random_letters(count):
     """
-    Pick letters for a tetrimino piece.
+    Pick letters for a tetrimino piece using pure random selection.
     
     Args:
         count: Number of letters needed (typically 4 for standard tetriminos)
