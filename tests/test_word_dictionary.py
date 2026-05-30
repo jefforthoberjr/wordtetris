@@ -1,4 +1,6 @@
-from models.word_dictionary import is_word, longest_word_span
+from models.word_dictionary import (
+    is_word, is_prefix, longest_word_span, select_maximal_paths,
+)
 
 
 def _spans(text, anchor, old_indices):
@@ -45,3 +47,38 @@ def test_straddle_tie_breaks_to_earliest_start():
 
 def test_no_word_returns_none():
     assert _spans("XQZ", anchor=1, old_indices={0, 2}) is None
+
+
+# --- hex snake helpers: prefix lookup and maximal-path selection ---
+
+def test_is_prefix():
+    assert is_prefix("ca")    # begins CAT, CAB, ...
+    assert is_prefix("cat")   # a whole word is also a prefix of itself
+    assert not is_prefix("qz")
+
+
+def test_maximal_drops_contained_subpath():
+    cat = [(0, 0), (1, 0), (2, 0)]
+    at = [(1, 0), (2, 0)]  # contiguous tail of cat -> dropped
+    assert select_maximal_paths([cat, at]) == [tuple(cat)]
+
+
+def test_maximal_keeps_overlapping_straddle():
+    # FIN and INK share the IN run but neither contains the other -> keep both.
+    fin = [(0, 0), (1, 0), (2, 0)]
+    ink = [(1, 0), (2, 0), (3, 0)]
+    result = select_maximal_paths([fin, ink])
+    assert set(result) == {tuple(fin), tuple(ink)}
+
+
+def test_maximal_dedupes_identical_paths():
+    p = [(0, 0), (1, 0)]
+    assert select_maximal_paths([p, list(p)]) == [tuple(p)]
+
+
+def test_maximal_branching_paths_both_kept():
+    # Same start, diverging routes (a down word and a right word) -> both kept.
+    down = [(0, 0), (0, 1), (0, 2)]
+    right = [(0, 0), (1, 0), (2, 0)]
+    result = select_maximal_paths([down, right])
+    assert set(result) == {tuple(down), tuple(right)}

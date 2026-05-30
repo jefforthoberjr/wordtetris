@@ -13,6 +13,7 @@ from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.grid import Grid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
+from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from config import CONFIG
 
 
@@ -50,8 +51,8 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        self._board = self._rule_use_square_grid(window)
-        # self._board = self._rule_use_hex_grid(window)
+        # self._board = self._rule_use_square_grid(window)
+        self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -181,11 +182,51 @@ class GameScreen:
     def _apply_clear_rule(self, placed_positions):
         # self._rule_clear_none(placed_positions)
         # self._rule_clear_adjacent_same_letter(placed_positions)
-        self._rule_clear_words(placed_positions)
+        # self._rule_clear_words(placed_positions)        # square grid
+        self._rule_clear_hex_words(placed_positions)      # hex grid
 
     def _rule_clear_none(self, placed_positions):
         """No clearing (feature disabled)."""
         pass
+
+    def _rule_clear_hex_words(self, placed_positions):
+        """Hex board: clear dictionary words formed by snaking paths that step
+        only up-right, down-right, or down, so a word still reads left->right
+        and top->bottom. A word must cover at least one placed cell and at
+        least one pre-existing cell. Every qualifying word that isn't a
+        sub-path of a longer one is cleared, so a single cell can drop several
+        branching words at once (including overlapping straddles)."""
+        new_cells = set(placed_positions)
+        found = []  # each entry: list of (x, y) cells spelling a dictionary word
+        for start in self._board.occupied_cells():
+            self._collect_hex_words(start, [], "", found)
+        qualifying = []
+        for path in found:
+            has_placed = any(cell in new_cells for cell in path)
+            has_old = any(cell not in new_cells for cell in path)
+            if has_placed and has_old:
+                qualifying.append(path)
+        to_clear = set()
+        for path in select_maximal_paths(qualifying):
+            to_clear.update(path)
+        for (x, y) in to_clear:
+            self._board.clear_cell(x, y)
+        return to_clear
+
+    def _collect_hex_words(self, cell, path, text, found):
+        """Walk snaking forward steps from `cell`, collecting every dictionary
+        word reachable. Prunes as soon as the letters so far begin no word."""
+        letter = self._board.letter_at(*cell)
+        if letter is None:
+            return
+        text = text + letter
+        if not is_prefix(text):
+            return
+        path = path + [cell]
+        if is_word(text):
+            found.append(path)
+        for nxt in self._board.forward_neighbors(*cell):
+            self._collect_hex_words(nxt, path, text, found)
 
     def _rule_clear_words(self, placed_positions):
         """Clear dictionary words formed when the placed piece links up with

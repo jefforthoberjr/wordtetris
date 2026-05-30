@@ -1,7 +1,7 @@
 import math
 import pyglet
 from models.grid import GridCell
-from models.hex_domino import hex_neighbor
+from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from views.shaders import get_shape_shader
 
 
@@ -163,6 +163,26 @@ class HexGrid:
         if cell is not None and cell.is_occupied() and cell.label is not None:
             letter = cell.label.text
         return letter
+
+    def forward_neighbors(self, x, y):
+        """On-board neighbors reachable by a word step -- up-right, down, or
+        down-right -- the snake directions that keep a word reading left to
+        right and top to bottom."""
+        result = []
+        for direction in (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT):
+            nx, ny = hex_neighbor(x, y, direction)
+            if self.is_valid(nx, ny):
+                result.append((nx, ny))
+        return result
+
+    def occupied_cells(self):
+        """Coordinates of every occupied cell on the board."""
+        cells = []
+        for y in range(self._rows):
+            for x in range(self._cols):
+                if self._cells[y][x].is_occupied():
+                    cells.append((x, y))
+        return cells
 
     def hide_cells_for_hover(self, positions):
         for x, y in positions:
