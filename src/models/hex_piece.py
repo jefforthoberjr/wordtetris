@@ -11,6 +11,28 @@ PIECE_TYPES = HexDominoType
 PIECE_DIRECTIONS = HEX_DOMINO_DIRECTIONS
 
 
+class HexCellShape:
+    """One bordered hex cell = a black outer hexagon behind a white inner one.
+
+    The grid stores a single "shape" per cell and toggles its .visible (for
+    hover/clear), so this wraps both polygons behind one .visible property,
+    duck-typing as the cell's square. Setting border to 0 in HexPiece would
+    recover the old borderless white-fill look.
+    """
+    def __init__(self, outer, inner):
+        self._outer = outer
+        self._inner = inner
+
+    def _get_visible(self):
+        return self._inner.visible
+
+    def _set_visible(self, value):
+        self._outer.visible = value
+        self._inner.visible = value
+
+    visible = property(_get_visible, _set_visible)
+
+
 class HexPiece:
     def __init__(self, piece_type, cell_size, batch, visible=False):
         self._piece_type = piece_type
@@ -36,22 +58,41 @@ class HexPiece:
         # capitals sit high (white space at the bottom). Nudge down to recenter.
         self._label_dy = -math.floor(font_size * 0.12)
 
+        # White fill + black border, like the square piece's BorderedRectangle.
+        # The border is a black hexagon behind a slightly smaller white one.
+        self._border = max(2.0, self._hex_size * 0.08)
+        self._inner_size = self._hex_size - self._border
+
         # Hexagon vertices built around the origin; repositioned per cell in
         # _update_positions. A Polygon anchors at its first vertex (angle 0,
-        # i.e. +size on x), so centering a cell adds +size to the x position.
-        base_verts = flat_top_vertices(self._hex_size, 0, 0)
+        # i.e. +radius on x), so centering a cell adds that radius to x.
+        outer_verts = flat_top_vertices(self._hex_size, 0, 0)
+        inner_verts = flat_top_vertices(self._inner_size, 0, 0)
 
-        self._fills = []
+        self._outers = []
+        self._inners = []
+        self._cell_shapes = []
         self._labels = []
         for i in range(cell_count):
-            fill = pyglet.shapes.Polygon(
-                *base_verts,
+            outer = pyglet.shapes.Polygon(
+                *outer_verts,
+                color=(0, 0, 0),
+                batch=batch,
+                program=shape_shader
+            )
+            outer.visible = visible
+            self._outers.append(outer)
+
+            inner = pyglet.shapes.Polygon(
+                *inner_verts,
                 color=(255, 255, 255),
                 batch=batch,
                 program=shape_shader
             )
-            fill.visible = visible
-            self._fills.append(fill)
+            inner.visible = visible
+            self._inners.append(inner)
+
+            self._cell_shapes.append(HexCellShape(outer, inner))
 
             label = pyglet.text.Label(
                 self._letters[i],
@@ -77,7 +118,9 @@ class HexPiece:
         positions = self._cell_grid_positions()
         for i, (col, row) in enumerate(positions):
             cx, cy = flat_top_cell_center(self._hex_size, col, row)
-            self._fills[i].position = (cx + self._hex_size, cy)
+            # Each polygon anchors at its own first vertex (+radius on x).
+            self._outers[i].position = (cx + self._hex_size, cy)
+            self._inners[i].position = (cx + self._inner_size, cy)
             self._labels[i].x = cx
             self._labels[i].y = cy + self._label_dy
 
@@ -105,8 +148,10 @@ class HexPiece:
 
     def set_visible(self, visible):
         self._visible = visible
-        for fill in self._fills:
-            fill.visible = visible
+        for outer in self._outers:
+            outer.visible = visible
+        for inner in self._inners:
+            inner.visible = visible
         for label in self._labels:
             label.visible = visible
 
@@ -138,9 +183,13 @@ class HexPiece:
         return self._cell_grid_positions()
 
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, fill_shape, label) for each cell."""
+        """Returns list of (grid_x, grid_y, cell_shape, label) for each cell.
+
+        The cell_shape is the HexCellShape wrapper so the grid can toggle both
+        the border and fill via one .visible (hover hide / clear).
+        """
         data = []
         positions = self._cell_grid_positions()
         for i, (gx, gy) in enumerate(positions):
-            data.append((gx, gy, self._fills[i], self._labels[i]))
+            data.append((gx, gy, self._cell_shapes[i], self._labels[i]))
         return data
