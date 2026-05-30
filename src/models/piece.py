@@ -6,12 +6,17 @@ from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from models.domino import DominoType, DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 
-# Configuration: which piece set to use
-# PIECE_TYPES = TetriminoType
-# PIECE_ROTATIONS = TETRIMINO_ROTATIONS
+def _rule_use_tetriminos():
+    return TetriminoType, TETRIMINO_ROTATIONS
 
-PIECE_TYPES = DominoType
-PIECE_ROTATIONS = DOMINO_ROTATIONS
+
+def _rule_use_dominos():
+    return DominoType, DOMINO_ROTATIONS
+
+
+# Configuration: which piece set to use
+PIECE_TYPES, PIECE_ROTATIONS = _rule_use_tetriminos()
+# PIECE_TYPES, PIECE_ROTATIONS = _rule_use_dominos()
 
 
 class Piece:
