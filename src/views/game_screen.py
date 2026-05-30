@@ -49,8 +49,8 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        self._board = self._rule_use_square_grid(window)
-        # self._board = self._rule_use_hex_grid(window)
+        # self._board = self._rule_use_square_grid(window)
+        self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -131,13 +131,13 @@ class GameScreen:
         shift = (modifiers & pyglet.window.key.MOD_SHIFT) != 0
         handled = True
         if symbol == self._keys["move_left"]:
-            self._move_piece_dir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
+            self._move_piece_hexdir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
         elif symbol == self._keys["move_right"]:
-            self._move_piece_dir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
+            self._move_piece_hexdir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
         elif symbol == self._keys["move_up"]:
-            self._move_piece_dir(HEX_UP)
+            self._move_piece_hexdir(HEX_UP)
         elif symbol == self._keys["move_down"]:
-            self._move_piece_dir(HEX_DOWN)
+            self._move_piece_hexdir(HEX_DOWN)
         else:
             handled = False
         return handled
@@ -151,35 +151,33 @@ class GameScreen:
         handled = True
         if symbol == self._keys["move_left"]:
             if up:
-                self._move_piece_dir(HEX_UP_LEFT)
+                self._move_piece_hexdir(HEX_UP_LEFT)
             elif down:
-                self._move_piece_dir(HEX_DOWN_LEFT)
+                self._move_piece_hexdir(HEX_DOWN_LEFT)
             else:
                 handled = False
         elif symbol == self._keys["move_right"]:
             if up:
-                self._move_piece_dir(HEX_UP_RIGHT)
+                self._move_piece_hexdir(HEX_UP_RIGHT)
             elif down:
-                self._move_piece_dir(HEX_DOWN_RIGHT)
+                self._move_piece_hexdir(HEX_DOWN_RIGHT)
             else:
                 handled = False
         elif symbol == self._keys["move_up"]:
-            self._move_piece_dir(HEX_UP)
+            self._move_piece_hexdir(HEX_UP)
         elif symbol == self._keys["move_down"]:
-            self._move_piece_dir(HEX_DOWN)
+            self._move_piece_hexdir(HEX_DOWN)
         else:
             handled = False
         return handled
 
-    def _move_piece_dir(self, direction):
+    def _move_piece_hexdir(self, direction):
         """Move the piece to its hex neighbor in the given direction index."""
         piece = self._current_piece()
         nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
     def _apply_clear_rule(self, placed_positions):
-        """Apply the active clearing rule to the cells just placed.
-        Swap the active rule on the line below."""
         # self._rule_clear_none(placed_positions)
         self._rule_clear_adjacent_same_letter(placed_positions)
 
@@ -188,13 +186,6 @@ class GameScreen:
         pass
 
     def _rule_clear_adjacent_same_letter(self, placed_positions):
-        """Clear a cell pair when a just-placed cell sits edge-adjacent to a
-        previously-placed cell holding the same letter.
-
-        The match must span new + old: two cells of the SAME just-placed piece
-        matching each other does not count. Only the two matched cells are
-        cleared, never the whole pieces they belong to. Returns the cleared set.
-        """
         new_cells = set(placed_positions)
         to_clear = set()
         for (x, y) in placed_positions:
@@ -210,7 +201,6 @@ class GameScreen:
         return to_clear
 
     def _square_neighbors(self, x, y):
-        """The 4 edge-adjacent cells of a square cell."""
         neighbors = []
         neighbors.append((x - 1, y))
         neighbors.append((x + 1, y))
