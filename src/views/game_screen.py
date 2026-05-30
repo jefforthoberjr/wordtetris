@@ -41,14 +41,16 @@ class GameScreen:
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
 
+        # Tracks currently-held keys, so a movement rule can use non-standard keys as
+        # held modifiers (e.g. up-arrow). 
+        self._key_state = pyglet.window.key.KeyStateHandler()
+        window.push_handlers(self._key_state)
+
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        # Board geometry rule. Swap the one active line to change grids.
-        # (Hex pieces are not ported yet -- in hex mode the placeholder square
-        #  piece still renders; that lands in Task 2.)
-        # self._board = self._rule_use_square_grid(window)
-        self._board = self._rule_use_hex_grid(window)
+        self._board = self._rule_use_square_grid(window)
+        # self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -81,7 +83,9 @@ class GameScreen:
         self._board_height = board.height
         self._piece_class = HexPiece
         self._piece_types = HEX_PIECE_TYPES
-        self._movement_rule = self._rule_hex_movement
+        
+        self._movement_rule = self._rule_hex_movement_holdshift
+        # self._movement_rule = self._rule_hex_movement_arrows
         return board
 
     def _init_first_piece(self):
@@ -121,7 +125,7 @@ class GameScreen:
             handled = False
         return handled
 
-    def _rule_hex_movement(self, symbol, modifiers):
+    def _rule_hex_movement_holdshift(self, symbol, modifiers):
         """Flat-top hex: A=up-left, Shift+A=down-left, D=up-right,
         Shift+D=down-right, W=up, S=down. Returns handled."""
         shift = (modifiers & pyglet.window.key.MOD_SHIFT) != 0
@@ -130,6 +134,35 @@ class GameScreen:
             self._move_piece_dir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
         elif symbol == self._keys["move_right"]:
             self._move_piece_dir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
+        elif symbol == self._keys["move_up"]:
+            self._move_piece_dir(HEX_UP)
+        elif symbol == self._keys["move_down"]:
+            self._move_piece_dir(HEX_DOWN)
+        else:
+            handled = False
+        return handled
+
+    def _rule_hex_movement_arrows(self, symbol, modifiers):
+        """Flat-top hex, arrow-key chords: up+A=up-left, down+A=down-left,
+        up+D=up-right, down+D=down-right, W=up, S=down. A/D alone do nothing.
+        Returns handled."""
+        up = self._key_state[pyglet.window.key.UP]
+        down = self._key_state[pyglet.window.key.DOWN]
+        handled = True
+        if symbol == self._keys["move_left"]:
+            if up:
+                self._move_piece_dir(HEX_UP_LEFT)
+            elif down:
+                self._move_piece_dir(HEX_DOWN_LEFT)
+            else:
+                handled = False
+        elif symbol == self._keys["move_right"]:
+            if up:
+                self._move_piece_dir(HEX_UP_RIGHT)
+            elif down:
+                self._move_piece_dir(HEX_DOWN_RIGHT)
+            else:
+                handled = False
         elif symbol == self._keys["move_up"]:
             self._move_piece_dir(HEX_UP)
         elif symbol == self._keys["move_down"]:
