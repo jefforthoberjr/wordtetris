@@ -41,7 +41,7 @@ class GameScreen:
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
 
-        # Tracks currently-held keys, so a movement rule can use non-standard keys as
+        # Tracks currently-held keys, so a movement can use non-standard keys as
         # held modifiers (e.g. up-arrow). 
         self._key_state = pyglet.window.key.KeyStateHandler()
         window.push_handlers(self._key_state)
@@ -49,8 +49,8 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        # self._board = self._rule_use_square_grid(window)
-        self._board = self._rule_use_hex_grid(window)
+        self._board = self._rule_use_square_grid(window)
+        # self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -189,33 +189,16 @@ class GameScreen:
         new_cells = set(placed_positions)
         to_clear = set()
         for (x, y) in placed_positions:
-            letter = self._board_letter(x, y)
+            letter = self._board.letter_at(x, y)
             if letter is not None:
-                for (nx, ny) in self._square_neighbors(x, y):
+                for (nx, ny) in self._board.neighbors(x, y):
                     is_old_cell = (nx, ny) not in new_cells
-                    if is_old_cell and self._board_letter(nx, ny) == letter:
+                    if is_old_cell and self._board.letter_at(nx, ny) == letter:
                         to_clear.add((x, y))
                         to_clear.add((nx, ny))
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
         return to_clear
-
-    def _square_neighbors(self, x, y):
-        neighbors = []
-        neighbors.append((x - 1, y))
-        neighbors.append((x + 1, y))
-        neighbors.append((x, y - 1))
-        neighbors.append((x, y + 1))
-        return neighbors
-
-    def _board_letter(self, x, y):
-        """Letter stored in a board cell, or None if empty / off-board."""
-        cell = self._board.get_cell(x, y)
-        letter = None
-        if cell is not None and cell.is_occupied():
-            if cell.label is not None:
-                letter = cell.label.text
-        return letter
 
     def _current_piece(self):
         return self._piece_pool.current_piece()

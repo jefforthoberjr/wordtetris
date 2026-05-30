@@ -1,6 +1,7 @@
 import math
 import pyglet
 from models.grid import GridCell
+from models.hex_domino import hex_neighbor
 from views.shaders import get_shape_shader
 
 
@@ -145,6 +146,23 @@ class HexGrid:
         cell = self.get_cell(x, y)
         if cell:
             cell.clear()
+
+    def neighbors(self, x, y):
+        """On-board coordinates of the six cells adjacent to (x, y)."""
+        result = []
+        for direction in range(6):
+            nx, ny = hex_neighbor(x, y, direction)
+            if self.is_valid(nx, ny):
+                result.append((nx, ny))
+        return result
+
+    def letter_at(self, x, y):
+        """Letter shown in a cell, or None if empty / off-board."""
+        cell = self.get_cell(x, y)
+        letter = None
+        if cell is not None and cell.is_occupied() and cell.label is not None:
+            letter = cell.label.text
+        return letter
 
     def hide_cells_for_hover(self, positions):
         for x, y in positions:

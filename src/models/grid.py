@@ -114,7 +114,19 @@ class Grid:
         cell = self.get_cell(x, y)
         if cell:
             cell.clear()
-    
+
+    def neighbors(self, x, y):
+        """On-board coordinates adjacent to (x, y) on this square grid."""
+        candidates = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+        return [(nx, ny) for (nx, ny) in candidates if self.is_valid(nx, ny)]
+
+    def letter_at(self, x, y):
+        """Letter shown in a cell, or None if empty / off-board."""
+        cell = self.get_cell(x, y)
+        if cell is None or not cell.is_occupied() or cell.label is None:
+            return None
+        return cell.label.text
+
     def hide_cells_for_hover(self, positions):
         for x, y in positions:
             cell = self.get_cell(x, y)
