@@ -3,6 +3,13 @@ GAME NAMES
 * blast-tionary
 
 
+Find a control sc
+
+More Dr. Mario style (block appear that you have to clear)
+	I could pick blocks to encourage more dictionary coverage
+
+	I could have starting blocks that need to be use in words multiple times before they break away
+
 
 Setup for steam distribution
   1. Create a Steamworks developer account ($100 one-time fee)

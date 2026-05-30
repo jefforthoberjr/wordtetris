@@ -6,6 +6,7 @@ import string
 
 _scrabble_letters = None
 _scrabble_weights = None
+_english_words = None
 
 
 def _load_scrabble_distribution():
@@ -52,3 +53,59 @@ def rule_scrabble_distribution(count):
     """
     _load_scrabble_distribution()
     return random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+
+
+def _load_english_words():
+    global _english_words
+    if _english_words is not None:
+        return
+    
+    _english_words = []
+    dict_path = os.path.join(os.path.dirname(__file__), 'dictionaries', 'spellingDictionary20k-nocompound.txt')
+    with open(dict_path, 'r') as f:
+        for line in f:
+            word = line.strip().upper()
+            if word:
+                _english_words.append(word)
+
+
+def rule_englishcorpus_random_unigram(count):
+    """
+    Pick letters by selecting random single letters from random words.
+    
+    Args:
+        count: Number of letters needed
+    
+    Returns:
+        List of uppercase letters
+    """
+    _load_english_words()
+    letters = []
+    for _ in range(count):
+        word = random.choice(_english_words)
+        idx = random.randint(0, len(word) - 1)
+        letters.append(word[idx])
+    return letters
+
+
+def rule_englishcorpus_random_digram(count):
+    """
+    Pick letters by selecting random 2-letter chunks from random words.
+    Words shorter than 2 characters are skipped.
+    
+    Args:
+        count: Number of letters needed (returns count letters, so count/2 digrams rounded up)
+    
+    Returns:
+        List of uppercase letters
+    """
+    _load_english_words()
+    letters = []
+    while len(letters) < count:
+        word = random.choice(_english_words)
+        if len(word) < 2:
+            continue
+        idx = random.randint(0, len(word) - 2)
+        letters.append(word[idx])
+        letters.append(word[idx + 1])
+    return letters[:count]

@@ -41,4 +41,6 @@ Prefer clear multiline loops over "list comprehension"
 
 Avoid "//" operator, use math.floor instead
 
+Avoid formal polymorphism typing; just use duck typing
+
 
