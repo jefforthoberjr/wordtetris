@@ -1,6 +1,10 @@
 from models.word_dictionary import (
     is_word, is_prefix, longest_word_span, select_maximal_paths,
 )
+from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
+from models.hex_grid import (
+    rule_snake_rightanddown, rule_snake_rightanddown_nosharptwist,
+)
 
 
 def _spans(text, anchor, old_indices):
@@ -82,3 +86,38 @@ def test_maximal_branching_paths_both_kept():
     right = [(0, 0), (1, 0), (2, 0)]
     result = select_maximal_paths([down, right])
     assert set(result) == {tuple(down), tuple(right)}
+
+
+# --- hex snake step rules ---
+
+def test_snake_rightanddown_allows_all_three_always():
+    for prev in (None, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT):
+        assert set(rule_snake_rightanddown(prev)) == {
+            HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT,
+        }
+
+
+def test_nosharptwist_unrestricted_at_start():
+    assert set(rule_snake_rightanddown_nosharptwist(None)) == {
+        HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT,
+    }
+
+
+def test_nosharptwist_forbids_down_after_upright():
+    # up-right then down is a 120-degree kink -> down is dropped.
+    allowed = rule_snake_rightanddown_nosharptwist(HEX_UP_RIGHT)
+    assert HEX_DOWN not in allowed
+    assert HEX_UP_RIGHT in allowed and HEX_DOWN_RIGHT in allowed
+
+
+def test_nosharptwist_forbids_upright_after_down():
+    allowed = rule_snake_rightanddown_nosharptwist(HEX_DOWN)
+    assert HEX_UP_RIGHT not in allowed
+    assert HEX_DOWN in allowed and HEX_DOWN_RIGHT in allowed
+
+
+def test_nosharptwist_allows_gentle_turns_after_downright():
+    # down-right -> any of the three is at most a 60-degree turn.
+    assert set(rule_snake_rightanddown_nosharptwist(HEX_DOWN_RIGHT)) == {
+        HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT,
+    }

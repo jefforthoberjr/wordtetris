@@ -35,6 +35,36 @@ def flat_top_vertices(hex_size, cx, cy):
     return verts
 
 
+# Snake step directions for word building, plus the rules that pick which are
+# allowed from a given cell. A rule takes the direction used to reach the cell
+# (None at a word's first cell) and returns the directions the word may
+# continue in. forward_neighbors() applies whichever rule is active.
+_SNAKE_DIRS = (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT)
+
+# The only 120-degree turns among the snake directions are up-right <-> down
+# (up-right points +30 deg, down-right -30 deg, down -90 deg, so every other
+# pair turns just 60 deg). Forbidding these two keeps the path from kinking.
+_SHARP_TWISTS = {
+    (HEX_UP_RIGHT, HEX_DOWN),
+    (HEX_DOWN, HEX_UP_RIGHT),
+}
+
+
+def rule_snake_rightanddown(prev_direction):
+    """A word may step up-right, down, or down-right from any cell, whatever
+    the previous step was."""
+    return _SNAKE_DIRS
+
+
+def rule_snake_rightanddown_nosharptwist(prev_direction):
+    """Like rule_snake_rightanddown, but forbids a sharp twist -- an up-right
+    step right after a down, or a down right after an up-right -- so the path
+    can't zig-zag into a hard V (e.g. CAT spelt up-right then down)."""
+    return tuple(
+        d for d in _SNAKE_DIRS if (prev_direction, d) not in _SHARP_TWISTS
+    )
+
+
 class HexGrid:
     def __init__(self, hex_size, window_width, window_height, batch):
         self._hex_size = hex_size
@@ -53,6 +83,10 @@ class HexGrid:
             for _ in range(self._cols):
                 row.append(GridCell())
             self._cells.append(row)
+
+        # Which snake steps a word may take; see the rule_snake_* functions.
+        # self._snake_rule = rule_snake_rightanddown
+        self._snake_rule = rule_snake_rightanddown_nosharptwist
 
         self._lines = []
         self._create_outlines(batch)
@@ -164,15 +198,16 @@ class HexGrid:
             letter = cell.label.text
         return letter
 
-    def forward_neighbors(self, x, y):
-        """On-board neighbors reachable by a word step -- up-right, down, or
-        down-right -- the snake directions that keep a word reading left to
-        right and top to bottom."""
+    def forward_neighbors(self, x, y, prev_direction=None):
+        """On-board (neighbor, direction) steps a word may take from (x, y),
+        per the active snake rule. `prev_direction` is the direction used to
+        reach (x, y), or None at the first cell of a word. The snake directions
+        keep a word reading left to right and top to bottom."""
         result = []
-        for direction in (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT):
+        for direction in self._snake_rule(prev_direction):
             nx, ny = hex_neighbor(x, y, direction)
             if self.is_valid(nx, ny):
-                result.append((nx, ny))
+                result.append(((nx, ny), direction))
         return result
 
     def occupied_cells(self):

@@ -199,7 +199,7 @@ class GameScreen:
         new_cells = set(placed_positions)
         found = []  # each entry: list of (x, y) cells spelling a dictionary word
         for start in self._board.occupied_cells():
-            self._collect_hex_words(start, [], "", found)
+            self._collect_hex_words(start, None, [], "", found)
         qualifying = []
         for path in found:
             has_placed = any(cell in new_cells for cell in path)
@@ -213,9 +213,11 @@ class GameScreen:
             self._board.clear_cell(x, y)
         return to_clear
 
-    def _collect_hex_words(self, cell, path, text, found):
+    def _collect_hex_words(self, cell, prev_direction, path, text, found):
         """Walk snaking forward steps from `cell`, collecting every dictionary
-        word reachable. Prunes as soon as the letters so far begin no word."""
+        word reachable. `prev_direction` is the step taken to reach `cell` (None
+        at the start), which the snake rule uses to veto sharp twists. Prunes as
+        soon as the letters so far begin no word."""
         letter = self._board.letter_at(*cell)
         if letter is None:
             return
@@ -225,8 +227,8 @@ class GameScreen:
         path = path + [cell]
         if is_word(text):
             found.append(path)
-        for nxt in self._board.forward_neighbors(*cell):
-            self._collect_hex_words(nxt, path, text, found)
+        for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
+            self._collect_hex_words(nxt, direction, path, text, found)
 
     def _rule_clear_words(self, placed_positions):
         """Clear dictionary words formed when the placed piece links up with
