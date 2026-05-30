@@ -35,14 +35,14 @@ class GameScreen:
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
         
         self._cell_size = math.floor(window.width / self.GRID_WIDTH)
-        self._grid_height = math.floor(window.height / self._cell_size)
+        self._board_height = math.floor(window.height / self._cell_size)
         
-        self._grid_batch = pyglet.graphics.Batch()
+        self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         
-        self._grid = Grid(
-            self.GRID_WIDTH, self._grid_height, self._cell_size,
-            window.width, window.height, self._grid_batch
+        self._board = Grid(
+            self.GRID_WIDTH, self._board_height, self._cell_size,
+            window.width, window.height, self._board_batch
         )
         
         self._piece_pool = PiecePool(self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch)
@@ -61,13 +61,13 @@ class GameScreen:
     def _rule_spawn_center(self, piece):
         """Position a piece at the center of the grid."""
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
-        center_y = math.floor(self._grid_height / 2)
+        center_y = math.floor(self._board_height / 2)
         piece.set_position(center_x, center_y)
     
     def _rule_spawn_random_spot(self, piece):
         """Position a piece at a random spot on the grid."""
         x = random.randint(0, self.GRID_WIDTH - 1)
-        y = random.randint(0, self._grid_height - 1)
+        y = random.randint(0, self._board_height - 1)
         piece.set_position(x, y)
     
     def _current_piece(self):
@@ -78,12 +78,12 @@ class GameScreen:
         if piece.placed:
             return
         positions = piece.get_cell_positions()
-        self._grid.hide_cells_for_hover(positions)
+        self._board.hide_cells_for_hover(positions)
     
     def _clear_hover_visibility(self):
         piece = self._current_piece()
         positions = piece.get_cell_positions()
-        self._grid.restore_cells_from_hover(positions)
+        self._board.restore_cells_from_hover(positions)
     
     def _move_piece(self, dx, dy):
         self._clear_hover_visibility()
@@ -105,8 +105,8 @@ class GameScreen:
         piece = self._current_piece()
         piece.place()
         
-        for gx, gy, square, label in piece.get_cell_data():
-            self._grid.place(gx, gy, square, label)
+        for gx, gy, cell, label in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label)
         
         next_piece = self._piece_pool.advance()
         if next_piece:
@@ -126,7 +126,7 @@ class GameScreen:
         self._window.clear()
         pyglet.gl.glClearColor(0, 0, 0, 1)
         
-        self._grid_batch.draw()
+        self._board_batch.draw()
         self._piece_batch.draw()
         
         if self._menu_open:

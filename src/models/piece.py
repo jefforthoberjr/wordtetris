@@ -37,12 +37,12 @@ class Piece:
         
         shape_shader = get_shape_shader()
         
-        self._squares = []
+        self._cells = []
         self._labels = []
         font_size = int(cell_size * 0.6)
         
         for i, _ in enumerate(self._shapes_data):
-            square = pyglet.shapes.BorderedRectangle(
+            cell = pyglet.shapes.BorderedRectangle(
                 0, 0, cell_size, cell_size,
                 border=2,
                 color=(255, 255, 255),
@@ -50,8 +50,8 @@ class Piece:
                 batch=batch,
                 program=shape_shader
             )
-            square.visible = visible
-            self._squares.append(square)
+            cell.visible = visible
+            self._cells.append(cell)
             
             label = pyglet.text.Label(
                 self._letters[i],
@@ -71,8 +71,8 @@ class Piece:
         for i, (dx, dy) in enumerate(self._shapes_data):
             px = (self._grid_x + dx) * self._cell_size
             py = (self._grid_y + dy) * self._cell_size
-            self._squares[i].x = px
-            self._squares[i].y = py
+            self._cells[i].x = px
+            self._cells[i].y = py
             self._labels[i].x = px + math.floor(self._cell_size / 2)
             self._labels[i].y = py + math.floor(self._cell_size / 2)
     
@@ -100,8 +100,8 @@ class Piece:
     
     def set_visible(self, visible):
         self._visible = visible
-        for square in self._squares:
-            square.visible = visible
+        for cell in self._cells:
+            cell.visible = visible
         for label in self._labels:
             label.visible = visible
     
@@ -130,10 +130,10 @@ class Piece:
         return positions
     
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, square, label) for each cell."""
+        """Returns list of (grid_x, grid_y, cell, label) for each cell."""
         data = []
         for i, (dx, dy) in enumerate(self._shapes_data):
             gx = self._grid_x + dx
             gy = self._grid_y + dy
-            data.append((gx, gy, self._squares[i], self._labels[i]))
+            data.append((gx, gy, self._cells[i], self._labels[i]))
         return data
