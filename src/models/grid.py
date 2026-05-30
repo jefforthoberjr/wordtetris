@@ -127,6 +127,20 @@ class Grid:
             return None
         return cell.label.text
 
+    def line_through(self, x, y, dx, dy):
+        """Maximal run of occupied cells through (x, y) stepping by (dx, dy),
+        returned in +(dx, dy) order. Empty if (x, y) is itself empty."""
+        if self.letter_at(x, y) is None:
+            return []
+        sx, sy = x, y
+        while self.letter_at(sx - dx, sy - dy) is not None:
+            sx, sy = sx - dx, sy - dy
+        cells = []
+        while self.letter_at(sx, sy) is not None:
+            cells.append((sx, sy))
+            sx, sy = sx + dx, sy + dy
+        return cells
+
     def hide_cells_for_hover(self, positions):
         for x, y in positions:
             cell = self.get_cell(x, y)

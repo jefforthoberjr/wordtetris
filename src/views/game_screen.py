@@ -12,6 +12,7 @@ from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.grid import Grid
 from models.hex_grid import HexGrid
+from models.word_dictionary import longest_word_span
 from config import CONFIG
 
 
@@ -49,8 +50,8 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        self._board = self._rule_use_square_grid(window)
-        # self._board = self._rule_use_hex_grid(window)
+        # self._board = self._rule_use_square_grid(window)
+        self._board = self._rule_use_hex_grid(window)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -179,11 +180,38 @@ class GameScreen:
 
     def _apply_clear_rule(self, placed_positions):
         # self._rule_clear_none(placed_positions)
-        self._rule_clear_adjacent_same_letter(placed_positions)
+        # self._rule_clear_adjacent_same_letter(placed_positions)
+        self._rule_clear_words(placed_positions)
 
     def _rule_clear_none(self, placed_positions):
         """No clearing (feature disabled)."""
         pass
+
+    def _rule_clear_words(self, placed_positions):
+        """Clear dictionary words formed when the placed piece links up with
+        letters already on the board. For each placed cell, scan its horizontal
+        (left->right) and vertical (top->bottom) line and clear the longest
+        forward-reading word that covers the cell plus at least one
+        pre-existing cell. A cell may clear one word per axis, so an across and
+        a down word can both go at once. Square grid only for now."""
+        new_cells = set(placed_positions)
+        axes = ((1, 0), (0, -1))  # across: left->right; down: top->bottom
+        to_clear = set()
+        for (px, py) in placed_positions:
+            for (dx, dy) in axes:
+                line = self._board.line_through(px, py, dx, dy)
+                if not line:
+                    continue
+                text = "".join(self._board.letter_at(x, y) for (x, y) in line)
+                is_old = [pos not in new_cells for pos in line]
+                anchor = line.index((px, py))
+                span = longest_word_span(text, anchor, is_old)
+                if span is not None:
+                    start, stop = span
+                    to_clear.update(line[start:stop])
+        for (x, y) in to_clear:
+            self._board.clear_cell(x, y)
+        return to_clear
 
     def _rule_clear_adjacent_same_letter(self, placed_positions):
         new_cells = set(placed_positions)
