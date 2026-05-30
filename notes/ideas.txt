@@ -10,6 +10,9 @@ More Dr. Mario style (block appear that you have to clear)
 
 	I could have starting blocks that need to be use in words multiple times before they break away
 
+	Maybe you can leave a lot of debis around, so long as you clear the initial starting blocks; 
+	like that is the focus of the mission (instead of having a completely clear board)
+
 
 Setup for steam distribution
   1. Create a Steamworks developer account ($100 one-time fee)

@@ -4,7 +4,14 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
+from models.piece import Piece, PIECE_TYPES
+from models.hex_piece import HexPiece, PIECE_TYPES as HEX_PIECE_TYPES
+from models.hex_domino import hex_neighbor
+from models.hex_domino import HEX_UP, HEX_DOWN
+from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
+from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.grid import Grid
+from models.hex_grid import HexGrid
 from config import CONFIG
 
 
@@ -16,11 +23,11 @@ def _get_key(action):
 class GameScreen:
     GRID_WIDTH = 20
     PIECE_POOL_SIZE = 100
-    
+
     def __init__(self, window, screen_manager):
         self._window = window
         self._screen_manager = screen_manager
-        
+
         self._keys = {
             "move_left": _get_key("move_left"),
             "move_right": _get_key("move_right"),
@@ -33,21 +40,50 @@ class GameScreen:
         }
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
-        
-        self._cell_size = math.floor(window.width / self.GRID_WIDTH)
-        self._board_height = math.floor(window.height / self._cell_size)
-        
+
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
-        
-        self._board = Grid(
+
+        # Board geometry rule. Swap the one active line to change grids.
+        # (Hex pieces are not ported yet -- in hex mode the placeholder square
+        #  piece still renders; that lands in Task 2.)
+        # self._board = self._rule_use_square_grid(window)
+        self._board = self._rule_use_hex_grid(window)
+
+        self._piece_pool = PiecePool(
+            self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
+            self._piece_class, self._piece_types
+        )
+        self._init_first_piece()
+
+    def _rule_use_square_grid(self, window):
+        """Build a square board and set piece sizing/type to match."""
+        self._cell_size = math.floor(window.width / self.GRID_WIDTH)
+        self._board_height = math.floor(window.height / self._cell_size)
+        self._piece_class = Piece
+        self._piece_types = PIECE_TYPES
+        self._movement_rule = self._rule_square_movement
+        board = Grid(
             self.GRID_WIDTH, self._board_height, self._cell_size,
             window.width, window.height, self._board_batch
         )
-        
-        self._piece_pool = PiecePool(self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch)
-        self._init_first_piece()
-    
+        return board
+
+    def _rule_use_hex_grid(self, window):
+        """Build a flat-top hex board and set piece sizing to match.
+        """
+        cell_size = math.floor(window.width / self.GRID_WIDTH)
+        hex_size = cell_size / math.sqrt(3)
+        board = HexGrid(hex_size, window.width, window.height, self._board_batch)
+        # Keep the float hex_size: the piece must use the exact same value as
+        # the grid, or it drifts off the cells across the board.
+        self._cell_size = hex_size
+        self._board_height = board.height
+        self._piece_class = HexPiece
+        self._piece_types = HEX_PIECE_TYPES
+        self._movement_rule = self._rule_hex_movement
+        return board
+
     def _init_first_piece(self):
         piece = self._piece_pool.current_piece()
         self._spawn_piece(piece)
@@ -70,6 +106,44 @@ class GameScreen:
         y = random.randint(0, self._board_height - 1)
         piece.set_position(x, y)
     
+    def _rule_square_movement(self, symbol, modifiers):
+        """Square grid: A/D/W/S nudge the piece by one cell. Returns handled."""
+        handled = True
+        if symbol == self._keys["move_left"]:
+            self._move_piece(-1, 0)
+        elif symbol == self._keys["move_right"]:
+            self._move_piece(1, 0)
+        elif symbol == self._keys["move_up"]:
+            self._move_piece(0, 1)
+        elif symbol == self._keys["move_down"]:
+            self._move_piece(0, -1)
+        else:
+            handled = False
+        return handled
+
+    def _rule_hex_movement(self, symbol, modifiers):
+        """Flat-top hex: A=up-left, Shift+A=down-left, D=up-right,
+        Shift+D=down-right, W=up, S=down. Returns handled."""
+        shift = (modifiers & pyglet.window.key.MOD_SHIFT) != 0
+        handled = True
+        if symbol == self._keys["move_left"]:
+            self._move_piece_dir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
+        elif symbol == self._keys["move_right"]:
+            self._move_piece_dir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
+        elif symbol == self._keys["move_up"]:
+            self._move_piece_dir(HEX_UP)
+        elif symbol == self._keys["move_down"]:
+            self._move_piece_dir(HEX_DOWN)
+        else:
+            handled = False
+        return handled
+
+    def _move_piece_dir(self, direction):
+        """Move the piece to its hex neighbor in the given direction index."""
+        piece = self._current_piece()
+        nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
+        self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
+
     def _current_piece(self):
         return self._piece_pool.current_piece()
     
@@ -157,20 +231,11 @@ class GameScreen:
         
         if self._current_piece().placed:
             return False
-        
-        if symbol == self._keys["move_left"]:
-            self._move_piece(-1, 0)
+
+        if self._movement_rule(symbol, modifiers):
             return True
-        elif symbol == self._keys["move_right"]:
-            self._move_piece(1, 0)
-            return True
-        elif symbol == self._keys["move_up"]:
-            self._move_piece(0, 1)
-            return True
-        elif symbol == self._keys["move_down"]:
-            self._move_piece(0, -1)
-            return True
-        elif symbol == self._keys["rotate_clockwise"]:
+
+        if symbol == self._keys["rotate_clockwise"]:
             self._rotate_piece_cw()
             return True
         elif symbol == self._keys["rotate_counterclockwise"]:

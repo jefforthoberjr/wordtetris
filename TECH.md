@@ -43,4 +43,8 @@ Avoid "//" operator, use math.floor instead
 
 Avoid formal polymorphism typing; just use duck typing
 
+Avoid raw pixel math; instead things should be relative to screen size.
 
+# PYGLET STYLE
+
+Note: On a Retina window, window.width reports the physical framebuffer size
