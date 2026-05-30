@@ -177,6 +177,56 @@ class GameScreen:
         nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
+    def _apply_clear_rule(self, placed_positions):
+        """Apply the active clearing rule to the cells just placed.
+        Swap the active rule on the line below."""
+        # self._rule_clear_none(placed_positions)
+        self._rule_clear_adjacent_same_letter(placed_positions)
+
+    def _rule_clear_none(self, placed_positions):
+        """No clearing (feature disabled)."""
+        pass
+
+    def _rule_clear_adjacent_same_letter(self, placed_positions):
+        """Clear a cell pair when a just-placed cell sits edge-adjacent to a
+        previously-placed cell holding the same letter.
+
+        The match must span new + old: two cells of the SAME just-placed piece
+        matching each other does not count. Only the two matched cells are
+        cleared, never the whole pieces they belong to. Returns the cleared set.
+        """
+        new_cells = set(placed_positions)
+        to_clear = set()
+        for (x, y) in placed_positions:
+            letter = self._board_letter(x, y)
+            if letter is not None:
+                for (nx, ny) in self._square_neighbors(x, y):
+                    is_old_cell = (nx, ny) not in new_cells
+                    if is_old_cell and self._board_letter(nx, ny) == letter:
+                        to_clear.add((x, y))
+                        to_clear.add((nx, ny))
+        for (x, y) in to_clear:
+            self._board.clear_cell(x, y)
+        return to_clear
+
+    def _square_neighbors(self, x, y):
+        """The 4 edge-adjacent cells of a square cell."""
+        neighbors = []
+        neighbors.append((x - 1, y))
+        neighbors.append((x + 1, y))
+        neighbors.append((x, y - 1))
+        neighbors.append((x, y + 1))
+        return neighbors
+
+    def _board_letter(self, x, y):
+        """Letter stored in a board cell, or None if empty / off-board."""
+        cell = self._board.get_cell(x, y)
+        letter = None
+        if cell is not None and cell.is_occupied():
+            if cell.label is not None:
+                letter = cell.label.text
+        return letter
+
     def _current_piece(self):
         return self._piece_pool.current_piece()
     
@@ -211,10 +261,14 @@ class GameScreen:
         self._clear_hover_visibility()
         piece = self._current_piece()
         piece.place()
-        
+
+        placed_positions = []
         for gx, gy, cell, label in piece.get_cell_data():
             self._board.place(gx, gy, cell, label)
-        
+            placed_positions.append((gx, gy))
+
+        self._apply_clear_rule(placed_positions)
+
         next_piece = self._piece_pool.advance()
         if next_piece:
             self._spawn_piece(next_piece)
