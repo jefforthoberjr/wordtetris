@@ -77,7 +77,8 @@ class MainMenuScreen:
             self._selected_index = (self._selected_index + 1) % len(self._menu_items)
             self._update_highlight()
             return True
-        elif symbol == pyglet.window.key.ENTER or symbol == pyglet.window.key.RETURN:
+        elif symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN,
+                        pyglet.window.key.SPACE):
             self._select_current()
             return True
         return False
