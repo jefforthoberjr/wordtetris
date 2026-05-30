@@ -15,8 +15,10 @@ class PiecePool:
     
     def _rule_fixed_size(self):
         """Populate pool with a fixed number of pieces."""
-        #tetrimino_types = self._rule_create_pure_random()
-        tetrimino_types = self._rule_create_random_even_distribution()
+        # tetrimino_types = self._rule_create_pure_random()
+        # tetrimino_types = self._rule_create_fixed_roundrobin()
+        tetrimino_types = self._rule_create_shuffled_roundrobin()
+        # tetrimino_types = self._rule_create_random_even_distribution()
         
         for t_type in tetrimino_types:
             piece = Piece(t_type, self._cell_size, self._batch, visible=False)
@@ -44,6 +46,26 @@ class PiecePool:
         
         random.shuffle(types_list)
         return types_list
+    
+    def _rule_create_fixed_roundrobin(self):
+        """Generate a list of tetrimino types by cycling through enum order."""
+        all_types = list(TetriminoType)
+        types_list = []
+        for i in range(self._size):
+            types_list.append(all_types[i % len(all_types)])
+        return types_list
+    
+    def _rule_create_shuffled_roundrobin(self):
+        """Generate batches of all tetrimino types, each batch shuffled."""
+        all_types = list(TetriminoType)
+        types_list = []
+        
+        while len(types_list) < self._size:
+            batch = all_types.copy()
+            random.shuffle(batch)
+            types_list.extend(batch)
+        
+        return types_list[:self._size]
     
     @property
     def size(self):

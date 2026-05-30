@@ -1,4 +1,5 @@
 import math
+import random
 import pyglet
 from views.ingame_menu import IngameMenu
 from controllers.screen_manager import ScreenType
@@ -48,11 +49,26 @@ class GameScreen:
         self._init_first_piece()
     
     def _init_first_piece(self):
+        piece = self._piece_pool.current_piece()
+        self._spawn_piece(piece)
+        piece.set_visible(True)
+    
+    def _spawn_piece(self, piece):
+        """Apply the current spawn positioning rule."""
+        # self._rule_spawn_center(piece)
+        self._rule_spawn_random_spot(piece)
+    
+    def _rule_spawn_center(self, piece):
+        """Position a piece at the center of the grid."""
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
         center_y = math.floor(self._grid_height / 2)
-        piece = self._piece_pool.current_piece()
         piece.set_position(center_x, center_y)
-        piece.set_visible(True)
+    
+    def _rule_spawn_random_spot(self, piece):
+        """Position a piece at a random spot on the grid."""
+        x = random.randint(0, self.GRID_WIDTH - 1)
+        y = random.randint(0, self._grid_height - 1)
+        piece.set_position(x, y)
     
     def _current_piece(self):
         return self._piece_pool.current_piece()
@@ -94,9 +110,7 @@ class GameScreen:
         
         next_piece = self._piece_pool.advance()
         if next_piece:
-            center_x = math.floor(self.GRID_WIDTH / 2) - 1
-            center_y = math.floor(self._grid_height / 2)
-            next_piece.set_position(center_x, center_y)
+            self._spawn_piece(next_piece)
             next_piece.set_visible(True)
             self._update_hover_visibility()
     

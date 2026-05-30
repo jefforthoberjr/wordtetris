@@ -8,6 +8,8 @@ Where to spawn pieces
 
 The distribution of spawned pieces
 
+Where should I keep track of all the different rules
+
 GRAPHICS_RULES
 
 How the piece rotates

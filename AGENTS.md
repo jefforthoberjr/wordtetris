@@ -34,6 +34,10 @@ Thus, our overall coding style will end up with many objects or logic rules in t
 
 Functions we extract as configurable features should have the word "rule" in it.
 
+We want it so when I swap out the rules later, I only have to update one place. So little extra wrapper functions are ok for this.
+
+Try to keep functions with rule selection in them toward the top of the .py files.
+
 ## WE BOTH EDIT THE CODE
 Sometimes, between your edits of code, I will manually make some small changes. For example, add a line of commenting. Since you may not see these edits in your context, please re-read files that have an updated timestamp newer than when you touched them last.
 

@@ -96,3 +96,6 @@ Rotate the blocks
 		MAoe it look like rotate arpmd a point
 
 	Measure the rotation footprint of each block s
+
+
+Simulate word connections like molecule chunks and magnets, and valence electron shells
