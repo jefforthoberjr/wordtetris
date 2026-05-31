@@ -6,7 +6,7 @@ GAME NAMES
 You cannot clear the same word twice in one match
 
 
-
+RULE EXTRACTION
 
 At the end, the set of words you found in a match, get formed into a poem (by AI) then generate an image (slowly revealed) as a smooth voice reads it. Funny reword for finding funny wordsl
 

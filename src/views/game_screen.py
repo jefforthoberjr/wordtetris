@@ -69,8 +69,8 @@ class GameScreen:
         sidepane_x = self._grid_area_size
         sidepane_width = window.width - self._grid_area_size
 
-        self._board = self._rule_use_square_grid(window)
-        # self._board = self._rule_use_hex_grid(window)
+        # self._board = self._rule_use_square_grid(window)
+        self._board = self._rule_use_hex_grid(window)
 
         self._sidepane = SidePane(
             sidepane_x, 0, sidepane_width, window.height
