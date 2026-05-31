@@ -22,13 +22,18 @@ def _get_key(action):
     return getattr(pyglet.window.key, key_name)
 
 
-# Minimum word-length rules for the clear logic. A word only clears if it
-# passes the active rule. Swap which one is active on the line in __init__.
-def rule_word_min2(text):
-    return len(text) >= 2
+# Minimum word rules for the clear logic. A word only clears if it passes the
+# active rule, which checks two separate things:
+#   - letters: how many letters the word spells (len of `text`)
+#   - cells: how many cells/grams the word spans (len of `path`)
+# These differ because a cell can hold a multi-letter gram, so a whole short
+# word could sit in one cell; the cell minimum forces a word to actually link
+# cells together. Swap which one is active on the line in __init__.
+def rule_word_min2letters_min2cells(text, path):
+    return len(text) >= 2 and len(path) >= 2
 
-def rule_word_min3(text):
-    return len(text) >= 3
+def rule_word_min3letters_min2cells(text, path):
+    return len(text) >= 3 and len(path) >= 2
 
 
 class GameScreen:
@@ -63,9 +68,9 @@ class GameScreen:
         # self._board = self._rule_use_square_grid(window)
         self._board = self._rule_use_hex_grid(window)
 
-        # Minimum word length to clear. Comment in the one you want.
-        # self._word_length_rule = rule_word_min2
-        self._word_length_rule = rule_word_min3
+        # Minimum word to clear (letters + cells). Comment in the one you want.
+        # self._word_length_rule = rule_word_min2letters_min2cells
+        self._word_length_rule = rule_word_min3letters_min2cells
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -238,7 +243,7 @@ class GameScreen:
         if not is_prefix(text):
             return
         path = path + [cell]
-        if is_word(text) and self._word_length_rule(text):
+        if is_word(text) and self._word_length_rule(text, path):
             found.append(path)
         for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
             self._collect_hex_words(nxt, direction, path, text, found)
