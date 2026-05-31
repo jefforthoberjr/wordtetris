@@ -219,11 +219,12 @@ class GameScreen:
         # The clear rule is grid-specific (e.g. _rule_clear_words needs square
         # line scans, _rule_clear_hex_words needs hex snaking). The grid builder
         # picks the matching one into self._clear_rule, so the two can't desync.
-        self._clear_rule(placed_positions)
+        # Each rule returns the list of word strings it cleared (for display).
+        return self._clear_rule(placed_positions)
 
     def _rule_clear_none(self, placed_positions):
         """No clearing (feature disabled)."""
-        pass
+        return []
 
     def _rule_clear_hex_words(self, placed_positions):
         """Hex board: clear dictionary words formed by snaking paths that step
@@ -243,11 +244,14 @@ class GameScreen:
             if has_placed and has_old:
                 qualifying.append(path)
         to_clear = set()
+        cleared_words = []
         for path in select_maximal_paths(qualifying):
+            # Read the spelled word before clearing the cells it sits on.
+            cleared_words.append("".join(self._board.letter_at(x, y) for (x, y) in path))
             to_clear.update(path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
-        return to_clear
+        return cleared_words
 
     def _collect_hex_words(self, cell, prev_direction, path, text, found):
         """Walk snaking forward steps from `cell`, collecting every dictionary
@@ -276,6 +280,7 @@ class GameScreen:
         new_cells = set(placed_positions)
         axes = ((1, 0), (0, -1))  # across: left->right; down: top->bottom
         to_clear = set()
+        cleared_words = []
         for (px, py) in placed_positions:
             for (dx, dy) in axes:
                 line = self._board.line_through(px, py, dx, dy)
@@ -287,10 +292,11 @@ class GameScreen:
                 span = longest_word_span(text, anchor, is_old)
                 if span is not None:
                     start, stop = span
+                    cleared_words.append(text[start:stop])
                     to_clear.update(line[start:stop])
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
-        return to_clear
+        return cleared_words
 
     def _rule_clear_adjacent_same_letter(self, placed_positions):
         new_cells = set(placed_positions)
@@ -305,7 +311,8 @@ class GameScreen:
                         to_clear.add((nx, ny))
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
-        return to_clear
+        # Not a word-based rule, so nothing to display.
+        return []
 
     def _current_piece(self):
         return self._piece_pool.current_piece()
@@ -347,7 +354,9 @@ class GameScreen:
             self._board.place(gx, gy, cell, label)
             placed_positions.append((gx, gy))
 
-        self._apply_clear_rule(placed_positions)
+        cleared_words = self._apply_clear_rule(placed_positions)
+        if cleared_words:
+            self._sidepane.add_cleared_words(cleared_words)
 
         next_piece = self._piece_pool.advance()
         if next_piece:

@@ -4,6 +4,112 @@ GRAPHICS-LIBRARY
 	understanding graphics pipeline basics
 	forecasting good graphics performance practices
 
+
+
+==
+
+opengl buffers are implemented with a set of parallel arrays
+	in vec3 position;       // baked glyph-quad geometry from layout
+  in vec4 colors;
+  in vec3 tex_coords;     // which glyph in the font atlas
+  in vec3 translation;    // per-object offset, applied in the shader
+  in vec3 view_translation;
+
+==
+
+A vertex buffer (as implemented within pyglet) is actually composed internally of a few parallel arrays (position, colors, text_coords, translation, etc.). This mirrors how it actually ran on the graphics card too: each buffer loaded in parallel.
+
+
+I'm going to try to re-word your axes, and my understanding of their performance concerns.
+
+1) "No CPU reshaping" means any upfront computation within pyglet/openGL before it's ready to push its update from RAM -> VRAM. In this example this is kerning recalculations. (Otherwise no extra atlas/texture pushing to worry about).
+
+2) "No reallocation" means preventing a chunk of VRAM allocation, which could otherwise occur if the size of the buffer changes.
+
+	It appears though that openGL can microgrow buffers (e.g. a few letters at a time, appending a few letters at time to the buffer). The perforance cost of microgrowing/reallocating a buffer by 1 word is 0.2 microseconds.
+
+3) "Fewer bytes". The overall size of the bytes transfer during a RAM -> VRAM operations. I now understand this to be 2 things:
+3.1) Few buffers are affected
+3.2) Fewer elements in the buffers are effected (Preventing a full buffer refresh, e.g. with glBufferSubData type calls).
+
+All letters, from multiple labels, are concatted onto the same buffer.
+	(labels in one Batch sharing a font/atlas land in one domain)
+	Each letter/glyph is it's own element in the buffer. 
+	(i.e. each label doesn't get its own buffer). 
+	That being said, O(N) on a buffer, where N is the total number of glyphs across all labels.
+
+
+
+Your statement "pyglet's vertex domain uses a region allocator ... text updates that bounce around a similar length ... rarely trigger an actual buffer growth"
+	Means: 
+	* Assuming we change some labels from 2 letter words to 10 letter words, does this this fall similar enough length to avoid buffer growth?
+	* Assuming yes, this leads you assert that the text growth  is "near-free" from a buffer footprint standpoint?
+	* Overall, I can agree with you that implementing our own padding may not make sense.
+	* We don't have to worry about performance axis 2
+  * "...once the pane has warmed up" does this happen on the initial setup of the pane (no), or does "warm up" occur when we have all labels populated with text, and we've stopped micro-reallocating the buffer (yes!)
+
+  GOOD: We can lessen the number of microgrowths / reallocations of a buffer by seeding each row once at
+  init with a max-width placeholder string of whitespacing.
+  But ultimately this is a very small optimization.
+
+Text (and its glyphs) are implemented as part of a text atlas.
+
+	Q: If the font is uploaded to openGL as a single text atlas, why is there changes to the "glyph layout" when text is changed? And why does this hit the CPU?
+
+	It's a side effect of printing text is knowing how to advance from one character to the next in line. (e.g. kurning; arrangements) (aka the "string geometry")
+	So, thus,
+		A Glyph is two kinds of data together: 
+		* a TextureRegion (the atlas coordinates) (lives on the GPU0
+		* a bag of metrics: advance, baseline, lsb, vertices) (CPU-side bookkeeping)
+
+	A re-kerning / re-arrange calculation triggers a whole new set of quads / vertecies. 
+
+	The overhead for a re-kerning is 1 about microsecond per word. (or about 0.1 microsecond per letter)
+	It turns otherwise, changing label.text (at the pyglet level) also has an additional 50 microsecond overhead (most of it vertex rebuilding).
+
+	A Glyph = TextureRegion + CPU metrics, and re-arranging triggers new quads
+	a glyph is 4 vertices
+
+Assuming everything I've stated above was correct (other pause and correct before responding to the following questions.
+
+	We're comparing 2 appoaches to application level implementations during a scroll:
+
+	A) Leave all the labels.positions the same, but update all their .text
+		[MEASURED RESULT: 50 microseconds per label]
+
+	B) Ring buffer. Only 1 or 2 labels get a .text update, but all labels get a .position update.
+		[MEASURED RESULT: 1 microseconds per label + 1x50 microsecond label update]
+
+	Looking inside pyglet, both A and B are O(N) operations on the vertex buffer. There is no glBufferSubData type optimization, to lessen performance axis 3.2. It may have some impact on the number pyglet interal buffer level tough (axis 3.1), thus:
+
+		A (Label.text updates): 0(3*N) 
+			buffer position: touched
+			buffer colors: touched
+			buffer text_coords: touched
+			buffer translations: untouched
+
+		B (Label.position update): O(1*N)
+			buffer position: untouched
+			buffer colors: untouched
+			buffer text_coords: untouched
+			buffer translations: touched
+
+			* caveat here being "untouched" really means "mostly untouched" since 1 or 2 entries would still have a .text update
+
+		Either way, negligible. Big O equivalent
+	
+We're left with the only performance impact being axis 1. Give me some example/ballpark CPU time (e.g. in microseconds) for the overhead of a kerning recalculation.
+
+==
+	
+
+==
+
+
+	3) instead of labels, using Glyphs ScrollableTextLayout
+	I assume this is only optimized for a pre-arranged, static block of text
+
+
 Rules:
 * Avoid glReadPixels unless necessary (to prevent stalls of the GPU pipeline)
 	* Avoid openGL "readback" from VRAM
@@ -56,7 +162,9 @@ Overview:
 
 	Pyglet seems to give me the most 'out of the box' performance, but also allows me direct access to openGL I want to.
 
+feature combos aka batch domains
 
+VBO aka Vertex Buffer O??
 
 1st order knowledge:
 

@@ -1,12 +1,12 @@
 import pyglet
 from views.shaders import get_shape_shader
+from views.scrolling_word_list import ScrollingWordList
 
 
 class SidePane:
-    """Blank pane sitting to the right of the grid. Owns the divider line that
-    visually separates it from the grid area on its left edge.
-
-    Intentionally empty for now; content gets added here next.
+    """Pane sitting to the right of the grid. Owns the divider line that
+    visually separates it from the grid area on its left edge, and a scrolling
+    list of the words the player has cleared.
     """
 
     DIVIDER_COLOR = (200, 200, 200)
@@ -25,6 +25,8 @@ class SidePane:
             program=get_shape_shader()
         )
 
+        self._word_list = ScrollingWordList(x, y, width, height)
+
     @property
     def x(self):
         return self._x
@@ -33,5 +35,10 @@ class SidePane:
     def width(self):
         return self._width
 
+    def add_cleared_words(self, words):
+        """Show words just cleared, newest on top."""
+        self._word_list.add_words(words)
+
     def draw(self):
         self._batch.draw()
+        self._word_list.draw()
