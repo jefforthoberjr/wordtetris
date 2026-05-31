@@ -1,6 +1,6 @@
 import math
 import pyglet
-from models.grid import GridCell
+from models.grid_cell import GridCell
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from views.shaders import get_shape_shader
 

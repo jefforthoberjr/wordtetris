@@ -2,6 +2,7 @@ import math
 import random
 import pyglet
 from views.ingame_menu import IngameMenu
+from views.side_pane import SidePane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.piece import Piece, PIECE_TYPES
@@ -10,7 +11,7 @@ from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
-from models.grid import Grid
+from models.grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
@@ -21,14 +22,9 @@ def _get_key(action):
     key_name = CONFIG["controls"][action]
     return getattr(pyglet.window.key, key_name)
 
-
-# Minimum word rules for the clear logic. A word only clears if it passes the
-# active rule, which checks two separate things:
+# Note: a cell can hold a multi-letter gram
 #   - letters: how many letters the word spells (len of `text`)
 #   - cells: how many cells/grams the word spans (len of `path`)
-# These differ because a cell can hold a multi-letter gram, so a whole short
-# word could sit in one cell; the cell minimum forces a word to actually link
-# cells together. Swap which one is active on the line in __init__.
 def rule_word_min2letters_min2cells(text, path):
     return len(text) >= 2 and len(path) >= 2
 
@@ -37,7 +33,7 @@ def rule_word_min3letters_min2cells(text, path):
 
 
 class GameScreen:
-    GRID_WIDTH = 20
+    GRID_WIDTH = 14
     PIECE_POOL_SIZE = 100
 
     def __init__(self, window, screen_manager):
@@ -65,8 +61,20 @@ class GameScreen:
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
 
-        # self._board = self._rule_use_square_grid(window)
-        self._board = self._rule_use_hex_grid(window)
+        # The grid occupies a square region on the left (its side is limited by
+        # the window height); the side pane fills the remaining width to its
+        # right. Both grid builders size themselves to this square region rather
+        # than the full window.
+        self._grid_area_size = window.height
+        sidepane_x = self._grid_area_size
+        sidepane_width = window.width - self._grid_area_size
+
+        self._board = self._rule_use_square_grid(window)
+        # self._board = self._rule_use_hex_grid(window)
+
+        self._sidepane = SidePane(
+            sidepane_x, 0, sidepane_width, window.height
+        )
 
         # Minimum word to clear (letters + cells). Comment in the one you want.
         # self._word_length_rule = rule_word_min2letters_min2cells
@@ -79,33 +87,43 @@ class GameScreen:
         self._init_first_piece()
 
     def _rule_use_square_grid(self, window):
-        """Build a square board and set piece sizing/type to match."""
-        self._cell_size = math.floor(window.width / self.GRID_WIDTH)
-        self._board_height = math.floor(window.height / self._cell_size)
+        """Build a square board and set piece sizing/type to match. Sized to the
+        square grid region so columns and rows come out equal."""
+        self._cell_size = math.floor(self._grid_area_size / self.GRID_WIDTH)
+        self._board_height = math.floor(self._grid_area_size / self._cell_size)
         self._piece_class = Piece
         self._piece_types = PIECE_TYPES
         self._movement_rule = self._rule_square_movement
-        board = Grid(
+        # Alternatives: self._rule_clear_none / _rule_clear_adjacent_same_letter
+        self._clear_rule = self._rule_clear_words
+        grid_px_width = self.GRID_WIDTH * self._cell_size
+        grid_px_height = self._board_height * self._cell_size
+        board = SquareGrid(
             self.GRID_WIDTH, self._board_height, self._cell_size,
-            window.width, window.height, self._board_batch
+            grid_px_width, grid_px_height, self._board_batch
         )
         return board
 
     def _rule_use_hex_grid(self, window):
         """Build a flat-top hex board and set piece sizing to match.
         """
-        cell_size = math.floor(window.width / self.GRID_WIDTH)
+        cell_size = math.floor(self._grid_area_size / self.GRID_WIDTH)
         hex_size = cell_size / math.sqrt(3)
-        board = HexGrid(hex_size, window.width, window.height, self._board_batch)
+        board = HexGrid(
+            hex_size, self._grid_area_size, self._grid_area_size,
+            self._board_batch
+        )
         # Keep the float hex_size: the piece must use the exact same value as
         # the grid, or it drifts off the cells across the board.
         self._cell_size = hex_size
         self._board_height = board.height
         self._piece_class = HexPiece
         self._piece_types = HEX_PIECE_TYPES
-        
+
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows
+        # Alternatives: self._rule_clear_none / _rule_clear_adjacent_same_letter
+        self._clear_rule = self._rule_clear_hex_words
         return board
 
     def _init_first_piece(self):
@@ -198,10 +216,10 @@ class GameScreen:
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
     def _apply_clear_rule(self, placed_positions):
-        # self._rule_clear_none(placed_positions)
-        # self._rule_clear_adjacent_same_letter(placed_positions)
-        # self._rule_clear_words(placed_positions)        # square grid
-        self._rule_clear_hex_words(placed_positions)      # hex grid
+        # The clear rule is grid-specific (e.g. _rule_clear_words needs square
+        # line scans, _rule_clear_hex_words needs hex snaking). The grid builder
+        # picks the matching one into self._clear_rule, so the two can't desync.
+        self._clear_rule(placed_positions)
 
     def _rule_clear_none(self, placed_positions):
         """No clearing (feature disabled)."""
@@ -351,7 +369,8 @@ class GameScreen:
         
         self._board_batch.draw()
         self._piece_batch.draw()
-        
+        self._sidepane.draw()
+
         if self._menu_open:
             self._ingame_menu.draw()
     

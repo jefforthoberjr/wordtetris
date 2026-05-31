@@ -117,7 +117,14 @@ def rule_englishcorpus_random_digram(count):
         grams.append(Gram(word[idx:idx + 2]))
     return grams
 
-
+# Raw gram freq count from "v7" of analysis
+# 1 letter grams: 26 entries; ~166k total weight
+# 2 letter grams: ~300 entries; ~141k total weight
+# 3 letter grams: ~700 entries; ~81k total weight
+# 4 letter grams: ~150 entries; ~15k total weight
+# (tossed out >5 grams; ~65 entries; ~6k total weight)
+# known issues: contains weird grams (clipped morphological chunkks)
+# known issues: getting a unigram is less likely than a multigram
 def _load_gram_corpus():
     global _corpus_grams, _corpus_weights
     if _corpus_grams is not None:
