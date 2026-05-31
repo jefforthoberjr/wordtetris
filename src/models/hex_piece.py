@@ -5,6 +5,7 @@ from models.gram_picker import rule_random_letters
 from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
+from models.gram_picker import rule_gramcorpus_distribution
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
@@ -55,7 +56,8 @@ class HexPiece:
         # self._grams = rule_random_letters(cell_count)
         # self._grams = rule_scrabble_distribution(cell_count)
         # self._grams = rule_englishcorpus_random_unigram(cell_count)
-        self._grams = rule_englishcorpus_random_digram(cell_count)
+        # self._grams = rule_englishcorpus_random_digram(cell_count)
+        self._grams = rule_gramcorpus_distribution(cell_count)
 
         shape_shader = get_shape_shader()
         # Base font for a single letter, sized to the hex height (sqrt(3)*size)

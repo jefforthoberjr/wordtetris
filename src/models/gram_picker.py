@@ -9,6 +9,8 @@ from models.gram import Gram
 _scrabble_letters = None
 _scrabble_weights = None
 _english_words = None
+_corpus_grams = None
+_corpus_weights = None
 
 
 def _load_scrabble_distribution():
@@ -19,7 +21,7 @@ def _load_scrabble_distribution():
     _scrabble_letters = []
     _scrabble_weights = []
 
-    csv_path = os.path.join(os.path.dirname(__file__), 'dictionaries', 'scrabble_letters.csv')
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'scrabble_letters.csv')
     with open(csv_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -113,4 +115,41 @@ def rule_englishcorpus_random_digram(count):
             continue
         idx = random.randint(0, len(word) - 2)
         grams.append(Gram(word[idx:idx + 2]))
+    return grams
+
+
+def _load_gram_corpus():
+    global _corpus_grams, _corpus_weights
+    if _corpus_grams is not None:
+        return
+
+    _corpus_grams = []
+    _corpus_weights = []
+
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'jpo_allGramsGreaterThan47InFreq.csv')
+    with open(csv_path, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            _corpus_grams.append(row['gram'])
+            _corpus_weights.append(int(row['freq']))
+
+
+def rule_gramcorpus_distribution(count):
+    """
+    Pick grams from the JPO gram corpus, weighted by each gram's frequency.
+
+    The corpus mixes 1-4 letter grams, so cells get a frequency-realistic
+    blend of unigrams through quadgrams.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of Grams (each 1-4 letters)
+    """
+    _load_gram_corpus()
+    picks = random.choices(_corpus_grams, weights=_corpus_weights, k=count)
+    grams = []
+    for text in picks:
+        grams.append(Gram(text))
     return grams
