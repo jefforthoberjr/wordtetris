@@ -11,7 +11,7 @@ from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
-from models.grid import SquareGrid
+from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
