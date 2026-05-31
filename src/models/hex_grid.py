@@ -79,8 +79,8 @@ class HexGrid:
 
         # Rules for which directions a word can take
         # self._snake_rule = rule_snake_rightanddown
-        # self._snake_rule = rule_snake_rightanddown_nosharptwist
-        self._snake_rule = rule_snake_straightline
+        self._snake_rule = rule_snake_rightanddown_nosharptwist
+        # self._snake_rule = rule_snake_straightline
 
         self._lines = []
         self._create_outlines(batch)
