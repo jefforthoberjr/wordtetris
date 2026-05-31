@@ -2,6 +2,8 @@ import math
 import pyglet
 from models.letter_picker import rule_random_letters
 from models.letter_picker import rule_scrabble_distribution
+from models.letter_picker import rule_englishcorpus_random_unigram
+from models.letter_picker import rule_englishcorpus_random_digram
 from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from models.domino import DominoType, DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
@@ -32,8 +34,10 @@ class Piece:
         self._visible = visible
         self._placed = False
         
-        # self._letters = rule_random_letters(len(self._shapes_data))
-        self._letters = rule_scrabble_distribution(len(self._shapes_data))
+        self._letters = rule_random_letters(len(self._shapes_data))
+        # self._letters = rule_scrabble_distribution(len(self._shapes_data))
+        # self._letters = rule_englishcorpus_random_unigram(len(self._shapes_data))
+        # self._letters = rule_englishcorpus_random_digram(len(self._shapes_data))
         
         shape_shader = get_shape_shader()
         
