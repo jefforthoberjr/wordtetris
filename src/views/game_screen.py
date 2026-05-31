@@ -15,11 +15,24 @@ from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
-from config import CONFIG
+
+
+# Control key bindings (formerly config.json "controls"). These now live next to
+# the rule functions, ready to be folded into rule bundles in a later refactor.
+CONTROL_KEYS = {
+    "move_left": "A",
+    "move_right": "D",
+    "move_up": "W",
+    "move_down": "S",
+    "rotate_clockwise": "LEFT",
+    "rotate_counterclockwise": "RIGHT",
+    "place": "SPACE",
+    "pause": "ESCAPE",
+}
 
 
 def _get_key(action):
-    key_name = CONFIG["controls"][action]
+    key_name = CONTROL_KEYS[action]
     return getattr(pyglet.window.key, key_name)
 
 # Note: a cell can hold a multi-letter gram
