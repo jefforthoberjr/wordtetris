@@ -2,7 +2,7 @@ import math
 import pyglet
 from models.letter_picker import rule_scrabble_distribution
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
-from models.hex_grid import SQRT3, flat_top_cell_center, flat_top_vertices
+from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
 
 
@@ -66,8 +66,8 @@ class HexPiece:
         # Hexagon vertices built around the origin; repositioned per cell in
         # _update_positions. A Polygon anchors at its first vertex (angle 0,
         # i.e. +radius on x), so centering a cell adds that radius to x.
-        outer_verts = flat_top_vertices(self._hex_size, 0, 0)
-        inner_verts = flat_top_vertices(self._inner_size, 0, 0)
+        outer_verts = flattop_vertices(self._hex_size, 0, 0)
+        inner_verts = flattop_vertices(self._inner_size, 0, 0)
 
         self._outers = []
         self._inners = []
@@ -117,7 +117,7 @@ class HexPiece:
     def _update_positions(self):
         positions = self._cell_grid_positions()
         for i, (col, row) in enumerate(positions):
-            cx, cy = flat_top_cell_center(self._hex_size, col, row)
+            cx, cy = flattop_cell_center(self._hex_size, col, row)
             # Each polygon anchors at its own first vertex (+radius on x).
             self._outers[i].position = (cx + self._hex_size, cy)
             self._inners[i].position = (cx + self._inner_size, cy)

@@ -4,19 +4,11 @@ from models.grid import GridCell
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from views.shaders import get_shape_shader
 
-
-# Flat-top hexagon grid. Mirrors the public interface of models.grid.Grid
-# (duck typing) so GameScreen can use either board by swapping one line.
-#
-# Geometry lives in the _rule_flat_top_* methods below. To add a pointy-top
-# variant later, write sibling _rule_pointy_top_* methods and repoint the
-# calls in __init__ / _create_outlines -- that is the single swap point.
 SQRT3 = math.sqrt(3)
-
 
 # Flat-top geometry as free functions so HexPiece can share the exact same
 # mapping as HexGrid (they must agree to the pixel, or pieces drift off cells).
-def flat_top_cell_center(hex_size, col, row):
+def flattop_cell_center(hex_size, col, row):
     hex_height = SQRT3 * hex_size
     cx = hex_size + col * (1.5 * hex_size)
     odd_offset = (col % 2) * (hex_height / 2)
@@ -24,7 +16,7 @@ def flat_top_cell_center(hex_size, col, row):
     return cx, cy
 
 
-def flat_top_vertices(hex_size, cx, cy):
+def flattop_vertices(hex_size, cx, cy):
     # Flat-top corners sit at 0, 60, 120, ... degrees around the center.
     verts = []
     for i in range(6):
@@ -34,57 +26,53 @@ def flat_top_vertices(hex_size, cx, cy):
         verts.append((vx, vy))
     return verts
 
+_SNAKE_DIRS_DOWNANDRIGHT = (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT)
 
-# Snake step directions for word building, plus the rules that pick which are
-# allowed from a given cell. A rule takes the direction used to reach the cell
-# (None at a word's first cell) and returns the directions the word may
-# continue in. forward_neighbors() applies whichever rule is active.
-_SNAKE_DIRS = (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT)
-
-# The only 120-degree turns among the snake directions are up-right <-> down
-# (up-right points +30 deg, down-right -30 deg, down -90 deg, so every other
-# pair turns just 60 deg). Forbidding these two keeps the path from kinking.
-_SHARP_TWISTS = {
+# Allow 60 deg turns; forbid 120 degree turns
+_SHARP_TWISTS_DOWNANDRIGHT = {
     (HEX_UP_RIGHT, HEX_DOWN),
     (HEX_DOWN, HEX_UP_RIGHT),
 }
 
+# Snaking allow for turns and twists and zigzags; more than just a straight line 
 
 def rule_snake_rightanddown(prev_direction):
-    """A word may step up-right, down, or down-right from any cell, whatever
-    the previous step was."""
-    return _SNAKE_DIRS
-
+    return _SNAKE_DIRS_DOWNANDRIGHT
 
 def rule_snake_rightanddown_nosharptwist(prev_direction):
-    """Like rule_snake_rightanddown, but forbids a sharp twist -- an up-right
-    step right after a down, or a down right after an up-right -- so the path
-    can't zig-zag into a hard V (e.g. CAT spelt up-right then down)."""
     return tuple(
-        d for d in _SNAKE_DIRS if (prev_direction, d) not in _SHARP_TWISTS
+        d for d in _SNAKE_DIRS_DOWNANDRIGHT if (prev_direction, d) not in _SHARP_TWISTS_DOWNANDRIGHT
     )
-
 
 class HexGrid:
     def __init__(self, hex_size, window_width, window_height, batch):
         self._hex_size = hex_size
-        # flat-top: corner-to-corner height is sqrt(3)*size, width is 2*size
+        # flat-top hexagons
         self._hex_height = SQRT3 * hex_size
         self._hex_width = 2 * hex_size
         # adjacent columns step 3/4 of the full width horizontally
         self._col_spacing = 1.5 * hex_size
 
-        self._cols = self._rule_flat_top_col_count(window_width)
-        self._rows = self._rule_flat_top_row_count(window_height)
+        self._cols = self._rule_flattop_col_count(window_width)
+        self._rows = self._rule_flattop_row_count(window_height)
 
         self._cells = []
+        #each col has the same number of cells
+        #top and bottom "edges" of the grid are thus jagged
+        #(the second col is a 1/2 step up from the first, then alternates up/down)
+        #(if there is an even number of cols, the final col end up 1/2 step up from the first col)
+        #   /-\_/-\_/-\_/-\  
+        # /-\_/-\_/-\_/-\-/-\
+        # ...
+        #(the bottom edge has the opposite up/down jaggedness)
+        
         for _ in range(self._rows):
             row = []
             for _ in range(self._cols):
                 row.append(GridCell())
             self._cells.append(row)
 
-        # Which snake steps a word may take; see the rule_snake_* functions.
+        # Rules for which directions a word can take
         # self._snake_rule = rule_snake_rightanddown
         self._snake_rule = rule_snake_rightanddown_nosharptwist
 
@@ -93,23 +81,23 @@ class HexGrid:
 
     # --- geometry rules (flat-top) -------------------------------------
 
-    def _rule_flat_top_col_count(self, window_width):
+    def _rule_flattop_col_count(self, window_width):
         # First column center sits one size in; each adds _col_spacing.
         usable = window_width - self._hex_width
         count = math.floor(usable / self._col_spacing) + 1
         return count
 
-    def _rule_flat_top_row_count(self, window_height):
+    def _rule_flattop_row_count(self, window_height):
         # Odd columns are nudged up half a hex, so reserve that half up top.
         usable = window_height - (self._hex_height / 2)
         count = math.floor(usable / self._hex_height)
         return count
 
-    def _rule_flat_top_cell_center(self, col, row):
-        return flat_top_cell_center(self._hex_size, col, row)
+    def _rule_flattop_cell_center(self, col, row):
+        return flattop_cell_center(self._hex_size, col, row)
 
-    def _rule_flat_top_vertices(self, cx, cy):
-        return flat_top_vertices(self._hex_size, cx, cy)
+    def _rule_flattop_vertices(self, cx, cy):
+        return flattop_vertices(self._hex_size, cx, cy)
 
     # --- rendering -----------------------------------------------------
 
@@ -120,8 +108,8 @@ class HexGrid:
         shape_shader = get_shape_shader()
         for row in range(self._rows):
             for col in range(self._cols):
-                cx, cy = self._rule_flat_top_cell_center(col, row)
-                verts = self._rule_flat_top_vertices(cx, cy)
+                cx, cy = self._rule_flattop_cell_center(col, row)
+                verts = self._rule_flattop_vertices(cx, cy)
                 for i in range(6):
                     x1, y1 = verts[i]
                     x2, y2 = verts[(i + 1) % 6]
@@ -131,8 +119,6 @@ class HexGrid:
                         program=shape_shader
                     )
                     self._lines.append(line)
-
-    # --- public interface (mirrors Grid) -------------------------------
 
     @property
     def width(self):
@@ -147,8 +133,8 @@ class HexGrid:
         return self._hex_size
 
     def cell_center(self, col, row):
-        # Pixel center of a cell; HexPiece will need this in Task 2.
-        return self._rule_flat_top_cell_center(col, row)
+        # Pixel center of a cell
+        return self._rule_flattop_cell_center(col, row)
 
     def is_valid(self, x, y):
         return 0 <= x < self._cols and 0 <= y < self._rows
@@ -159,7 +145,7 @@ class HexGrid:
             cell = self._cells[y][x]
         return cell
 
-    def is_occupied(self, x, y):
+    def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         result = False
         if cell is not None:
@@ -199,10 +185,6 @@ class HexGrid:
         return letter
 
     def forward_neighbors(self, x, y, prev_direction=None):
-        """On-board (neighbor, direction) steps a word may take from (x, y),
-        per the active snake rule. `prev_direction` is the direction used to
-        reach (x, y), or None at the first cell of a word. The snake directions
-        keep a word reading left to right and top to bottom."""
         result = []
         for direction in self._snake_rule(prev_direction):
             nx, ny = hex_neighbor(x, y, direction)
