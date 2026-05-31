@@ -3,6 +3,15 @@ GAME NAMES
 * blast-tionary
 
 
+You cannot clear the same word twice in one match
+
+
+
+
+At the end, the set of words you found in a match, get formed into a poem (by AI) then generate an image (slowly revealed) as a smooth voice reads it. Funny reword for finding funny wordsl
+
+	(watch this ad while we generate your poem)
+
 Find a control sc
 
 More Dr. Mario style (block appear that you have to clear)

@@ -280,7 +280,10 @@ class GameScreen:
         new_cells = set(placed_positions)
         axes = ((1, 0), (0, -1))  # across: left->right; down: top->bottom
         to_clear = set()
-        cleared_words = []
+        # Keyed by the word's cells: two placed cells on the same line find the
+        # same word, so collapse by location. Distinct cells spelling the same
+        # text (a separate occurrence) are kept.
+        words_by_cells = {}
         for (px, py) in placed_positions:
             for (dx, dy) in axes:
                 line = self._board.line_through(px, py, dx, dy)
@@ -292,11 +295,12 @@ class GameScreen:
                 span = longest_word_span(text, anchor, is_old)
                 if span is not None:
                     start, stop = span
-                    cleared_words.append(text[start:stop])
-                    to_clear.update(line[start:stop])
+                    cells = tuple(line[start:stop])
+                    words_by_cells[cells] = text[start:stop]
+                    to_clear.update(cells)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
-        return cleared_words
+        return list(words_by_cells.values())
 
     def _rule_clear_adjacent_same_letter(self, placed_positions):
         new_cells = set(placed_positions)
