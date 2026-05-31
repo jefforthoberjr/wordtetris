@@ -5,7 +5,7 @@ from views.ingame_menu import IngameMenu
 from views.side_pane import SidePane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
-from models.piece import Piece, PIECE_TYPES
+from models.square_piece import SquarePiece, PIECE_TYPES
 from models.hex_piece import HexPiece, PIECE_TYPES as HEX_PIECE_TYPES
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
@@ -91,7 +91,7 @@ class GameScreen:
         square grid region so columns and rows come out equal."""
         self._cell_size = math.floor(self._grid_area_size / self.GRID_WIDTH)
         self._board_height = math.floor(self._grid_area_size / self._cell_size)
-        self._piece_class = Piece
+        self._piece_class = SquarePiece
         self._piece_types = PIECE_TYPES
         self._movement_rule = self._rule_square_movement
         # Alternatives: self._rule_clear_none / _rule_clear_adjacent_same_letter

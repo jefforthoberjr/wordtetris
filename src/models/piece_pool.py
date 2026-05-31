@@ -1,9 +1,9 @@
 import random
-from models.piece import Piece, PIECE_TYPES
+from models.square_piece import SquarePiece, PIECE_TYPES
 
 
 class PiecePool:
-    def __init__(self, size, cell_size, batch, piece_class=Piece, piece_types=None):
+    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None):
         self._pieces = []
         self._current_index = 0
         self._size = size

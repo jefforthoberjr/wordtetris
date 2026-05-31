@@ -23,7 +23,7 @@ PIECE_TYPES, PIECE_ROTATIONS = _rule_use_tetriminos()
 # PIECE_TYPES, PIECE_ROTATIONS = _rule_use_dominos()
 
 
-class Piece:
+class SquarePiece:
     def __init__(self, piece_type, cell_size, batch, visible=False):
         self._piece_type = piece_type
         self._rotations = PIECE_ROTATIONS[piece_type]
