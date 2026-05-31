@@ -1,5 +1,6 @@
 import math
 import pyglet
+from models.gram import gram_font_size
 from models.gram_picker import rule_random_letters
 from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
@@ -51,18 +52,17 @@ class HexPiece:
         self._placed = False
 
         cell_count = 1 + len(self._sat_dirs)
-        self._grams = rule_random_letters(cell_count)
+        # self._grams = rule_random_letters(cell_count)
         # self._grams = rule_scrabble_distribution(cell_count)
         # self._grams = rule_englishcorpus_random_unigram(cell_count)
-        # self._grams = rule_englishcorpus_random_digram(cell_count)
+        self._grams = rule_englishcorpus_random_digram(cell_count)
 
         shape_shader = get_shape_shader()
-        # Sized to the hex height (sqrt(3)*size); a bit smaller than the cell so
-        # the glyph clears the top/bottom hex edges.
-        font_size = int(self._hex_size * SQRT3 * 0.5)
-        # pyglet's anchor_y="center" centers the line box, not the glyph, so
-        # capitals sit high (white space at the bottom). Nudge down to recenter.
-        self._label_dy = -math.floor(font_size * 0.12)
+        # Base font for a single letter, sized to the hex height (sqrt(3)*size)
+        # so the glyph clears the top/bottom hex edges; multi-letter grams shrink
+        # to fit. The recenter nudge is per-label (below) since it scales with
+        # each gram's font size.
+        base_font_size = int(self._hex_size * SQRT3 * 0.5)
 
         # White fill + black border, like the square piece's BorderedRectangle.
         # The border is a black hexagon behind a slightly smaller white one.
@@ -79,6 +79,7 @@ class HexPiece:
         self._inners = []
         self._cell_shapes = []
         self._labels = []
+        self._label_dys = []
         for i in range(cell_count):
             outer = pyglet.shapes.Polygon(
                 *outer_verts,
@@ -100,9 +101,10 @@ class HexPiece:
 
             self._cell_shapes.append(HexCellShape(outer, inner))
 
+            gram_font = gram_font_size(base_font_size, self._grams[i])
             label = pyglet.text.Label(
                 self._grams[i].text,
-                font_size=font_size,
+                font_size=gram_font,
                 weight='bold',
                 color=(0, 0, 0, 255),
                 anchor_x="center",
@@ -111,6 +113,10 @@ class HexPiece:
             )
             label.visible = visible
             self._labels.append(label)
+            # pyglet's anchor_y="center" centers the line box, not the glyph, so
+            # capitals sit high (white space at the bottom). Nudge down to
+            # recenter, scaled to this gram's own font size.
+            self._label_dys.append(-math.floor(gram_font * 0.12))
 
         self._update_positions()
 
@@ -128,7 +134,7 @@ class HexPiece:
             self._outers[i].position = (cx + self._hex_size, cy)
             self._inners[i].position = (cx + self._inner_size, cy)
             self._labels[i].x = cx
-            self._labels[i].y = cy + self._label_dy
+            self._labels[i].y = cy + self._label_dys[i]
 
     @property
     def piece_type(self):

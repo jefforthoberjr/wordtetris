@@ -1,5 +1,6 @@
 import math
 import pyglet
+from models.gram import gram_font_size
 from models.gram_picker import rule_random_letters
 from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
@@ -43,7 +44,8 @@ class Piece:
         
         self._cells = []
         self._labels = []
-        font_size = int(cell_size * 0.6)
+        # Base font for a single letter; multi-letter grams shrink to fit.
+        base_font_size = int(cell_size * 0.6)
         
         for i, _ in enumerate(self._shapes_data):
             cell = pyglet.shapes.BorderedRectangle(
@@ -59,7 +61,7 @@ class Piece:
             
             label = pyglet.text.Label(
                 self._grams[i].text,
-                font_size=font_size,
+                font_size=gram_font_size(base_font_size, self._grams[i]),
                 weight='bold',
                 color=(0, 0, 0, 255),
                 anchor_x="center",
