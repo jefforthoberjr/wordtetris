@@ -34,7 +34,7 @@ _SHARP_TWISTS_DOWNANDRIGHT = {
     (HEX_DOWN, HEX_UP_RIGHT),
 }
 
-# Snaking allow for turns and twists and zigzags; more than just a straight line 
+# Snaking allow for turns and twists and zigzags; maybe more than just a straight line 
 
 def rule_snake_rightanddown(prev_direction):
     return _SNAKE_DIRS_DOWNANDRIGHT
@@ -43,6 +43,11 @@ def rule_snake_rightanddown_nosharptwist(prev_direction):
     return tuple(
         d for d in _SNAKE_DIRS_DOWNANDRIGHT if (prev_direction, d) not in _SHARP_TWISTS_DOWNANDRIGHT
     )
+
+def rule_snake_straightline(prev_direction):
+    if prev_direction is None:
+        return _SNAKE_DIRS_DOWNANDRIGHT
+    return (prev_direction,)
 
 class HexGrid:
     def __init__(self, hex_size, window_width, window_height, batch):
@@ -74,7 +79,8 @@ class HexGrid:
 
         # Rules for which directions a word can take
         # self._snake_rule = rule_snake_rightanddown
-        self._snake_rule = rule_snake_rightanddown_nosharptwist
+        # self._snake_rule = rule_snake_rightanddown_nosharptwist
+        self._snake_rule = rule_snake_straightline
 
         self._lines = []
         self._create_outlines(batch)
