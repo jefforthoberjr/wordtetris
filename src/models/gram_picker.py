@@ -3,6 +3,8 @@ import os
 import random
 import string
 
+from models.gram import Gram
+
 
 _scrabble_letters = None
 _scrabble_weights = None
@@ -13,10 +15,10 @@ def _load_scrabble_distribution():
     global _scrabble_letters, _scrabble_weights
     if _scrabble_letters is not None:
         return
-    
+
     _scrabble_letters = []
     _scrabble_weights = []
-    
+
     csv_path = os.path.join(os.path.dirname(__file__), 'dictionaries', 'scrabble_letters.csv')
     with open(csv_path, 'r') as f:
         reader = csv.DictReader(f)
@@ -27,39 +29,43 @@ def _load_scrabble_distribution():
 
 def rule_random_letters(count):
     """
-    Pick letters for a tetrimino piece using pure random selection.
-    
+    Pick grams for a piece using pure random single letters.
+
     Args:
-        count: Number of letters needed (typically 4 for standard tetriminos)
-    
+        count: Number of grams needed (one per cell)
+
     Returns:
-        List of uppercase letters
+        List of unigram Grams
     """
-    letters = []
+    grams = []
     for _ in range(count):
-        letters.append(random.choice(string.ascii_uppercase))
-    return letters
+        grams.append(Gram(random.choice(string.ascii_uppercase)))
+    return grams
 
 
 def rule_scrabble_distribution(count):
     """
-    Pick letters using Scrabble tile distribution weights.
-    
+    Pick grams using Scrabble tile distribution weights.
+
     Args:
-        count: Number of letters needed (typically 4 for standard tetriminos)
-    
+        count: Number of grams needed (one per cell)
+
     Returns:
-        List of uppercase letters
+        List of unigram Grams
     """
     _load_scrabble_distribution()
-    return random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+    letters = random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+    grams = []
+    for letter in letters:
+        grams.append(Gram(letter))
+    return grams
 
 
 def _load_english_words():
     global _english_words
     if _english_words is not None:
         return
-    
+
     _english_words = []
     dict_path = os.path.join(os.path.dirname(__file__), 'dictionaries', 'spellingDictionary20k-nocompound.txt')
     with open(dict_path, 'r') as f:
@@ -71,41 +77,40 @@ def _load_english_words():
 
 def rule_englishcorpus_random_unigram(count):
     """
-    Pick letters by selecting random single letters from random words.
-    
+    Pick grams by selecting random single letters from random words.
+
     Args:
-        count: Number of letters needed
-    
+        count: Number of grams needed (one per cell)
+
     Returns:
-        List of uppercase letters
+        List of unigram Grams
     """
     _load_english_words()
-    letters = []
+    grams = []
     for _ in range(count):
         word = random.choice(_english_words)
         idx = random.randint(0, len(word) - 1)
-        letters.append(word[idx])
-    return letters
+        grams.append(Gram(word[idx]))
+    return grams
 
 
 def rule_englishcorpus_random_digram(count):
     """
-    Pick letters by selecting random 2-letter chunks from random words.
+    Pick grams by selecting random 2-letter chunks from random words.
     Words shorter than 2 characters are skipped.
-    
+
     Args:
-        count: Number of letters needed (returns count letters, so count/2 digrams rounded up)
-    
+        count: Number of grams needed (one per cell)
+
     Returns:
-        List of uppercase letters
+        List of digram Grams (each Gram holds 2 letters)
     """
     _load_english_words()
-    letters = []
-    while len(letters) < count:
+    grams = []
+    while len(grams) < count:
         word = random.choice(_english_words)
         if len(word) < 2:
             continue
         idx = random.randint(0, len(word) - 2)
-        letters.append(word[idx])
-        letters.append(word[idx + 1])
-    return letters[:count]
+        grams.append(Gram(word[idx:idx + 2]))
+    return grams
