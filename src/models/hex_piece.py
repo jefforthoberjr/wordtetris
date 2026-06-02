@@ -150,6 +150,11 @@ class HexPiece:
         return self._piece_type
 
     @property
+    def rotation_count(self):
+        """Distinct rotation states: a hex piece cycles every 6 60-deg turns."""
+        return 6
+
+    @property
     def grid_x(self):
         return self._grid_x
 

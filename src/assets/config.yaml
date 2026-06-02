@@ -18,11 +18,14 @@ rules:
   # game_screen.grid:         rule_use_hex_grid
   game_screen.grid:       rule_use_square_grid
 
-  game_screen.word_length:  rule_word_min3letters_min2cells
-  # game_screen.word_length: rule_word_min2letters_min2cells
+  # game_screen.word_length:  rule_word_min3letters_min2cells
+  game_screen.word_length: rule_word_min2letters_min2cells
 
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center
+
+  game_screen.spawn_orientation: rule_orient_random
+  # game_screen.spawn_orientation: rule_orient_default
 
   hex_grid.snake:           rule_snake_rightanddown_nosharptwist
   # hex_grid.snake:         rule_snake_rightanddown

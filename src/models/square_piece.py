@@ -97,7 +97,12 @@ class SquarePiece:
     @property
     def piece_type(self):
         return self._piece_type
-    
+
+    @property
+    def rotation_count(self):
+        """Number of distinct rotation states (so a spawn rule can pick one)."""
+        return len(self._rotations)
+
     @property
     def grid_x(self):
         return self._grid_x

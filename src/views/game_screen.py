@@ -111,6 +111,14 @@ class GameScreen:
         }
         self._spawn_rule = select_rule("game_screen.spawn", spawn_rules)
 
+        # Spawn orientation rule (independent of position), chosen by the YAML
+        # key game_screen.spawn_orientation.
+        orient_rules = {
+            "rule_orient_default": self._rule_orient_default,
+            "rule_orient_random": self._rule_orient_random,
+        }
+        self._orient_rule = select_rule("game_screen.spawn_orientation", orient_rules)
+
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
             self._piece_class, self._piece_types
@@ -163,9 +171,20 @@ class GameScreen:
         piece.set_visible(True)
     
     def _spawn_piece(self, piece):
-        """Apply the current spawn positioning rule (see self._spawn_rule)."""
+        """Apply the current spawn orientation, then positioning rule."""
+        self._orient_rule(piece)
         self._spawn_rule(piece)
-    
+
+    def _rule_orient_default(self, piece):
+        """Spawn in the piece's default orientation (rotation state 0)."""
+        pass
+
+    def _rule_orient_random(self, piece):
+        """Spawn in a random rotation: turn clockwise a random number of times."""
+        turns = random.randrange(piece.rotation_count)
+        for _ in range(turns):
+            piece.rotate_cw()
+
     def _rule_spawn_center(self, piece):
         """Position a piece at the center of the grid."""
         center_x = math.floor(self.GRID_WIDTH / 2) - 1
