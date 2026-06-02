@@ -1,3 +1,4 @@
+import math
 import pyglet
 from models.grid_cell import GridCell
 from views.shaders import get_shape_shader
@@ -47,7 +48,15 @@ class SquareGrid:
     @property
     def height(self):
         return self._height
-    
+
+    def center_cell(self):
+        """Center cell by cell count: as-equal-as-possible open cells on each
+        side, off by one when a dimension is even. The center spawn rule uses
+        this so it adapts to any grid size."""
+        cx = math.floor((self._width - 1) / 2)
+        cy = math.floor((self._height - 1) / 2)
+        return cx, cy
+
     def is_valid(self, x, y):
         return 0 <= x < self._width and 0 <= y < self._height
     

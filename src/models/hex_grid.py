@@ -140,6 +140,15 @@ class HexGrid:
     def height(self):
         return self._rows
 
+    def center_cell(self):
+        """Center cell by cell count: as-equal-as-possible open cells left/right
+        and above/below, off by one when a dimension is even. Every column holds
+        the same number of cells, so the row count centers vertically too. The
+        center spawn rule uses this so it adapts to any grid size."""
+        cx = math.floor((self._cols - 1) / 2)
+        cy = math.floor((self._rows - 1) / 2)
+        return cx, cy
+
     @property
     def hex_size(self):
         return self._hex_size

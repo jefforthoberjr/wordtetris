@@ -186,9 +186,9 @@ class GameScreen:
             piece.rotate_cw()
 
     def _rule_spawn_center(self, piece):
-        """Position a piece at the center of the grid."""
-        center_x = math.floor(self.GRID_WIDTH / 2) - 1
-        center_y = math.floor(self._board_height / 2)
+        """Position a piece at the grid's center cell. The grid computes it from
+        its own dimensions, so this adapts to any grid size."""
+        center_x, center_y = self._board.center_cell()
         piece.set_position(center_x, center_y)
     
     def _rule_spawn_random_spot(self, piece):
