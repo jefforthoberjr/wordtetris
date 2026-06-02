@@ -119,6 +119,16 @@ class GameScreen:
         }
         self._orient_rule = select_rule("game_screen.spawn_orientation", orient_rules)
 
+        # Every word cleared this game, so the repeat rule can prevent a word
+        # from being cleared twice. (Reset alongside the board when a proper
+        # new-game restart is added.)
+        self._cleared_word_history = set()
+        repeat_rules = {
+            "rule_repeat_allow": self._rule_repeat_allow,
+            "rule_repeat_block": self._rule_repeat_block,
+        }
+        self._repeat_rule = select_rule("game_screen.word_repeat", repeat_rules)
+
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
             self._piece_class, self._piece_types
@@ -264,12 +274,24 @@ class GameScreen:
         nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
+    def _rule_repeat_allow(self, word):
+        """Allow a word to clear even if it cleared before (original behavior)."""
+        return True
+
+    def _rule_repeat_block(self, word):
+        """Block a word that has already been cleared earlier this game."""
+        return word not in self._cleared_word_history
+
     def _apply_clear_rule(self, placed_positions):
         # The clear rule is grid-specific (e.g. _rule_clear_words needs square
         # line scans, _rule_clear_hex_words needs hex snaking). The grid builder
         # picks the matching one into self._clear_rule, so the two can't desync.
-        # Each rule returns the list of word strings it cleared (for display).
-        return self._clear_rule(placed_positions)
+        # Each rule gates its words through self._repeat_rule before clearing
+        # and returns the list of word strings it actually cleared (for display).
+        cleared_words = self._clear_rule(placed_positions)
+        for word in cleared_words:
+            self._cleared_word_history.add(word)
+        return cleared_words
 
     def _rule_clear_none(self, placed_positions):
         """No clearing (feature disabled)."""
@@ -296,8 +318,10 @@ class GameScreen:
         cleared_words = []
         for path in select_maximal_paths(qualifying):
             # Read the spelled word before clearing the cells it sits on.
-            cleared_words.append("".join(self._board.letter_at(x, y) for (x, y) in path))
-            to_clear.update(path)
+            word = "".join(self._board.letter_at(x, y) for (x, y) in path)
+            if self._repeat_rule(word):
+                cleared_words.append(word)
+                to_clear.update(path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
         return cleared_words
@@ -353,7 +377,7 @@ class GameScreen:
                     # _collect_hex_words; longest_word_span has no length floor
                     # of its own, so without this the square grid would clear
                     # short words (e.g. OX) regardless of the active rule.
-                    if self._word_length_rule(word, cells):
+                    if self._word_length_rule(word, cells) and self._repeat_rule(word):
                         words_by_cells[cells] = word
                         to_clear.update(cells)
         for (x, y) in to_clear:
