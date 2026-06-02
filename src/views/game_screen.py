@@ -55,6 +55,8 @@ _WORD_LENGTH_RULES = {
 class GameScreen:
     GRID_WIDTH = 14
     PIECE_POOL_SIZE = 100
+    # Obstacle pieces dropped onto the board before play begins.
+    OBSTACLE_COUNT = 4
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -78,9 +80,6 @@ class GameScreen:
         self._key_state = pyglet.window.key.KeyStateHandler()
         window.push_handlers(self._key_state)
 
-        self._board_batch = pyglet.graphics.Batch()
-        self._piece_batch = pyglet.graphics.Batch()
-
         # The grid occupies a square region on the left (its side is limited by
         # the window height); the side pane fills the remaining width to its
         # right. Both grid builders size themselves to this square region rather
@@ -88,15 +87,6 @@ class GameScreen:
         self._grid_area_size = window.height
         sidepane_x = self._grid_area_size
         sidepane_width = window.width - self._grid_area_size
-
-        # Grid bundle, chosen by the YAML key game_screen.grid. The chosen
-        # builder also wires up its own movement + clear rules.
-        grid_rules = {
-            "rule_use_square_grid": self._rule_use_square_grid,
-            "rule_use_hex_grid": self._rule_use_hex_grid,
-        }
-        self._board = select_rule("game_screen.grid", grid_rules)(window)
-
         self._sidepane = SidePane(
             sidepane_x, 0, sidepane_width, window.height
         )
@@ -119,21 +109,90 @@ class GameScreen:
         }
         self._orient_rule = select_rule("game_screen.spawn_orientation", orient_rules)
 
-        # Every word cleared this game, so the repeat rule can prevent a word
-        # from being cleared twice. (Reset alongside the board when a proper
-        # new-game restart is added.)
-        self._cleared_word_history = set()
         repeat_rules = {
             "rule_repeat_allow": self._rule_repeat_allow,
             "rule_repeat_block": self._rule_repeat_block,
         }
         self._repeat_rule = select_rule("game_screen.word_repeat", repeat_rules)
 
+        self._start_new_game()
+
+    def _start_new_game(self):
+        """Begin a fresh game: rebuild the board and piece pools and drop a new
+        random set of obstacles. Called once at construction and again every
+        time the player (re)enters from the menu via "Start Game".
+
+        Each game gets brand-new batches so every shape from the previous game
+        (grid lines, placed pieces, obstacles) is released together for GC,
+        rather than piling up invisible behind the new board."""
+        self._board_batch = pyglet.graphics.Batch()
+        self._piece_batch = pyglet.graphics.Batch()
+        # Separate batch for the starting obstacle pieces. Their cells live on
+        # the board once dropped, but render through this batch so they stay
+        # visually grouped and independently styleable.
+        self._obstacle_batch = pyglet.graphics.Batch()
+
+        # Grid bundle, chosen by the YAML key game_screen.grid. The chosen
+        # builder also wires up its own movement + clear rules and sizes the
+        # pieces, so it must run before the pools are built.
+        grid_rules = {
+            "rule_use_square_grid": self._rule_use_square_grid,
+            "rule_use_hex_grid": self._rule_use_hex_grid,
+        }
+        self._board = select_rule("game_screen.grid", grid_rules)(self._window)
+
+        # Every word cleared this game, so the repeat rule can prevent a word
+        # from being cleared twice. Fresh per game, alongside the cleared-word
+        # list shown in the side pane.
+        self._cleared_word_history = set()
+        self._sidepane.reset()
+
+        # Starting obstacles: a small pool of pieces dropped straight onto the
+        # board before the player can move anything. They use the same piece /
+        # gram rules as the main pool, just their own batch. Rebuilt every game,
+        # so each game gets a new random set.
+        self._obstacle_pool = PiecePool(
+            self.OBSTACLE_COUNT, self._cell_size, self._obstacle_batch,
+            self._piece_class, self._piece_types
+        )
+        self._place_obstacles()
+
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
             self._piece_class, self._piece_types
         )
         self._init_first_piece()
+
+    def _place_obstacles(self):
+        """Drop every obstacle piece onto the board before play begins. Each is
+        oriented by the active orientation rule and scattered to a random,
+        on-board, non-overlapping spot so the obstacles don't stack. Clearing is
+        intentionally skipped here (we never call _apply_clear_rule), so the
+        player doesn't start the game with words already cleared for free."""
+        occupied = set()
+        while True:
+            piece = self._obstacle_pool.current_piece()
+            self._orient_rule(piece)
+            self._position_obstacle(piece, occupied)
+            piece.place()
+            for gx, gy, cell, label in piece.get_cell_data():
+                self._board.place(gx, gy, cell, label)
+                occupied.add((gx, gy))
+            piece.set_visible(True)
+            if self._obstacle_pool.advance() is None:
+                break
+
+    def _position_obstacle(self, piece, occupied):
+        """Pick a random spot whose cells are all on-board and clear of other
+        obstacles. Retries a bounded number of times, then keeps the last spot
+        rather than looping forever on a crowded board."""
+        for _ in range(100):
+            self._rule_spawn_random_spot(piece)
+            cells = piece.get_cell_positions()
+            on_board = all(self._board.get_cell(x, y) is not None for (x, y) in cells)
+            free = all((x, y) not in occupied for (x, y) in cells)
+            if on_board and free:
+                return
 
     def _rule_use_square_grid(self, window):
         """Build a square board and set piece sizing/type to match. Sized to the
@@ -453,6 +512,9 @@ class GameScreen:
     def on_enter(self):
         self._menu_open = False
         self._ingame_menu.reset()
+        # Entering from the menu ("Start Game") begins a fresh game, which lays
+        # down a new random obstacle set.
+        self._start_new_game()
     
     def on_exit(self):
         pass
@@ -463,6 +525,7 @@ class GameScreen:
         pyglet.gl.glClearColor(0, 0, 0, 1)
         
         self._board_batch.draw()
+        self._obstacle_batch.draw()
         self._piece_batch.draw()
         self._sidepane.draw()
 

@@ -39,6 +39,10 @@ class SidePane:
         """Show words just cleared, newest on top."""
         self._word_list.add_words(words)
 
+    def reset(self):
+        """Clear the cleared-words list back to empty for a new game."""
+        self._word_list.reset()
+
     def draw(self):
         self._batch.draw()
         self._word_list.draw()

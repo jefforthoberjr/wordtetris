@@ -71,5 +71,12 @@ class ScrollingWordList:
         for word in words:
             self.add_word(word)
 
+    def reset(self):
+        """Blank every row and restore the top-anchored order, for a new game."""
+        self._head = 0
+        for r, label in enumerate(self._labels):
+            label.text = " " * self.PAD_LEN
+            label.y = self._top_y - r * self._row_height
+
     def draw(self):
         self._batch.draw()
