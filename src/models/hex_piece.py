@@ -9,11 +9,22 @@ from models.gram_picker import rule_gramcorpus_distribution
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
+from config import select_rule
 
 
 # Configuration: which hex piece set to use (mirrors piece.py's pattern).
 PIECE_TYPES = HexDominoType
 PIECE_DIRECTIONS = HEX_DOMINO_DIRECTIONS
+
+# How each piece's grams are picked, chosen by the YAML key hex_piece.gram_pick.
+_GRAM_PICK_RULES = {
+    "rule_random_letters": rule_random_letters,
+    "rule_scrabble_distribution": rule_scrabble_distribution,
+    "rule_englishcorpus_random_unigram": rule_englishcorpus_random_unigram,
+    "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
+    "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
+}
+_gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
 
 
 class HexCellShape:
@@ -53,11 +64,7 @@ class HexPiece:
         self._placed = False
 
         cell_count = 1 + len(self._sat_dirs)
-        # self._grams = rule_random_letters(cell_count)
-        # self._grams = rule_scrabble_distribution(cell_count)
-        # self._grams = rule_englishcorpus_random_unigram(cell_count)
-        # self._grams = rule_englishcorpus_random_digram(cell_count)
-        self._grams = rule_gramcorpus_distribution(cell_count)
+        self._grams = _gram_pick_rule(cell_count)
 
         shape_shader = get_shape_shader()
         # Base font for a single letter, sized to the hex height (sqrt(3)*size)

@@ -1,5 +1,6 @@
 import random
 from models.square_piece import SquarePiece, PIECE_TYPES
+from config import select_rule
 
 
 class PiecePool:
@@ -19,11 +20,15 @@ class PiecePool:
         self._rule_fixed_size()
 
     def _rule_fixed_size(self):
-        """Populate pool with a fixed number of pieces."""
-        # piece_types = self._rule_create_pure_random()
-        # piece_types = self._rule_create_fixed_roundrobin()
-        piece_types = self._rule_create_shuffled_roundrobin()
-        # piece_types = self._rule_create_random_even_distribution()
+        """Populate pool with a fixed number of pieces. The ordering rule is
+        chosen by the YAML key piece_pool.order."""
+        order_rules = {
+            "rule_create_pure_random": self._rule_create_pure_random,
+            "rule_create_fixed_roundrobin": self._rule_create_fixed_roundrobin,
+            "rule_create_shuffled_roundrobin": self._rule_create_shuffled_roundrobin,
+            "rule_create_random_even_distribution": self._rule_create_random_even_distribution,
+        }
+        piece_types = select_rule("piece_pool.order", order_rules)()
 
         for p_type in piece_types:
             piece = self._piece_class(p_type, self._cell_size, self._batch, visible=False)

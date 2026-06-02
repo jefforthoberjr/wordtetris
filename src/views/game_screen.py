@@ -15,6 +15,7 @@ from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
+from config import select_rule
 
 
 # Control key bindings (formerly config.json "controls"). These now live next to
@@ -43,6 +44,12 @@ def rule_word_min2letters_min2cells(text, path):
 
 def rule_word_min3letters_min2cells(text, path):
     return len(text) >= 3 and len(path) >= 2
+
+# Minimum-word rule (letters + cells), chosen by the YAML key game_screen.word_length.
+_WORD_LENGTH_RULES = {
+    "rule_word_min2letters_min2cells": rule_word_min2letters_min2cells,
+    "rule_word_min3letters_min2cells": rule_word_min3letters_min2cells,
+}
 
 
 class GameScreen:
@@ -82,16 +89,27 @@ class GameScreen:
         sidepane_x = self._grid_area_size
         sidepane_width = window.width - self._grid_area_size
 
-        # self._board = self._rule_use_square_grid(window)
-        self._board = self._rule_use_hex_grid(window)
+        # Grid bundle, chosen by the YAML key game_screen.grid. The chosen
+        # builder also wires up its own movement + clear rules.
+        grid_rules = {
+            "rule_use_square_grid": self._rule_use_square_grid,
+            "rule_use_hex_grid": self._rule_use_hex_grid,
+        }
+        self._board = select_rule("game_screen.grid", grid_rules)(window)
 
         self._sidepane = SidePane(
             sidepane_x, 0, sidepane_width, window.height
         )
 
-        # Minimum word to clear (letters + cells). Comment in the one you want.
-        # self._word_length_rule = rule_word_min2letters_min2cells
-        self._word_length_rule = rule_word_min3letters_min2cells
+        # Minimum word to clear (letters + cells); see _WORD_LENGTH_RULES.
+        self._word_length_rule = select_rule("game_screen.word_length", _WORD_LENGTH_RULES)
+
+        # Spawn positioning rule, chosen by the YAML key game_screen.spawn.
+        spawn_rules = {
+            "rule_spawn_center": self._rule_spawn_center,
+            "rule_spawn_random_spot": self._rule_spawn_random_spot,
+        }
+        self._spawn_rule = select_rule("game_screen.spawn", spawn_rules)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -145,9 +163,8 @@ class GameScreen:
         piece.set_visible(True)
     
     def _spawn_piece(self, piece):
-        """Apply the current spawn positioning rule."""
-        # self._rule_spawn_center(piece)
-        self._rule_spawn_random_spot(piece)
+        """Apply the current spawn positioning rule (see self._spawn_rule)."""
+        self._spawn_rule(piece)
     
     def _rule_spawn_center(self, piece):
         """Position a piece at the center of the grid."""
@@ -302,15 +319,24 @@ class GameScreen:
                 line = self._board.line_through(px, py, dx, dy)
                 if not line:
                     continue
-                text = "".join(self._board.letter_at(x, y) for (x, y) in line)
+                # One gram per cell (a gram may be multi-letter); the word is
+                # the grams joined, and spans are whole-cell so a gram is never
+                # split. is_old/anchor are per cell, matching grams.
+                grams = [self._board.letter_at(x, y) for (x, y) in line]
                 is_old = [pos not in new_cells for pos in line]
                 anchor = line.index((px, py))
-                span = longest_word_span(text, anchor, is_old)
+                span = longest_word_span(grams, anchor, is_old)
                 if span is not None:
                     start, stop = span
                     cells = tuple(line[start:stop])
-                    words_by_cells[cells] = text[start:stop]
-                    to_clear.update(cells)
+                    word = "".join(grams[start:stop])
+                    # Same word-length gate the hex path applies in
+                    # _collect_hex_words; longest_word_span has no length floor
+                    # of its own, so without this the square grid would clear
+                    # short words (e.g. OX) regardless of the active rule.
+                    if self._word_length_rule(word, cells):
+                        words_by_cells[cells] = word
+                        to_clear.update(cells)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
         return list(words_by_cells.values())

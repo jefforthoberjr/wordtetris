@@ -1,3 +1,6 @@
+from config import select_rule
+
+
 class Gram:
     """The contents of a single cell: a short run of letters.
 
@@ -36,8 +39,12 @@ def rule_gram_font_scale_by_length(base_size, gram):
     return int(scaled)
 
 
-# Active font-sizing rule (swap to rule_gram_font_fixed to disable resizing).
-_gram_font_size_rule = rule_gram_font_scale_by_length
+# Active font-sizing rule, chosen by the YAML key gram.font_size.
+_GRAM_FONT_SIZE_RULES = {
+    "rule_gram_font_fixed": rule_gram_font_fixed,
+    "rule_gram_font_scale_by_length": rule_gram_font_scale_by_length,
+}
+_gram_font_size_rule = select_rule("gram.font_size", _GRAM_FONT_SIZE_RULES)
 
 
 def gram_font_size(base_size, gram):

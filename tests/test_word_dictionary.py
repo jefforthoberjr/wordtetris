@@ -8,9 +8,16 @@ from models.hex_grid import (
 
 
 def _spans(text, anchor, old_indices):
-    """Helper: build the is_old mask and run longest_word_span."""
-    is_old = [i in old_indices for i in range(len(text))]
-    return longest_word_span(text, anchor, is_old)
+    """Helper: one letter per cell. Build the is_old mask and run the span."""
+    grams = list(text)
+    is_old = [i in old_indices for i in range(len(grams))]
+    return longest_word_span(grams, anchor, is_old)
+
+
+def _spans_grams(grams, anchor, old_indices):
+    """Helper for multi-letter cells: `grams` is the per-cell gram list."""
+    is_old = [i in old_indices for i in range(len(grams))]
+    return longest_word_span(grams, anchor, is_old)
 
 
 def test_is_word_case_insensitive():
@@ -51,6 +58,35 @@ def test_straddle_tie_breaks_to_earliest_start():
 
 def test_no_word_returns_none():
     assert _spans("XQZ", anchor=1, old_indices={0, 2}) is None
+
+
+# --- multi-letter grams (a cell can hold several letters) ---
+
+def test_multiletter_gram_forms_word():
+    # Cells [TH, E] spell THE. Placed E (cell 1) links to old TH (cell 0).
+    assert is_word("the")
+    assert _spans_grams(["TH", "E"], anchor=1, old_indices={0}) == (0, 2)
+
+
+def test_multiletter_span_returns_cell_indices():
+    # Cells [S, TA, R] spell STAR; the span is the cell range (0, 3), not chars.
+    # TAR (cells 1-3) is also a word but STAR is longer, so the full span wins.
+    assert is_word("star")
+    assert _spans_grams(["S", "TA", "R"], anchor=2, old_indices={0, 1}) == (0, 3)
+
+
+def test_multiletter_longest_counts_letters():
+    # [HE, A, T] = HEAT. Placed A (cell 1). AT (cells 1-3) is a word too, but
+    # HEAT (4 letters) beats AT (2), so the longer multi-cell word clears.
+    assert is_word("heat") and is_word("at")
+    assert _spans_grams(["HE", "A", "T"], anchor=1, old_indices={0, 2}) == (0, 3)
+
+
+def test_multiletter_no_partial_gram_word():
+    # [A, TH]: the letters contain "AT", but that would split the TH gram, so it
+    # is never matched. Nothing whole-cell here spells a word -> no clear.
+    assert is_word("at") and not is_word("ath")
+    assert _spans_grams(["A", "TH"], anchor=0, old_indices={1}) is None
 
 
 # --- hex snake helpers: prefix lookup and maximal-path selection ---

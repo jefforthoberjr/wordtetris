@@ -9,6 +9,7 @@ from models.gram_picker import rule_gramcorpus_distribution
 from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from models.domino import DominoType, DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
+from config import select_rule
 
 def _rule_use_tetriminos():
     return TetriminoType, TETRIMINO_ROTATIONS
@@ -18,9 +19,22 @@ def _rule_use_dominos():
     return DominoType, DOMINO_ROTATIONS
 
 
-# Configuration: which piece set to use
-PIECE_TYPES, PIECE_ROTATIONS = _rule_use_tetriminos()
-# PIECE_TYPES, PIECE_ROTATIONS = _rule_use_dominos()
+# Which piece set to use, chosen by the YAML key square_piece.piece_set.
+_PIECE_SET_RULES = {
+    "rule_use_tetriminos": _rule_use_tetriminos,
+    "rule_use_dominos": _rule_use_dominos,
+}
+PIECE_TYPES, PIECE_ROTATIONS = select_rule("square_piece.piece_set", _PIECE_SET_RULES)()
+
+# How each piece's grams are picked, chosen by the YAML key square_piece.gram_pick.
+_GRAM_PICK_RULES = {
+    "rule_random_letters": rule_random_letters,
+    "rule_scrabble_distribution": rule_scrabble_distribution,
+    "rule_englishcorpus_random_unigram": rule_englishcorpus_random_unigram,
+    "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
+    "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
+}
+_gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
 
 
 class SquarePiece:
@@ -36,11 +50,7 @@ class SquarePiece:
         self._visible = visible
         self._placed = False
         
-        # self._grams = rule_random_letters(len(self._shapes_data))
-        self._grams = rule_scrabble_distribution(len(self._shapes_data))
-        # self._grams = rule_englishcorpus_random_unigram(len(self._shapes_data))
-        # self._grams = rule_englishcorpus_random_digram(len(self._shapes_data))
-        # self._grams = rule_gramcorpus_distribution(len(self._shapes_data))
+        self._grams = _gram_pick_rule(len(self._shapes_data))
         
         shape_shader = get_shape_shader()
         

@@ -3,6 +3,7 @@ import pyglet
 from models.grid_cell import GridCell
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from views.shaders import get_shape_shader
+from config import select_rule
 
 SQRT3 = math.sqrt(3)
 
@@ -49,6 +50,13 @@ def rule_snake_straightline(prev_direction):
         return _SNAKE_DIRS_DOWNANDRIGHT
     return (prev_direction,)
 
+# Which snake-direction rule a word can take, chosen by the YAML key hex_grid.snake.
+_SNAKE_RULES = {
+    "rule_snake_rightanddown": rule_snake_rightanddown,
+    "rule_snake_rightanddown_nosharptwist": rule_snake_rightanddown_nosharptwist,
+    "rule_snake_straightline": rule_snake_straightline,
+}
+
 class HexGrid:
     def __init__(self, hex_size, window_width, window_height, batch):
         self._hex_size = hex_size
@@ -77,10 +85,8 @@ class HexGrid:
                 row.append(GridCell())
             self._cells.append(row)
 
-        # Rules for which directions a word can take
-        # self._snake_rule = rule_snake_rightanddown
-        self._snake_rule = rule_snake_rightanddown_nosharptwist
-        # self._snake_rule = rule_snake_straightline
+        # Rule for which directions a word can take (see _SNAKE_RULES).
+        self._snake_rule = select_rule("hex_grid.snake", _SNAKE_RULES)
 
         self._lines = []
         self._create_outlines(batch)
