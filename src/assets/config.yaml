@@ -15,8 +15,8 @@ rules:
   gram.font_size:           rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
 
-  game_screen.grid:         rule_use_hex_grid
-  # game_screen.grid:       rule_use_square_grid
+  # game_screen.grid:         rule_use_hex_grid
+  game_screen.grid:       rule_use_square_grid
 
   # game_screen.word_length:  rule_word_min3letters_min2cells
   game_screen.word_length: rule_word_min2letters_min2cells
@@ -35,24 +35,24 @@ rules:
   # hex_grid.snake:         rule_snake_straightline
   hex_grid.snake:         rule_snake_anydirection
 
-  # square_piece.gram_pick:   rule_scrabble_distribution
+  square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
   # square_piece.gram_pick: rule_englishcorpus_random_unigram
   # square_piece.gram_pick: rule_englishcorpus_random_digram
   # square_piece.gram_pick: rule_gramcorpus_distribution
-  square_piece.gram_pick: rule_mixed_scrabble_digram52
+  # square_piece.gram_pick: rule_mixed_scrabble_digram52
 
   square_piece.piece_set:   rule_use_tetriminos
   # square_piece.piece_set: rule_use_dominos
 
   # Starting obstacles for the square grid: own gram-pick + piece set, so they
   # can differ from the playable pieces (e.g. unigram dominos as obstacles).
-  square_obstacle.gram_pick: rule_scrabble_distribution
+  # square_obstacle.gram_pick: rule_scrabble_distribution
   # square_obstacle.gram_pick: rule_random_letters
   # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # square_obstacle.gram_pick: rule_englishcorpus_random_digram
   # square_obstacle.gram_pick: rule_gramcorpus_distribution
-  # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
+  square_obstacle.gram_pick: rule_mixed_scrabble_digram52
 
   square_obstacle.piece_set: rule_use_dominos
   # square_obstacle.piece_set: rule_use_tetriminos

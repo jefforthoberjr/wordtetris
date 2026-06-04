@@ -7,17 +7,17 @@ from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
-from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
-from models.domino import DominoType, DOMINO_ROTATIONS
+from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
+from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 from config import select_rule
 
 def _rule_use_tetriminos():
-    return TetriminoType, TETRIMINO_ROTATIONS
+    return SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
 
 
 def _rule_use_dominos():
-    return DominoType, DOMINO_ROTATIONS
+    return SquareDominoType, SQUARE_DOMINO_ROTATIONS
 
 
 # Which piece set to use. The main pieces follow square_piece.piece_set; the
@@ -34,8 +34,8 @@ OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.p
 # (the type enums are distinct, so keys never collide) means one SquarePiece
 # class serves both the main set and a differently-configured obstacle set.
 ALL_PIECE_ROTATIONS = {}
-ALL_PIECE_ROTATIONS.update(TETRIMINO_ROTATIONS)
-ALL_PIECE_ROTATIONS.update(DOMINO_ROTATIONS)
+ALL_PIECE_ROTATIONS.update(SQUARE_TETRIMINO_ROTATIONS)
+ALL_PIECE_ROTATIONS.update(SQUARE_DOMINO_ROTATIONS)
 
 # How each piece's grams are picked. The main pieces follow square_piece.gram_pick;
 # the starting obstacles follow their own square_obstacle.gram_pick.
