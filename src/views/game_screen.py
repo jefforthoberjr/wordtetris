@@ -6,7 +6,11 @@ from views.side_pane import SidePane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PIECE_TYPES
+from models.square_piece import OBSTACLE_PIECE_TYPES as SQUARE_OBSTACLE_PIECE_TYPES
+from models.square_piece import OBSTACLE_GRAM_PICK_RULE as SQUARE_OBSTACLE_GRAM_PICK_RULE
 from models.hex_piece import HexPiece, PIECE_TYPES as HEX_PIECE_TYPES
+from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
+from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
@@ -148,12 +152,13 @@ class GameScreen:
         self._sidepane.reset()
 
         # Starting obstacles: a small pool of pieces dropped straight onto the
-        # board before the player can move anything. They use the same piece /
-        # gram rules as the main pool, just their own batch. Rebuilt every game,
-        # so each game gets a new random set.
+        # board before the player can move anything. They use their own piece
+        # set + gram-pick rules (square_obstacle.* / hex_obstacle.*) and their
+        # own batch. Rebuilt every game, so each game gets a new random set.
         self._obstacle_pool = PiecePool(
             self.OBSTACLE_COUNT, self._cell_size, self._obstacle_batch,
-            self._piece_class, self._piece_types
+            self._piece_class, self._obstacle_piece_types,
+            gram_pick_rule=self._obstacle_gram_pick_rule
         )
         self._place_obstacles()
 
@@ -201,6 +206,10 @@ class GameScreen:
         self._board_height = math.floor(self._grid_area_size / self._cell_size)
         self._piece_class = SquarePiece
         self._piece_types = PIECE_TYPES
+        # Obstacles get their own piece set + gram-pick (square_obstacle.* keys),
+        # so they can differ from the playable pieces.
+        self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
+        self._obstacle_gram_pick_rule = SQUARE_OBSTACLE_GRAM_PICK_RULE
         self._movement_rule = self._rule_square_movement
         # Alternatives: self._rule_clear_none / _rule_clear_adjacent_same_letter
         self._clear_rule = self._rule_clear_words
@@ -227,6 +236,10 @@ class GameScreen:
         self._board_height = board.height
         self._piece_class = HexPiece
         self._piece_types = HEX_PIECE_TYPES
+        # Obstacles get their own gram-pick (hex_obstacle.gram_pick); the hex set
+        # has a single piece type, so obstacle types match the main set.
+        self._obstacle_piece_types = HEX_OBSTACLE_PIECE_TYPES
+        self._obstacle_gram_pick_rule = HEX_OBSTACLE_GRAM_PICK_RULE
 
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows

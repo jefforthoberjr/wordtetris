@@ -4,7 +4,7 @@ from config import select_rule
 
 
 class PiecePool:
-    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None):
+    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None, gram_pick_rule=None):
         self._pieces = []
         self._current_index = 0
         self._size = size
@@ -16,6 +16,9 @@ class PiecePool:
         if piece_types is None:
             piece_types = PIECE_TYPES
         self._piece_types = piece_types
+        # Injected so an obstacle pool can pick grams by a different rule than
+        # the main pool. None lets each piece fall back to its configured default.
+        self._gram_pick_rule = gram_pick_rule
 
         self._rule_fixed_size()
 
@@ -31,7 +34,10 @@ class PiecePool:
         piece_types = select_rule("piece_pool.order", order_rules)()
 
         for p_type in piece_types:
-            piece = self._piece_class(p_type, self._cell_size, self._batch, visible=False)
+            piece = self._piece_class(
+                p_type, self._cell_size, self._batch, visible=False,
+                gram_pick_rule=self._gram_pick_rule
+            )
             self._pieces.append(piece)
     
     def _rule_create_pure_random(self):

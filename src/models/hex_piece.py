@@ -13,11 +13,14 @@ from views.shaders import get_shape_shader
 from config import select_rule
 
 
-# Configuration: which hex piece set to use (mirrors piece.py's pattern).
+# Configuration: which hex piece set to use (mirrors piece.py's pattern). There
+# is only one hex set today, so obstacles reuse it; their grams can still differ.
 PIECE_TYPES = HexDominoType
 PIECE_DIRECTIONS = HEX_DOMINO_DIRECTIONS
+OBSTACLE_PIECE_TYPES = HexDominoType
 
-# How each piece's grams are picked, chosen by the YAML key hex_piece.gram_pick.
+# How each piece's grams are picked. The main pieces follow hex_piece.gram_pick;
+# the starting obstacles follow their own hex_obstacle.gram_pick.
 _GRAM_PICK_RULES = {
     "rule_random_letters": rule_random_letters,
     "rule_scrabble_distribution": rule_scrabble_distribution,
@@ -27,6 +30,7 @@ _GRAM_PICK_RULES = {
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
 }
 _gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
+OBSTACLE_GRAM_PICK_RULE = select_rule("hex_obstacle.gram_pick", _GRAM_PICK_RULES)
 
 
 class HexCellShape:
@@ -52,7 +56,7 @@ class HexCellShape:
 
 
 class HexPiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None):
         self._piece_type = piece_type
         # 'cell_size' carries the hex size (float) so the piece aligns exactly
         # with HexGrid, which is built from the same value.
@@ -66,7 +70,11 @@ class HexPiece:
         self._placed = False
 
         cell_count = 1 + len(self._sat_dirs)
-        self._grams = _gram_pick_rule(cell_count)
+        # Pools inject a gram-pick rule so obstacles can pick grams differently
+        # from the main pieces; falling back to the configured default.
+        if gram_pick_rule is None:
+            gram_pick_rule = _gram_pick_rule
+        self._grams = gram_pick_rule(cell_count)
 
         shape_shader = get_shape_shader()
         # Base font for a single letter, sized to the hex height (sqrt(3)*size)

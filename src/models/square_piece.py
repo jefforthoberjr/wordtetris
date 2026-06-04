@@ -20,14 +20,25 @@ def _rule_use_dominos():
     return DominoType, DOMINO_ROTATIONS
 
 
-# Which piece set to use, chosen by the YAML key square_piece.piece_set.
+# Which piece set to use. The main pieces follow square_piece.piece_set; the
+# starting obstacles follow their own square_obstacle.piece_set, so obstacles
+# can be (say) dominos while the playable pieces are tetriminos.
 _PIECE_SET_RULES = {
     "rule_use_tetriminos": _rule_use_tetriminos,
     "rule_use_dominos": _rule_use_dominos,
 }
 PIECE_TYPES, PIECE_ROTATIONS = select_rule("square_piece.piece_set", _PIECE_SET_RULES)()
+OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()
 
-# How each piece's grams are picked, chosen by the YAML key square_piece.gram_pick.
+# A piece looks up its rotations by piece_type alone. Merging every set's table
+# (the type enums are distinct, so keys never collide) means one SquarePiece
+# class serves both the main set and a differently-configured obstacle set.
+ALL_PIECE_ROTATIONS = {}
+ALL_PIECE_ROTATIONS.update(TETRIMINO_ROTATIONS)
+ALL_PIECE_ROTATIONS.update(DOMINO_ROTATIONS)
+
+# How each piece's grams are picked. The main pieces follow square_piece.gram_pick;
+# the starting obstacles follow their own square_obstacle.gram_pick.
 _GRAM_PICK_RULES = {
     "rule_random_letters": rule_random_letters,
     "rule_scrabble_distribution": rule_scrabble_distribution,
@@ -37,12 +48,13 @@ _GRAM_PICK_RULES = {
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
 }
 _gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
+OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
 
 
 class SquarePiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None):
         self._piece_type = piece_type
-        self._rotations = PIECE_ROTATIONS[piece_type]
+        self._rotations = ALL_PIECE_ROTATIONS[piece_type]
         self._rotation_state = 0
         self._shapes_data = list(self._rotations[self._rotation_state])
         self._cell_size = cell_size
@@ -51,8 +63,12 @@ class SquarePiece:
         self._grid_y = 0
         self._visible = visible
         self._placed = False
-        
-        self._grams = _gram_pick_rule(len(self._shapes_data))
+
+        # Pools inject a gram-pick rule so obstacles can pick grams differently
+        # from the main pieces; falling back to the configured default.
+        if gram_pick_rule is None:
+            gram_pick_rule = _gram_pick_rule
+        self._grams = gram_pick_rule(len(self._shapes_data))
         
         shape_shader = get_shape_shader()
         

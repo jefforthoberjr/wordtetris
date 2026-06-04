@@ -15,8 +15,8 @@ rules:
   gram.font_size:           rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
 
-  # game_screen.grid:         rule_use_hex_grid
-  game_screen.grid:       rule_use_square_grid
+  game_screen.grid:         rule_use_hex_grid
+  # game_screen.grid:       rule_use_square_grid
 
   # game_screen.word_length:  rule_word_min3letters_min2cells
   game_screen.word_length: rule_word_min2letters_min2cells
@@ -44,6 +44,18 @@ rules:
   square_piece.piece_set:   rule_use_tetriminos
   # square_piece.piece_set: rule_use_dominos
 
+  # Starting obstacles for the square grid: own gram-pick + piece set, so they
+  # can differ from the playable pieces (e.g. unigram dominos as obstacles).
+  square_obstacle.gram_pick: rule_scrabble_distribution
+  # square_obstacle.gram_pick: rule_random_letters
+  # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
+  # square_obstacle.gram_pick: rule_englishcorpus_random_digram
+  # square_obstacle.gram_pick: rule_gramcorpus_distribution
+  # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
+
+  square_obstacle.piece_set: rule_use_dominos
+  # square_obstacle.piece_set: rule_use_tetriminos
+
   # hex_piece.gram_pick:      rule_gramcorpus_distribution
   # hex_piece.gram_pick:    rule_random_letters
   # hex_piece.gram_pick:    rule_scrabble_distribution
@@ -51,6 +63,16 @@ rules:
   # hex_piece.gram_pick:    rule_englishcorpus_random_digram
   hex_piece.gram_pick:    rule_mixed_scrabble_digram52
 
+  # Starting obstacles for the hex grid: own gram-pick. The hex set has a single
+  # piece type, so there is no hex obstacle piece_set to choose.
+  hex_obstacle.gram_pick: rule_scrabble_distribution
+  # hex_obstacle.gram_pick: rule_random_letters
+  # hex_obstacle.gram_pick: rule_englishcorpus_random_unigram
+  # hex_obstacle.gram_pick: rule_englishcorpus_random_digram
+  # hex_obstacle.gram_pick: rule_gramcorpus_distribution
+  # hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
+
+  # For piece sets that have multiple shapes, how to manage the distribution of shaped
   piece_pool.order:         rule_create_shuffled_roundrobin
   # piece_pool.order:       rule_create_pure_random
   # piece_pool.order:       rule_create_fixed_roundrobin
