@@ -2,6 +2,7 @@ import math
 import pyglet
 from models.grid_cell import GridCell
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
+from models.hex_domino import HEX_UP, HEX_UP_LEFT, HEX_DOWN_LEFT
 from views.shaders import get_shape_shader
 from config import select_rule
 
@@ -28,6 +29,7 @@ def flattop_vertices(hex_size, cx, cy):
     return verts
 
 _SNAKE_DIRS_DOWNANDRIGHT = (HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT)
+_SNAKE_DIRS_ALL = (HEX_UP_RIGHT, HEX_UP, HEX_UP_LEFT, HEX_DOWN_LEFT, HEX_DOWN, HEX_DOWN_RIGHT)
 
 # Allow 60 deg turns; forbid 120 degree turns
 _SHARP_TWISTS_DOWNANDRIGHT = {
@@ -50,11 +52,20 @@ def rule_snake_straightline(prev_direction):
         return _SNAKE_DIRS_DOWNANDRIGHT
     return (prev_direction,)
 
+def rule_snake_anydirection(prev_direction):
+    """Snake in any of the six hex directions with no angle restriction: no
+    left/right or up/down bias, any turn (60 or 120 deg) allowed. The only
+    limit, no snaking backwards onto a cell already in the word path, can't be
+    seen from a direction set alone, so it's enforced by the path-visited guard
+    in the caller's word walk (game_screen._collect_hex_words)."""
+    return _SNAKE_DIRS_ALL
+
 # Which snake-direction rule a word can take, chosen by the YAML key hex_grid.snake.
 _SNAKE_RULES = {
     "rule_snake_rightanddown": rule_snake_rightanddown,
     "rule_snake_rightanddown_nosharptwist": rule_snake_rightanddown_nosharptwist,
     "rule_snake_straightline": rule_snake_straightline,
+    "rule_snake_anydirection": rule_snake_anydirection,
 }
 
 class HexGrid:

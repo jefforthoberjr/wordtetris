@@ -413,7 +413,12 @@ class GameScreen:
         if is_word(text) and self._word_length_rule(text, path):
             found.append(path)
         for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
-            self._collect_hex_words(nxt, direction, path, text, found)
+            # Never snake backwards onto a cell already in this word's path. The
+            # right/down rules can't revisit (their directions are monotonic), so
+            # this guard only bites for rules that allow turning back, like
+            # rule_snake_anydirection; it also keeps that walk from looping.
+            if nxt not in path:
+                self._collect_hex_words(nxt, direction, path, text, found)
 
     def _rule_clear_words(self, placed_positions):
         """Clear dictionary words formed when the placed piece links up with

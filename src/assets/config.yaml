@@ -30,9 +30,10 @@ rules:
   game_screen.spawn_orientation: rule_orient_random
   # game_screen.spawn_orientation: rule_orient_default
 
-  hex_grid.snake:           rule_snake_rightanddown_nosharptwist
+  # hex_grid.snake:           rule_snake_rightanddown_nosharptwist
   # hex_grid.snake:         rule_snake_rightanddown
   # hex_grid.snake:         rule_snake_straightline
+  hex_grid.snake:         rule_snake_anydirection
 
   # square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
