@@ -210,3 +210,23 @@ def rule_mixed_scrabble_digram52(count):
             text = random.choices(_scrabble_letters, weights=_scrabble_weights, k=1)[0]
         grams.append(Gram(text))
     return grams
+
+
+def rule_digram52_distribution(count):
+    """
+    Pick grams as digrams only, drawn from jpo_52digrams.csv weighted by each
+    digram's frequency. Like rule_mixed_scrabble_digram52 but with no Scrabble
+    unigrams mixed in: every cell gets a 2-letter gram.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of digram Grams (each 2 letters)
+    """
+    _load_digrams52()
+    picks = random.choices(_digrams52, weights=_digrams52_weights, k=count)
+    grams = []
+    for text in picks:
+        grams.append(Gram(text))
+    return grams

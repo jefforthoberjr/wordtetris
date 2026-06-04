@@ -7,6 +7,7 @@ from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
+from models.gram_picker import rule_digram52_distribution
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
@@ -49,6 +50,7 @@ _GRAM_PICK_RULES = {
     "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
+    "rule_digram52_distribution": rule_digram52_distribution,
 }
 _gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("hex_obstacle.gram_pick", _GRAM_PICK_RULES)

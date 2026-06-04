@@ -46,6 +46,7 @@ rules:
   # square_piece.gram_pick: rule_englishcorpus_random_digram
   # square_piece.gram_pick: rule_gramcorpus_distribution
   # square_piece.gram_pick: rule_mixed_scrabble_digram52
+  # square_piece.gram_pick: rule_digram52_distribution
 
   # square_piece.piece_set:   rule_use_tetriminos
   square_piece.piece_set: rule_use_dominos
@@ -58,18 +59,20 @@ rules:
   # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # square_obstacle.gram_pick: rule_englishcorpus_random_digram
   # square_obstacle.gram_pick: rule_gramcorpus_distribution
-  square_obstacle.gram_pick: rule_mixed_scrabble_digram52
+  # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
+  square_obstacle.gram_pick: rule_digram52_distribution
 
   square_obstacle.piece_set: rule_use_dominos
   # square_obstacle.piece_set: rule_use_tetriminos
   # square_obstacle.piece_set: rule_use_unimos
 
   # hex_piece.gram_pick:      rule_gramcorpus_distribution
-  # hex_piece.gram_pick:    rule_random_letters
+  # hex_piece.gram_pick:    rule_random_lettersw
   hex_piece.gram_pick:    rule_scrabble_distribution
   # hex_piece.gram_pick:    rule_englishcorpus_random_unigram
   # hex_piece.gram_pick:    rule_englishcorpus_random_digram
   # hex_piece.gram_pick:    rule_mixed_scrabble_digram52
+  # hex_piece.gram_pick:    rule_digram52_distribution
 
   hex_piece.piece_set:    rule_use_hex_dominos
   # hex_piece.piece_set:  rule_use_hex_unimos
@@ -81,7 +84,8 @@ rules:
   # hex_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # hex_obstacle.gram_pick: rule_englishcorpus_random_digram
   # hex_obstacle.gram_pick: rule_gramcorpus_distribution
-  hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
+  # hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
+  hex_obstacle.gram_pick: rule_digram52_distribution
 
   # hex_obstacle.piece_set: rule_use_hex_dominos
   hex_obstacle.piece_set: rule_use_hex_unimos
