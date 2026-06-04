@@ -11,7 +11,7 @@ from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
-from config import select_rule
+from config import select_rule, get_color
 
 
 def _rule_use_hex_dominos():
@@ -77,7 +77,7 @@ class HexCellShape:
 
 
 class HexPiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):
         self._piece_type = piece_type
         # 'cell_size' carries the hex size (float) so the piece aligns exactly
         # with HexGrid, which is built from the same value.
@@ -96,6 +96,13 @@ class HexPiece:
         if gram_pick_rule is None:
             gram_pick_rule = _gram_pick_rule
         self._grams = gram_pick_rule(cell_count)
+
+        # Inner-hexagon fill color; pools tint obstacles differently from the
+        # default playable pieces. None falls back to the configured cell fill.
+        if cell_color is None:
+            cell_color = get_color("board.cell_fill")
+        border_color = get_color("board.cell_border")
+        text_color = get_color("board.cell_text")
 
         shape_shader = get_shape_shader()
         # Base font for a single letter, sized to the hex height (sqrt(3)*size)
@@ -123,7 +130,7 @@ class HexPiece:
         for i in range(cell_count):
             outer = pyglet.shapes.Polygon(
                 *outer_verts,
-                color=(0, 0, 0),
+                color=border_color,
                 batch=batch,
                 program=shape_shader
             )
@@ -132,7 +139,7 @@ class HexPiece:
 
             inner = pyglet.shapes.Polygon(
                 *inner_verts,
-                color=(255, 255, 255),
+                color=cell_color,
                 batch=batch,
                 program=shape_shader
             )
@@ -146,7 +153,7 @@ class HexPiece:
                 self._grams[i].text,
                 font_size=gram_font,
                 weight='bold',
-                color=(0, 0, 0, 255),
+                color=text_color,
                 anchor_x="center",
                 anchor_y="center",
                 batch=batch

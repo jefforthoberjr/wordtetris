@@ -19,7 +19,7 @@ from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import longest_word_span
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
-from config import select_rule
+from config import select_rule, get_color
 
 
 # Control key bindings (formerly config.json "controls"). These now live next to
@@ -61,6 +61,9 @@ class GameScreen:
     PIECE_POOL_SIZE = 100
     # Obstacle pieces dropped onto the board before play begins.
     OBSTACLE_COUNT = 4
+    # Obstacle cells render with their own fill (see colors.yaml) so they read
+    # as pre-placed hazards distinct from the playable pieces.
+    OBSTACLE_CELL_COLOR = get_color("board.obstacle_fill")
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -158,7 +161,8 @@ class GameScreen:
         self._obstacle_pool = PiecePool(
             self.OBSTACLE_COUNT, self._cell_size, self._obstacle_batch,
             self._piece_class, self._obstacle_piece_types,
-            gram_pick_rule=self._obstacle_gram_pick_rule
+            gram_pick_rule=self._obstacle_gram_pick_rule,
+            cell_color=self.OBSTACLE_CELL_COLOR
         )
         self._place_obstacles()
 
@@ -577,9 +581,14 @@ class GameScreen:
         pass
     
     def draw(self):
-        pyglet.gl.glClearColor(1, 1, 1, 1)
+        # glClearColor wants 0-1 floats, but colors.yaml stores 0-255 channels,
+        # so normalize. Clear to the board background, then restore the default
+        # window background for the menu/title screens that just call clear().
+        bg = get_color("board.background")
+        win_bg = get_color("window.background")
+        pyglet.gl.glClearColor(bg[0] / 255, bg[1] / 255, bg[2] / 255, 1)
         self._window.clear()
-        pyglet.gl.glClearColor(0, 0, 0, 1)
+        pyglet.gl.glClearColor(win_bg[0] / 255, win_bg[1] / 255, win_bg[2] / 255, 1)
         
         self._board_batch.draw()
         self._obstacle_batch.draw()

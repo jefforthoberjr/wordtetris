@@ -1,0 +1,24 @@
+# All game colors live here, separate from the behavior rules in config.yaml,
+# so restyling is one edit point. Values are RGB or RGBA, 0-255 per channel
+# (the alpha channel is only needed for text labels and translucent panels).
+# Names are addressed by dotted path in code, e.g. get_color("board.cell_fill").
+
+board:
+  cell_fill:        [255, 255, 255]   # playable piece cell fill
+  cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
+  cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
+  obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
+  grid_line:        [200, 200, 200]   # grid lines (square + hex)
+  background:       [255, 255, 255]   # game board window background
+
+window:
+  background:       [0, 0, 0]         # default clear color (menu / title screens)
+
+sidepane:
+  divider:          [200, 200, 200]   # vertical rule between board and side pane
+  wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
+
+menu:
+  highlight:        [255, 255, 0, 255]   # selected menu item
+  normal:           [255, 255, 255, 255] # unselected menu item
+  panel:            [50, 50, 50]         # in-game menu panel background

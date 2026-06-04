@@ -1,6 +1,7 @@
 import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
+from config import get_color
 
 
 class SidePane:
@@ -9,7 +10,7 @@ class SidePane:
     list of the words the player has cleared.
     """
 
-    DIVIDER_COLOR = (200, 200, 200)
+    DIVIDER_COLOR = get_color("sidepane.divider")
 
     def __init__(self, x, y, width, height):
         self._x = x

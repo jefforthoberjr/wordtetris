@@ -11,7 +11,7 @@ from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATI
 from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
 from models.square_unimo import SquareUnimoType, SQUARE_UNIMO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
-from config import select_rule
+from config import select_rule, get_color
 
 def _rule_use_tetriminos():
     return SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
@@ -59,7 +59,7 @@ OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RU
 
 
 class SquarePiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):
         self._piece_type = piece_type
         self._rotations = ALL_PIECE_ROTATIONS[piece_type]
         self._rotation_state = 0
@@ -76,6 +76,13 @@ class SquarePiece:
         if gram_pick_rule is None:
             gram_pick_rule = _gram_pick_rule
         self._grams = gram_pick_rule(len(self._shapes_data))
+
+        # Cell fill color; pools tint obstacles differently from the default
+        # playable pieces. None falls back to the configured cell fill.
+        if cell_color is None:
+            cell_color = get_color("board.cell_fill")
+        border_color = get_color("board.cell_border")
+        text_color = get_color("board.cell_text")
         
         shape_shader = get_shape_shader()
         
@@ -88,19 +95,19 @@ class SquarePiece:
             cell = pyglet.shapes.BorderedRectangle(
                 0, 0, cell_size, cell_size,
                 border=2,
-                color=(255, 255, 255),
-                border_color=(0, 0, 0),
+                color=cell_color,
+                border_color=border_color,
                 batch=batch,
                 program=shape_shader
             )
             cell.visible = visible
             self._cells.append(cell)
-            
+
             label = pyglet.text.Label(
                 self._grams[i].text,
                 font_size=gram_font_size(base_font_size, self._grams[i]),
                 weight='bold',
-                color=(0, 0, 0, 255),
+                color=text_color,
                 anchor_x="center",
                 anchor_y="center",
                 batch=batch

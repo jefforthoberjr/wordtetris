@@ -4,7 +4,7 @@ from models.grid_cell import GridCell
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from models.hex_domino import HEX_UP, HEX_UP_LEFT, HEX_DOWN_LEFT
 from views.shaders import get_shape_shader
-from config import select_rule
+from config import select_rule, get_color
 
 SQRT3 = math.sqrt(3)
 
@@ -127,7 +127,7 @@ class HexGrid:
     def _create_outlines(self, batch):
         # One full outline per cell. Shared edges are drawn twice; if the line
         # count ever bites us, dedupe shared edges here.
-        line_color = (200, 200, 200)
+        line_color = get_color("board.grid_line")
         shape_shader = get_shape_shader()
         for row in range(self._rows):
             for col in range(self._cols):

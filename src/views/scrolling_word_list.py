@@ -1,5 +1,6 @@
 import math
 import pyglet
+from config import get_color
 
 
 class ScrollingWordList:
@@ -25,7 +26,7 @@ class ScrollingWordList:
     """
 
     PAD_LEN = 12
-    TEXT_COLOR = (30, 30, 30, 255)
+    TEXT_COLOR = get_color("sidepane.wordlist_text")
 
     def __init__(self, x, y, width, height):
         self._batch = pyglet.graphics.Batch()

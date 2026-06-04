@@ -4,7 +4,7 @@ from config import select_rule
 
 
 class PiecePool:
-    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None, gram_pick_rule=None):
+    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None, gram_pick_rule=None, cell_color=None):
         self._pieces = []
         self._current_index = 0
         self._size = size
@@ -19,6 +19,9 @@ class PiecePool:
         # Injected so an obstacle pool can pick grams by a different rule than
         # the main pool. None lets each piece fall back to its configured default.
         self._gram_pick_rule = gram_pick_rule
+        # Injected so an obstacle pool can tint its cells differently from the
+        # main pool. None lets each piece fall back to its default (white).
+        self._cell_color = cell_color
 
         self._rule_fixed_size()
 
@@ -36,7 +39,7 @@ class PiecePool:
         for p_type in piece_types:
             piece = self._piece_class(
                 p_type, self._cell_size, self._batch, visible=False,
-                gram_pick_rule=self._gram_pick_rule
+                gram_pick_rule=self._gram_pick_rule, cell_color=self._cell_color
             )
             self._pieces.append(piece)
     

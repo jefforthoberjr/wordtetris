@@ -2,6 +2,7 @@ import math
 import pyglet
 from models.grid_cell import GridCell
 from views.shaders import get_shape_shader
+from config import get_color
 
 
 class SquareGrid:
@@ -20,7 +21,7 @@ class SquareGrid:
         self._create_lines(window_width, window_height, batch)
     
     def _create_lines(self, window_width, window_height, batch):
-        line_color = (200, 200, 200)
+        line_color = get_color("board.grid_line")
         shape_shader = get_shape_shader()
         
         for x in range(self._width + 1):

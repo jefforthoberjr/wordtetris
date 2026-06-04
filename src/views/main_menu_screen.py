@@ -1,5 +1,6 @@
 import math
 import pyglet
+from config import get_color
 
 
 class MainMenuScreen:
@@ -12,8 +13,8 @@ class MainMenuScreen:
         self._menu_items = ["Start Game", "Exit"]
         self._selected_index = 0
         self._labels = []
-        self._highlight_color = (255, 255, 0, 255)
-        self._normal_color = (255, 255, 255, 255)
+        self._highlight_color = get_color("menu.highlight")
+        self._normal_color = get_color("menu.normal")
         
         start_y = math.floor(window.height / 2) + 30
         spacing = 60

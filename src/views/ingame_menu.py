@@ -1,5 +1,6 @@
 import math
 import pyglet
+from config import get_color
 
 
 class IngameMenu:
@@ -12,8 +13,8 @@ class IngameMenu:
         self._menu_items = ["Main Menu", "Exit"]
         self._selected_index = 0
         self._labels = []
-        self._highlight_color = (255, 255, 0, 255)
-        self._normal_color = (255, 255, 255, 255)
+        self._highlight_color = get_color("menu.highlight")
+        self._normal_color = get_color("menu.normal")
         
         panel_width = 300
         panel_height = 200
@@ -22,7 +23,7 @@ class IngameMenu:
         
         self._background = pyglet.shapes.Rectangle(
             panel_x, panel_y, panel_width, panel_height,
-            color=(50, 50, 50),
+            color=get_color("menu.panel"),
             batch=self._batch
         )
         self._background.opacity = 220
