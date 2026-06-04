@@ -18,8 +18,8 @@ rules:
   # game_screen.grid:         rule_use_hex_grid
   game_screen.grid:       rule_use_square_grid
 
-  # game_screen.word_length:  rule_word_min3letters_min2cells
-  game_screen.word_length: rule_word_min2letters_min2cells
+  game_screen.word_length:  rule_word_min3letters_min2cells
+  # game_screen.word_length: rule_word_min2letters_min2cells
 
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
@@ -34,6 +34,11 @@ rules:
   # hex_grid.snake:         rule_snake_rightanddown
   # hex_grid.snake:         rule_snake_straightline
   hex_grid.snake:         rule_snake_anydirection
+
+  # How the square board forms/clears words. (rule_clear_none and
+  # rule_clear_adjacent_same_letter remain code-only alternatives.)
+  # square_grid.clear:        rule_clear_words
+  square_grid.clear:      rule_clear_square_snake_words
 
   square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters

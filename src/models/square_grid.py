@@ -90,6 +90,30 @@ class SquareGrid:
         candidates = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
         return [(nx, ny) for (nx, ny) in candidates if self.is_valid(nx, ny)]
 
+    def forward_neighbors(self, x, y, prev_direction=None):
+        """Cardinal neighbors of (x, y) for snaking words in any direction, with
+        no diagonals. Matches the hex grid's forward_neighbors call shape so the
+        same snaking word-walk serves both boards. prev_direction is accepted but
+        ignored: the square grid imposes no turn restriction, so a word may bend
+        any way; the walk's own path-visited guard is what stops it from snaking
+        backwards onto a cell it already used."""
+        steps = ((1, 0), (-1, 0), (0, 1), (0, -1))
+        result = []
+        for direction, (dx, dy) in enumerate(steps):
+            nx, ny = x + dx, y + dy
+            if self.is_valid(nx, ny):
+                result.append(((nx, ny), direction))
+        return result
+
+    def occupied_cells(self):
+        """Coordinates of every occupied cell on the board."""
+        cells = []
+        for y in range(self._height):
+            for x in range(self._width):
+                if self._cells[y][x].is_occupied():
+                    cells.append((x, y))
+        return cells
+
     def letter_at(self, x, y):
         """Letter shown in a cell, or None if empty / off-board."""
         cell = self.get_cell(x, y)

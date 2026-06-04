@@ -211,8 +211,14 @@ class GameScreen:
         self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
         self._obstacle_gram_pick_rule = SQUARE_OBSTACLE_GRAM_PICK_RULE
         self._movement_rule = self._rule_square_movement
-        # Alternatives: self._rule_clear_none / _rule_clear_adjacent_same_letter
-        self._clear_rule = self._rule_clear_words
+        # Word-clearing rule, chosen by the YAML key square_grid.clear.
+        # _rule_clear_none / _rule_clear_adjacent_same_letter stay code-only
+        # alternatives (not exposed in YAML).
+        square_clear_rules = {
+            "rule_clear_words": self._rule_clear_words,
+            "rule_clear_square_snake_words": self._rule_clear_square_snake_words,
+        }
+        self._clear_rule = select_rule("square_grid.clear", square_clear_rules)
         grid_px_width = self.GRID_WIDTH * self._cell_size
         grid_px_height = self._board_height * self._cell_size
         board = SquareGrid(
@@ -379,7 +385,7 @@ class GameScreen:
         new_cells = set(placed_positions)
         found = []  # each entry: list of (x, y) cells spelling a dictionary word
         for start in self._board.occupied_cells():
-            self._collect_hex_words(start, None, [], "", found)
+            self._collect_snake_words(start, None, [], "", found)
         qualifying = []
         for path in found:
             has_placed = any(cell in new_cells for cell in path)
@@ -398,11 +404,13 @@ class GameScreen:
             self._board.clear_cell(x, y)
         return cleared_words
 
-    def _collect_hex_words(self, cell, prev_direction, path, text, found):
+    def _collect_snake_words(self, cell, prev_direction, path, text, found):
         """Walk snaking forward steps from `cell`, collecting every dictionary
-        word reachable. `prev_direction` is the step taken to reach `cell` (None
-        at the start), which the snake rule uses to veto sharp twists. Prunes as
-        soon as the letters so far begin no word."""
+        word reachable. Grid-agnostic: it asks the board for forward_neighbors,
+        so it serves both the hex snake rules and the square snake rule.
+        `prev_direction` is the step taken to reach `cell` (None at the start),
+        which a board's snake rule may use to veto sharp twists (the square grid
+        ignores it). Prunes as soon as the letters so far begin no word."""
         letter = self._board.letter_at(*cell)
         if letter is None:
             return
@@ -418,7 +426,7 @@ class GameScreen:
             # this guard only bites for rules that allow turning back, like
             # rule_snake_anydirection; it also keeps that walk from looping.
             if nxt not in path:
-                self._collect_hex_words(nxt, direction, path, text, found)
+                self._collect_snake_words(nxt, direction, path, text, found)
 
     def _rule_clear_words(self, placed_positions):
         """Clear dictionary words formed when the placed piece links up with
@@ -460,6 +468,37 @@ class GameScreen:
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
         return list(words_by_cells.values())
+
+    def _rule_clear_square_snake_words(self, placed_positions):
+        """Square board: clear dictionary words formed by snaking paths that step
+        in any of the four cardinal directions (no diagonals), turning freely but
+        never reusing a cell already in the word's path. A word must cover at
+        least one placed cell and at least one pre-existing cell. Every
+        qualifying word that isn't a sub-path of a longer one is cleared, so a
+        single cell can drop several branching words at once. This is the
+        snaking alternative to the straight-line _rule_clear_words; it mirrors
+        the hex _rule_clear_hex_words, sharing the same _collect_snake_words walk."""
+        new_cells = set(placed_positions)
+        found = []  # each entry: list of (x, y) cells spelling a dictionary word
+        for start in self._board.occupied_cells():
+            self._collect_snake_words(start, None, [], "", found)
+        qualifying = []
+        for path in found:
+            has_placed = any(cell in new_cells for cell in path)
+            has_old = any(cell not in new_cells for cell in path)
+            if has_placed and has_old:
+                qualifying.append(path)
+        to_clear = set()
+        cleared_words = []
+        for path in select_maximal_paths(qualifying):
+            # Read the spelled word before clearing the cells it sits on.
+            word = "".join(self._board.letter_at(x, y) for (x, y) in path)
+            if self._repeat_rule(word):
+                cleared_words.append(word)
+                to_clear.update(path)
+        for (x, y) in to_clear:
+            self._board.clear_cell(x, y)
+        return cleared_words
 
     def _rule_clear_adjacent_same_letter(self, placed_positions):
         new_cells = set(placed_positions)
