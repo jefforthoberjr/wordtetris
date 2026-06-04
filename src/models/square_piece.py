@@ -6,6 +6,7 @@ from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
+from models.gram_picker import rule_mixed_scrabble_digram52
 from models.tetrimino import TetriminoType, TETRIMINO_ROTATIONS
 from models.domino import DominoType, DOMINO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
@@ -33,6 +34,7 @@ _GRAM_PICK_RULES = {
     "rule_englishcorpus_random_unigram": rule_englishcorpus_random_unigram,
     "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
+    "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
 }
 _gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
 

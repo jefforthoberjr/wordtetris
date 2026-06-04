@@ -11,6 +11,8 @@ _scrabble_weights = None
 _english_words = None
 _corpus_grams = None
 _corpus_weights = None
+_digrams52 = None
+_digrams52_weights = None
 
 
 def _load_scrabble_distribution():
@@ -158,5 +160,53 @@ def rule_gramcorpus_distribution(count):
     picks = random.choices(_corpus_grams, weights=_corpus_weights, k=count)
     grams = []
     for text in picks:
+        grams.append(Gram(text))
+    return grams
+
+
+def _load_digrams52():
+    global _digrams52, _digrams52_weights
+    if _digrams52 is not None:
+        return
+
+    _digrams52 = []
+    _digrams52_weights = []
+
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'jpo_52digrams.csv')
+    with open(csv_path, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            _digrams52.append(row['gram'])
+            _digrams52_weights.append(int(row['freq']))
+
+
+# 1-in-3 odds of a digram, 2-in-3 odds of a unigram. Kept as a fraction so the
+# split is easy to retune in one spot if we want a different blend later.
+_DIGRAM52_CHANCE = 1.0 / 3.0
+
+
+def rule_mixed_scrabble_digram52(count):
+    """
+    Pick grams as a blend of Scrabble unigrams and corpus digrams.
+
+    Each cell rolls independently: a 1-in-3 chance to pull a digram from
+    jpo_52digrams.csv, otherwise a 2-in-3 chance to pull a unigram from
+    scrabble_letters.csv. Within whichever source is chosen, that file's own
+    weights are respected.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of Grams (a mix of unigrams and digrams)
+    """
+    _load_scrabble_distribution()
+    _load_digrams52()
+    grams = []
+    for _ in range(count):
+        if random.random() < _DIGRAM52_CHANCE:
+            text = random.choices(_digrams52, weights=_digrams52_weights, k=1)[0]
+        else:
+            text = random.choices(_scrabble_letters, weights=_scrabble_weights, k=1)[0]
         grams.append(Gram(text))
     return grams

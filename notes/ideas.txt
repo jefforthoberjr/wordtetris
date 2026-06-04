@@ -3,7 +3,51 @@ GAME NAMES
 * blast-tionary
 
 
-You cannot clear the same word twice in one match
+Words you create, you can pull back into the game board, as their own little piece (or maybe a couple of trigram pieces.)
+So that players can achieve compound words. "sun" "up" "ball"
+
+Can players pull up a dictionary? Like the history of all the words they've accomplished?
+
+Instead of being forced to use a single spawned piece, maybe word pieces are streaming by (or from a set), and players can choose to pick one of them?
+	(Aid in players to build a certain word).
+
+	When players first play, they are just doing basic / luck word creation. But at a certain point, players will be hunting / targetting for certain words.
+
+Also, when you save the player's history, record the pieces/grams they used to achieve it (and maybe the whole arrangement too). This would be like a nice sharing/remembering how they had found/created that peice.
+
+Also allow for latin prefix loading / reuse (even if they aren't standalong words in themselves)
+	"micro", "anthro", etc.
+
+In a more dumbed down version of the game, word pieces are just thrown in like a set of pieces, the player doesn't arrange the order of them, otherwise the pieces are like melted or blended together.
+
+Maybe player can select in advance a set of words from their built dictionary, that they want to blend up and include in their piece set.
+	It could be pickings from a subset of randomly picked words.
+	Or like being presented a menu or categories of words
+		would you like the "greek" with "plants and nature", the "viking" and "french military" or "asian foreign loan words"
+
+	Like making smoothie? Drinking a smoothy?
+
+	Different levels are themed like different restaurants. Coffee baristas, ribs joint.
+
+	game name: "Word Foodie"
+
+Number of cells needed to complete the word
+	Even with the most clever gram corpus; on average 4 cells will be needed to complete words. Example analysis from one of my gram sets:
+		1 cell : 67
+		2 cell : 1832
+		3 cell : 5373
+		4 cell : 6165
+		5 cell : 4055
+		6 cell : 1974
+		7 cell : 759
+		8 cell : 160
+		9 cell : 18
+		10 cell : 3
+
+	7k out of 20k words are spelled in 3 cells.
+	17k out of 20k words are spelling in 5 cells
+		The remaining 3k word then become hard to achieve stretch goals by the passionate players.
+
 
 
 RULE EXTRACTION

@@ -6,6 +6,7 @@ from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
+from models.gram_picker import rule_mixed_scrabble_digram52
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
@@ -23,6 +24,7 @@ _GRAM_PICK_RULES = {
     "rule_englishcorpus_random_unigram": rule_englishcorpus_random_unigram,
     "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
+    "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
 }
 _gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
 
