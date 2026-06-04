@@ -8,16 +8,37 @@ from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
+from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
 from config import select_rule
 
 
-# Configuration: which hex piece set to use (mirrors piece.py's pattern). There
-# is only one hex set today, so obstacles reuse it; their grams can still differ.
-PIECE_TYPES = HexDominoType
-PIECE_DIRECTIONS = HEX_DOMINO_DIRECTIONS
-OBSTACLE_PIECE_TYPES = HexDominoType
+def _rule_use_hex_dominos():
+    return HexDominoType, HEX_DOMINO_DIRECTIONS
+
+
+def _rule_use_hex_unimos():
+    return HexUnimoType, HEX_UNIMO_DIRECTIONS
+
+
+# Which hex piece set to use (mirrors square_piece's pattern). The main pieces
+# follow hex_piece.piece_set; the starting obstacles follow their own
+# hex_obstacle.piece_set, so obstacles can be (say) unimos while the playable
+# pieces are dominos.
+_PIECE_SET_RULES = {
+    "rule_use_hex_dominos": _rule_use_hex_dominos,
+    "rule_use_hex_unimos": _rule_use_hex_unimos,
+}
+PIECE_TYPES, PIECE_DIRECTIONS = select_rule("hex_piece.piece_set", _PIECE_SET_RULES)()
+OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_DIRECTIONS = select_rule("hex_obstacle.piece_set", _PIECE_SET_RULES)()
+
+# A piece looks up its satellite directions by piece_type alone. Merging every
+# set's table (the type enums are distinct, so keys never collide) means one
+# HexPiece class serves both the main set and a differently-configured obstacle set.
+ALL_PIECE_DIRECTIONS = {}
+ALL_PIECE_DIRECTIONS.update(HEX_DOMINO_DIRECTIONS)
+ALL_PIECE_DIRECTIONS.update(HEX_UNIMO_DIRECTIONS)
 
 # How each piece's grams are picked. The main pieces follow hex_piece.gram_pick;
 # the starting obstacles follow their own hex_obstacle.gram_pick.
@@ -61,7 +82,7 @@ class HexPiece:
         # 'cell_size' carries the hex size (float) so the piece aligns exactly
         # with HexGrid, which is built from the same value.
         self._hex_size = cell_size
-        self._sat_dirs = list(PIECE_DIRECTIONS[piece_type])
+        self._sat_dirs = list(ALL_PIECE_DIRECTIONS[piece_type])
         self._rotation_state = 0
         self._batch = batch
         self._grid_x = 0

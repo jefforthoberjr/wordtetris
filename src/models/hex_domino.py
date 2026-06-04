@@ -2,7 +2,10 @@ from enum import Enum
 
 
 class HexDominoType(Enum):
-    SINGLE = 1
+    # SINGLE (1-cell) is disabled so hex dominos only spawn 2-cell pieces; the
+    # dedicated HexUnimoType now covers 1-cell hex pieces. Kept commented in case
+    # we want to restore mixed 1+2 cell domino spawning.
+    # SINGLE = 1
     DOUBLE = 2
 
 
@@ -12,7 +15,7 @@ class HexDominoType(Enum):
 # step for a compass direction depends on the primary column's parity. So we
 # store directions and resolve them live via hex_neighbor().
 HEX_DOMINO_DIRECTIONS = {
-    HexDominoType.SINGLE: [],     # just the primary cell
+    # HexDominoType.SINGLE: [],   # just the primary cell (disabled; see enum above)
     HexDominoType.DOUBLE: [0],    # primary + its up-right neighbor (dir 0)
 }
 

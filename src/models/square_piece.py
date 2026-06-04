@@ -9,6 +9,7 @@ from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
 from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
+from models.square_unimo import SquareUnimoType, SQUARE_UNIMO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 from config import select_rule
 
@@ -20,12 +21,17 @@ def _rule_use_dominos():
     return SquareDominoType, SQUARE_DOMINO_ROTATIONS
 
 
+def _rule_use_unimos():
+    return SquareUnimoType, SQUARE_UNIMO_ROTATIONS
+
+
 # Which piece set to use. The main pieces follow square_piece.piece_set; the
 # starting obstacles follow their own square_obstacle.piece_set, so obstacles
-# can be (say) dominos while the playable pieces are tetriminos.
+# can be (say) unimos while the playable pieces are tetriminos.
 _PIECE_SET_RULES = {
     "rule_use_tetriminos": _rule_use_tetriminos,
     "rule_use_dominos": _rule_use_dominos,
+    "rule_use_unimos": _rule_use_unimos,
 }
 PIECE_TYPES, PIECE_ROTATIONS = select_rule("square_piece.piece_set", _PIECE_SET_RULES)()
 OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()
@@ -36,6 +42,7 @@ OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.p
 ALL_PIECE_ROTATIONS = {}
 ALL_PIECE_ROTATIONS.update(SQUARE_TETRIMINO_ROTATIONS)
 ALL_PIECE_ROTATIONS.update(SQUARE_DOMINO_ROTATIONS)
+ALL_PIECE_ROTATIONS.update(SQUARE_UNIMO_ROTATIONS)
 
 # How each piece's grams are picked. The main pieces follow square_piece.gram_pick;
 # the starting obstacles follow their own square_obstacle.gram_pick.
