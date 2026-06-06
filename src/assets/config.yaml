@@ -15,8 +15,8 @@ rules:
   gram.font_size:           rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
 
-  game_screen.grid:         rule_use_hex_grid
-  # game_screen.grid:       rule_use_square_grid
+  # game_screen.grid:         rule_use_hex_grid
+  game_screen.grid:       rule_use_square_grid
 
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
@@ -35,10 +35,16 @@ rules:
   # hex_grid.snake:         rule_snake_straightline
   hex_grid.snake:         rule_snake_anydirection
 
-  # How the square board forms/clears words. (rule_clear_none and
-  # rule_clear_adjacent_same_letter remain code-only alternatives.)
-  # square_grid.clear:        rule_clear_words
-  square_grid.clear:      rule_clear_square_snake_words
+  # How the board forms/clears words. Grid-agnostic: the snake walk uses each
+  # board's own movement geometry (square cardinals; hex directions shaped by
+  # hex_grid.snake), so one rule serves both grids. rule_clear_none turns
+  # clearing off.
+  game_screen.clear:      rule_clear_snake_words
+  # game_screen.clear:    rule_clear_none
+
+  # Word selection: the clear rule finds every candidate word on the board; this
+  # rule decides which of those candidates actually clear. 
+  game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
 
   square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters

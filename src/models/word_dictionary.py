@@ -75,37 +75,3 @@ def select_maximal_paths(paths):
         if not contained:
             result.append(path)
     return result
-
-
-def longest_word_span(grams, anchor_index, is_old):
-    """Find the longest dictionary word formed by a contiguous run of cells in
-    `grams`, read forward, that both covers cell `anchor_index` and covers at
-    least one cell where `is_old` is True. Returns a half-open (start, stop)
-    *cell* range, or None if there is none.
-
-    `grams` is the line of cells as gram strings (each 1+ letters), so a word is
-    "".join(grams[start:stop]). Spans are whole-cell, so a multi-letter gram is
-    never split mid-word. With one letter per cell this reduces to a plain
-    character scan.
-
-    `is_old[k]` marks a cell that was already on the board (not part of the
-    piece just placed); requiring one keeps a piece from clearing a word made
-    of its own cells, mirroring the adjacency rule. Ties on letter length
-    resolve to the earliest start, so a placed cell straddling two equal words
-    (e.g. the I in AIRE -> AIR or IRE) clears just one of them.
-    """
-    best_key = None
-    best_span = None
-    n = len(grams)
-    for start in range(anchor_index + 1):
-        for stop in range(anchor_index + 1, n + 1):
-            if not any(is_old[k] for k in range(start, stop)):
-                continue
-            word = "".join(grams[start:stop])
-            if not is_word(word):
-                continue
-            key = (len(word), -start)  # most letters, then earliest start
-            if best_key is None or key > best_key:
-                best_key = key
-                best_span = (start, stop)
-    return best_span

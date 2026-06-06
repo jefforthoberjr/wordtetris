@@ -199,15 +199,6 @@ class HexGrid:
         if cell:
             cell.clear()
 
-    def neighbors(self, x, y):
-        """On-board coordinates of the six cells adjacent to (x, y)."""
-        result = []
-        for direction in range(6):
-            nx, ny = hex_neighbor(x, y, direction)
-            if self.is_valid(nx, ny):
-                result.append((nx, ny))
-        return result
-
     def letter_at(self, x, y):
         """Letter shown in a cell, or None if empty / off-board."""
         cell = self.get_cell(x, y)

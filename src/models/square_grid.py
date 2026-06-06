@@ -86,11 +86,6 @@ class SquareGrid:
         if cell:
             cell.clear()
 
-    def neighbors(self, x, y):
-        """On-board coordinates adjacent to (x, y) on this square grid."""
-        candidates = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-        return [(nx, ny) for (nx, ny) in candidates if self.is_valid(nx, ny)]
-
     def forward_neighbors(self, x, y, prev_direction=None):
         """Cardinal neighbors of (x, y) for snaking words in any direction, with
         no diagonals. Matches the hex grid's forward_neighbors call shape so the
@@ -121,20 +116,6 @@ class SquareGrid:
         if cell is None or not cell.is_occupied() or cell.label is None:
             return None
         return cell.label.text
-
-    def line_through(self, x, y, dx, dy):
-        """Maximal run of occupied cells through (x, y) stepping by (dx, dy),
-        returned in +(dx, dy) order. Empty if (x, y) is itself empty."""
-        if self.letter_at(x, y) is None:
-            return []
-        sx, sy = x, y
-        while self.letter_at(sx - dx, sy - dy) is not None:
-            sx, sy = sx - dx, sy - dy
-        cells = []
-        while self.letter_at(sx, sy) is not None:
-            cells.append((sx, sy))
-            sx, sy = sx + dx, sy + dy
-        return cells
 
     def hide_cells_for_hover(self, positions):
         for x, y in positions:
