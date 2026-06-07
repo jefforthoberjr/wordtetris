@@ -4,7 +4,8 @@
 # Names are addressed by dotted path in code, e.g. get_color("board.cell_fill").
 
 board:
-  cell_fill:        [255, 255, 255]   # playable piece cell fill
+  cell_fill:        [255, 255, 255]   # settled cell fill (placed pieces)
+  active_piece_fill: [173, 216, 230]  # light blue: the active/movable piece
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells

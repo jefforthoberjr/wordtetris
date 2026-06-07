@@ -104,6 +104,10 @@ class GameScreen:
     # Obstacle cells render with their own fill (see colors.yaml) so they read
     # as pre-placed hazards distinct from the playable pieces.
     OBSTACLE_CELL_COLOR = get_color("board.obstacle_fill")
+    # The active/movable piece is tinted so it stands out from settled cells;
+    # each cell reverts to the settled fill when the piece is placed.
+    ACTIVE_PIECE_CELL_COLOR = get_color("board.active_piece_fill")
+    SETTLED_CELL_COLOR = get_color("board.cell_fill")
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -247,7 +251,8 @@ class GameScreen:
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
-            self._piece_class, self._piece_types
+            self._piece_class, self._piece_types,
+            cell_color=self.ACTIVE_PIECE_CELL_COLOR
         )
         self._init_first_piece()
 
@@ -627,6 +632,9 @@ class GameScreen:
         placed_positions = []
         for gx, gy, cell, label in piece.get_cell_data():
             self._board.place(gx, gy, cell, label)
+            # The piece was tinted while movable; once settled it reads as a
+            # normal board cell.
+            cell.color = self.SETTLED_CELL_COLOR
             placed_positions.append((gx, gy))
 
         # Runs stages 1-3: auto selectors clear and advance immediately;
@@ -691,8 +699,12 @@ class GameScreen:
             return True
 
         # While selecting words, keys drive the entry pane (Backspace/Enter);
-        # letters arrive separately via on_text.
+        # letters arrive separately via on_text. The place key (spacebar) ends
+        # selection, same as clicking Next piece.
         if self._phase == Phase.SELECTING:
+            if symbol == self._keys["place"]:
+                self._end_selection()
+                return True
             return self._entry_pane.on_key_press(symbol, modifiers)
 
         if self._current_piece().placed:

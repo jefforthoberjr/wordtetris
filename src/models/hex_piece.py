@@ -77,6 +77,16 @@ class HexCellShape:
 
     visible = property(_get_visible, _set_visible)
 
+    def _get_color(self):
+        return self._inner.color
+
+    def _set_color(self, value):
+        # The fill is the inner hexagon; the outer stays the border color. Lets
+        # callers retint a cell via .color, matching the square BorderedRectangle.
+        self._inner.color = value
+
+    color = property(_get_color, _set_color)
+
 
 class HexPiece:
     def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):
