@@ -467,18 +467,41 @@ class GameScreen:
     #                   (_clear_paths)
     # Stage 1's geometry is configured per board (hex_grid.word_pathfinding) and
     # stage 4 is mechanical; stages 2-3 are the swappable seams.
+    def _piece_touches_existing(self, piece_cells):
+        """True if any still-present cell of `piece_cells` is physically adjacent
+        to an occupied cell outside the piece. Gates the SELECT phase: a piece
+        that touches nothing can never bridge into a word, and its isolation is
+        plainly visible, so we skip SELECT for it. A piece that does touch the
+        board always opens SELECT, however -- regardless of whether a word can
+        actually be formed -- since opening only when one exists would tip the
+        player off that it does."""
+        piece = set(piece_cells)
+        for (x, y) in piece:
+            if self._board.letter_at(x, y) is None:
+                continue  # this piece cell has since been cleared
+            for (nx, ny) in self._board.neighbors(x, y):
+                if (nx, ny) not in piece and self._board.letter_at(nx, ny) is not None:
+                    return True
+        return False
+
     def _begin_selection(self, placed_positions):
         """Stages 1-3 for the piece just placed. Compute the move's candidates,
         then either auto-clear and move on, or hand off to the interactive
-        selector and enter the SELECTING phase (next piece withheld)."""
+        selector and enter the SELECTING phase (next piece withheld).
+
+        If the placed piece landed isolated -- not adjacent to any existing cell
+        -- no word can bridge it to the board, so skip the SELECT phase and move
+        straight on to the next piece."""
         self._move_placed = set(placed_positions)
         self._recompute_candidates()
-        if self._selector.interactive:
+        if not self._selector.interactive:
+            self._clear_paths(self._selector.choose(self._candidates))
+            self._advance_piece()
+        elif self._piece_touches_existing(placed_positions):
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
             self._selecting_side_pane.set_word_count(len(self._player_dict))
         else:
-            self._clear_paths(self._selector.choose(self._candidates))
             self._advance_piece()
 
     def _recompute_candidates(self):
@@ -550,6 +573,13 @@ class GameScreen:
             self._selecting_side_pane.accept_word(word, is_new)
             self._selecting_side_pane.set_word_count(len(self._player_dict))
             self._recompute_candidates()
+            # Leave SELECT once the placed piece is no longer adjacent to the
+            # board -- its remaining cells were consumed or stranded -- mirroring
+            # the adjacency gate in _begin_selection. Keyed on adjacency, not the
+            # candidate count, so the transition never reveals whether a word is
+            # still formable.
+            if not self._piece_touches_existing(self._move_placed):
+                self._end_selection()
             return
         self._selecting_side_pane.show_errors([self._submission_error(word)])
 

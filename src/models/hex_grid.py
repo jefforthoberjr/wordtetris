@@ -216,6 +216,16 @@ class HexGrid:
                 result.append(((nx, ny), direction))
         return result
 
+    def neighbors(self, x, y):
+        """Every on-board cell adjacent to (x, y): all six hex neighbors,
+        independent of the word-walk snake rule (this is physical adjacency)."""
+        result = []
+        for direction in _SNAKE_DIRS_ALL:
+            nx, ny = hex_neighbor(x, y, direction)
+            if self.is_valid(nx, ny):
+                result.append((nx, ny))
+        return result
+
     def occupied_cells(self):
         """Coordinates of every occupied cell on the board."""
         cells = []

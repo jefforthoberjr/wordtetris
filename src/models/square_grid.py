@@ -101,6 +101,16 @@ class SquareGrid:
                 result.append(((nx, ny), direction))
         return result
 
+    def neighbors(self, x, y):
+        """Every on-board cell edge-adjacent to (x, y): the four cardinals (no
+        diagonals), i.e. physical adjacency."""
+        result = []
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if self.is_valid(nx, ny):
+                result.append((nx, ny))
+        return result
+
     def occupied_cells(self):
         """Coordinates of every occupied cell on the board."""
         cells = []
