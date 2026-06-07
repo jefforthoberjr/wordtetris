@@ -32,7 +32,13 @@ class ScreenManager:
         if self._current_screen:
             return self._current_screen.on_key_press(symbol, modifiers)
         return False
-    
+
+    def on_text(self, text):
+        # Only screens that accept typed input (e.g. the game screen's word
+        # entry) define on_text; others simply ignore keystrokes.
+        if self._current_screen and hasattr(self._current_screen, "on_text"):
+            self._current_screen.on_text(text)
+
     def on_mouse_press(self, x, y, button, modifiers):
         if self._current_screen:
             self._current_screen.on_mouse_press(x, y, button, modifiers)

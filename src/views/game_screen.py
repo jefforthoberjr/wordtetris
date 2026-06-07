@@ -1,8 +1,10 @@
 import math
 import random
+from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
 from views.side_pane import SidePane
+from views.word_entry_pane import WordEntryPane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PIECE_TYPES
@@ -19,6 +21,45 @@ from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from config import select_rule, get_color
+
+
+class Phase(Enum):
+    """Game-screen phases. PLAYING: a piece is live and the player moves/places
+    it. SELECTING: a piece has been placed and the player is choosing which
+    words to clear before the next piece spawns (interactive selection rules
+    only; the auto selector never leaves PLAYING)."""
+    PLAYING = 1
+    SELECTING = 2
+
+
+# --- Stage-3 selection strategies (game_screen.word_select) ----------------
+# Of the nucleated candidate words, decide which clear. Strategies share a tiny
+# interface so GameScreen can treat them uniformly: `interactive` says whether
+# selection spans frames (waits on the player) or resolves instantly. Auto
+# strategies implement choose(); interactive ones own a UI via create_ui() and
+# drive clearing through callbacks into GameScreen.
+class AutoSelect:
+    """Instant auto-select: keep every candidate path that isn't a contiguous
+    sub-path of a longer one. Overlapping words (FIN/INK sharing IN) and repeats
+    of one word at different board locations both survive; only strict sub-words
+    are dropped (CAT inside CATEGORY). The original instant-clear behavior."""
+    interactive = False
+
+    def choose(self, candidates):
+        return select_maximal_paths(candidates)
+
+    def create_ui(self, x, y, width, height, on_submit, on_next):
+        return None
+
+
+class TextInputSelect:
+    """Interactive: the player types a word and submits it (Enter or the Submit
+    control) to clear that word, repeating until they hit Next piece. The UI is
+    a WordEntryPane in the right-pane region."""
+    interactive = True
+
+    def create_ui(self, x, y, width, height, on_submit, on_next):
+        return WordEntryPane(x, y, width, height, on_submit, on_next)
 
 
 # Control key bindings (formerly config.json "controls"). These now live next to
@@ -121,16 +162,29 @@ class GameScreen:
         }
         self._repeat_rule = select_rule("game_screen.word_repeat", repeat_rules)
 
-        # Word-selection rule, chosen by the YAML key game_screen.word_select.
-        # A clear rule enumerates every candidate word as a cell path; this rule
-        # decides which of those candidates actually clear. Splitting selection
-        # out is the seam a future player-driven "pick your words" mode plugs
-        # into; today only the original auto-select exists.
+        # Stage-3 selection strategy, chosen by the YAML key
+        # game_screen.word_select. The auto strategy clears instantly; the text-
+        # input strategy enters the SELECTING phase and lets the player type the
+        # words to clear (see Phase / the selector classes above).
         select_rules = {
-            "rule_select_mostwords_withoverlaps_withrepeats":
-                self._rule_select_mostwords_withoverlaps_withrepeats,
+            "rule_select_mostwords_withoverlaps_withrepeats": AutoSelect,
+            "rule_select_by_text_input": TextInputSelect,
         }
-        self._select_rule = select_rule("game_screen.word_select", select_rules)
+        self._selector = select_rule("game_screen.word_select", select_rules)()
+        # Interactive selectors build their UI in the right-pane region (same
+        # spot as the side pane; shown only while SELECTING).
+        self._entry_pane = self._selector.create_ui(
+            self._sidepane.x, 0, self._sidepane.width, window.height,
+            on_submit=self._on_submit_word, on_next=self._end_selection,
+        )
+        self._phase = Phase.PLAYING
+        # Candidate word-paths for the move being selected (interactive only):
+        # the full path list plus a word -> path map (first path wins a tie).
+        self._candidates = []
+        self._candidate_words = {}
+        # Cells the current piece added this move; nucleation re-runs against the
+        # ones still on the board as the player clears words.
+        self._move_placed = set()
 
         # Nucleation rule, chosen by the YAML key game_screen.word_nucleation.
         # Of every word found on the board, this decides which count for the move
@@ -154,6 +208,9 @@ class GameScreen:
         Each game gets brand-new batches so every shape from the previous game
         (grid lines, placed pieces, obstacles) is released together for GC,
         rather than piling up invisible behind the new board."""
+        self._phase = Phase.PLAYING
+        if self._entry_pane is not None:
+            self._entry_pane.begin()
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         # Separate batch for the starting obstacle pieces. Their cells live on
@@ -198,7 +255,7 @@ class GameScreen:
         """Drop every obstacle piece onto the board before play begins. Each is
         oriented by the active orientation rule and scattered to a random,
         on-board, non-overlapping spot so the obstacles don't stack. Clearing is
-        intentionally skipped here (we never call _apply_clear_rule), so the
+        intentionally skipped here (we never call _begin_selection), so the
         player doesn't start the game with words already cleared for free."""
         occupied = set()
         while True:
@@ -376,26 +433,52 @@ class GameScreen:
         """Block a word that has already been cleared earlier this game."""
         return word not in self._cleared_word_history
 
-    def _apply_clear_rule(self, placed_positions):
-        """Run the word-clearing pipeline for the piece just placed and return
-        the words cleared (for the side pane). Four stages, each its own seam:
+    # The word-clearing pipeline runs in four stages, each its own seam:
+    #   1. pathfind  -- find every dictionary word on the board (_find_words)
+    #   2. nucleate  -- keep the words that count for this move
+    #                   (self._nucleation_rule, game_screen.word_nucleation)
+    #   3. select    -- pick which to clear (self._selector, game_screen.word_
+    #                   select): the auto strategy chooses instantly, the text-
+    #                   input strategy waits on the player across frames
+    #   4. clear     -- read each word, gate on the repeat rule, remove cells
+    #                   (_clear_paths)
+    # Stage 1's geometry is configured per board (hex_grid.word_pathfinding) and
+    # stage 4 is mechanical; stages 2-3 are the swappable seams.
+    def _begin_selection(self, placed_positions):
+        """Stages 1-3 for the piece just placed. Compute the move's candidates,
+        then either auto-clear and move on, or hand off to the interactive
+        selector and enter the SELECTING phase (next piece withheld)."""
+        self._move_placed = set(placed_positions)
+        self._recompute_candidates()
+        if self._selector.interactive:
+            self._phase = Phase.SELECTING
+            self._entry_pane.begin()
+        else:
+            self._clear_paths(self._selector.choose(self._candidates))
+            self._advance_piece()
 
-          1. pathfind  -- find every dictionary word on the board (_find_words)
-          2. nucleate  -- keep the words that count for this move
-                          (self._nucleation_rule, game_screen.word_nucleation)
-          3. select    -- pick which of those to clear
-                          (self._select_rule, game_screen.word_select)
-          4. clear     -- read each word, gate on the repeat rule, remove cells
-
-        Stages 2 and 3 are the swappable seams a future player-driven word pick
-        plugs into; stage 1's geometry is configured per board (hex_grid.word_
-        pathfinding), and stage 4 is mechanical."""
+    def _recompute_candidates(self):
+        """Re-run stages 1-2 against the current board: find every word, then
+        nucleate against the move's placed cells that are still present (they
+        shrink as the player clears words). Refreshes self._candidates and the
+        word -> path map used to match typed words (first path wins a tie)."""
         found = self._find_words()
-        candidates = self._nucleation_rule(found, placed_positions)
+        live_placed = {
+            p for p in self._move_placed if self._board.letter_at(*p) is not None
+        }
+        self._candidates = self._nucleation_rule(found, live_placed)
+        self._candidate_words = {}
+        for path in self._candidates:
+            word = "".join(self._board.letter_at(x, y) for (x, y) in path)
+            self._candidate_words.setdefault(word, path)
+
+    def _clear_paths(self, paths):
+        """Stage 4: clear the chosen word-paths. Reads each word first, gates it
+        through the repeat rule, removes the cells, records history, and shows
+        the words in the side pane. Returns the words actually cleared."""
         to_clear = set()
         cleared_words = []
-        for path in self._select_rule(candidates):
-            # Read the spelled word before clearing the cells it sits on.
+        for path in paths:
             word = "".join(self._board.letter_at(x, y) for (x, y) in path)
             if self._repeat_rule(word):
                 cleared_words.append(word)
@@ -404,7 +487,50 @@ class GameScreen:
             self._board.clear_cell(x, y)
         for word in cleared_words:
             self._cleared_word_history.add(word)
+        if cleared_words:
+            self._sidepane.add_cleared_words(cleared_words)
         return cleared_words
+
+    def _on_submit_word(self, typed):
+        """Interactive submit (Enter or the Submit control). Validate the typed
+        word against the current candidates, dictionary, and history; on success
+        clear it and recompute candidates, otherwise surface the error(s)."""
+        word = typed.strip().upper()
+        if not word:
+            return
+        path = self._candidate_words.get(word)
+        on_board = path is not None
+        errors = []
+        # Candidates are by construction dictionary words, so a found path
+        # implies a valid word; the dictionary check only matters when the word
+        # isn't on the board (then both messages can show together).
+        if not is_word(word):
+            errors.append("Not a word")
+        if not on_board:
+            errors.append("Not on the board")
+        elif not self._repeat_rule(word):
+            errors.append("Already cleared")
+        if errors:
+            self._entry_pane.show_errors(errors)
+            return
+        self._clear_paths([path])
+        self._entry_pane.accept_word(word)
+        self._recompute_candidates()
+
+    def _advance_piece(self):
+        """Spawn the next piece and resume play (or do nothing if the pool is
+        exhausted)."""
+        next_piece = self._piece_pool.advance()
+        if next_piece:
+            self._spawn_piece(next_piece)
+            next_piece.set_visible(True)
+            self._update_hover_visibility()
+
+    def _end_selection(self):
+        """Leave the SELECTING phase (the Next piece control) and spawn the next
+        piece."""
+        self._phase = Phase.PLAYING
+        self._advance_piece()
 
     def _find_words(self):
         """Stage 1 (pathfind): every dictionary word spellable on the board, as
@@ -463,16 +589,6 @@ class GameScreen:
         """No word ever qualifies, which disables clearing entirely."""
         return []
 
-    # --- Word-selection rules (game_screen.word_select) --------------------
-    # Stage 3: of the nucleated candidates, pick which to actually clear.
-    def _rule_select_mostwords_withoverlaps_withrepeats(self, candidates):
-        """Auto-select: keep every candidate path that isn't a contiguous
-        sub-path of a longer one. Overlapping words (FIN/INK sharing IN) and
-        repeats of one word at different board locations both survive; only
-        strict sub-words are dropped (CAT inside CATEGORY). This reproduces the
-        original instant-clear behavior, now a swappable selection step."""
-        return select_maximal_paths(candidates)
-
     def _current_piece(self):
         return self._piece_pool.current_piece()
     
@@ -513,16 +629,11 @@ class GameScreen:
             self._board.place(gx, gy, cell, label)
             placed_positions.append((gx, gy))
 
-        cleared_words = self._apply_clear_rule(placed_positions)
-        if cleared_words:
-            self._sidepane.add_cleared_words(cleared_words)
+        # Runs stages 1-3: auto selectors clear and advance immediately;
+        # interactive ones enter the SELECTING phase and withhold the next piece
+        # until the player hits Next piece (see _end_selection).
+        self._begin_selection(placed_positions)
 
-        next_piece = self._piece_pool.advance()
-        if next_piece:
-            self._spawn_piece(next_piece)
-            next_piece.set_visible(True)
-            self._update_hover_visibility()
-    
     def on_enter(self):
         self._menu_open = False
         self._ingame_menu.reset()
@@ -546,7 +657,12 @@ class GameScreen:
         self._board_batch.draw()
         self._obstacle_batch.draw()
         self._piece_batch.draw()
-        self._sidepane.draw()
+        # The right pane swaps between the game-long cleared-word list (PLAYING)
+        # and the word-entry UI (SELECTING).
+        if self._phase == Phase.SELECTING:
+            self._entry_pane.draw()
+        else:
+            self._sidepane.draw()
 
         if self._menu_open:
             self._ingame_menu.draw()
@@ -573,7 +689,12 @@ class GameScreen:
             self._menu_open = True
             self._ingame_menu.reset()
             return True
-        
+
+        # While selecting words, keys drive the entry pane (Backspace/Enter);
+        # letters arrive separately via on_text.
+        if self._phase == Phase.SELECTING:
+            return self._entry_pane.on_key_press(symbol, modifiers)
+
         if self._current_piece().placed:
             return False
 
@@ -592,12 +713,23 @@ class GameScreen:
         
         return False
     
+    def on_text(self, text):
+        # Typed characters only matter while selecting words; on_key_press
+        # handles Backspace/Enter and the pane filters to letters.
+        if self._menu_open:
+            return
+        if self._phase == Phase.SELECTING:
+            self._entry_pane.on_text(text)
+
     def on_mouse_press(self, x, y, button, modifiers):
         if self._menu_open:
             action = self._ingame_menu.on_mouse_press(x, y, button, modifiers)
             if action:
                 self._handle_menu_action(action)
-    
+            return
+        if self._phase == Phase.SELECTING:
+            self._entry_pane.on_mouse_press(x, y, button, modifiers)
+
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:
             self._ingame_menu.on_mouse_motion(x, y, dx, dy)

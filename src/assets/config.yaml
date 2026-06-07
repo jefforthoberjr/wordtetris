@@ -45,9 +45,12 @@ rules:
   # game_screen.word_nucleation: rule_nucleate_none
 
   # Stage 3 (select): of the nucleated candidates, which to actually clear.
-  # Today only the auto-select (keep maximal paths: overlaps + repeats included,
-  # strict sub-words dropped).
-  game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
+  #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant
+  #     (keep maximal paths: overlaps + repeats included, strict sub-words dropped)
+  #   rule_select_by_text_input -- interactive: player types the words to clear
+  #     in the right pane, then hits Next piece (the SELECTING phase)
+  # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
+  game_screen.word_select: rule_select_by_text_input
 
   square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters

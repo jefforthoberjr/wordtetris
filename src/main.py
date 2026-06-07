@@ -58,6 +58,12 @@ def on_key_press(symbol, modifiers):
     return result
 
 
+def on_text(text):
+    debug_panel.start_event()
+    screen_manager.on_text(text)
+    debug_panel.end_event()
+
+
 def on_mouse_press(x, y, button, modifiers):
     debug_panel.start_event()
     screen_manager.on_mouse_press(x, y, button, modifiers)
@@ -78,6 +84,7 @@ def update_game_tick(dt):
 window.push_handlers(
     on_draw=on_draw,
     on_key_press=on_key_press,
+    on_text=on_text,
     on_mouse_press=on_mouse_press,
     on_mouse_motion=on_mouse_motion
 )
