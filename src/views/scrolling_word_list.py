@@ -26,9 +26,9 @@ class ScrollingWordList:
     """
 
     PAD_LEN = 12
-    TEXT_COLOR = get_color("sidepane.wordlist_text")
+    TEXT_COLOR = get_color("moving_side_pane.wordlist_text")
     # A word the player has never collected before shows green instead.
-    NEW_TEXT_COLOR = get_color("sidepane.wordlist_new_text")
+    NEW_TEXT_COLOR = get_color("moving_side_pane.wordlist_new_text")
 
     def __init__(self, x, y, width, height):
         self._batch = pyglet.graphics.Batch()

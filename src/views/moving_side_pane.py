@@ -4,13 +4,13 @@ from views.scrolling_word_list import ScrollingWordList
 from config import get_color
 
 
-class SidePane:
-    """Pane sitting to the right of the grid. Owns the divider line that
+class MovingSidePane:
+    """Right pane shown during the MOVING phase. Owns the divider line that
     visually separates it from the grid area on its left edge, and a scrolling
     list of the words the player has cleared.
     """
 
-    DIVIDER_COLOR = get_color("sidepane.divider")
+    DIVIDER_COLOR = get_color("moving_side_pane.divider")
 
     def __init__(self, x, y, width, height):
         self._x = x

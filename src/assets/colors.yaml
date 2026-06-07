@@ -15,21 +15,22 @@ board:
 window:
   background:       [0, 0, 0]         # default clear color (menu / title screens)
 
-sidepane:
+# Right pane shown during the MOVING phase: the game-long cleared-word list.
+moving_side_pane:
   divider:          [200, 200, 200]   # vertical rule between board and side pane
   wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
 
-# Interactive word-selection pane (the SELECTING phase): type a word to clear.
-selection:
-  divider:          [200, 200, 200]      # vertical rule (matches sidepane)
+# Right pane shown during the SELECTING phase: type a word to clear.
+selecting_side_pane:
+  divider:          [200, 200, 200]      # vertical rule (matches moving side pane)
   prompt:           [120, 120, 120, 255] # "Type a word:" prompt
   input_text:       [30, 30, 30, 255]    # the word being typed
   placeholder:      [180, 180, 180, 255] # faint caret when input is empty
   button_text:      [40, 90, 170, 255]   # clickable Submit / Next labels
   error_text:       [200, 40, 40, 255]   # error messages
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
-  #  styled by sidepane.wordlist_text)
+  #  styled by moving_side_pane.wordlist_text)
 
 menu:
   highlight:        [255, 255, 0, 255]   # selected menu item

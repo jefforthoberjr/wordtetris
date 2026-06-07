@@ -4,12 +4,11 @@ from views.scrolling_word_list import ScrollingWordList
 from config import get_color
 
 
-class WordEntryPane:
-    """Right-pane UI for the interactive word-selection phase (the SELECTING
-    game state): the player types a word and submits it to clear it from the
-    board. Reuses ScrollingWordList as a sub-component for the this-phase
-    accepted-word list, so it stays separate from the side pane's game-long
-    cleared-word ring buffer.
+class SelectingSidePane:
+    """Right pane shown during the SELECTING phase: the player types a word and
+    submits it to clear it from the board. Reuses ScrollingWordList as a
+    sub-component for the this-phase accepted-word list, so it stays separate
+    from the moving side pane's game-long cleared-word ring buffer.
 
     Manual throughout, matching the in-game menu idiom: the text field is a
     Label showing the typed word with a faux caret, and Submit/Next are plain
@@ -23,12 +22,12 @@ class WordEntryPane:
     the remaining space.
     """
 
-    DIVIDER_COLOR = get_color("selection.divider")
-    PROMPT_COLOR = get_color("selection.prompt")
-    INPUT_COLOR = get_color("selection.input_text")
-    PLACEHOLDER_COLOR = get_color("selection.placeholder")
-    BUTTON_COLOR = get_color("selection.button_text")
-    ERROR_COLOR = get_color("selection.error_text")
+    DIVIDER_COLOR = get_color("selecting_side_pane.divider")
+    PROMPT_COLOR = get_color("selecting_side_pane.prompt")
+    INPUT_COLOR = get_color("selecting_side_pane.input_text")
+    PLACEHOLDER_COLOR = get_color("selecting_side_pane.placeholder")
+    BUTTON_COLOR = get_color("selecting_side_pane.button_text")
+    ERROR_COLOR = get_color("selecting_side_pane.error_text")
     MAX_ERRORS = 3
     PROMPT = "Type a word:"
 

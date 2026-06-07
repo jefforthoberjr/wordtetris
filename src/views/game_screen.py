@@ -3,8 +3,8 @@ import random
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
-from views.side_pane import SidePane
-from views.word_entry_pane import WordEntryPane
+from views.moving_side_pane import MovingSidePane
+from views.selecting_side_pane import SelectingSidePane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PIECE_TYPES
@@ -25,11 +25,11 @@ from config import select_rule, get_color
 
 
 class Phase(Enum):
-    """Game-screen phases. PLAYING: a piece is live and the player moves/places
+    """Game-screen phases. MOVING: a piece is live and the player moves/places
     it. SELECTING: a piece has been placed and the player is choosing which
     words to clear before the next piece spawns (interactive selection rules
-    only; the auto selector never leaves PLAYING)."""
-    PLAYING = 1
+    only; the auto selector never leaves MOVING)."""
+    MOVING = 1
     SELECTING = 2
 
 
@@ -56,11 +56,11 @@ class AutoSelect:
 class TextInputSelect:
     """Interactive: the player types a word and submits it (Enter or the Submit
     control) to clear that word, repeating until they hit Next piece. The UI is
-    a WordEntryPane in the right-pane region."""
+    a SelectingSidePane in the right-pane region."""
     interactive = True
 
     def create_ui(self, x, y, width, height, on_submit, on_next):
-        return WordEntryPane(x, y, width, height, on_submit, on_next)
+        return SelectingSidePane(x, y, width, height, on_submit, on_next)
 
 
 # Control key bindings (formerly config.json "controls"). These now live next to
@@ -137,10 +137,10 @@ class GameScreen:
         # right. Both grid builders size themselves to this square region rather
         # than the full window.
         self._grid_area_size = window.height
-        sidepane_x = self._grid_area_size
-        sidepane_width = window.width - self._grid_area_size
-        self._sidepane = SidePane(
-            sidepane_x, 0, sidepane_width, window.height
+        side_pane_x = self._grid_area_size
+        side_pane_width = window.width - self._grid_area_size
+        self._moving_side_pane = MovingSidePane(
+            side_pane_x, 0, side_pane_width, window.height
         )
 
         # The player's lifetime word collection, persisted across every game.
@@ -182,11 +182,11 @@ class GameScreen:
         self._selector = select_rule("game_screen.word_select", select_rules)()
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
-        self._entry_pane = self._selector.create_ui(
-            self._sidepane.x, 0, self._sidepane.width, window.height,
+        self._selecting_side_pane = self._selector.create_ui(
+            self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
             on_submit=self._on_submit_word, on_next=self._end_selection,
         )
-        self._phase = Phase.PLAYING
+        self._phase = Phase.MOVING
         # Candidate word-paths for the move being selected (interactive only):
         # the full path list plus a word -> path map (first path wins a tie).
         self._candidates = []
@@ -222,9 +222,9 @@ class GameScreen:
         Each game gets brand-new batches so every shape from the previous game
         (grid lines, placed pieces, obstacles) is released together for GC,
         rather than piling up invisible behind the new board."""
-        self._phase = Phase.PLAYING
-        if self._entry_pane is not None:
-            self._entry_pane.begin()
+        self._phase = Phase.MOVING
+        if self._selecting_side_pane is not None:
+            self._selecting_side_pane.begin()
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         # Separate batch for the starting obstacle pieces. Their cells live on
@@ -245,7 +245,7 @@ class GameScreen:
         # from being cleared twice. Fresh per game, alongside the cleared-word
         # list shown in the side pane.
         self._cleared_word_history = set()
-        self._sidepane.reset()
+        self._moving_side_pane.reset()
 
         # Starting obstacles: a small pool of pieces dropped straight onto the
         # board before the player can move anything. They use their own piece
@@ -473,7 +473,7 @@ class GameScreen:
         self._recompute_candidates()
         if self._selector.interactive:
             self._phase = Phase.SELECTING
-            self._entry_pane.begin()
+            self._selecting_side_pane.begin()
         else:
             self._clear_paths(self._selector.choose(self._candidates))
             self._advance_piece()
@@ -527,7 +527,7 @@ class GameScreen:
             # autosave); add() returns True for words never collected before, so
             # they list green.
             new_flags = [self._player_dict.add(word) for word in cleared_words]
-            self._sidepane.add_cleared_words(cleared_words, new_flags)
+            self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
         return cleared_words
 
     def _on_submit_word(self, typed):
@@ -543,10 +543,10 @@ class GameScreen:
             # dictionary, so the entry pane can list it green.
             is_new = not self._player_dict.contains(word)
             self._clear_paths([path])
-            self._entry_pane.accept_word(word, is_new)
+            self._selecting_side_pane.accept_word(word, is_new)
             self._recompute_candidates()
             return
-        self._entry_pane.show_errors([self._submission_error(word)])
+        self._selecting_side_pane.show_errors([self._submission_error(word)])
 
     def _submission_error(self, word):
         """The single most specific reason `word` can't be cleared right now,
@@ -575,7 +575,7 @@ class GameScreen:
     def _end_selection(self):
         """Leave the SELECTING phase (the Next piece control) and spawn the next
         piece."""
-        self._phase = Phase.PLAYING
+        self._phase = Phase.MOVING
         self._advance_piece()
 
     def _find_words(self, apply_length=True):
@@ -732,12 +732,12 @@ class GameScreen:
         self._board_batch.draw()
         self._obstacle_batch.draw()
         self._piece_batch.draw()
-        # The right pane swaps between the game-long cleared-word list (PLAYING)
+        # The right pane swaps between the game-long cleared-word list (MOVING)
         # and the word-entry UI (SELECTING).
         if self._phase == Phase.SELECTING:
-            self._entry_pane.draw()
+            self._selecting_side_pane.draw()
         else:
-            self._sidepane.draw()
+            self._moving_side_pane.draw()
 
         if self._menu_open:
             self._ingame_menu.draw()
@@ -772,7 +772,7 @@ class GameScreen:
             if symbol == self._keys["place"]:
                 self._end_selection()
                 return True
-            return self._entry_pane.on_key_press(symbol, modifiers)
+            return self._selecting_side_pane.on_key_press(symbol, modifiers)
 
         if self._current_piece().placed:
             return False
@@ -798,7 +798,7 @@ class GameScreen:
         if self._menu_open:
             return
         if self._phase == Phase.SELECTING:
-            self._entry_pane.on_text(text)
+            self._selecting_side_pane.on_text(text)
 
     def on_mouse_press(self, x, y, button, modifiers):
         if self._menu_open:
@@ -807,7 +807,7 @@ class GameScreen:
                 self._handle_menu_action(action)
             return
         if self._phase == Phase.SELECTING:
-            self._entry_pane.on_mouse_press(x, y, button, modifiers)
+            self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:
