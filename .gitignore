@@ -1,3 +1,6 @@
 .DS_Store
 venv/
 __pycache__/
+
+# Per-player lifetime word collection, written at runtime.
+player_dictionary.txt

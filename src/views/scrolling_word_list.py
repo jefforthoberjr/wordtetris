@@ -27,6 +27,8 @@ class ScrollingWordList:
 
     PAD_LEN = 12
     TEXT_COLOR = get_color("sidepane.wordlist_text")
+    # A word the player has never collected before shows green instead.
+    NEW_TEXT_COLOR = get_color("sidepane.wordlist_new_text")
 
     def __init__(self, x, y, width, height):
         self._batch = pyglet.graphics.Batch()
@@ -56,27 +58,37 @@ class ScrollingWordList:
         # Index of the label currently shown at rank 0 (the top row).
         self._head = 0
 
-    def add_word(self, word):
+    def add_word(self, word, is_new=False):
         """Push one word onto the top; everything below slides down one row and
-        the old bottom row falls off. Costs one .text rewrite + N label moves."""
+        the old bottom row falls off. Costs one .text rewrite + N label moves.
+        `is_new` colors the entry green (a word new to the player's dictionary)."""
         # The label one step behind head is currently the bottom (oldest) row;
         # recycle it as the new top by overwriting only its text.
         self._head = (self._head - 1) % self._rows
-        self._labels[self._head].text = word.ljust(self.PAD_LEN)
+        label = self._labels[self._head]
+        label.text = word.ljust(self.PAD_LEN)
+        # Recycled labels carry the previous occupant's color, so set it every
+        # time, not just for new words.
+        label.color = self.NEW_TEXT_COLOR if is_new else self.TEXT_COLOR
         # Reposition: rank r (0 = top) is the label r steps forward of head.
         for r in range(self._rows):
             idx = (self._head + r) % self._rows
             self._labels[idx].y = self._top_y - r * self._row_height
 
-    def add_words(self, words):
-        for word in words:
-            self.add_word(word)
+    def add_words(self, words, new_flags=None):
+        """Add several words, oldest first. `new_flags`, if given, is a parallel
+        list of booleans marking which words are new to the player's dictionary."""
+        if new_flags is None:
+            new_flags = [False] * len(words)
+        for word, is_new in zip(words, new_flags):
+            self.add_word(word, is_new)
 
     def reset(self):
         """Blank every row and restore the top-anchored order, for a new game."""
         self._head = 0
         for r, label in enumerate(self._labels):
             label.text = " " * self.PAD_LEN
+            label.color = self.TEXT_COLOR
             label.y = self._top_y - r * self._row_height
 
     def draw(self):

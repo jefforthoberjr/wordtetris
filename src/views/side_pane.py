@@ -36,9 +36,10 @@ class SidePane:
     def width(self):
         return self._width
 
-    def add_cleared_words(self, words):
-        """Show words just cleared, newest on top."""
-        self._word_list.add_words(words)
+    def add_cleared_words(self, words, new_flags=None):
+        """Show words just cleared, newest on top. `new_flags`, if given, marks
+        which words are new to the player's dictionary (shown green)."""
+        self._word_list.add_words(words, new_flags)
 
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""

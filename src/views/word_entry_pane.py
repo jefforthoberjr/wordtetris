@@ -136,9 +136,10 @@ class WordEntryPane:
             self._on_next()
 
     # --- feedback from GameScreen -----------------------------------------
-    def accept_word(self, word):
-        """A submitted word was valid and cleared: list it and reset the field."""
-        self._word_list.add_word(word)
+    def accept_word(self, word, is_new=False):
+        """A submitted word was valid and cleared: list it and reset the field.
+        `is_new` shows it green when the word is new to the player's dictionary."""
+        self._word_list.add_word(word, is_new)
         self._typed = ""
         self.clear_errors()
         self._render_input()

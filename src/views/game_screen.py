@@ -20,6 +20,7 @@ from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
+from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color
 
 
@@ -141,6 +142,10 @@ class GameScreen:
         self._sidepane = SidePane(
             sidepane_x, 0, sidepane_width, window.height
         )
+
+        # The player's lifetime word collection, persisted across every game.
+        # Words cleared for the first time ever are shown green and autosaved.
+        self._player_dict = PlayerDictionary()
 
         # Minimum word to clear (letters + cells); see _WORD_LENGTH_RULES.
         self._word_length_rule = select_rule("game_screen.word_length", _WORD_LENGTH_RULES)
@@ -512,7 +517,11 @@ class GameScreen:
         for word in cleared_words:
             self._cleared_word_history.add(word)
         if cleared_words:
-            self._sidepane.add_cleared_words(cleared_words)
+            # Record each word in the player's lifetime dictionary (instant
+            # autosave); add() returns True for words never collected before, so
+            # they list green.
+            new_flags = [self._player_dict.add(word) for word in cleared_words]
+            self._sidepane.add_cleared_words(cleared_words, new_flags)
         return cleared_words
 
     def _on_submit_word(self, typed):
@@ -524,8 +533,11 @@ class GameScreen:
             return
         path = self._candidate_words.get(word)
         if path is not None and self._repeat_rule(word):
+            # Capture newness before _clear_paths adds the word to the player's
+            # dictionary, so the entry pane can list it green.
+            is_new = not self._player_dict.contains(word)
             self._clear_paths([path])
-            self._entry_pane.accept_word(word)
+            self._entry_pane.accept_word(word, is_new)
             self._recompute_candidates()
             return
         self._entry_pane.show_errors([self._submission_error(word)])
