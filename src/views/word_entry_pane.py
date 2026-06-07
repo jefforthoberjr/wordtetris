@@ -67,17 +67,17 @@ class WordEntryPane:
         )
 
         # Error area, directly under the input so a message reads against the
-        # word just typed. One Label per possible error (they can co-occur).
+        # word just typed. A single multiline Label wrapped to the pane width:
+        # one reason shows at a time, but it can be a full sentence that wraps in
+        # the narrow pane. MAX_ERRORS reserves the vertical space below it.
         error_top = input_y - line_h * 1.2
         error_step = base * 0.95
-        self._errors = []
-        for i in range(self.MAX_ERRORS):
-            label = pyglet.text.Label(
-                "", font_size=base * 0.7, x=left, y=error_top - i * error_step,
-                anchor_x="left", anchor_y="top",
-                color=self.ERROR_COLOR, batch=self._batch,
-            )
-            self._errors.append(label)
+        self._error = pyglet.text.Label(
+            "", font_size=base * 0.7, x=left, y=error_top,
+            width=width - 2 * margin, multiline=True,
+            anchor_x="left", anchor_y="top",
+            color=self.ERROR_COLOR, batch=self._batch,
+        )
 
         # Controls (clickable labels).
         controls_top = error_top - self.MAX_ERRORS * error_step - line_h * 0.3
@@ -144,12 +144,11 @@ class WordEntryPane:
         self._render_input()
 
     def show_errors(self, messages):
-        for i, label in enumerate(self._errors):
-            label.text = messages[i] if i < len(messages) else ""
+        # One message at a time today; join defensively if several are passed.
+        self._error.text = "\n".join(messages)
 
     def clear_errors(self):
-        for label in self._errors:
-            label.text = ""
+        self._error.text = ""
 
     # --- internals ---------------------------------------------------------
     def _render_input(self):

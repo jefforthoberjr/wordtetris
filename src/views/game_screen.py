@@ -186,6 +186,11 @@ class GameScreen:
         # the full path list plus a word -> path map (first path wins a tie).
         self._candidates = []
         self._candidate_words = {}
+        # Wider word sets the submission-error diagnosis reads (see
+        # _recompute_candidates): every board word ignoring length, and those
+        # that meet the length minimum.
+        self._board_words_any = set()
+        self._length_ok_words = set()
         # Cells the current piece added this move; nucleation re-runs against the
         # ones still on the board as the player clears words.
         self._move_placed = set()
@@ -463,19 +468,33 @@ class GameScreen:
             self._advance_piece()
 
     def _recompute_candidates(self):
-        """Re-run stages 1-2 against the current board: find every word, then
-        nucleate against the move's placed cells that are still present (they
-        shrink as the player clears words). Refreshes self._candidates and the
-        word -> path map used to match typed words (first path wins a tie)."""
-        found = self._find_words()
+        """Re-run stages 1-2 against the current board and refresh the word sets
+        a typed submission is checked against. Also builds the wider sets the
+        error diagnosis needs to tell apart 'too short' from 'didn't involve the
+        placed piece' from 'isn't on the board':
+
+          _board_words_any  -- every dictionary word on the board, ignoring the
+                               length minimum (so a too-short word still shows up)
+          _length_ok_words  -- those that also meet the length rule
+          _candidate_words  -- length-OK words that nucleate around the move's
+                               still-present placed cells (the clearable set),
+                               mapped word -> path (first path wins a tie)
+        """
         live_placed = {
             p for p in self._move_placed if self._board.letter_at(*p) is not None
         }
+        found_any = self._find_words(apply_length=False)
+        self._board_words_any = {self._word_of(p) for p in found_any}
+        found = [p for p in found_any if self._word_length_rule(self._word_of(p), p)]
+        self._length_ok_words = {self._word_of(p) for p in found}
         self._candidates = self._nucleation_rule(found, live_placed)
         self._candidate_words = {}
         for path in self._candidates:
-            word = "".join(self._board.letter_at(x, y) for (x, y) in path)
-            self._candidate_words.setdefault(word, path)
+            self._candidate_words.setdefault(self._word_of(path), path)
+
+    def _word_of(self, path):
+        """The word a cell path spells, reading its grams in order."""
+        return "".join(self._board.letter_at(x, y) for (x, y) in path)
 
     def _clear_paths(self, paths):
         """Stage 4: clear the chosen word-paths. Reads each word first, gates it
@@ -484,7 +503,7 @@ class GameScreen:
         to_clear = set()
         cleared_words = []
         for path in paths:
-            word = "".join(self._board.letter_at(x, y) for (x, y) in path)
+            word = self._word_of(path)
             if self._repeat_rule(word):
                 cleared_words.append(word)
                 to_clear.update(path)
@@ -497,30 +516,34 @@ class GameScreen:
         return cleared_words
 
     def _on_submit_word(self, typed):
-        """Interactive submit (Enter or the Submit control). Validate the typed
-        word against the current candidates, dictionary, and history; on success
-        clear it and recompute candidates, otherwise surface the error(s)."""
+        """Interactive submit (Enter or the Submit control). If the typed word is
+        a clearable candidate, clear it and recompute; otherwise show the single
+        most specific reason it can't be cleared."""
         word = typed.strip().upper()
         if not word:
             return
         path = self._candidate_words.get(word)
-        on_board = path is not None
-        errors = []
-        # Candidates are by construction dictionary words, so a found path
-        # implies a valid word; the dictionary check only matters when the word
-        # isn't on the board (then both messages can show together).
-        if not is_word(word):
-            errors.append("Not a word")
-        if not on_board:
-            errors.append("Not on the board")
-        elif not self._repeat_rule(word):
-            errors.append("Already cleared")
-        if errors:
-            self._entry_pane.show_errors(errors)
+        if path is not None and self._repeat_rule(word):
+            self._clear_paths([path])
+            self._entry_pane.accept_word(word)
+            self._recompute_candidates()
             return
-        self._clear_paths([path])
-        self._entry_pane.accept_word(word)
-        self._recompute_candidates()
+        self._entry_pane.show_errors([self._submission_error(word)])
+
+    def _submission_error(self, word):
+        """The single most specific reason `word` can't be cleared right now,
+        walking the pipeline from the typed word inward: a non-word, a word not
+        on the board at all, a board word too short to clear, a board word that
+        doesn't touch the placed piece, or one already cleared this game."""
+        if not is_word(word):
+            return "Word is not in the dictionary"
+        if word not in self._board_words_any:
+            return "Word isn't on the board"
+        if word not in self._length_ok_words:
+            return "Word is too short"
+        if word not in self._candidate_words:
+            return "Word didn't involve placed piece"
+        return "Word already cleared"
 
     def _advance_piece(self):
         """Spawn the next piece and resume play (or do nothing if the pool is
@@ -537,18 +560,20 @@ class GameScreen:
         self._phase = Phase.PLAYING
         self._advance_piece()
 
-    def _find_words(self):
+    def _find_words(self, apply_length=True):
         """Stage 1 (pathfind): every dictionary word spellable on the board, as
         a list of cell paths. Walks from each occupied cell via _collect_words;
         the step geometry comes from the board's forward_neighbors (square: four
         cardinals, hardcoded; hex: shaped by hex_grid.word_pathfinding), so this
-        is grid-agnostic."""
+        is grid-agnostic. With apply_length=False the word-length minimum is
+        skipped, so the caller sees too-short words too (used to diagnose a
+        rejected submission)."""
         found = []  # each entry: list of (x, y) cells spelling a dictionary word
         for start in self._board.occupied_cells():
-            self._collect_words(start, None, [], "", found)
+            self._collect_words(start, None, [], "", found, apply_length)
         return found
 
-    def _collect_words(self, cell, prev_direction, path, text, found):
+    def _collect_words(self, cell, prev_direction, path, text, found, apply_length=True):
         """Pathfinding walk: step forward from `cell` (snaking via the board's
         forward_neighbors), collecting every dictionary word reachable. Grid-
         agnostic -- each board supplies its own snake geometry. `prev_direction`
@@ -562,7 +587,7 @@ class GameScreen:
         if not is_prefix(text):
             return
         path = path + [cell]
-        if is_word(text) and self._word_length_rule(text, path):
+        if is_word(text) and (not apply_length or self._word_length_rule(text, path)):
             found.append(path)
         for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
             # Never step backwards onto a cell already in this word's path. The
@@ -570,7 +595,7 @@ class GameScreen:
             # this guard only bites for rules that allow turning back, like
             # rule_snake_anydirection; it also keeps that walk from looping.
             if nxt not in path:
-                self._collect_words(nxt, direction, path, text, found)
+                self._collect_words(nxt, direction, path, text, found, apply_length)
 
     # --- Nucleation rules (game_screen.word_nucleation) --------------------
     # Stage 2: of every word _find_words turned up, decide which count for the

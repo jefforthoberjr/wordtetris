@@ -105,18 +105,37 @@ def test_submit_valid_word_clears_and_lists_it():
     assert g._entry_pane.errors is None
 
 
-def test_word_not_on_board_errors():
-    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
-    g._begin_selection([(3, 0)])
-    g._on_submit_word("hello")  # a real word, but not on the board
-    assert g._entry_pane.errors == ["Not on the board"]
-
-
-def test_non_word_off_board_shows_both_errors():
+def test_non_dictionary_word_errors():
     g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
     g._begin_selection([(3, 0)])
     g._on_submit_word("zzz")
-    assert g._entry_pane.errors == ["Not a word", "Not on the board"]
+    assert g._entry_pane.errors == ["Word is not in the dictionary"]
+
+
+def test_real_word_not_on_board_errors():
+    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("hello")  # a real word, but not on the board
+    assert g._entry_pane.errors == ["Word isn't on the board"]
+
+
+def test_word_too_short_errors():
+    # GO is a dictionary word and sits on the board, but the active length rule
+    # (min 3 letters) makes it too short to clear -- a distinct message from
+    # "not on the board".
+    g = _game(FakeBoard({(0, 0): "G", (1, 0): "O"}))
+    g._begin_selection([(1, 0)])
+    g._on_submit_word("go")
+    assert g._entry_pane.errors == ["Word is too short"]
+
+
+def test_word_not_involving_placed_piece_errors():
+    # CAT is a length-OK board word, but the placed piece (an isolated S far
+    # away) doesn't touch it, so it never nucleated.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T", (5, 5): "S"}))
+    g._begin_selection([(5, 5)])
+    g._on_submit_word("cat")
+    assert g._entry_pane.errors == ["Word didn't involve placed piece"]
 
 
 def test_already_cleared_word_errors():
@@ -126,7 +145,7 @@ def test_already_cleared_word_errors():
     )
     g._begin_selection([(3, 0)])
     g._on_submit_word("tear")
-    assert g._entry_pane.errors == ["Already cleared"]
+    assert g._entry_pane.errors == ["Word already cleared"]
     assert g._board.cells != {}  # nothing cleared
 
 
@@ -136,7 +155,7 @@ def test_recompute_after_clear_allows_second_word():
     g._begin_selection([(3, 0)])
     g._on_submit_word("tear")
     g._on_submit_word("tear")
-    assert g._entry_pane.errors == ["Not on the board"]
+    assert g._entry_pane.errors == ["Word isn't on the board"]
 
 
 def test_auto_selector_clears_immediately_without_selecting():
