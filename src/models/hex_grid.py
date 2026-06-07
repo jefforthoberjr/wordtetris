@@ -60,7 +60,8 @@ def rule_snake_anydirection(prev_direction):
     in the caller's word walk (game_screen._collect_hex_words)."""
     return _SNAKE_DIRS_ALL
 
-# Which snake-direction rule a word can take, chosen by the YAML key hex_grid.snake.
+# Which snake-direction the pathfinding walk may take, chosen by the YAML key
+# hex_grid.word_pathfinding.
 _SNAKE_RULES = {
     "rule_snake_rightanddown": rule_snake_rightanddown,
     "rule_snake_rightanddown_nosharptwist": rule_snake_rightanddown_nosharptwist,
@@ -96,8 +97,8 @@ class HexGrid:
                 row.append(GridCell())
             self._cells.append(row)
 
-        # Rule for which directions a word can take (see _SNAKE_RULES).
-        self._snake_rule = select_rule("hex_grid.snake", _SNAKE_RULES)
+        # Rule for which directions the pathfinding walk can take (_SNAKE_RULES).
+        self._snake_rule = select_rule("hex_grid.word_pathfinding", _SNAKE_RULES)
 
         self._lines = []
         self._create_outlines(batch)

@@ -15,8 +15,8 @@ rules:
   gram.font_size:           rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
 
-  # game_screen.grid:         rule_use_hex_grid
-  game_screen.grid:       rule_use_square_grid
+  game_screen.grid:         rule_use_hex_grid
+  # game_screen.grid:       rule_use_square_grid
 
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
@@ -30,20 +30,23 @@ rules:
   game_screen.spawn_orientation: rule_orient_random
   # game_screen.spawn_orientation: rule_orient_default
 
-  # hex_grid.snake:           rule_snake_rightanddown_nosharptwist
-  # hex_grid.snake:         rule_snake_rightanddown
-  # hex_grid.snake:         rule_snake_straightline
-  hex_grid.snake:         rule_snake_anydirection
+  # Stage 1 (pathfind): how the search walks the board to find words. Grid-level
+  # because geometry differs -- the square board steps its 4 cardinals
+  # (hardcoded); the hex board's snake directions are configurable here.
+  # hex_grid.word_pathfinding: rule_snake_rightanddown_nosharptwist   #TODO retest these after refactor
+  # hex_grid.word_pathfinding: rule_snake_rightanddown  #TODO retest these after refactor
+  # hex_grid.word_pathfinding: rule_snake_straightline  #TODO retest these after refactor
+  hex_grid.word_pathfinding: rule_snake_anydirection
 
-  # How the board forms/clears words. Grid-agnostic: the snake walk uses each
-  # board's own movement geometry (square cardinals; hex directions shaped by
-  # hex_grid.snake), so one rule serves both grids. rule_clear_none turns
-  # clearing off.
-  game_screen.clear:      rule_clear_snake_words
-  # game_screen.clear:    rule_clear_none
+  # Stage 2 (nucleate): of every word found, which count for the move just made.
+  # rule_adjacent_to_placed_piece keeps words bridging the new piece and an
+  # existing cell; rule_nucleate_none qualifies nothing (clearing off).
+  game_screen.word_nucleation: rule_adjacent_to_placed_piece
+  # game_screen.word_nucleation: rule_nucleate_none
 
-  # Word selection: the clear rule finds every candidate word on the board; this
-  # rule decides which of those candidates actually clear. 
+  # Stage 3 (select): of the nucleated candidates, which to actually clear.
+  # Today only the auto-select (keep maximal paths: overlaps + repeats included,
+  # strict sub-words dropped).
   game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
 
   square_piece.gram_pick:   rule_scrabble_distribution

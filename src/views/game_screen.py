@@ -132,16 +132,17 @@ class GameScreen:
         }
         self._select_rule = select_rule("game_screen.word_select", select_rules)
 
-        # Word-clearing rule, chosen by the YAML key game_screen.clear. Now
-        # grid-agnostic: the snake walk asks the board for forward_neighbors, so
-        # each board plugs in its own movement geometry (square cardinals vs hex
-        # directions, the latter further shaped by hex_grid.snake) and one rule
-        # serves both grids.
-        clear_rules = {
-            "rule_clear_snake_words": self._rule_clear_snake_words,
-            "rule_clear_none": self._rule_clear_none,
+        # Nucleation rule, chosen by the YAML key game_screen.word_nucleation.
+        # Of every word found on the board, this decides which count for the move
+        # just made -- the gate between pathfinding and selection. Grid-agnostic.
+        # rule_nucleate_none qualifies nothing, which disables clearing entirely.
+        nucleation_rules = {
+            "rule_adjacent_to_placed_piece": self._rule_adjacent_to_placed_piece,
+            "rule_nucleate_none": self._rule_nucleate_none,
         }
-        self._clear_rule = select_rule("game_screen.clear", clear_rules)
+        self._nucleation_rule = select_rule(
+            "game_screen.word_nucleation", nucleation_rules
+        )
 
         self._start_new_game()
 
@@ -376,46 +377,24 @@ class GameScreen:
         return word not in self._cleared_word_history
 
     def _apply_clear_rule(self, placed_positions):
-        # self._clear_rule (game_screen.clear) is grid-agnostic: the snake walk
-        # asks the board for forward_neighbors, so the same rule serves both the
-        # square and hex boards. It gates its words through self._repeat_rule
-        # before clearing and returns the word strings it cleared (for display).
-        cleared_words = self._clear_rule(placed_positions)
-        for word in cleared_words:
-            self._cleared_word_history.add(word)
-        return cleared_words
+        """Run the word-clearing pipeline for the piece just placed and return
+        the words cleared (for the side pane). Four stages, each its own seam:
 
-    # --- Word-selection rules (game_screen.word_select) --------------------
-    # A snaking clear rule gathers every candidate word on the board as a cell
-    # path, then hands that full list to the active selection rule, which
-    # returns the subset of paths to actually clear. The clear rule still owns
-    # reading each path's word, the repeat gate, and clearing the cells.
-    def _rule_select_mostwords_withoverlaps_withrepeats(self, candidates):
-        """Auto-select: keep every candidate path that isn't a contiguous
-        sub-path of a longer one. Overlapping words (FIN/INK sharing IN) and
-        repeats of one word at different board locations both survive; only
-        strict sub-words are dropped (CAT inside CATEGORY). This reproduces the
-        original instant-clear behavior, now a swappable selection step."""
-        return select_maximal_paths(candidates)
+          1. pathfind  -- find every dictionary word on the board (_find_words)
+          2. nucleate  -- keep the words that count for this move
+                          (self._nucleation_rule, game_screen.word_nucleation)
+          3. select    -- pick which of those to clear
+                          (self._select_rule, game_screen.word_select)
+          4. clear     -- read each word, gate on the repeat rule, remove cells
 
-    def _clear_candidate_words(self, found, placed_positions):
-        """Shared back half of every word-clearing rule. `found` is the full
-        list of candidate words, each a cell path spelling a dictionary word;
-        each clear rule differs only in how it builds that list (snaking vs.
-        straight-line). Keep the candidates that cover at least one placed and
-        one pre-existing cell, hand that qualifying list to the active selection
-        rule, then clear the chosen paths (gated by the repeat rule) and return
-        their words for the side pane."""
-        new_cells = set(placed_positions)
-        qualifying = []
-        for path in found:
-            has_placed = any(cell in new_cells for cell in path)
-            has_old = any(cell not in new_cells for cell in path)
-            if has_placed and has_old:
-                qualifying.append(path)
+        Stages 2 and 3 are the swappable seams a future player-driven word pick
+        plugs into; stage 1's geometry is configured per board (hex_grid.word_
+        pathfinding), and stage 4 is mechanical."""
+        found = self._find_words()
+        candidates = self._nucleation_rule(found, placed_positions)
         to_clear = set()
         cleared_words = []
-        for path in self._select_rule(qualifying):
+        for path in self._select_rule(candidates):
             # Read the spelled word before clearing the cells it sits on.
             word = "".join(self._board.letter_at(x, y) for (x, y) in path)
             if self._repeat_rule(word):
@@ -423,33 +402,28 @@ class GameScreen:
                 to_clear.update(path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
+        for word in cleared_words:
+            self._cleared_word_history.add(word)
         return cleared_words
 
-    def _rule_clear_none(self, placed_positions):
-        """No clearing (feature disabled)."""
-        return []
-
-    def _rule_clear_snake_words(self, placed_positions):
-        """Clear dictionary words formed by snaking paths through the board.
-        Grid-agnostic: the walk asks the board for forward_neighbors, so each
-        board supplies its own geometry -- the square board steps the four
-        cardinals (turning freely), the hex board steps its six directions as
-        shaped by hex_grid.snake (e.g. right/down, or any direction). A word
-        must cover at least one placed cell and at least one pre-existing cell;
-        every qualifying word that isn't a sub-path of a longer one is cleared,
-        so a single cell can drop several branching/overlapping words at once."""
+    def _find_words(self):
+        """Stage 1 (pathfind): every dictionary word spellable on the board, as
+        a list of cell paths. Walks from each occupied cell via _collect_words;
+        the step geometry comes from the board's forward_neighbors (square: four
+        cardinals, hardcoded; hex: shaped by hex_grid.word_pathfinding), so this
+        is grid-agnostic."""
         found = []  # each entry: list of (x, y) cells spelling a dictionary word
         for start in self._board.occupied_cells():
-            self._collect_snake_words(start, None, [], "", found)
-        return self._clear_candidate_words(found, placed_positions)
+            self._collect_words(start, None, [], "", found)
+        return found
 
-    def _collect_snake_words(self, cell, prev_direction, path, text, found):
-        """Walk snaking forward steps from `cell`, collecting every dictionary
-        word reachable. Grid-agnostic: it asks the board for forward_neighbors,
-        so it serves both the hex snake rules and the square snake rule.
-        `prev_direction` is the step taken to reach `cell` (None at the start),
-        which a board's snake rule may use to veto sharp twists (the square grid
-        ignores it). Prunes as soon as the letters so far begin no word."""
+    def _collect_words(self, cell, prev_direction, path, text, found):
+        """Pathfinding walk: step forward from `cell` (snaking via the board's
+        forward_neighbors), collecting every dictionary word reachable. Grid-
+        agnostic -- each board supplies its own snake geometry. `prev_direction`
+        is the step taken to reach `cell` (None at the start), which a board's
+        pathfinding rule may use to veto sharp twists (the square grid ignores
+        it). Prunes as soon as the letters so far begin no word."""
         letter = self._board.letter_at(*cell)
         if letter is None:
             return
@@ -460,12 +434,44 @@ class GameScreen:
         if is_word(text) and self._word_length_rule(text, path):
             found.append(path)
         for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
-            # Never snake backwards onto a cell already in this word's path. The
+            # Never step backwards onto a cell already in this word's path. The
             # right/down rules can't revisit (their directions are monotonic), so
             # this guard only bites for rules that allow turning back, like
             # rule_snake_anydirection; it also keeps that walk from looping.
             if nxt not in path:
-                self._collect_snake_words(nxt, direction, path, text, found)
+                self._collect_words(nxt, direction, path, text, found)
+
+    # --- Nucleation rules (game_screen.word_nucleation) --------------------
+    # Stage 2: of every word _find_words turned up, decide which count for the
+    # move just made. The gate between pathfinding and selection.
+    def _rule_adjacent_to_placed_piece(self, found, placed_positions):
+        """Keep words that bridge the just-placed piece and the existing board:
+        a word must cover at least one placed cell and at least one pre-existing
+        cell. This is what makes a word 'nucleate' around the new piece rather
+        than clearing words made purely of old letters or purely of the piece's
+        own cells."""
+        new_cells = set(placed_positions)
+        candidates = []
+        for path in found:
+            has_placed = any(cell in new_cells for cell in path)
+            has_old = any(cell not in new_cells for cell in path)
+            if has_placed and has_old:
+                candidates.append(path)
+        return candidates
+
+    def _rule_nucleate_none(self, found, placed_positions):
+        """No word ever qualifies, which disables clearing entirely."""
+        return []
+
+    # --- Word-selection rules (game_screen.word_select) --------------------
+    # Stage 3: of the nucleated candidates, pick which to actually clear.
+    def _rule_select_mostwords_withoverlaps_withrepeats(self, candidates):
+        """Auto-select: keep every candidate path that isn't a contiguous
+        sub-path of a longer one. Overlapping words (FIN/INK sharing IN) and
+        repeats of one word at different board locations both survive; only
+        strict sub-words are dropped (CAT inside CATEGORY). This reproduces the
+        original instant-clear behavior, now a swappable selection step."""
+        return select_maximal_paths(candidates)
 
     def _current_piece(self):
         return self._piece_pool.current_piece()
