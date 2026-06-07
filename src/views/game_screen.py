@@ -484,10 +484,21 @@ class GameScreen:
                     return True
         return False
 
+    def _settle_placed_cells(self):
+        """Revert the just-placed piece's still-present cells from the active
+        (light-blue) tint to the settled board color. Called when the piece is
+        left behind: on leaving SELECT, or when SELECT is skipped. Cells already
+        cleared (square is None) are skipped."""
+        for (x, y) in self._move_placed:
+            cell = self._board.get_cell(x, y)
+            if cell is not None and cell.square is not None:
+                cell.square.color = self.SETTLED_CELL_COLOR
+
     def _begin_selection(self, placed_positions):
         """Stages 1-3 for the piece just placed. Compute the move's candidates,
         then either auto-clear and move on, or hand off to the interactive
-        selector and enter the SELECTING phase (next piece withheld).
+        selector and enter the SELECTING phase (next piece withheld). The placed
+        piece keeps its light-blue tint while SELECT is active, then settles.
 
         If the placed piece landed isolated -- not adjacent to any existing cell
         -- no word can bridge it to the board, so skip the SELECT phase and move
@@ -496,12 +507,14 @@ class GameScreen:
         self._recompute_candidates()
         if not self._selector.interactive:
             self._clear_paths(self._selector.choose(self._candidates))
+            self._settle_placed_cells()
             self._advance_piece()
         elif self._piece_touches_existing(placed_positions):
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
             self._selecting_side_pane.set_word_count(len(self._player_dict))
         else:
+            self._settle_placed_cells()
             self._advance_piece()
 
     def _recompute_candidates(self):
@@ -608,8 +621,10 @@ class GameScreen:
             self._update_hover_visibility()
 
     def _end_selection(self):
-        """Leave the SELECTING phase (the Next piece control) and spawn the next
-        piece."""
+        """Leave the SELECTING phase (the Next piece control, or once the piece
+        is no longer adjacent to the board) and spawn the next piece. Settles the
+        placed piece's remaining cells from light blue back to the board color."""
+        self._settle_placed_cells()
         self._phase = Phase.MOVING
         self._advance_piece()
 
@@ -734,9 +749,10 @@ class GameScreen:
         placed_positions = []
         for gx, gy, cell, label in piece.get_cell_data():
             self._board.place(gx, gy, cell, label)
-            # The piece was tinted while movable; once settled it reads as a
-            # normal board cell.
-            cell.color = self.SETTLED_CELL_COLOR
+            # Keep the active (light-blue) tint for now: it stays lit through the
+            # SELECT phase to remind the player where words nucleate, and only
+            # reverts to the settled board color once the piece is left behind
+            # (see _settle_placed_cells).
             placed_positions.append((gx, gy))
 
         # Runs stages 1-3: auto selectors clear and advance immediately;
