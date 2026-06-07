@@ -225,6 +225,7 @@ class GameScreen:
         self._phase = Phase.MOVING
         if self._selecting_side_pane is not None:
             self._selecting_side_pane.begin()
+            self._selecting_side_pane.set_word_count(len(self._player_dict))
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         # Separate batch for the starting obstacle pieces. Their cells live on
@@ -246,6 +247,7 @@ class GameScreen:
         # list shown in the side pane.
         self._cleared_word_history = set()
         self._moving_side_pane.reset()
+        self._moving_side_pane.set_word_count(len(self._player_dict))
 
         # Starting obstacles: a small pool of pieces dropped straight onto the
         # board before the player can move anything. They use their own piece
@@ -474,6 +476,7 @@ class GameScreen:
         if self._selector.interactive:
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
+            self._selecting_side_pane.set_word_count(len(self._player_dict))
         else:
             self._clear_paths(self._selector.choose(self._candidates))
             self._advance_piece()
@@ -528,6 +531,7 @@ class GameScreen:
             # they list green.
             new_flags = [self._player_dict.add(word) for word in cleared_words]
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
+            self._moving_side_pane.set_word_count(len(self._player_dict))
         return cleared_words
 
     def _on_submit_word(self, typed):
@@ -544,6 +548,7 @@ class GameScreen:
             is_new = not self._player_dict.contains(word)
             self._clear_paths([path])
             self._selecting_side_pane.accept_word(word, is_new)
+            self._selecting_side_pane.set_word_count(len(self._player_dict))
             self._recompute_candidates()
             return
         self._selecting_side_pane.show_errors([self._submission_error(word)])

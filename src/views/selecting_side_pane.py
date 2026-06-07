@@ -28,6 +28,7 @@ class SelectingSidePane:
     PLACEHOLDER_COLOR = get_color("selecting_side_pane.placeholder")
     BUTTON_COLOR = get_color("selecting_side_pane.button_text")
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
+    COUNT_COLOR = get_color("selecting_side_pane.word_count")
     MAX_ERRORS = 3
     PROMPT = "Type a word:"
 
@@ -92,9 +93,18 @@ class SelectingSidePane:
             color=self.BUTTON_COLOR, batch=self._batch,
         )
 
-        # This-phase accepted-word list fills whatever space is left.
+        # Player's lifetime dictionary size, pinned to the very bottom edge.
+        count_y = y + margin
+        self._count = pyglet.text.Label(
+            "", font_size=base * 0.7, x=left, y=count_y,
+            anchor_x="left", anchor_y="bottom",
+            color=self.COUNT_COLOR, batch=self._batch,
+        )
+
+        # This-phase accepted-word list fills the space between the controls and
+        # the count label, reserving one line for the latter at the bottom.
         list_top = next_y - line_h
-        list_bottom = y + margin
+        list_bottom = count_y + line_h
         list_height = max(line_h, list_top - list_bottom)
         self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
 
@@ -142,6 +152,10 @@ class SelectingSidePane:
         self._typed = ""
         self.clear_errors()
         self._render_input()
+
+    def set_word_count(self, count):
+        """Show the player's lifetime dictionary size along the bottom edge."""
+        self._count.text = f"Dictionary: {count} words"
 
     def show_errors(self, messages):
         # One message at a time today; join defensively if several are passed.

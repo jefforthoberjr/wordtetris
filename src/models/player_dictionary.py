@@ -25,6 +25,10 @@ class PlayerDictionary:
                     if word:
                         self._words.add(word)
 
+    def __len__(self):
+        """Total number of words the player has collected."""
+        return len(self._words)
+
     def contains(self, word):
         """True if `word` is already in the player's dictionary (case-insensitive)."""
         return word.lower() in self._words

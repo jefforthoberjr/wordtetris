@@ -20,6 +20,7 @@ moving_side_pane:
   divider:          [200, 200, 200]   # vertical rule between board and side pane
   wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
+  word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
 
 # Right pane shown during the SELECTING phase: type a word to clear.
 selecting_side_pane:
@@ -29,6 +30,7 @@ selecting_side_pane:
   placeholder:      [180, 180, 180, 255] # faint caret when input is empty
   button_text:      [40, 90, 170, 255]   # clickable Submit / Next labels
   error_text:       [200, 40, 40, 255]   # error messages
+  word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
   #  styled by moving_side_pane.wordlist_text)
 
