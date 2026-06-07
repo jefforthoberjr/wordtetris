@@ -368,10 +368,16 @@ class GameScreen:
         piece.set_position(center_x, center_y)
     
     def _rule_spawn_random_spot(self, piece):
-        """Position a piece at a random spot on the grid."""
-        x = random.randint(0, self.GRID_WIDTH - 1)
-        y = random.randint(0, self._board_height - 1)
-        piece.set_position(x, y)
+        """Position a piece at a random spot with every cell on the grid. The
+        anchor alone being a valid cell isn't enough -- a piece anchored at an
+        edge can still hang cells off it -- so retry until the whole piece fits,
+        then keep the last spot rather than looping forever if none does."""
+        for _ in range(100):
+            x = random.randint(0, self.GRID_WIDTH - 1)
+            y = random.randint(0, self._board_height - 1)
+            piece.set_position(x, y)
+            if self._piece_on_board(piece):
+                return
     
     def _rule_square_movement(self, symbol, modifiers):
         """Square grid: A/D/W/S nudge the piece by one cell. Returns handled."""
@@ -646,24 +652,48 @@ class GameScreen:
         positions = piece.get_cell_positions()
         self._board.restore_cells_from_hover(positions)
     
+    def _piece_on_board(self, piece):
+        """True only if every cell the piece occupies is on the grid. Off-board
+        cells return None from get_cell, so this rejects a piece hanging off any
+        edge -- the gate the move/rotate/place guards share."""
+        return all(
+            self._board.get_cell(x, y) is not None
+            for (x, y) in piece.get_cell_positions()
+        )
+
     def _move_piece(self, dx, dy):
-        self._clear_hover_visibility()
-        self._current_piece().move(dx, dy)
-        self._update_hover_visibility()
-    
-    def _rotate_piece_cw(self):
-        self._clear_hover_visibility()
-        self._current_piece().rotate_cw()
-        self._update_hover_visibility()
-    
-    def _rotate_piece_ccw(self):
-        self._clear_hover_visibility()
-        self._current_piece().rotate_ccw()
-        self._update_hover_visibility()
-    
-    def _place_current_piece(self):
-        self._clear_hover_visibility()
         piece = self._current_piece()
+        self._clear_hover_visibility()
+        piece.move(dx, dy)
+        # Reject a move that would hang any cell off the edge of the grid,
+        # restoring the prior position before refreshing the hover.
+        if not self._piece_on_board(piece):
+            piece.move(-dx, -dy)
+        self._update_hover_visibility()
+
+    def _rotate_piece_cw(self):
+        piece = self._current_piece()
+        self._clear_hover_visibility()
+        piece.rotate_cw()
+        if not self._piece_on_board(piece):
+            piece.rotate_ccw()  # rotation would hang off the grid; undo it
+        self._update_hover_visibility()
+
+    def _rotate_piece_ccw(self):
+        piece = self._current_piece()
+        self._clear_hover_visibility()
+        piece.rotate_ccw()
+        if not self._piece_on_board(piece):
+            piece.rotate_cw()
+        self._update_hover_visibility()
+
+    def _place_current_piece(self):
+        piece = self._current_piece()
+        # A piece can't be placed while any cell hangs off the grid; ignore the
+        # place until the player brings it fully back on-board.
+        if not self._piece_on_board(piece):
+            return
+        self._clear_hover_visibility()
         piece.place()
 
         placed_positions = []

@@ -24,8 +24,8 @@ rules:
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 
-  # game_screen.spawn:        rule_spawn_random_spot
-  game_screen.spawn:      rule_spawn_center
+  game_screen.spawn:        rule_spawn_random_spot
+  # game_screen.spawn:      rule_spawn_center
 
   game_screen.spawn_orientation: rule_orient_random
   # game_screen.spawn_orientation: rule_orient_default
