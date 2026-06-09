@@ -64,6 +64,11 @@ rules:
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count
 
+  # Victory condition (only one active at a time):
+  game_screen.victory: rule_victory_originals_cleared
+  # game_screen.victory: rule_victory_grid_empty
+  # game_screen.victory: rule_victory_none
+
   square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
   # square_piece.gram_pick: rule_englishcorpus_random_unigram

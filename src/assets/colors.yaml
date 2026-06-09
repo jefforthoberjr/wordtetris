@@ -44,6 +44,11 @@ dictionary:
   tab_border:      [150, 150, 110]        # outline around every tab
   tab_text:        [60, 60, 40, 255]      # the A-Z letter glyph on each tab
 
+# Victory overlay shown centered on the grid when a game is won.
+victory:
+  panel:            [40, 60, 40]          # solid panel behind the VICTORY text
+  text:             [255, 215, 0, 255]    # "VICTORY" lettering (gold)
+
 menu:
   highlight:        [255, 255, 0, 255]   # selected menu item
   normal:           [255, 255, 255, 255] # unselected menu item

@@ -28,9 +28,12 @@ class Phase(Enum):
     """Game-screen phases. MOVING: a piece is live and the player moves/places
     it. SELECTING: a piece has been placed and the player is choosing which
     words to clear before the next piece spawns (interactive selection rules
-    only; the auto selector never leaves MOVING)."""
+    only; the auto selector never leaves MOVING). VICTORY: the active victory
+    rule was met -- no live piece, no word entry; the player can only open the
+    menu (Escape)."""
     MOVING = 1
     SELECTING = 2
+    VICTORY = 3
 
 
 # --- Stage-3 selection strategies (game_screen.word_select) ----------------
@@ -159,6 +162,25 @@ class GameScreen:
             side_pane_x, 0, side_pane_width, window.height
         )
 
+        # Victory overlay: a solid panel + big "VICTORY" centered over the grid
+        # region (the left square). Built once and drawn only in the VICTORY
+        # phase. Sized off the window so it scales with the framebuffer.
+        self._victory_batch = pyglet.graphics.Batch()
+        grid_cx = math.floor(self._grid_area_size / 2)
+        grid_cy = math.floor(window.height / 2)
+        panel_w = math.floor(self._grid_area_size * 0.7)
+        panel_h = math.floor(window.height * 0.22)
+        self._victory_panel = pyglet.shapes.Rectangle(
+            grid_cx - math.floor(panel_w / 2), grid_cy - math.floor(panel_h / 2),
+            panel_w, panel_h, color=get_color("victory.panel"),
+            batch=self._victory_batch,
+        )
+        self._victory_label = pyglet.text.Label(
+            "VICTORY", font_size=math.floor(window.height / 8),
+            x=grid_cx, y=grid_cy, anchor_x="center", anchor_y="center",
+            color=get_color("victory.text"), batch=self._victory_batch,
+        )
+
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.
         self._player_dict = PlayerDictionary()
@@ -170,6 +192,19 @@ class GameScreen:
         # through this rule so every set_word_count call honors the toggle.
         self._dictionary_count_rule = select_rule(
             "game_screen.dictionary_count", _DICTIONARY_COUNT_RULES)
+
+        # Victory condition, chosen by the YAML key game_screen.victory. Bound
+        # methods so the rule can read live board / original-cell state; see the
+        # _rule_victory_* methods near the other rule definitions.
+        victory_rules = {
+            "rule_victory_originals_cleared": self._rule_victory_originals_cleared,
+            "rule_victory_grid_empty": self._rule_victory_grid_empty,
+            "rule_victory_none": self._rule_victory_none,
+        }
+        self._victory_rule = select_rule("game_screen.victory", victory_rules)
+        # Coordinates of the starting obstacle cells not yet cleared; emptied as
+        # they clear, so rule_victory_originals_cleared wins when it hits empty.
+        self._original_cells = set()
 
         # Spawn positioning rule, chosen by the YAML key game_screen.spawn.
         spawn_rules = {
@@ -267,6 +302,8 @@ class GameScreen:
         # from being cleared twice. Fresh per game, alongside the cleared-word
         # list shown in the side pane.
         self._cleared_word_history = set()
+        # Fresh per game: the starting obstacle cells the victory rule tracks.
+        self._original_cells = set()
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
 
@@ -304,6 +341,8 @@ class GameScreen:
             for gx, gy, cell, label in piece.get_cell_data():
                 self._board.place(gx, gy, cell, label)
                 occupied.add((gx, gy))
+                # Record this as an original cell for the victory rule to track.
+                self._original_cells.add((gx, gy))
             piece.set_visible(True)
             if self._obstacle_pool.advance() is None:
                 break
@@ -515,6 +554,43 @@ class GameScreen:
             if cell is not None and cell.square is not None:
                 cell.square.color = self.SETTLED_CELL_COLOR
 
+    # --- victory rules (game_screen.victory) -----------------------------
+    # Each returns True when its win condition is met against the current board.
+    # Selected in __init__; consulted by _check_victory after every clear and
+    # before each spawn.
+    def _rule_victory_originals_cleared(self):
+        # Win once every starting obstacle cell has been cleared. _original_cells
+        # shrinks as cells clear (see _clear_paths), so empty == all gone. Guard
+        # against an obstacle-less board never having had originals to clear.
+        return len(self._original_cells) == 0 and self.OBSTACLE_COUNT > 0
+
+    def _rule_victory_grid_empty(self):
+        # Win once the board holds no cells at all.
+        return len(self._board.occupied_cells()) == 0
+
+    def _rule_victory_none(self):
+        # No victory condition: the game runs until the player quits (the
+        # original endless behavior, preserved as a selectable option).
+        return False
+
+    def _check_victory(self):
+        """If the active victory rule is satisfied, enter VICTORY and return
+        True; otherwise return False. Already being in VICTORY counts as True so
+        callers never spawn a piece past the win."""
+        won = self._phase == Phase.VICTORY
+        if not won and self._victory_rule():
+            self._enter_victory()
+            won = True
+        return won
+
+    def _enter_victory(self):
+        """Transition to the VICTORY state: settle the last placed piece (so no
+        cell is left tinted) and stop play. The VICTORY overlay is drawn by
+        draw(); the right pane reverts to the cleared-word list automatically
+        since the phase is no longer SELECTING."""
+        self._phase = Phase.VICTORY
+        self._settle_placed_cells()
+
     def _begin_selection(self, placed_positions):
         """Stages 1-3 for the piece just placed. Compute the move's candidates,
         then either auto-clear and move on, or hand off to the interactive
@@ -529,7 +605,10 @@ class GameScreen:
         if not self._selector.interactive:
             self._clear_paths(self._selector.choose(self._candidates))
             self._settle_placed_cells()
-            self._advance_piece()
+            # The clear may have met the victory condition; only spawn the next
+            # piece if it didn't.
+            if not self._check_victory():
+                self._advance_piece()
         elif self._piece_touches_existing(placed_positions):
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
@@ -580,6 +659,9 @@ class GameScreen:
                 to_clear.update(path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
+        # An original (starting obstacle) cell, once cleared, stays counted as
+        # gone even if a later piece reoccupies its coordinate.
+        self._original_cells.difference_update(to_clear)
         for word in cleared_words:
             self._cleared_word_history.add(word)
         if cleared_words:
@@ -607,6 +689,10 @@ class GameScreen:
             self._selecting_side_pane.accept_word(word, is_new)
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
             self._recompute_candidates()
+            # This clear may have won the game immediately (e.g. it removed the
+            # last original cell); if so, stop here rather than ending selection.
+            if self._check_victory():
+                return
             # Leave SELECT once the placed piece is no longer adjacent to the
             # board -- its remaining cells were consumed or stranded -- mirroring
             # the adjacency gate in _begin_selection. Keyed on adjacency, not the
@@ -634,7 +720,10 @@ class GameScreen:
 
     def _advance_piece(self):
         """Spawn the next piece and resume play (or do nothing if the pool is
-        exhausted)."""
+        exhausted). Checks victory first, so a win is caught before the next
+        piece spawns (rule_victory_grid_empty's 'before spawning' point)."""
+        if self._check_victory():
+            return
         next_piece = self._piece_pool.advance()
         if next_piece:
             self._spawn_piece(next_piece)
@@ -811,6 +900,11 @@ class GameScreen:
         else:
             self._moving_side_pane.draw()
 
+        # On a win, the VICTORY panel sits over the grid; the pane above already
+        # reverted to the cleared-word list (phase is no longer SELECTING).
+        if self._phase == Phase.VICTORY:
+            self._victory_batch.draw()
+
         if self._menu_open:
             self._ingame_menu.draw()
     
@@ -835,6 +929,11 @@ class GameScreen:
         if symbol == self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
+            return True
+
+        # Once won, the game is frozen: no piece movement, rotation, placement,
+        # or word entry -- only the menu (Escape, handled above) responds.
+        if self._phase == Phase.VICTORY:
             return True
 
         # While selecting words, keys drive the entry pane (Backspace/Enter);

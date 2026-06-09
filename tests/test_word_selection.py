@@ -144,6 +144,10 @@ def _game(board, interactive=True, history=None):
     g._selecting_side_pane = FakePane()
     g._player_dict = FakePlayerDict()
     g._dictionary_count_rule = gs.rule_show_dictionary_count
+    # No victory in these selection-logic tests, and no starting obstacles to
+    # track; the victory rule just reports "not won" so flow proceeds normally.
+    g._original_cells = set()
+    g._victory_rule = lambda: False
     g._phase = gs.Phase.MOVING
     g._move_placed = set()
     g._candidates = []
