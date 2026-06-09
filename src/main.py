@@ -10,6 +10,7 @@ from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
 from views.main_menu_screen import MainMenuScreen
 from views.game_screen import GameScreen
+from views.dictionary_screen import DictionaryScreen
 
 window = pyglet.window.Window(
     width=CONFIG["window"]["width"],
@@ -21,11 +22,14 @@ ram_overhead.measure("after_window")
 
 screen_manager = ScreenManager()
 title_screen = TitleScreen(window, screen_manager, ScreenType.MAIN_MENU)
-main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.GAME)
+main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.GAME,
+                                  ScreenType.DICTIONARY)
 game_screen = GameScreen(window, screen_manager)
+dictionary_screen = DictionaryScreen(window, screen_manager)
 screen_manager.register(ScreenType.TITLE, title_screen)
 screen_manager.register(ScreenType.MAIN_MENU, main_menu_screen)
 screen_manager.register(ScreenType.GAME, game_screen)
+screen_manager.register(ScreenType.DICTIONARY, dictionary_screen)
 screen_manager.switch_to(ScreenType.TITLE)
 
 debug_visible = False

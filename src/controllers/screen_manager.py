@@ -4,6 +4,7 @@ class ScreenType(Enum):
     TITLE = 1
     MAIN_MENU = 2
     GAME = 3
+    DICTIONARY = 4
 
 
 class ScreenManager:

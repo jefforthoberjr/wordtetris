@@ -29,6 +29,12 @@ class PlayerDictionary:
         """Total number of words the player has collected."""
         return len(self._words)
 
+    def words(self):
+        """Return the player's words as a sorted (alphabetical) list -- a fresh
+        snapshot the dictionary screen can page through without it changing
+        underneath the viewer."""
+        return sorted(self._words)
+
     def contains(self, word):
         """True if `word` is already in the player's dictionary (case-insensitive)."""
         return word.lower() in self._words

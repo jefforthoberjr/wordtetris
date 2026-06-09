@@ -34,6 +34,16 @@ selecting_side_pane:
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
   #  styled by moving_side_pane.wordlist_text)
 
+# "My Dictionary" screen: paged, read-only list of every word the player owns.
+dictionary:
+  background:       [255, 250, 205]       # light yellow: whole-screen background
+  title_text:      [60, 60, 40, 255]      # word-count readout
+  word_text:       [40, 40, 30, 255]      # the paged word-grid entries
+  tab_fill:        [255, 255, 255]        # inactive A-Z page tab (white)
+  tab_active:      [255, 250, 205]        # current letter's tab (matches bg, looks "open")
+  tab_border:      [150, 150, 110]        # outline around every tab
+  tab_text:        [60, 60, 40, 255]      # the A-Z letter glyph on each tab
+
 menu:
   highlight:        [255, 255, 0, 255]   # selected menu item
   normal:           [255, 255, 255, 255] # unselected menu item

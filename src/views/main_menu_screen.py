@@ -4,13 +4,15 @@ from config import get_color
 
 
 class MainMenuScreen:
-    def __init__(self, window, screen_manager, game_screen_type):
+    def __init__(self, window, screen_manager, game_screen_type,
+                 dictionary_screen_type):
         self._window = window
         self._screen_manager = screen_manager
         self._game_screen_type = game_screen_type
+        self._dictionary_screen_type = dictionary_screen_type
         self._batch = pyglet.graphics.Batch()
-        
-        self._menu_items = ["Start Game", "Exit"]
+
+        self._menu_items = ["Start Game", "My Dictionary", "Exit"]
         self._selected_index = 0
         self._labels = []
         self._highlight_color = get_color("menu.highlight")
@@ -44,6 +46,8 @@ class MainMenuScreen:
         if self._selected_index == 0:
             self._screen_manager.switch_to(self._game_screen_type)
         elif self._selected_index == 1:
+            self._screen_manager.switch_to(self._dictionary_screen_type)
+        elif self._selected_index == 2:
             self._window.close()
     
     def _get_item_at(self, x, y):

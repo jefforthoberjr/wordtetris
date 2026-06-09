@@ -9,6 +9,14 @@ game:
 audio:
   master_volume: 0.8
 
+dictionary:
+  # TEMP (playtest): page the large mock word list so the A-Z tabs and sub-pages
+  # can be exercised before the player has collected thousands of words. Set
+  # use_mock_data to false to read the player's real player_dictionary.txt.
+  # use_mock_data: true
+  use_mock_data: false
+  mock_data_path: tests/assets/mock_player_dictionary.txt
+
 # Note: game_screen.grid is a bundle:
 # (the chosen grid builder wires up its own movement + clear rules)
 rules:
