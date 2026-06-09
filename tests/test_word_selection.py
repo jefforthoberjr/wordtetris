@@ -143,6 +143,7 @@ def _game(board, interactive=True, history=None):
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
     g._player_dict = FakePlayerDict()
+    g._dictionary_count_rule = gs.rule_show_dictionary_count
     g._phase = gs.Phase.MOVING
     g._move_placed = set()
     g._candidates = []

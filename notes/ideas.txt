@@ -2,6 +2,18 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+Spelling backwards looks a little weird if there are is a cell with a digram, since the end of the digram visually "jumps" backwards looking.
+
+Prevent weired unigram domino combos (like double I)
+
+
+Have entire placed nucleated chunks (an asteroid of multiple pieces) be moveable, re-arrangable?
+
+
+Give players the ability to re-move their word if they didn't like the placement
+
+Should I require that pieces can only be placed next to another piece already on the board? (like cannot just place a piece in the middle of nowhere?
+
 
 Words you create, you can pull back into the game board, as their own little piece (or maybe a couple of trigram pieces.)
 So that players can achieve compound words. "sun" "up" "ball"

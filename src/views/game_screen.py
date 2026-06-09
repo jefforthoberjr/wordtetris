@@ -97,6 +97,22 @@ _WORD_LENGTH_RULES = {
 }
 
 
+# Whether the right pane shows the player's lifetime dictionary size, chosen by
+# the YAML key game_screen.dictionary_count. Every set_word_count call routes
+# through the selected rule, so toggling the readout off is a single config edit.
+def rule_show_dictionary_count(pane, count):
+    pane.set_word_count(count)
+
+def rule_hide_dictionary_count(pane, count):
+    # Readout hidden -- skip the update so the pane's count label stays blank.
+    pass
+
+_DICTIONARY_COUNT_RULES = {
+    "rule_show_dictionary_count": rule_show_dictionary_count,
+    "rule_hide_dictionary_count": rule_hide_dictionary_count,
+}
+
+
 class GameScreen:
     GRID_WIDTH = 14
     PIECE_POOL_SIZE = 100
@@ -149,6 +165,11 @@ class GameScreen:
 
         # Minimum word to clear (letters + cells); see _WORD_LENGTH_RULES.
         self._word_length_rule = select_rule("game_screen.word_length", _WORD_LENGTH_RULES)
+
+        # Whether the right pane shows the dictionary-size readout; routed
+        # through this rule so every set_word_count call honors the toggle.
+        self._dictionary_count_rule = select_rule(
+            "game_screen.dictionary_count", _DICTIONARY_COUNT_RULES)
 
         # Spawn positioning rule, chosen by the YAML key game_screen.spawn.
         spawn_rules = {
@@ -225,7 +246,7 @@ class GameScreen:
         self._phase = Phase.MOVING
         if self._selecting_side_pane is not None:
             self._selecting_side_pane.begin()
-            self._selecting_side_pane.set_word_count(len(self._player_dict))
+            self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
         # Separate batch for the starting obstacle pieces. Their cells live on
@@ -247,7 +268,7 @@ class GameScreen:
         # list shown in the side pane.
         self._cleared_word_history = set()
         self._moving_side_pane.reset()
-        self._moving_side_pane.set_word_count(len(self._player_dict))
+        self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
 
         # Starting obstacles: a small pool of pieces dropped straight onto the
         # board before the player can move anything. They use their own piece
@@ -512,7 +533,7 @@ class GameScreen:
         elif self._piece_touches_existing(placed_positions):
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
-            self._selecting_side_pane.set_word_count(len(self._player_dict))
+            self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         else:
             self._settle_placed_cells()
             self._advance_piece()
@@ -567,7 +588,7 @@ class GameScreen:
             # they list green.
             new_flags = [self._player_dict.add(word) for word in cleared_words]
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
-            self._moving_side_pane.set_word_count(len(self._player_dict))
+            self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words
 
     def _on_submit_word(self, typed):
@@ -584,7 +605,7 @@ class GameScreen:
             is_new = not self._player_dict.contains(word)
             self._clear_paths([path])
             self._selecting_side_pane.accept_word(word, is_new)
-            self._selecting_side_pane.set_word_count(len(self._player_dict))
+            self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
             self._recompute_candidates()
             # Leave SELECT once the placed piece is no longer adjacent to the
             # board -- its remaining cells were consumed or stranded -- mirroring

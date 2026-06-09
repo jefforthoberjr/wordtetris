@@ -60,6 +60,10 @@ rules:
   # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
   game_screen.word_select: rule_select_by_text_input
 
+  # Whether the right pane shows the player's lifetime dictionary-size readout.
+  # game_screen.dictionary_count: rule_show_dictionary_count
+  game_screen.dictionary_count: rule_hide_dictionary_count
+
   square_piece.gram_pick:   rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
   # square_piece.gram_pick: rule_englishcorpus_random_unigram
