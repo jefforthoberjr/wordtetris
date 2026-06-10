@@ -69,10 +69,15 @@ rules:
   # game_screen.victory: rule_victory_grid_empty
   # game_screen.victory: rule_victory_none
 
-  # Cell overlap: whether a moving piece may be placed onto cells that already
-  # hold a player or obstacle cell. Currently always permitted (the gate where a
-  # future rule could refuse the placement instead).
-  game_screen.cell_overlap: rule_moveandplace_over_playerandobstacle_cell
+  # Cell overlap: whether a piece may be moved onto / placed over cells that
+  # already hold a player or obstacle cell. The block_* rules also stop the
+  # piece from being moved onto a forbidden cell, not just placed there.
+  #   rule_moveandplace_over_playerandobstacle_cell -- overlap always allowed
+  #   rule_block_moveandplace_over_playerandobstacle_cell -- no overlap at all
+  #   rule_block_moveandplace_over_obstacle_cell -- block obstacles, allow players
+  # game_screen.cell_overlap: rule_moveandplace_over_playerandobstacle_cell
+  # game_screen.cell_overlap: rule_block_moveandplace_over_playerandobstacle_cell
+  game_screen.cell_overlap: rule_block_moveandplace_over_obstacle_cell
 
   # Cell overlap action: what happens to the "old" cells a placement covers.
   # rule_old_cells_get_delete treats them as gone, so a covered starting

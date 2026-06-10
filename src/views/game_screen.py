@@ -212,6 +212,8 @@ class GameScreen:
         # near the victory rules.
         cell_overlap_rules = {
             "rule_moveandplace_over_playerandobstacle_cell": self._rule_moveandplace_over_playerandobstacle_cell,
+            "rule_block_moveandplace_over_playerandobstacle_cell": self._rule_block_moveandplace_over_playerandobstacle_cell,
+            "rule_block_moveandplace_over_obstacle_cell": self._rule_block_moveandplace_over_obstacle_cell,
         }
         self._cell_overlap_rule = select_rule("game_screen.cell_overlap", cell_overlap_rules)
         cell_overlap_action_rules = {
@@ -445,15 +447,23 @@ class GameScreen:
         piece.set_position(center_x, center_y)
     
     def _rule_spawn_random_spot(self, piece):
-        """Position a piece at a random spot with every cell on the grid. The
-        anchor alone being a valid cell isn't enough -- a piece anchored at an
-        edge can still hang cells off it -- so retry until the whole piece fits,
-        then keep the last spot rather than looping forever if none does."""
+        """Position a piece at a random legal resting spot: every cell on the
+        grid AND the active cell-overlap rule satisfied. The anchor alone being a
+        valid cell isn't enough -- a piece anchored at an edge can still hang
+        cells off it -- and a blocking overlap rule must hold at spawn too, or
+        the piece would respect the rule for every move yet sit on a forbidden
+        cell the instant it appeared. So retry until a legal spot is found, then
+        keep the last spot rather than looping forever if none does.
+
+        NOTE (busy board): with a blocking overlap rule, a crowded board may have
+        no legal spot within 100 tries; the piece then spawns on the last
+        (overlapping) spot and could be stuck. Fine while boards are sparse;
+        revisit with a board-full / game-over condition once they fill up."""
         for _ in range(100):
             x = random.randint(0, self.GRID_WIDTH - 1)
             y = random.randint(0, self._board_height - 1)
             piece.set_position(x, y)
-            if self._piece_on_board(piece):
+            if self._move_allowed(piece):
                 return
     
     def _rule_square_movement(self, symbol, modifiers):
@@ -589,11 +599,27 @@ class GameScreen:
         return False
 
     def _rule_moveandplace_over_playerandobstacle_cell(self, overlapped):
-        # Cell-overlap rule: placing a piece over cells already holding a player
-        # or obstacle cell is always permitted. Returns True so the placement is
-        # never blocked. `overlapped` is the set of cells about to be covered;
-        # a future overlap rule could inspect it and refuse instead.
+        # Cell-overlap rule: moving or placing a piece over cells already holding
+        # a player or obstacle cell is always permitted. Returns True so the move
+        # is never blocked. `overlapped` is the set of occupied cells the piece
+        # would cover; this rule ignores it.
         return True
+
+    def _rule_block_moveandplace_over_playerandobstacle_cell(self, overlapped):
+        # Cell-overlap rule: a piece may not move onto or place over ANY occupied
+        # cell, player or obstacle. Permitted only when it covers nothing.
+        return len(overlapped) == 0
+
+    def _rule_block_moveandplace_over_obstacle_cell(self, overlapped):
+        # Cell-overlap rule: a piece may not move onto or place over an obstacle
+        # cell, but may still move over and cover player cells. Obstacle cells
+        # are the still-intact starting cells tracked in _original_cells (a
+        # covered obstacle is dropped from that set by the overlap-action rule,
+        # so a player cell never lingers at an _original_cells coordinate and
+        # this stays in sync with the victory rule). Permitted unless the piece
+        # would cover an obstacle.
+        obstacles_covered = overlapped & self._original_cells
+        return len(obstacles_covered) == 0
 
     def _rule_old_cells_get_delete(self, overlapped):
         # Cell-overlap action rule: the cells a placement covers are treated as
@@ -844,19 +870,40 @@ class GameScreen:
     def _piece_on_board(self, piece):
         """True only if every cell the piece occupies is on the grid. Off-board
         cells return None from get_cell, so this rejects a piece hanging off any
-        edge -- the gate the move/rotate/place guards share."""
+        edge. One half of the move/rotate/place gate; see _move_allowed."""
         return all(
             self._board.get_cell(x, y) is not None
             for (x, y) in piece.get_cell_positions()
+        )
+
+    def _overlapped_cells(self, piece):
+        """The occupied board cells the piece currently sits on -- the cells a
+        placement would cover. The piece's own cells aren't on the board yet, so
+        this reports only settled obstacle / player cells. is_cell_occupied is
+        common to the square and hex boards, so it stays grid-agnostic."""
+        overlapped = set()
+        for (x, y) in piece.get_cell_positions():
+            if self._board.is_cell_occupied(x, y):
+                overlapped.add((x, y))
+        return overlapped
+
+    def _move_allowed(self, piece):
+        """The shared move/rotate/place gate: a position is allowed only if every
+        cell is on the grid AND the cells it covers satisfy the active cell-
+        overlap rule. Driving the overlap rule here -- not just at placement --
+        lets a blocking rule stop the piece from being moved onto a forbidden
+        cell in the first place, so the player never drags it over one."""
+        return self._piece_on_board(piece) and self._cell_overlap_rule(
+            self._overlapped_cells(piece)
         )
 
     def _move_piece(self, dx, dy):
         piece = self._current_piece()
         self._clear_hover_visibility()
         piece.move(dx, dy)
-        # Reject a move that would hang any cell off the edge of the grid,
-        # restoring the prior position before refreshing the hover.
-        if not self._piece_on_board(piece):
+        # Reject a move that would hang a cell off the grid or violate the cell-
+        # overlap rule, restoring the prior position before refreshing the hover.
+        if not self._move_allowed(piece):
             piece.move(-dx, -dy)
         self._update_hover_visibility()
 
@@ -864,15 +911,15 @@ class GameScreen:
         piece = self._current_piece()
         self._clear_hover_visibility()
         piece.rotate_cw()
-        if not self._piece_on_board(piece):
-            piece.rotate_ccw()  # rotation would hang off the grid; undo it
+        if not self._move_allowed(piece):
+            piece.rotate_ccw()  # off the grid or onto a forbidden cell; undo it
         self._update_hover_visibility()
 
     def _rotate_piece_ccw(self):
         piece = self._current_piece()
         self._clear_hover_visibility()
         piece.rotate_ccw()
-        if not self._piece_on_board(piece):
+        if not self._move_allowed(piece):
             piece.rotate_cw()
         self._update_hover_visibility()
 
@@ -882,16 +929,11 @@ class GameScreen:
         # place until the player brings it fully back on-board.
         if not self._piece_on_board(piece):
             return
-        # Cells already on the board this placement would cover. Read before the
-        # piece's own cells land, so it reflects only the settled board (the
-        # piece's cells aren't placed yet). is_cell_occupied is common to both
-        # the square and hex boards, so this stays grid-agnostic.
-        overlapped = set()
-        for (x, y) in piece.get_cell_positions():
-            if self._board.is_cell_occupied(x, y):
-                overlapped.add((x, y))
+        # Cells already on the board this placement would cover.
+        overlapped = self._overlapped_cells(piece)
         # Cell-overlap rule: may the piece be placed when it covers those cells?
-        # Always yes for now; a future rule could refuse and abort the place.
+        # A blocking rule refuses and aborts the place (movement is gated the
+        # same way, so a blocked piece should never reach here covering them).
         if not self._cell_overlap_rule(overlapped):
             return
         self._clear_hover_visibility()
