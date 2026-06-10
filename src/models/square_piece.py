@@ -8,10 +8,12 @@ from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
+from models.gram_picker import rule_scrabble_with_allvowelswild
 from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
 from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
 from models.square_unimo import SquareUnimoType, SQUARE_UNIMO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
+from views.textures import wild_vowel_image
 from config import select_rule, get_color
 
 def _rule_use_tetriminos():
@@ -55,6 +57,7 @@ _GRAM_PICK_RULES = {
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
     "rule_digram52_distribution": rule_digram52_distribution,
+    "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
 _gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
@@ -105,15 +108,24 @@ class SquarePiece:
             cell.visible = visible
             self._cells.append(cell)
 
-            label = pyglet.text.Label(
-                self._grams[i].text,
-                font_size=gram_font_size(base_font_size, self._grams[i]),
-                weight='bold',
-                color=text_color,
-                anchor_x="center",
-                anchor_y="center",
-                batch=batch
-            )
+            # A wild-vowel gram renders as the vowel emblem sprite instead of a
+            # letter label; everything downstream (positioning, visibility,
+            # hover) treats the sprite and label alike via the _labels slot.
+            gram = self._grams[i]
+            if gram.is_wild:
+                image = wild_vowel_image(math.floor(cell_size * 0.9))
+                label = pyglet.sprite.Sprite(image, batch=batch)
+                label.scale = (cell_size * 0.9) / image.height
+            else:
+                label = pyglet.text.Label(
+                    gram.text,
+                    font_size=gram_font_size(base_font_size, gram),
+                    weight='bold',
+                    color=text_color,
+                    anchor_x="center",
+                    anchor_y="center",
+                    batch=batch
+                )
             label.visible = visible
             self._labels.append(label)
         
@@ -187,10 +199,12 @@ class SquarePiece:
         return positions
     
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, cell, label) for each cell."""
+        """Returns list of (grid_x, grid_y, cell, label, gram) for each cell.
+        The gram travels with the render objects so the board can record what a
+        placed cell holds (its letters, or that it is a wild vowel)."""
         data = []
         for i, (dx, dy) in enumerate(self._shapes_data):
             gx = self._grid_x + dx
             gy = self._grid_y + dy
-            data.append((gx, gy, self._cells[i], self._labels[i]))
+            data.append((gx, gy, self._cells[i], self._labels[i], self._grams[i]))
         return data

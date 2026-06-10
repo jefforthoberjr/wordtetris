@@ -83,13 +83,13 @@ class SquareGrid:
             result = (gx, gy)
         return result
     
-    def place(self, x, y, square, label):
+    def place(self, x, y, square, label, gram=None):
         cell = self.get_cell(x, y)
         if cell is None:
             return False
         if cell.is_occupied():
             cell.clear()
-        cell.set_contents(square, label)
+        cell.set_contents(square, label, gram)
         return True
     
     def clear_cell(self, x, y):
@@ -131,12 +131,27 @@ class SquareGrid:
                     cells.append((x, y))
         return cells
 
-    def letter_at(self, x, y):
-        """Letter shown in a cell, or None if empty / off-board."""
+    def gram_at(self, x, y):
+        """The Gram a cell holds (its letters, or a wild vowel), or None if the
+        cell is empty / off-board. Word-finding uses this to expand wild cells,
+        which letter_at hides, and presence checks use it to count wild cells as
+        occupied."""
         cell = self.get_cell(x, y)
-        if cell is None or not cell.is_occupied() or cell.label is None:
+        result = None
+        if cell is not None and cell.is_occupied():
+            result = cell.gram
+        return result
+
+    def letter_at(self, x, y):
+        """Letters a cell contributes when spelling a word, or None if empty,
+        off-board, or a wild vowel (whose 1-3 letter run is resolved separately;
+        the plain-letter walk treats it as having no fixed letters)."""
+        cell = self.get_cell(x, y)
+        if cell is None or not cell.is_occupied() or cell.gram is None:
             return None
-        return cell.label.text
+        if cell.gram.is_wild:
+            return None
+        return cell.gram.text
 
     def hide_cells_for_hover(self, positions):
         for x, y in positions:

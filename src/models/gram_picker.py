@@ -4,6 +4,7 @@ import random
 import string
 
 from models.gram import Gram
+from models.wild_vowel import is_vowel
 
 
 _scrabble_letters = None
@@ -62,6 +63,31 @@ def rule_scrabble_distribution(count):
     grams = []
     for letter in letters:
         grams.append(Gram(letter))
+    return grams
+
+
+def rule_scrabble_with_allvowelswild(count):
+    """
+    Like rule_scrabble_distribution -- same Scrabble tile weights -- but every
+    time the draw lands on a vowel (A, E, I, O, U, Y) the cell becomes a wild
+    vowel instead of that fixed letter. Consonants are unchanged, so the overall
+    letter frequencies are preserved; only the identity of the vowels is hidden
+    behind a wild cell that can later stand for a 1-3 vowel run.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of Grams, with vowels replaced by wild-vowel Grams
+    """
+    _load_scrabble_distribution()
+    letters = random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+    grams = []
+    for letter in letters:
+        if is_vowel(letter):
+            grams.append(Gram("", is_wild=True))
+        else:
+            grams.append(Gram(letter))
     return grams
 
 

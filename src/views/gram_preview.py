@@ -2,6 +2,7 @@ import math
 import pyglet
 from config import get_color
 from models.gram import Gram, gram_font_size
+from views.textures import wild_vowel_image
 
 SQRT3 = math.sqrt(3)
 
@@ -10,9 +11,12 @@ def parse_variation(variation):
     """Split an encoded player-dictionary variation into (shape, grams).
 
     shape is "hex" when the variation used the "/" separator, else "square".
-    grams is an ordered list of (text, is_obstacle): each gram's letters
-    uppercased for display, and whether it was wrapped in "[ ]" as an obstacle.
-    e.g. "ge|[ar]" -> ("square", [("GE", False), ("AR", True)])."""
+    grams is an ordered list of (text, is_obstacle, is_wild): each gram's
+    letters uppercased for display, whether it was wrapped in "[ ]" as an
+    obstacle, and whether it was wrapped in "?...?" as a wild vowel (the obstacle
+    bracket sits outside the wild marker, e.g. "[?ea?]"). A wild gram renders as
+    the emblem, so its text is not shown -- but it is still parsed out.
+    e.g. "ge|[ar]" -> ("square", [("GE", False, False), ("AR", True, False)])."""
     if "/" in variation:
         shape = "hex"
         separator = "/"
@@ -23,10 +27,13 @@ def parse_variation(variation):
     for part in variation.split(separator):
         is_obstacle = part.startswith("[") and part.endswith("]")
         if is_obstacle:
-            text = part[1:-1]
+            inner = part[1:-1]
         else:
-            text = part
-        grams.append((text.upper(), is_obstacle))
+            inner = part
+        is_wild = inner.startswith("?") and inner.endswith("?")
+        if is_wild:
+            inner = inner[1:-1]
+        grams.append((inner.upper(), is_obstacle, is_wild))
     return shape, grams
 
 
@@ -115,10 +122,20 @@ class GramPreview:
         )
         self._shapes.append(label)
 
+    def _add_wild_sprite(self, cx, cy, target_height):
+        # A wild cell re-renders as the vowel emblem (centered over the fill),
+        # exactly as it looked in the game -- not as the letters it resolved to.
+        image = wild_vowel_image(math.floor(target_height))
+        sprite = pyglet.sprite.Sprite(image, batch=self._batch)
+        sprite.scale = target_height / image.height
+        sprite.x = cx
+        sprite.y = cy
+        self._shapes.append(sprite)
+
     def _build_square_row(self, grams, left_x, center_y):
         cell = self._cell_size
         bottom = center_y - math.floor(cell / 2)
-        for i, (text, is_obstacle) in enumerate(grams):
+        for i, (text, is_obstacle, is_wild) in enumerate(grams):
             x = left_x + i * cell
             rect = pyglet.shapes.BorderedRectangle(
                 x, bottom, cell, cell, border=2,
@@ -126,8 +143,12 @@ class GramPreview:
                 border_color=self._border_color, batch=self._batch,
             )
             self._shapes.append(rect)
-            font_size = gram_font_size(self._label_base(), Gram(text))
-            self._add_label(text, x + math.floor(cell / 2), center_y, font_size)
+            cx = x + math.floor(cell / 2)
+            if is_wild:
+                self._add_wild_sprite(cx, center_y, cell * 0.9)
+            else:
+                font_size = gram_font_size(self._label_base(), Gram(text))
+                self._add_label(text, cx, center_y, font_size)
 
     def _hex_size(self):
         # Point-up hex sized so its height (2*size) matches the square box.
@@ -148,7 +169,7 @@ class GramPreview:
         inner_size = size - border
         width = SQRT3 * size
         step = width
-        for i, (text, is_obstacle) in enumerate(grams):
+        for i, (text, is_obstacle, is_wild) in enumerate(grams):
             cx = left_x + math.floor(width / 2) + i * step
             outer = pyglet.shapes.Polygon(
                 *self._hex_verts(size, cx, center_y),
@@ -160,13 +181,16 @@ class GramPreview:
                 color=self._fill_for(is_obstacle), batch=self._batch,
             )
             self._shapes.append(inner)
-            # A lone letter has the hex's narrower middle to itself; the square
-            # base font overfills it, so trim single-letter grams (digrams and
-            # longer already fit). Hex-only -- the square boxes are wider.
-            font_size = gram_font_size(self._label_base(), Gram(text))
-            if len(text) == 1:
-                font_size = math.floor(font_size * 0.7)
-            self._add_label(text, cx, center_y, font_size)
+            if is_wild:
+                self._add_wild_sprite(cx, center_y, size)
+            else:
+                # A lone letter has the hex's narrower middle to itself; the
+                # square base font overfills it, so trim single-letter grams
+                # (digrams and longer already fit). Hex-only -- boxes are wider.
+                font_size = gram_font_size(self._label_base(), Gram(text))
+                if len(text) == 1:
+                    font_size = math.floor(font_size * 0.7)
+                self._add_label(text, cx, center_y, font_size)
 
     def _hex_verts(self, size, cx, cy):
         # Point-up: corners at 30, 90, ... degrees, so one vertex sits straight

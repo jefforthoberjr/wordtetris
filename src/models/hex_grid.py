@@ -206,13 +206,13 @@ class HexGrid:
                         best = (col, row)
         return best
 
-    def place(self, x, y, square, label):
+    def place(self, x, y, square, label, gram=None):
         cell = self.get_cell(x, y)
         result = False
         if cell is not None:
             if cell.is_occupied():
                 cell.clear()
-            cell.set_contents(square, label)
+            cell.set_contents(square, label, gram)
             result = True
         return result
 
@@ -221,12 +221,26 @@ class HexGrid:
         if cell:
             cell.clear()
 
+    def gram_at(self, x, y):
+        """The Gram a cell holds (its letters, or a wild vowel), or None if the
+        cell is empty / off-board. Word-finding uses this to expand wild cells,
+        which letter_at hides, and presence checks use it to count wild cells as
+        occupied."""
+        cell = self.get_cell(x, y)
+        result = None
+        if cell is not None and cell.is_occupied():
+            result = cell.gram
+        return result
+
     def letter_at(self, x, y):
-        """Letter shown in a cell, or None if empty / off-board."""
+        """Letters a cell contributes when spelling a word, or None if empty,
+        off-board, or a wild vowel (whose 1-3 letter run is resolved separately;
+        the plain-letter walk treats it as having no fixed letters)."""
         cell = self.get_cell(x, y)
         letter = None
-        if cell is not None and cell.is_occupied() and cell.label is not None:
-            letter = cell.label.text
+        if cell is not None and cell.is_occupied() and cell.gram is not None:
+            if not cell.gram.is_wild:
+                letter = cell.gram.text
         return letter
 
     def forward_neighbors(self, x, y, prev_direction=None):

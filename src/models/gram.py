@@ -9,12 +9,20 @@ class Gram:
     whose text is 2 letters long. For now this is a thin wrapper around its
     string, but later it will carry extra metadata (scoring, color, etc.).
     """
-    def __init__(self, text):
+    def __init__(self, text, is_wild=False):
         self._text = text.upper()
+        # A wild-vowel gram: its cell stands for a run of 1-3 vowels chosen when a
+        # word is spelled (see models.wild_vowel). It has no fixed text -- it
+        # renders as the vowel emblem, not a letter -- so _text stays empty.
+        self._is_wild = is_wild
 
     @property
     def text(self):
         return self._text
+
+    @property
+    def is_wild(self):
+        return self._is_wild
 
     def __len__(self):
         return len(self._text)

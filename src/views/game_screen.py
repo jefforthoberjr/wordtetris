@@ -1,5 +1,6 @@
 import math
 import random
+from collections import namedtuple
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
@@ -20,6 +21,7 @@ from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
+from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color
 
@@ -36,6 +38,14 @@ class Phase(Enum):
     VICTORY = 3
 
 
+# One dictionary word found on the board: the cell `path`, the `segments` each
+# cell contributed in order (a wild cell's resolved 1-3 vowel run, else the
+# gram's letters), and the `word` they spell. A plain (no-wild) path yields one
+# FoundWord; a path through a wild cell can yield several (CAT, COT, CUT ...),
+# one per expansion that completes a word.
+FoundWord = namedtuple("FoundWord", ["path", "segments", "word"])
+
+
 # --- Stage-3 selection strategies (game_screen.word_select) ----------------
 # Of the nucleated candidate words, decide which clear. Strategies share a tiny
 # interface so GameScreen can treat them uniformly: `interactive` says whether
@@ -43,14 +53,33 @@ class Phase(Enum):
 # strategies implement choose(); interactive ones own a UI via create_ui() and
 # drive clearing through callbacks into GameScreen.
 class AutoSelect:
-    """Instant auto-select: keep every candidate path that isn't a contiguous
+    """Instant auto-select: keep every candidate that isn't a contiguous
     sub-path of a longer one. Overlapping words (FIN/INK sharing IN) and repeats
     of one word at different board locations both survive; only strict sub-words
-    are dropped (CAT inside CATEGORY). The original instant-clear behavior."""
+    are dropped (CAT inside CATEGORY).
+
+    Wild cells make a single path ambiguous (CAT vs COT vs COAT), and a wild
+    cell can only resolve to one run when it clears. So among the candidates we
+    keep only those spelling a longest word, then drop sub-paths among those --
+    the longest-word-wins rule for wilds. (Ties beyond that aren't teased apart
+    further here; the interactive selector is the primary mode.)"""
     interactive = False
 
     def choose(self, candidates):
-        return select_maximal_paths(candidates)
+        chosen = candidates
+        if candidates:
+            longest = max(len(c.word) for c in candidates)
+            longest_words = [c for c in candidates if len(c.word) == longest]
+            keep_paths = select_maximal_paths([c.path for c in longest_words])
+            keep = {tuple(p) for p in keep_paths}
+            chosen = []
+            seen = set()
+            for c in longest_words:
+                key = tuple(c.path)
+                if key in keep and key not in seen:
+                    seen.add(key)
+                    chosen.append(c)
+        return chosen
 
     def create_ui(self, x, y, width, height, on_submit, on_next):
         return None
@@ -355,8 +384,8 @@ class GameScreen:
             self._orient_rule(piece)
             self._position_obstacle(piece, occupied)
             piece.place()
-            for gx, gy, cell, label in piece.get_cell_data():
-                self._board.place(gx, gy, cell, label)
+            for gx, gy, cell, label, gram in piece.get_cell_data():
+                self._board.place(gx, gy, cell, label, gram)
                 occupied.add((gx, gy))
                 # Record this as an original cell for the victory rule to track.
                 self._original_cells.add((gx, gy))
@@ -568,10 +597,10 @@ class GameScreen:
         player off that it does."""
         piece = set(piece_cells)
         for (x, y) in piece:
-            if self._board.letter_at(x, y) is None:
+            if self._board.gram_at(x, y) is None:
                 continue  # this piece cell has since been cleared
             for (nx, ny) in self._board.neighbors(x, y):
-                if (nx, ny) not in piece and self._board.letter_at(nx, ny) is not None:
+                if (nx, ny) not in piece and self._board.gram_at(nx, ny) is not None:
                     return True
         return False
 
@@ -692,50 +721,51 @@ class GameScreen:
                                mapped word -> path (first path wins a tie)
         """
         live_placed = {
-            p for p in self._move_placed if self._board.letter_at(*p) is not None
+            p for p in self._move_placed if self._board.gram_at(*p) is not None
         }
         found_any = self._find_words(apply_length=False)
-        self._board_words_any = {self._word_of(p) for p in found_any}
-        found = [p for p in found_any if self._word_length_rule(self._word_of(p), p)]
-        self._length_ok_words = {self._word_of(p) for p in found}
+        self._board_words_any = {fw.word for fw in found_any}
+        found = [fw for fw in found_any if self._word_length_rule(fw.word, fw.path)]
+        self._length_ok_words = {fw.word for fw in found}
         self._candidates = self._nucleation_rule(found, live_placed)
         self._candidate_words = {}
-        for path in self._candidates:
-            self._candidate_words.setdefault(self._word_of(path), path)
+        for fw in self._candidates:
+            self._candidate_words.setdefault(fw.word, fw)
 
-    def _word_of(self, path):
-        """The word a cell path spells, reading its grams in order."""
-        return "".join(self._board.letter_at(x, y) for (x, y) in path)
-
-    def _encode_variation(self, path):
+    def _encode_variation(self, found):
         """Encode the gram grouping a cleared word was made of, for the player
-        dictionary: each cell's gram in order, joined by the active grid's
-        separator (_gram_separator -- "|" square, "/" hex), with grams that are
-        still starting obstacles wrapped in "[ ]". Must run before _clear_paths
-        prunes _original_cells, so a just-cleared obstacle still reads as one."""
+        dictionary: each cell's contributed letters in order, joined by the
+        active grid's separator (_gram_separator -- "|" square, "/" hex). A wild
+        cell wraps the run it resolved to in "?...?"; a starting-obstacle cell
+        wraps in "[ ]" (outside the wild marker, e.g. "[?ea?]"). Must run before
+        _clear_paths prunes _original_cells, so a just-cleared obstacle still
+        reads as one."""
         parts = []
-        for (x, y) in path:
-            gram = self._board.letter_at(x, y).lower()
+        for (x, y), segment in zip(found.path, found.segments):
+            gram = self._board.gram_at(x, y)
+            text = segment.lower()
+            if gram is not None and gram.is_wild:
+                text = "?" + text + "?"
             if (x, y) in self._original_cells:
-                gram = "[" + gram + "]"
-            parts.append(gram)
+                text = "[" + text + "]"
+            parts.append(text)
         return self._gram_separator.join(parts)
 
-    def _clear_paths(self, paths):
-        """Stage 4: clear the chosen word-paths. Reads each word first, gates it
-        through the repeat rule, removes the cells, records history, and shows
-        the words in the side pane. Returns the words actually cleared."""
+    def _clear_paths(self, found_words):
+        """Stage 4: clear the chosen FoundWords. Gates each through the repeat
+        rule, removes the cells, records history, and shows the words in the side
+        pane. Returns the words actually cleared."""
         to_clear = set()
         cleared_words = []
         # The gram grouping each cleared word was made of, captured here -- before
         # the obstacle pruning below -- so an obstacle gram still reads as one.
         cleared_variations = []
-        for path in paths:
-            word = self._word_of(path)
+        for fw in found_words:
+            word = fw.word
             if self._repeat_rule(word):
                 cleared_words.append(word)
-                cleared_variations.append(self._encode_variation(path))
-                to_clear.update(path)
+                cleared_variations.append(self._encode_variation(fw))
+                to_clear.update(fw.path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
         # An original (starting obstacle) cell, once cleared, stays counted as
@@ -763,12 +793,12 @@ class GameScreen:
         word = typed.strip().upper()
         if not word:
             return
-        path = self._candidate_words.get(word)
-        if path is not None and self._repeat_rule(word):
+        found = self._candidate_words.get(word)
+        if found is not None and self._repeat_rule(word):
             # Capture newness before _clear_paths adds the word to the player's
             # dictionary, so the entry pane can list it green.
             is_new = not self._player_dict.contains(word)
-            self._clear_paths([path])
+            self._clear_paths([found])
             self._selecting_side_pane.accept_word(word, is_new)
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
             self._recompute_candidates()
@@ -823,40 +853,53 @@ class GameScreen:
 
     def _find_words(self, apply_length=True):
         """Stage 1 (pathfind): every dictionary word spellable on the board, as
-        a list of cell paths. Walks from each occupied cell via _collect_words;
-        the step geometry comes from the board's forward_neighbors (square: four
-        cardinals, hardcoded; hex: shaped by hex_grid.word_pathfinding), so this
-        is grid-agnostic. With apply_length=False the word-length minimum is
-        skipped, so the caller sees too-short words too (used to diagnose a
-        rejected submission)."""
-        found = []  # each entry: list of (x, y) cells spelling a dictionary word
+        a list of FoundWord (path + resolved segments + word). Walks from each
+        occupied cell via _collect_words; the step geometry comes from the
+        board's forward_neighbors (square: four cardinals, hardcoded; hex: shaped
+        by hex_grid.word_pathfinding), so this is grid-agnostic. A wild cell
+        branches into its possible vowel runs, so one path can yield several
+        FoundWord. With apply_length=False the word-length minimum is skipped, so
+        the caller sees too-short words too (used to diagnose a rejected
+        submission)."""
+        found = []  # each entry: a FoundWord spelling a dictionary word
         for start in self._board.occupied_cells():
-            self._collect_words(start, None, [], "", found, apply_length)
+            self._collect_words(start, None, [], "", [], found, apply_length)
         return found
 
-    def _collect_words(self, cell, prev_direction, path, text, found, apply_length=True):
+    def _collect_words(self, cell, prev_direction, path, text, segments, found, apply_length=True):
         """Pathfinding walk: step forward from `cell` (snaking via the board's
         forward_neighbors), collecting every dictionary word reachable. Grid-
         agnostic -- each board supplies its own snake geometry. `prev_direction`
         is the step taken to reach `cell` (None at the start), which a board's
         pathfinding rule may use to veto sharp twists (the square grid ignores
-        it). Prunes as soon as the letters so far begin no word."""
-        letter = self._board.letter_at(*cell)
-        if letter is None:
+        it). Prunes as soon as the letters so far begin no word.
+
+        A wild-vowel cell contributes any of its vowel runs rather than one fixed
+        gram, so the walk branches over each run (`segments` records the run
+        actually taken, so a matched word knows its exact spelling)."""
+        gram = self._board.gram_at(*cell)
+        if gram is None:
             return
-        text = text + letter
-        if not is_prefix(text):
-            return
+        if gram.is_wild:
+            options = wild_expansions()
+        else:
+            options = [gram.text]
         path = path + [cell]
-        if is_word(text) and (not apply_length or self._word_length_rule(text, path)):
-            found.append(path)
-        for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
-            # Never step backwards onto a cell already in this word's path. The
-            # right/down rules can't revisit (their directions are monotonic), so
-            # this guard only bites for rules that allow turning back, like
-            # rule_snake_anydirection; it also keeps that walk from looping.
-            if nxt not in path:
-                self._collect_words(nxt, direction, path, text, found, apply_length)
+        for option in options:
+            text2 = text + option
+            if not is_prefix(text2):
+                continue
+            segments2 = segments + [option]
+            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)):
+                found.append(FoundWord(path, segments2, text2))
+            for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
+                # Never step backwards onto a cell already in this word's path.
+                # The right/down rules can't revisit (their directions are
+                # monotonic), so this guard only bites for rules that allow
+                # turning back, like rule_snake_anydirection; it also keeps that
+                # walk from looping.
+                if nxt not in path:
+                    self._collect_words(nxt, direction, path, text2, segments2, found, apply_length)
 
     # --- Nucleation rules (game_screen.word_nucleation) --------------------
     # Stage 2: of every word _find_words turned up, decide which count for the
@@ -869,11 +912,11 @@ class GameScreen:
         own cells."""
         new_cells = set(placed_positions)
         candidates = []
-        for path in found:
-            has_placed = any(cell in new_cells for cell in path)
-            has_old = any(cell not in new_cells for cell in path)
+        for fw in found:
+            has_placed = any(cell in new_cells for cell in fw.path)
+            has_old = any(cell not in new_cells for cell in fw.path)
             if has_placed and has_old:
-                candidates.append(path)
+                candidates.append(fw)
         return candidates
 
     def _rule_nucleate_none(self, found, placed_positions):
@@ -993,8 +1036,8 @@ class GameScreen:
         piece.place()
 
         placed_positions = []
-        for gx, gy, cell, label in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label)
+        for gx, gy, cell, label, gram in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram)
             # Keep the active (light-blue) tint for now: it stays lit through the
             # SELECT phase to remind the player where words nucleate, and only
             # reverts to the settled board color once the piece is left behind

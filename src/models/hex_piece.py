@@ -8,10 +8,12 @@ from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
+from models.gram_picker import rule_scrabble_with_allvowelswild
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
+from views.textures import wild_vowel_image
 from config import select_rule, get_color
 
 
@@ -51,6 +53,7 @@ _GRAM_PICK_RULES = {
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
     "rule_digram52_distribution": rule_digram52_distribution,
+    "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
 _gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("hex_obstacle.gram_pick", _GRAM_PICK_RULES)
@@ -160,22 +163,33 @@ class HexPiece:
 
             self._cell_shapes.append(HexCellShape(outer, inner))
 
-            gram_font = gram_font_size(base_font_size, self._grams[i])
-            label = pyglet.text.Label(
-                self._grams[i].text,
-                font_size=gram_font,
-                weight='bold',
-                color=text_color,
-                anchor_x="center",
-                anchor_y="center",
-                batch=batch
-            )
+            # A wild-vowel gram renders as the vowel emblem sprite instead of a
+            # letter label, sized to sit inside the hex; the _labels slot and the
+            # per-label recenter nudge carry the sprite alongside text labels.
+            gram = self._grams[i]
+            if gram.is_wild:
+                image = wild_vowel_image(math.floor(self._hex_size))
+                label = pyglet.sprite.Sprite(image, batch=batch)
+                label.scale = self._hex_size / image.height
+                self._labels.append(label)
+                self._label_dys.append(0)
+            else:
+                gram_font = gram_font_size(base_font_size, gram)
+                label = pyglet.text.Label(
+                    gram.text,
+                    font_size=gram_font,
+                    weight='bold',
+                    color=text_color,
+                    anchor_x="center",
+                    anchor_y="center",
+                    batch=batch
+                )
+                self._labels.append(label)
+                # pyglet's anchor_y="center" centers the line box, not the glyph,
+                # so capitals sit high (white space at the bottom). Nudge down to
+                # recenter, scaled to this gram's own font size.
+                self._label_dys.append(-math.floor(gram_font * 0.12))
             label.visible = visible
-            self._labels.append(label)
-            # pyglet's anchor_y="center" centers the line box, not the glyph, so
-            # capitals sit high (white space at the bottom). Nudge down to
-            # recenter, scaled to this gram's own font size.
-            self._label_dys.append(-math.floor(gram_font * 0.12))
 
         self._update_positions()
 
@@ -259,13 +273,15 @@ class HexPiece:
         return self._cell_grid_positions()
 
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, cell_shape, label) for each cell.
+        """Returns list of (grid_x, grid_y, cell_shape, label, gram) for each
+        cell.
 
         The cell_shape is the HexCellShape wrapper so the grid can toggle both
-        the border and fill via one .visible (hover hide / clear).
+        the border and fill via one .visible (hover hide / clear). The gram
+        travels along so the board can record what the placed cell holds.
         """
         data = []
         positions = self._cell_grid_positions()
         for i, (gx, gy) in enumerate(positions):
-            data.append((gx, gy, self._cell_shapes[i], self._labels[i]))
+            data.append((gx, gy, self._cell_shapes[i], self._labels[i], self._grams[i]))
         return data

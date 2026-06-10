@@ -85,13 +85,15 @@ rules:
   # covering an obstacle strands that victory condition).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
 
-  square_piece.gram_pick:   rule_scrabble_distribution
+  square_piece.gram_pick:   rule_scrabble_with_allvowelswild
+  # square_piece.gram_pick: rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
   # square_piece.gram_pick: rule_englishcorpus_random_unigram
   # square_piece.gram_pick: rule_englishcorpus_random_digram
   # square_piece.gram_pick: rule_gramcorpus_distribution
   # square_piece.gram_pick: rule_mixed_scrabble_digram52
   # square_piece.gram_pick: rule_digram52_distribution
+  # rule_scrabble_with_allvowelswild: scrabble weights, but vowels become wild cells
 
   # square_piece.piece_set:   rule_use_tetriminos
   square_piece.piece_set: rule_use_dominos
@@ -113,7 +115,8 @@ rules:
 
   # hex_piece.gram_pick:      rule_gramcorpus_distribution
   # hex_piece.gram_pick:    rule_random_lettersw
-  hex_piece.gram_pick:    rule_scrabble_distribution
+  hex_piece.gram_pick:    rule_scrabble_with_allvowelswild
+  # hex_piece.gram_pick:    rule_scrabble_distribution
   # hex_piece.gram_pick:    rule_englishcorpus_random_unigram
   # hex_piece.gram_pick:    rule_englishcorpus_random_digram
   # hex_piece.gram_pick:    rule_mixed_scrabble_digram52

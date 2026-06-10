@@ -17,11 +17,14 @@ from pathlib import Path
 #     b|a|rf;ba|rf   -- "barf", two known square groupings
 #     ge|[ar]        -- "gear", square, the "ar" gram came from an obstacle
 #     a/[re]/a       -- "area", hex
+#     c|?a?|t        -- "cat", square, the middle cell was a wild vowel (-> "a")
+#     [br]/?ea?/ch   -- "breach", hex, obstacle "br" + wild "ea" + "ch"
 _DEFAULT_PATH = Path(__file__).resolve().parents[2] / "player_dictionary.txt"
 
 # The separator / annotation characters used inside a variation; stripping them
-# from a variation string leaves the bare word.
-_GRAM_MARKUP = "|/[]"
+# from a variation string leaves the bare word. "|" "/" separate grams; "[ ]"
+# wrap an obstacle gram; "?" wrap the letters a wild-vowel cell resolved to.
+_GRAM_MARKUP = "|/[]?"
 
 
 def word_of_variation(variation):

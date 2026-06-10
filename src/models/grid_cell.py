@@ -2,14 +2,19 @@ class GridCell:
     def __init__(self):
         self.square = None
         self.label = None
+        # The Gram the cell holds (its letters, or a wild vowel). Kept so the
+        # board can report a cell's letters / wild-ness without inspecting the
+        # render objects (the label may be a sprite, not text).
+        self.gram = None
         self._hidden_by_hover = False
 
     def is_occupied(self):
         return self.square is not None
 
-    def set_contents(self, square, label):
+    def set_contents(self, square, label, gram=None):
         self.square = square
         self.label = label
+        self.gram = gram
         self._hidden_by_hover = False
         if square:
             square.visible = True
@@ -23,6 +28,7 @@ class GridCell:
             self.label.visible = False
         self.square = None
         self.label = None
+        self.gram = None
         self._hidden_by_hover = False
 
     def hide_for_hover(self):
