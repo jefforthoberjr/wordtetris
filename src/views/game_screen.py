@@ -206,6 +206,21 @@ class GameScreen:
         # they clear, so rule_victory_originals_cleared wins when it hits empty.
         self._original_cells = set()
 
+        # Cell-overlap rules, chosen by the YAML keys game_screen.cell_overlap
+        # (may a placement cover existing cells?) and game_screen.cell_overlap_action
+        # (what becomes of the cells it covers?). See the _rule_*overlap* methods
+        # near the victory rules.
+        cell_overlap_rules = {
+            "rule_moveandplace_over_playerandobstacle_cell": self._rule_moveandplace_over_playerandobstacle_cell,
+        }
+        self._cell_overlap_rule = select_rule("game_screen.cell_overlap", cell_overlap_rules)
+        cell_overlap_action_rules = {
+            "rule_old_cells_get_delete": self._rule_old_cells_get_delete,
+        }
+        self._cell_overlap_action_rule = select_rule(
+            "game_screen.cell_overlap_action", cell_overlap_action_rules
+        )
+
         # Spawn positioning rule, chosen by the YAML key game_screen.spawn.
         spawn_rules = {
             "rule_spawn_center": self._rule_spawn_center,
@@ -573,6 +588,20 @@ class GameScreen:
         # original endless behavior, preserved as a selectable option).
         return False
 
+    def _rule_moveandplace_over_playerandobstacle_cell(self, overlapped):
+        # Cell-overlap rule: placing a piece over cells already holding a player
+        # or obstacle cell is always permitted. Returns True so the placement is
+        # never blocked. `overlapped` is the set of cells about to be covered;
+        # a future overlap rule could inspect it and refuse instead.
+        return True
+
+    def _rule_old_cells_get_delete(self, overlapped):
+        # Cell-overlap action rule: the cells a placement covers are treated as
+        # gone. The board already overwrote their contents in place(); this drops
+        # any covered starting-obstacle coordinates from _original_cells so a
+        # covered obstacle counts as cleared for rule_victory_originals_cleared.
+        self._original_cells.difference_update(overlapped)
+
     def _check_victory(self):
         """If the active victory rule is satisfied, enter VICTORY and return
         True; otherwise return False. Already being in VICTORY counts as True so
@@ -853,6 +882,18 @@ class GameScreen:
         # place until the player brings it fully back on-board.
         if not self._piece_on_board(piece):
             return
+        # Cells already on the board this placement would cover. Read before the
+        # piece's own cells land, so it reflects only the settled board (the
+        # piece's cells aren't placed yet). is_cell_occupied is common to both
+        # the square and hex boards, so this stays grid-agnostic.
+        overlapped = set()
+        for (x, y) in piece.get_cell_positions():
+            if self._board.is_cell_occupied(x, y):
+                overlapped.add((x, y))
+        # Cell-overlap rule: may the piece be placed when it covers those cells?
+        # Always yes for now; a future rule could refuse and abort the place.
+        if not self._cell_overlap_rule(overlapped):
+            return
         self._clear_hover_visibility()
         piece.place()
 
@@ -864,6 +905,10 @@ class GameScreen:
             # reverts to the settled board color once the piece is left behind
             # (see _settle_placed_cells).
             placed_positions.append((gx, gy))
+
+        # Cell-overlap action rule: handle the cells just covered (e.g. drop a
+        # covered obstacle from the original-cell tracking so it counts as gone).
+        self._cell_overlap_action_rule(overlapped)
 
         # Runs stages 1-3: auto selectors clear and advance immediately;
         # interactive ones enter the SELECTING phase and withhold the next piece

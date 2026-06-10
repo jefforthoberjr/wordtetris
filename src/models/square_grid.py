@@ -66,7 +66,7 @@ class SquareGrid:
             return None
         return self._cells[y][x]
     
-    def is_occupied(self, x, y):
+    def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         if cell is None:
             return False

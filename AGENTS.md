@@ -28,7 +28,7 @@ Then, as we refactor code, to add more complexity to the feature, I was to prese
 
 When refactoring code, keep the old version of the feature in the code, but disabled (or in an uncalled function).
 
-When I ask you to refactor a feature, in a major way, ask me to confirm if I want to stash a copy of the old way in the code. I will be rare that I want to completely abandon an old feature.
+When I ask you to refactor a feature, in a major way, ask me to confirm if I want to stash existing logic, as a commented out rule in config.yaml, a copy of the old way in the code. I will be rare that I want to completely abandon an old feature.
 
 Thus, our overall coding style will end up with many objects or logic rules in the game will be swappable/configurable. The code will be a lot like a 'rules engine' format.
 
