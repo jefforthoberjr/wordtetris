@@ -1,9 +1,11 @@
 import math
+import random
 from pathlib import Path
 import pyglet
 from config import CONFIG, get_color
 from controllers.screen_manager import ScreenType
 from models.player_dictionary import PlayerDictionary
+from views.gram_preview import GramPreview
 
 
 # Repo root, for resolving the config-relative mock dictionary path below.
@@ -95,6 +97,23 @@ class DictionaryScreen:
             )
             self._cells.append(cell)
 
+        self._font_size = font_size
+
+        # Hover preview: a single re-render of the hovered word's gram grouping,
+        # drawn over that word's cell (the text Label underneath is untouched).
+        # Cells are a touch larger than the word font so the boxes read clearly,
+        # but still smaller than the in-game grid. _hover_index tracks which grid
+        # cell is previewed so a fresh variation is only picked when the hovered
+        # word changes, not on every mouse-motion event.
+        preview_cell = math.floor(font_size * 1.1)
+        self._preview = GramPreview(preview_cell, self._row_height)
+        self._hover_index = None
+        # Words currently laid out in the grid, in cell order (set per page).
+        self._visible_words = []
+        # The PlayerDictionary backing the current view, kept so a hover can look
+        # up the word's gram variations (set in on_enter alongside _words).
+        self._dict = None
+
         # --- A-Z tab strip ------------------------------------------------
         # 26 fixed square tabs along the bottom, one per letter. Sizes come from
         # the window width so all 26 always fit. The current letter's tab is
@@ -185,6 +204,9 @@ class DictionaryScreen:
         page = self._pages[index]
         self._render_words(page["words"])
         self._update_tab_highlight(page["letter"])
+        # The cells now hold different words, so any active preview is stale.
+        self._preview.hide()
+        self._hover_index = None
 
     def _update_tab_highlight(self, current_letter):
         active = get_color("dictionary.tab_active")
@@ -201,6 +223,9 @@ class DictionaryScreen:
         blanked so a short page leaves no stale leftovers. Column-major: because
         cells are stored column-major, the i-th word drops straight into the
         i-th cell."""
+        # Held so a hover can map a grid cell index back to its word (and look up
+        # that word's gram variations for the preview).
+        self._visible_words = page_words
         for i, cell in enumerate(self._cells):
             if i < len(page_words):
                 cell.text = page_words[i]
@@ -224,9 +249,13 @@ class DictionaryScreen:
         # toggle can redirect this to the large mock file for paging playtests.
         source = self._word_source_path()
         if source is not None and source.exists():
-            self._words = PlayerDictionary(source).words()
+            self._dict = PlayerDictionary(source)
         else:
-            self._words = PlayerDictionary().words()
+            self._dict = PlayerDictionary()
+        self._words = self._dict.words()
+        # Any preview from a prior visit is stale now the words reloaded.
+        self._preview.hide()
+        self._hover_index = None
         self._count_label.text = str(len(self._words)) + " words collected"
         # Build the A-Z page model and open on the first page (letter "a").
         self._pages, self._letter_first_page = self._build_pages(self._words)
@@ -248,6 +277,9 @@ class DictionaryScreen:
         # Tab squares first, then everything else (word grid, count, tab letters).
         self._tab_batch.draw()
         self._batch.draw()
+        # The hovered-word preview sits on top of the word grid, occluding the
+        # word's text Label with its re-rendered cells.
+        self._preview.draw()
 
     def update(self, dt):
         pass
@@ -304,4 +336,38 @@ class DictionaryScreen:
             self._jump_to_letter(self.LETTERS[hit])
 
     def on_mouse_motion(self, x, y, dx, dy):
-        pass
+        # Which laid-out word, if any, is under the cursor. Each word Label is
+        # anchored top-left at (cell.x, cell.y); its glyphs run right by
+        # content_width and down from the top, so a row_height-tall box from the
+        # top makes the word comfortable to hover.
+        hit = None
+        for i in range(len(self._visible_words)):
+            cell = self._cells[i]
+            left = cell.x
+            right = cell.x + cell.content_width
+            top = cell.y
+            bottom = cell.y - self._row_height
+            if left <= x <= right and bottom <= y <= top:
+                hit = i
+        if hit is None:
+            self._preview.hide()
+            self._hover_index = None
+        elif hit != self._hover_index:
+            # Only (re)build when the hovered word changes, so the random variation
+            # pick stays put while the cursor moves within one word.
+            self._show_preview_for(hit)
+
+    def _show_preview_for(self, index):
+        """Preview the word in grid cell `index`: pick one of its gram groupings
+        at random and render it over the word. A word with no stored grouping
+        (e.g. legacy data) just clears any existing preview."""
+        self._hover_index = index
+        word = self._visible_words[index]
+        variations = self._dict.variations(word)
+        if not variations:
+            self._preview.hide()
+        else:
+            variation = random.choice(variations)
+            cell = self._cells[index]
+            center_y = cell.y - math.floor(self._font_size / 2)
+            self._preview.show(variation, cell.x, center_y, cell.content_width)

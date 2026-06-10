@@ -117,7 +117,7 @@ class FakePlayerDict:
     def contains(self, word):
         return word.lower() in self._words
 
-    def add(self, word):
+    def add(self, word, variation=None):
         w = word.lower()
         is_new = w not in self._words
         self._words.add(w)
@@ -143,6 +143,9 @@ def _game(board, interactive=True, history=None):
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
     g._player_dict = FakePlayerDict()
+    # Square separator so _clear_paths can encode the cleared word's grouping for
+    # the player dictionary (these tests run square-geometry boards).
+    g._gram_separator = "|"
     g._dictionary_count_rule = gs.rule_show_dictionary_count
     # No victory in these selection-logic tests, and no starting obstacles to
     # track; the victory rule just reports "not won" so flow proceeds normally.

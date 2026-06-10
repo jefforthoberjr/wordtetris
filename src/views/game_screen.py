@@ -388,6 +388,9 @@ class GameScreen:
         self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
         self._obstacle_gram_pick_rule = SQUARE_OBSTACLE_GRAM_PICK_RULE
         self._movement_rule = self._rule_square_movement
+        # Gram separator a cleared word is recorded with in the player dictionary
+        # (see _encode_variation): "|" marks a word formed on the square grid.
+        self._gram_separator = "|"
         grid_px_width = self.GRID_WIDTH * self._cell_size
         grid_px_height = self._board_height * self._cell_size
         board = SquareGrid(
@@ -418,6 +421,9 @@ class GameScreen:
 
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows
+        # Gram separator a cleared word is recorded with in the player dictionary
+        # (see _encode_variation): "/" marks a word formed on the hex grid.
+        self._gram_separator = "/"
         return board
 
     def _init_first_piece(self):
@@ -701,16 +707,34 @@ class GameScreen:
         """The word a cell path spells, reading its grams in order."""
         return "".join(self._board.letter_at(x, y) for (x, y) in path)
 
+    def _encode_variation(self, path):
+        """Encode the gram grouping a cleared word was made of, for the player
+        dictionary: each cell's gram in order, joined by the active grid's
+        separator (_gram_separator -- "|" square, "/" hex), with grams that are
+        still starting obstacles wrapped in "[ ]". Must run before _clear_paths
+        prunes _original_cells, so a just-cleared obstacle still reads as one."""
+        parts = []
+        for (x, y) in path:
+            gram = self._board.letter_at(x, y).lower()
+            if (x, y) in self._original_cells:
+                gram = "[" + gram + "]"
+            parts.append(gram)
+        return self._gram_separator.join(parts)
+
     def _clear_paths(self, paths):
         """Stage 4: clear the chosen word-paths. Reads each word first, gates it
         through the repeat rule, removes the cells, records history, and shows
         the words in the side pane. Returns the words actually cleared."""
         to_clear = set()
         cleared_words = []
+        # The gram grouping each cleared word was made of, captured here -- before
+        # the obstacle pruning below -- so an obstacle gram still reads as one.
+        cleared_variations = []
         for path in paths:
             word = self._word_of(path)
             if self._repeat_rule(word):
                 cleared_words.append(word)
+                cleared_variations.append(self._encode_variation(path))
                 to_clear.update(path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
@@ -720,10 +744,14 @@ class GameScreen:
         for word in cleared_words:
             self._cleared_word_history.add(word)
         if cleared_words:
-            # Record each word in the player's lifetime dictionary (instant
-            # autosave); add() returns True for words never collected before, so
-            # they list green.
-            new_flags = [self._player_dict.add(word) for word in cleared_words]
+            # Record each word + its gram grouping in the player's lifetime
+            # dictionary (instant autosave). add() returns True only for words
+            # never collected before, so they list green; a word re-collected
+            # with a new grouping saves the grouping but stays black (the count
+            # didn't grow).
+            new_flags = []
+            for word, variation in zip(cleared_words, cleared_variations):
+                new_flags.append(self._player_dict.add(word, variation))
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words

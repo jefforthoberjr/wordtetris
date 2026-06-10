@@ -4,10 +4,21 @@ GAME NAMES
 
 Spelling backwards looks a little weird if there are is a cell with a digram, since the end of the digram visually "jumps" backwards looking.
 
-Prevent weired unigram domino combos (like double I)
+Spelling stright backwards across a multigram is a little unintuitive too.
 
+Prevent weired unigram domino combos (like double I)
+	What distribution should I use for this?
 
 Have entire placed nucleated chunks (an asteroid of multiple pieces) be moveable, re-arrangable?
+
+
+In the middle of spelling a long word, you basically start forming a wish list of letters you need to finish it.
+	I would be cool if there was a way to keep track of that (i.e. not forgetting was letters I was hunting for)
+	Or some way of cheating/influencing the next letters to include them. (like pulling ahead from the next random set of pieces)
+
+	Maybe allow to pickup an remove some placed player pieces.
+
+IDEA: all letters in a cluster can be used to spell a word, they actually don't need to be adjacent at all, they just need to be part of the cluster. Packing on the size of different asteroids until can spell a word (without worrying about arranging the different angles to snake it together. Longer words are harder to snake together. Then really, we're just throwing words onto 4 different piles.
 
 
 Give players the ability to re-move their word if they didn't like the placement
