@@ -102,10 +102,13 @@ class GramPreview:
         )
         self._shapes.append(rect)
 
-    def _add_label(self, text, cx, cy):
+    def _label_base(self):
+        return math.floor(self._cell_size * 0.6)
+
+    def _add_label(self, text, cx, cy, font_size):
         label = pyglet.text.Label(
             text,
-            font_size=gram_font_size(math.floor(self._cell_size * 0.6), Gram(text)),
+            font_size=font_size,
             weight="bold",
             x=cx, y=cy, anchor_x="center", anchor_y="center",
             color=self._text_color, batch=self._batch,
@@ -123,28 +126,28 @@ class GramPreview:
                 border_color=self._border_color, batch=self._batch,
             )
             self._shapes.append(rect)
-            self._add_label(text, x + math.floor(cell / 2), center_y)
+            font_size = gram_font_size(self._label_base(), Gram(text))
+            self._add_label(text, x + math.floor(cell / 2), center_y, font_size)
 
     def _hex_size(self):
         # Point-up hex sized so its height (2*size) matches the square box.
         return self._cell_size / 2
 
-    def _hex_gap(self):
-        return math.floor(self._cell_size * 0.12)
-
     def _hex_row_width(self, count):
-        width = SQRT3 * self._hex_size()
-        return count * width + (count - 1) * self._hex_gap()
+        # A point-up hex has vertical left/right edges, so stepping centers by
+        # exactly the hex width puts neighbours edge-to-edge (no gap).
+        return count * SQRT3 * self._hex_size()
 
     def _build_hex_row(self, grams, left_x, center_y):
         # Point-up hexagons (a vertex straight up), laid left to right and spaced
-        # by their width plus a small gap. The cell is a black outer hexagon
-        # behind a slightly smaller fill hexagon, matching the in-game hex cell.
+        # by their full width so adjacent cells touch along their vertical edges.
+        # Each cell is a black outer hexagon behind a slightly smaller fill
+        # hexagon, matching the in-game hex cell.
         size = self._hex_size()
         border = max(2.0, size * 0.16)
         inner_size = size - border
         width = SQRT3 * size
-        step = width + self._hex_gap()
+        step = width
         for i, (text, is_obstacle) in enumerate(grams):
             cx = left_x + math.floor(width / 2) + i * step
             outer = pyglet.shapes.Polygon(
@@ -157,7 +160,13 @@ class GramPreview:
                 color=self._fill_for(is_obstacle), batch=self._batch,
             )
             self._shapes.append(inner)
-            self._add_label(text, cx, center_y)
+            # A lone letter has the hex's narrower middle to itself; the square
+            # base font overfills it, so trim single-letter grams (digrams and
+            # longer already fit). Hex-only -- the square boxes are wider.
+            font_size = gram_font_size(self._label_base(), Gram(text))
+            if len(text) == 1:
+                font_size = math.floor(font_size * 0.7)
+            self._add_label(text, cx, center_y, font_size)
 
     def _hex_verts(self, size, cx, cy):
         # Point-up: corners at 30, 90, ... degrees, so one vertex sits straight
