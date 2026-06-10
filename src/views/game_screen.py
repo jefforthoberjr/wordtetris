@@ -728,9 +728,27 @@ class GameScreen:
         found = [fw for fw in found_any if self._word_length_rule(fw.word, fw.path)]
         self._length_ok_words = {fw.word for fw in found}
         self._candidates = self._nucleation_rule(found, live_placed)
-        self._candidate_words = {}
+        # Of several ways to spell the same word (different paths, or different
+        # wild-vowel expansions), keep the one covering the fewest cells, so a
+        # typed word makes the most compact clear -- e.g. a single wild as "OA"
+        # over two wilds as "O"+"A" -- leaving more cells in play.
+        by_word = {}
         for fw in self._candidates:
-            self._candidate_words.setdefault(fw.word, fw)
+            by_word.setdefault(fw.word, []).append(fw)
+        self._candidate_words = {}
+        for word, options in by_word.items():
+            self._candidate_words[word] = self._fewest_cell_word(options)
+
+    def _fewest_cell_word(self, found_words):
+        """Pick the FoundWord covering the fewest cells; break ties at random.
+        Used when a typed word can be cleared several ways (common with wild
+        vowels)."""
+        fewest = min(len(fw.path) for fw in found_words)
+        smallest = []
+        for fw in found_words:
+            if len(fw.path) == fewest:
+                smallest.append(fw)
+        return random.choice(smallest)
 
     def _encode_variation(self, found):
         """Encode the gram grouping a cleared word was made of, for the player

@@ -12,6 +12,8 @@ Some kind of bonus goals or something per level, otherwise it's too much of a bl
 
 All vowels are wild cards
 
+Have every 10 turns be a word selection auto scan the whole board, then every 10 turns your packing up cluster of asteroids
+
 Try tetris style gravity
 
 Spelling backwards looks a little weird if there are is a cell with a digram, since the end of the digram visually "jumps" backwards looking.

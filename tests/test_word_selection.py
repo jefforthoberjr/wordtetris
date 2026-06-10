@@ -21,15 +21,35 @@ class _FakeCell:
         self.square = _FakeSquare()
 
 
+class _FakeGram:
+    """Stand-in for a placed cell's Gram: its letters and whether it is a wild
+    vowel (a wild cell carries no fixed letters)."""
+
+    def __init__(self, text, is_wild=False):
+        self.text = text
+        self.is_wild = is_wild
+
+
 class FakeBoard:
     """Sparse {(x, y): letter} board with the methods the pipeline calls. Square
-    geometry (four cardinals) so words snake/turn freely."""
+    geometry (four cardinals) so words snake/turn freely. Cells listed in `wild`
+    are wild-vowel cells (their letter value is ignored)."""
 
-    def __init__(self, cells):
+    def __init__(self, cells, wild=()):
         self.cells = dict(cells)
+        self._wild = set(wild)
 
     def letter_at(self, x, y):
-        return self.cells.get((x, y))
+        letter = self.cells.get((x, y))
+        if (x, y) in self._wild:
+            letter = None  # a wild cell contributes no fixed letter
+        return letter
+
+    def gram_at(self, x, y):
+        gram = None
+        if (x, y) in self.cells:
+            gram = _FakeGram(self.cells[(x, y)], is_wild=(x, y) in self._wild)
+        return gram
 
     def occupied_cells(self):
         return list(self.cells.keys())
@@ -110,6 +130,8 @@ class FakePlayerDict:
 
     def __init__(self):
         self._words = set()
+        # (word, variation) pairs recorded, so tests can assert the encoding.
+        self.added = []
 
     def __len__(self):
         return len(self._words)
@@ -121,6 +143,7 @@ class FakePlayerDict:
         w = word.lower()
         is_new = w not in self._words
         self._words.add(w)
+        self.added.append((w, variation))
         return is_new
 
 
@@ -242,3 +265,56 @@ def test_auto_selector_clears_immediately_without_selecting():
     assert g._phase is gs.Phase.MOVING       # never enters SELECTING
     assert g._moving_side_pane.cleared == ["TEAR"]    # maximal path cleared
     assert g._board.cells == {}
+
+
+# --- wild-vowel cells -------------------------------------------------------
+
+def test_wild_cell_expands_to_multiple_words():
+    # C _ T with the middle cell wild: the wild expands to 1-3 vowels, so the
+    # path spells several words, including COAT via the two-vowel run "OA".
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "X", (2, 0): "T"}, wild={(1, 0)}),
+    )
+    g._begin_selection([(2, 0)])
+    assert g._phase is gs.Phase.SELECTING
+    assert {"CAT", "COT", "CUT", "COAT"} <= set(g._candidate_words)
+
+
+def test_wild_submit_clears_and_encodes_with_question_marks():
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "X", (2, 0): "T"}, wild={(1, 0)}),
+    )
+    g._begin_selection([(2, 0)])
+    g._on_submit_word("coat")
+    assert g._selecting_side_pane.accepted == ["COAT"]
+    assert g._board.cells == {}  # all three cells cleared
+    # The wild cell records the run it resolved to, wrapped in "?...?".
+    assert g._player_dict.added == [("coat", "c|?oa?|t")]
+
+
+def test_wild_obstacle_encodes_brackets_outside_question_marks():
+    # A wild cell that is also a starting obstacle encodes as [?...?].
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "X", (2, 0): "T"}, wild={(1, 0)}),
+    )
+    g._original_cells = {(1, 0)}
+    g._begin_selection([(2, 0)])
+    g._on_submit_word("cat")
+    assert g._player_dict.added == [("cat", "c|[?a?]|t")]
+
+
+def test_typed_word_prefers_fewest_cells():
+    # Two adjacent wilds then T, H: OATH can clear as wild("O")+wild("A")+T+H
+    # (4 cells) or as the second wild alone = "OA" + T + H (3 cells). Typing OATH
+    # should take the 3-cell clear, leaving the first wild in play.
+    g = _game(
+        FakeBoard(
+            {(0, 0): "X", (1, 0): "Y", (2, 0): "T", (3, 0): "H"},
+            wild={(0, 0), (1, 0)},
+        ),
+    )
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("oath")
+    assert g._player_dict.added == [("oath", "?oa?|t|h")]
+    # Only the three OATH cells cleared; the first wild remains on the board.
+    assert g._board.cells == {(0, 0): "X"}
