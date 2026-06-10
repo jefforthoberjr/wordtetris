@@ -185,6 +185,27 @@ class HexGrid:
             result = cell.is_occupied()
         return result
 
+    def cell_at(self, px, py):
+        """The (col, row) of the hex nearest pixel (px, py), or None if the point
+        lies outside every cell. The offset hex layout has no tidy inverse, so
+        this just keeps the closest cell center within one hex radius -- a click
+        in a gap or off the board misses. The mouse controls use it to map a
+        click to a grid cell."""
+        best = None
+        best_dist_sq = None
+        limit_sq = self._hex_size * self._hex_size
+        for row in range(self._rows):
+            for col in range(self._cols):
+                cx, cy = self.cell_center(col, row)
+                offset_x = px - cx
+                offset_y = py - cy
+                dist_sq = offset_x * offset_x + offset_y * offset_y
+                if dist_sq <= limit_sq:
+                    if best_dist_sq is None or dist_sq < best_dist_sq:
+                        best_dist_sq = dist_sq
+                        best = (col, row)
+        return best
+
     def place(self, x, y, square, label):
         cell = self.get_cell(x, y)
         result = False

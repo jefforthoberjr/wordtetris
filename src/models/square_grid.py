@@ -71,6 +71,17 @@ class SquareGrid:
         if cell is None:
             return False
         return cell.is_occupied()
+
+    def cell_at(self, px, py):
+        """The (x, y) of the cell containing pixel (px, py), or None if the point
+        is off the board. Cells tile from the origin, so this is a floor-divide;
+        the mouse controls use it to map a click to a grid cell."""
+        gx = math.floor(px / self._cell_size)
+        gy = math.floor(py / self._cell_size)
+        result = None
+        if self.is_valid(gx, gy):
+            result = (gx, gy)
+        return result
     
     def place(self, x, y, square, label):
         cell = self.get_cell(x, y)

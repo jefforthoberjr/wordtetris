@@ -935,6 +935,31 @@ class GameScreen:
             piece.move(-dx, -dy)
         self._update_hover_visibility()
 
+    def _handle_move_click(self, x, y):
+        """Left-click control (MOVING phase). Clicking a cell the current piece
+        occupies rotates it clockwise; clicking any other on-board cell jumps the
+        piece there. Clicks off the board, or while the piece is already placed,
+        do nothing. The grid maps the pixel to a cell (cell_at), so this works
+        the same on the square and hex boards."""
+        piece = self._current_piece()
+        cell = self._board.cell_at(x, y)
+        if not piece.placed and cell is not None:
+            if cell in piece.get_cell_positions():
+                self._rotate_piece_cw()
+            else:
+                self._jump_piece_to(cell)
+
+    def _jump_piece_to(self, cell):
+        """Translate the current piece so its anchor cell lands on `cell` -- a
+        direct jump, not a step-by-step walk through the cells in between. The
+        anchor (grid_x, grid_y) is an occupied cell of every piece, so the click
+        ends up under the piece. Routed through _move_piece, so an invalid
+        landing (off board or a forbidden overlap) is rejected and the piece
+        stays put, exactly like a keyboard move."""
+        piece = self._current_piece()
+        target_x, target_y = cell
+        self._move_piece(target_x - piece.grid_x, target_y - piece.grid_y)
+
     def _rotate_piece_cw(self):
         piece = self._current_piece()
         self._clear_hover_visibility()
@@ -1094,6 +1119,13 @@ class GameScreen:
             return
         if self._phase == Phase.SELECTING:
             self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
+        # MOVING: left-click drives the current piece -- click a cell it occupies
+        # to rotate, click another on-board cell to jump it there. Right-click
+        # places the piece, the same as the place key.
+        if self._phase == Phase.MOVING and button == pyglet.window.mouse.LEFT:
+            self._handle_move_click(x, y)
+        elif self._phase == Phase.MOVING and button == pyglet.window.mouse.RIGHT:
+            self._place_current_piece()
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:
