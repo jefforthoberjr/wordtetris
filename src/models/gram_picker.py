@@ -14,6 +14,7 @@ _corpus_grams = None
 _corpus_weights = None
 _digrams52 = None
 _digrams52_weights = None
+_trigrams = None
 
 
 def _load_scrabble_distribution():
@@ -252,6 +253,42 @@ def rule_digram52_distribution(count):
     """
     _load_digrams52()
     picks = random.choices(_digrams52, weights=_digrams52_weights, k=count)
+    grams = []
+    for text in picks:
+        grams.append(Gram(text))
+    return grams
+
+
+def _load_trigrams():
+    global _trigrams
+    if _trigrams is not None:
+        return
+
+    # Unlike the other gram CSVs, this file is a plain one-trigram-per-line list:
+    # no header row and no frequency column (every trigram is weighted equally).
+    _trigrams = []
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'jpo_5.2.2_trigrams.csv')
+    with open(csv_path, 'r') as f:
+        for line in f:
+            gram = line.strip().upper()
+            if gram:
+                _trigrams.append(gram)
+
+
+def rule_trigram_equalweight(count):
+    """
+    Pick grams as trigrams only, drawn from jpo_5.2.2_trigrams.csv with EVERY
+    trigram equally likely (the file carries no frequencies). Every cell gets a
+    3-letter gram.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of trigram Grams (each 3 letters)
+    """
+    _load_trigrams()
+    picks = random.choices(_trigrams, k=count)
     grams = []
     for text in picks:
         grams.append(Gram(text))

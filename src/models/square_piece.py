@@ -8,6 +8,7 @@ from models.gram_picker import rule_englishcorpus_random_digram
 from models.gram_picker import rule_gramcorpus_distribution
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
+from models.gram_picker import rule_trigram_equalweight
 from models.gram_picker import rule_scrabble_with_allvowelswild
 from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
 from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
@@ -60,6 +61,7 @@ _GRAM_PICK_RULES = {
     "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
     "rule_digram52_distribution": rule_digram52_distribution,
+    "rule_trigram_equalweight": rule_trigram_equalweight,
     "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
 _gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)

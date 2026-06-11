@@ -65,11 +65,6 @@ rules:
   game_screen.dictionary_count: rule_hide_dictionary_count
 
   # Victory condition (only one active at a time):
-  #   rule_victory_missions_cleared -- clear every mission (light-red) piece; left
-  #     over player and obstacle cells are fine
-  #   rule_victory_missions_and_obstacles_cleared -- clear every mission AND every
-  #     obstacle (light-orange) piece; left over player cells are fine
-  #   rule_victory_obstacles_cleared -- clear every obstacle piece only
   game_screen.victory: rule_victory_missions_cleared
   # game_screen.victory: rule_victory_missions_and_obstacles_cleared
   # game_screen.victory: rule_victory_obstacles_cleared
@@ -101,7 +96,9 @@ rules:
   # square_piece.gram_pick: rule_gramcorpus_distribution
   square_piece.gram_pick: rule_mixed_scrabble_digram52
   # square_piece.gram_pick: rule_digram52_distribution
+  # square_piece.gram_pick: rule_trigram_equalweight
   # rule_scrabble_with_allvowelswild: scrabble weights, but vowels become wild cells
+  # rule_trigram_equalweight: every trigram in jpo_5.2.2_trigrams.csv, equal odds
 
   # square_piece.piece_set:   rule_use_tetriminos
   square_piece.piece_set: rule_use_dominos
@@ -116,6 +113,7 @@ rules:
   # square_obstacle.gram_pick: rule_gramcorpus_distribution
   # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
   square_obstacle.gram_pick: rule_digram52_distribution
+  # square_obstacle.gram_pick: rule_trigram_equalweight
 
   square_obstacle.piece_set: rule_use_dominos
   # square_obstacle.piece_set: rule_use_tetriminos
@@ -130,6 +128,7 @@ rules:
   # square_mission.gram_pick: rule_gramcorpus_distribution
   # square_mission.gram_pick: rule_mixed_scrabble_digram52
   square_mission.gram_pick: rule_digram52_distribution
+  # square_mission.gram_pick: rule_trigram_equalweight
 
   square_mission.piece_set: rule_use_dominos
   # square_mission.piece_set: rule_use_tetriminos
@@ -143,6 +142,7 @@ rules:
   # hex_piece.gram_pick:    rule_englishcorpus_random_digram
   # hex_piece.gram_pick:    rule_mixed_scrabble_digram52
   # hex_piece.gram_pick:    rule_digram52_distribution
+  # hex_piece.gram_pick:    rule_trigram_equalweight
 
   hex_piece.piece_set:    rule_use_hex_dominos
   # hex_piece.piece_set:  rule_use_hex_unimos
@@ -156,6 +156,7 @@ rules:
   # hex_obstacle.gram_pick: rule_gramcorpus_distribution
   # hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
   hex_obstacle.gram_pick: rule_digram52_distribution
+  # hex_obstacle.gram_pick: rule_trigram_equalweight
 
   # hex_obstacle.piece_set: rule_use_hex_dominos
   hex_obstacle.piece_set: rule_use_hex_unimos
@@ -168,7 +169,8 @@ rules:
   # hex_mission.gram_pick: rule_englishcorpus_random_digram
   # hex_mission.gram_pick: rule_gramcorpus_distribution
   # hex_mission.gram_pick: rule_mixed_scrabble_digram52
-  hex_mission.gram_pick: rule_digram52_distribution
+  # hex_mission.gram_pick: rule_digram52_distribution
+  hex_mission.gram_pick: rule_trigram_equalweight
 
   # hex_mission.piece_set: rule_use_hex_dominos
   hex_mission.piece_set: rule_use_hex_unimos
