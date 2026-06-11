@@ -32,11 +32,29 @@ rules:
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 
+  # Player-piece spawn: where each single live piece appears, one at a time.
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center
 
   game_screen.spawn_orientation: rule_orient_random
   # game_screen.spawn_orientation: rule_orient_default
+
+  # Starting formation: how the whole opening set of obstacle + mission pieces is
+  # laid out (built and placed before play). Separate from the per-piece player
+  # spawn above; the formation owns how many pieces of each it lays down.
+  #   rule_formation_scattered -- obstacle_count obstacles + mission_count
+  #     missions, each at a random non-overlapping spot (the original opening)
+  #   rule_formation_mission_center_obstacle_ring -- 1 mission on the center cell,
+  #     ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
+  # game_screen.setup_formation: rule_formation_scattered
+  game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
+
+  # How many obstacle / mission pieces rule_formation_scattered lays down. The
+  # ring formation derives its own counts from board geometry and ignores these.
+  # Also gate the obstacle/mission victory rules: a count of 0 means "the board
+  # never started with this kind", so that victory rule can't be satisfied.
+  game_screen.obstacle_count: 4
+  game_screen.mission_count: 2
 
   # Stage 1 (pathfind): how the search walks the board to find words. Grid-level
   # because geometry differs -- the square board steps its 4 cardinals

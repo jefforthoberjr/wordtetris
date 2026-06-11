@@ -27,7 +27,7 @@ from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
-from config import select_rule, get_color
+from config import select_rule, get_color, CONFIG
 
 
 class Phase(Enum):
@@ -152,15 +152,18 @@ _DICTIONARY_COUNT_RULES = {
 class GameScreen:
     GRID_WIDTH = 14
     PIECE_POOL_SIZE = 100
-    # Obstacle pieces dropped onto the board before play begins.
-    OBSTACLE_COUNT = 4
+    # Obstacle pieces the scattered formation drops before play begins; also gates
+    # the obstacle victory rule (0 == board never had obstacles). Config-surfaced
+    # near game_screen.setup_formation; the ring formation derives its own count.
+    OBSTACLE_COUNT = CONFIG["rules"]["game_screen.obstacle_count"]
     # Obstacle cells render with their own fill (see colors.yaml) so they read
     # as pre-placed hazards distinct from the playable pieces.
     OBSTACLE_CELL_COLOR = get_color("board.obstacle_fill")
-    # Mission pieces dropped onto the board before play begins -- the light-red
-    # goal pieces the mission victory rules want cleared. A parallel track to the
-    # obstacles above (own count, own tint, own tracking set / config keys).
-    MISSION_COUNT = 2
+    # Mission pieces the scattered formation drops before play begins -- the
+    # light-red goal pieces the mission victory rules want cleared. A parallel
+    # track to the obstacles above (own count, own tint, own tracking set / config
+    # keys); same config-surfaced count, same victory gate.
+    MISSION_COUNT = CONFIG["rules"]["game_screen.mission_count"]
     MISSION_CELL_COLOR = get_color("board.mission_fill")
     # The active/movable piece is tinted so it stands out from settled cells;
     # each cell reverts to the settled fill when the piece is placed.
@@ -283,12 +286,26 @@ class GameScreen:
             "game_screen.cell_overlap_action", cell_overlap_action_rules
         )
 
-        # Spawn positioning rule, chosen by the YAML key game_screen.spawn.
+        # Player-piece spawn positioning (one live piece at a time), chosen by the
+        # YAML key game_screen.spawn.
         spawn_rules = {
             "rule_spawn_center": self._rule_spawn_center,
             "rule_spawn_random_spot": self._rule_spawn_random_spot,
         }
         self._spawn_rule = select_rule("game_screen.spawn", spawn_rules)
+
+        # Starting-formation rule, chosen by the YAML key game_screen.setup_formation.
+        # Lays out the whole opening set of obstacle + mission pieces: builds the
+        # pools at the counts it needs and places every piece. Distinct from the
+        # per-piece player spawn above (several pieces, fixed layout vs one live
+        # piece). See the _rule_formation_* methods.
+        setup_formation_rules = {
+            "rule_formation_scattered": self._rule_formation_scattered,
+            "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
+        }
+        self._setup_formation_rule = select_rule(
+            "game_screen.setup_formation", setup_formation_rules
+        )
 
         # Spawn orientation rule (independent of position), chosen by the YAML
         # key game_screen.spawn_orientation.
@@ -388,28 +405,15 @@ class GameScreen:
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
 
-        # Starting obstacles: a small pool of pieces dropped straight onto the
-        # board before the player can move anything. They use their own piece
-        # set + gram-pick rules (square_obstacle.* / hex_obstacle.*) and their
-        # own batch. Rebuilt every game, so each game gets a new random set.
-        self._obstacle_pool = PiecePool(
-            self.OBSTACLE_COUNT, self._cell_size, self._obstacle_batch,
-            self._piece_class, self._obstacle_piece_types,
-            gram_pick_rule=self._obstacle_gram_pick_rule,
-            cell_color=self.OBSTACLE_CELL_COLOR
-        )
-        # Starting missions: the obstacles' twin -- their own pool, piece set +
-        # gram-pick rules (square_mission.* / hex_mission.*), batch and tint.
-        self._mission_pool = PiecePool(
-            self.MISSION_COUNT, self._cell_size, self._mission_batch,
-            self._piece_class, self._mission_piece_types,
-            gram_pick_rule=self._mission_gram_pick_rule,
-            cell_color=self.MISSION_CELL_COLOR
-        )
-        # Obstacles and missions share one "occupied" set so the two never stack.
-        occupied = set()
-        self._place_obstacles(occupied)
-        self._place_missions(occupied)
+        # Lay out the opening obstacle + mission pieces per the active starting-
+        # formation rule (game_screen.setup_formation): it builds the obstacle and
+        # mission pools at the counts the formation calls for and places every
+        # piece (recording cells in _obstacle_cells / _mission_cells). These use
+        # their own piece set + gram-pick rules (square_obstacle.* / hex_obstacle.*
+        # and the mission twins) and their own batches. Separate from the
+        # per-piece player spawn rule. Rebuilt every game, so each game gets a
+        # fresh opening.
+        self._setup_formation_rule()
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -418,50 +422,107 @@ class GameScreen:
         )
         self._init_first_piece()
 
-    def _place_obstacles(self, occupied):
-        """Drop every obstacle piece onto the board before play begins, recording
-        each cell in _obstacle_cells for the obstacle victory rule. `occupied` is
-        shared with _place_missions so obstacles and missions never stack."""
-        self._drop_setup_pool(self._obstacle_pool, occupied, self._obstacle_cells)
+    # --- starting-formation rules (game_screen.setup_formation) ------------
+    # Each lays out the full opening set of obstacle + mission pieces: builds the
+    # pools at the counts the formation calls for, places every piece, and records
+    # its cells in _obstacle_cells / _mission_cells. Clearing is intentionally
+    # skipped (we never call _begin_selection), so the player doesn't start the
+    # game with words already cleared for free.
+    def _rule_formation_scattered(self):
+        """The original opening: OBSTACLE_COUNT obstacles and MISSION_COUNT
+        missions, each scattered to a random on-board, non-overlapping spot.
+        Obstacles and missions share one `occupied` set so the two never stack."""
+        self._build_obstacle_pool(self.OBSTACLE_COUNT)
+        self._build_mission_pool(self.MISSION_COUNT)
+        occupied = set()
+        self._scatter_pool(self._obstacle_pool, occupied, self._obstacle_cells)
+        self._scatter_pool(self._mission_pool, occupied, self._mission_cells)
 
-    def _place_missions(self, occupied):
-        """Drop every mission piece onto the board before play begins -- the
-        obstacles' twin -- recording each cell in _mission_cells for the mission
-        victory rules and <> encoding. Shares `occupied` with _place_obstacles."""
-        self._drop_setup_pool(self._mission_pool, occupied, self._mission_cells)
+    def _rule_formation_mission_center_obstacle_ring(self):
+        """One mission piece on the board's center cell, ringed by obstacle pieces
+        on that cell's neighbors -- 6 on a hex grid, 4 on a square grid. Builds a
+        one-piece mission pool and one obstacle per on-board neighbor. Intended
+        for single-cell (unimo) pieces; a multi-cell piece would extend past its
+        anchor cell and could overlap a neighbor or hang off the board."""
+        center = self._board.center_cell()
+        ring = self._board.neighbors(*center)
+        self._build_mission_pool(1)
+        self._build_obstacle_pool(len(ring))
+        occupied = set()
+        self._place_one_setup_piece(
+            self._mission_pool, center, self._mission_cells, occupied
+        )
+        for cell in ring:
+            self._place_one_setup_piece(
+                self._obstacle_pool, cell, self._obstacle_cells, occupied
+            )
 
-    def _drop_setup_pool(self, pool, occupied, track_cells):
-        """Shared mechanism behind _place_obstacles / _place_missions: orient each
-        piece in the pool, scatter it to a random on-board spot clear of every
-        cell already in `occupied`, drop it on the board, and record its cells in
-        both `occupied` (so later setup pieces avoid it) and `track_cells` (the
-        per-track victory/encoding set). Clearing is intentionally skipped here
-        (we never call _begin_selection), so the player doesn't start the game
-        with words already cleared for free."""
+    def _build_obstacle_pool(self, count):
+        """(Re)build the obstacle pool with `count` pieces, using the obstacle
+        piece set / gram-pick / batch / tint set up by the grid builder."""
+        self._obstacle_pool = PiecePool(
+            count, self._cell_size, self._obstacle_batch,
+            self._piece_class, self._obstacle_piece_types,
+            gram_pick_rule=self._obstacle_gram_pick_rule,
+            cell_color=self.OBSTACLE_CELL_COLOR
+        )
+
+    def _build_mission_pool(self, count):
+        """(Re)build the mission pool with `count` pieces (the obstacles' twin,
+        using the mission piece set / gram-pick / batch / tint)."""
+        self._mission_pool = PiecePool(
+            count, self._cell_size, self._mission_batch,
+            self._piece_class, self._mission_piece_types,
+            gram_pick_rule=self._mission_gram_pick_rule,
+            cell_color=self.MISSION_CELL_COLOR
+        )
+
+    def _scatter_pool(self, pool, occupied, track_cells):
+        """Place every piece in `pool` at a random on-board spot clear of
+        `occupied`, recording each cell in `occupied` (so later pieces avoid it)
+        and `track_cells` (its victory/encoding set). The scattered formation's
+        per-pool worker."""
         while True:
             piece = pool.current_piece()
             self._orient_rule(piece)
-            self._position_setup_piece(piece, occupied)
-            piece.place()
-            for gx, gy, cell, label, gram in piece.get_cell_data():
-                self._board.place(gx, gy, cell, label, gram)
-                occupied.add((gx, gy))
-                # Record this cell for its track's victory rule to count down.
-                track_cells.add((gx, gy))
-            piece.set_visible(True)
+            self._position_scattered(piece, occupied)
+            self._settle_setup_piece(piece, track_cells, occupied)
             if pool.advance() is None:
                 break
 
-    def _position_setup_piece(self, piece, occupied):
-        """Pick a random spot whose cells are all on-board and clear of every
-        already-placed setup cell (obstacles + missions, via the shared
-        `occupied` set). Retries a bounded number of times, then keeps the last
-        spot rather than looping forever on a crowded board."""
+    def _place_one_setup_piece(self, pool, cell, track_cells, occupied):
+        """Place the pool's current piece at a specific `cell` -- for formation
+        rules that lay pieces at fixed coordinates -- record it, and advance the
+        pool."""
+        piece = pool.current_piece()
+        self._orient_rule(piece)
+        piece.set_position(*cell)
+        self._settle_setup_piece(piece, track_cells, occupied)
+        pool.advance()
+
+    def _settle_setup_piece(self, piece, track_cells, occupied):
+        """Drop an already-positioned setup piece onto the board: place it, record
+        each of its cells in `occupied` (so later setup pieces avoid it) and
+        `track_cells` (its victory/encoding set), and reveal it."""
+        piece.place()
+        for gx, gy, cell, label, gram in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram)
+            occupied.add((gx, gy))
+            track_cells.add((gx, gy))
+        piece.set_visible(True)
+
+    def _position_scattered(self, piece, occupied):
+        """Pick a random on-board anchor whose cells are all on the grid and clear
+        of `occupied`. Retries a bounded number of times, then keeps the last spot
+        rather than looping forever on a crowded board. Independent of the player
+        spawn rule -- starting pieces lay themselves out, they don't spawn live."""
         for _ in range(100):
-            self._rule_spawn_random_spot(piece)
+            x = random.randint(0, self.GRID_WIDTH - 1)
+            y = random.randint(0, self._board_height - 1)
+            piece.set_position(x, y)
             cells = piece.get_cell_positions()
-            on_board = all(self._board.get_cell(x, y) is not None for (x, y) in cells)
-            free = all((x, y) not in occupied for (x, y) in cells)
+            on_board = all(self._board.get_cell(cx, cy) is not None for (cx, cy) in cells)
+            free = all((cx, cy) not in occupied for (cx, cy) in cells)
             if on_board and free:
                 return
 

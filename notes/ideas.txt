@@ -6,11 +6,19 @@ Add info/tutorial screen
 Add controls displayed on screen
 Add click controls for the grid
 
+A game mode where pieces just spawn at a regular time interval, and you can click and re-arrange words
+
+Spawn obstacle pieces, and a final "victory" piece.
+The victory piece is surroundsed by obstable pieces.
+
+
 Idea: a "magic" component, where you can conjure up letters you want to complete words (like wilds) but you need to build up magic in the game from completing words
 
 Some kind of bonus goals or something per level, otherwise it's too much of a blank canvas. too many choices.
 
 All vowels are wild cards
+
+Maybe allow player to draw or markup the game board with pieces they are aspirational for
 
 Have every 10 turns be a word selection auto scan the whole board, then every 10 turns your packing up cluster of asteroids
 
