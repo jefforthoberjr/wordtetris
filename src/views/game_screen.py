@@ -11,9 +11,13 @@ from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PIECE_TYPES
 from models.square_piece import OBSTACLE_PIECE_TYPES as SQUARE_OBSTACLE_PIECE_TYPES
 from models.square_piece import OBSTACLE_GRAM_PICK_RULE as SQUARE_OBSTACLE_GRAM_PICK_RULE
+from models.square_piece import MISSION_PIECE_TYPES as SQUARE_MISSION_PIECE_TYPES
+from models.square_piece import MISSION_GRAM_PICK_RULE as SQUARE_MISSION_GRAM_PICK_RULE
 from models.hex_piece import HexPiece, PIECE_TYPES as HEX_PIECE_TYPES
 from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
 from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
+from models.hex_piece import MISSION_PIECE_TYPES as HEX_MISSION_PIECE_TYPES
+from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RULE
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
@@ -153,6 +157,11 @@ class GameScreen:
     # Obstacle cells render with their own fill (see colors.yaml) so they read
     # as pre-placed hazards distinct from the playable pieces.
     OBSTACLE_CELL_COLOR = get_color("board.obstacle_fill")
+    # Mission pieces dropped onto the board before play begins -- the light-red
+    # goal pieces the mission victory rules want cleared. A parallel track to the
+    # obstacles above (own count, own tint, own tracking set / config keys).
+    MISSION_COUNT = 2
+    MISSION_CELL_COLOR = get_color("board.mission_fill")
     # The active/movable piece is tinted so it stands out from settled cells;
     # each cell reverts to the settled fill when the piece is placed.
     ACTIVE_PIECE_CELL_COLOR = get_color("board.active_piece_fill")
@@ -223,28 +232,50 @@ class GameScreen:
             "game_screen.dictionary_count", _DICTIONARY_COUNT_RULES)
 
         # Victory condition, chosen by the YAML key game_screen.victory. Bound
-        # methods so the rule can read live board / original-cell state; see the
+        # methods so the rule can read live board / obstacle-cell state; see the
         # _rule_victory_* methods near the other rule definitions.
         victory_rules = {
-            "rule_victory_originals_cleared": self._rule_victory_originals_cleared,
+            "rule_victory_missions_cleared": self._rule_victory_missions_cleared,
+            "rule_victory_missions_and_obstacles_cleared": self._rule_victory_missions_and_obstacles_cleared,
+            "rule_victory_obstacles_cleared": self._rule_victory_obstacles_cleared,
             "rule_victory_grid_empty": self._rule_victory_grid_empty,
             "rule_victory_none": self._rule_victory_none,
         }
         self._victory_rule = select_rule("game_screen.victory", victory_rules)
         # Coordinates of the starting obstacle cells not yet cleared; emptied as
-        # they clear, so rule_victory_originals_cleared wins when it hits empty.
-        self._original_cells = set()
+        # they clear, so rule_victory_obstacles_cleared wins when it hits empty.
+        self._obstacle_cells = set()
+        # The mission-piece twin of _obstacle_cells: the starting mission cells
+        # not yet cleared, tracked for the mission victory rules and <> encoding.
+        self._mission_cells = set()
 
-        # Cell-overlap rules, chosen by the YAML keys game_screen.cell_overlap
-        # (may a placement cover existing cells?) and game_screen.cell_overlap_action
-        # (what becomes of the cells it covers?). See the _rule_*overlap* methods
-        # near the victory rules.
-        cell_overlap_rules = {
-            "rule_moveandplace_over_playerandobstacle_cell": self._rule_moveandplace_over_playerandobstacle_cell,
-            "rule_block_moveandplace_over_playerandobstacle_cell": self._rule_block_moveandplace_over_playerandobstacle_cell,
+        # Cell-overlap rules: one independent slot per piece track, each deciding
+        # whether a piece may be moved onto / placed over a cell of that track.
+        # _overlap_allowed ANDs all three, so a position holds only when none of
+        # them blocks it. game_screen.cell_overlap_action (separate) decides what
+        # becomes of the covered cells. See the _rule_*over_*_cell methods near
+        # the victory rules.
+        cell_overlap_player_rules = {
+            "rule_moveandplace_over_player_cell": self._rule_moveandplace_over_player_cell,
+            "rule_block_moveandplace_over_player_cell": self._rule_block_moveandplace_over_player_cell,
+        }
+        self._cell_overlap_player_rule = select_rule(
+            "game_screen.cell_overlap_player", cell_overlap_player_rules
+        )
+        cell_overlap_obstacle_rules = {
+            "rule_moveandplace_over_obstacle_cell": self._rule_moveandplace_over_obstacle_cell,
             "rule_block_moveandplace_over_obstacle_cell": self._rule_block_moveandplace_over_obstacle_cell,
         }
-        self._cell_overlap_rule = select_rule("game_screen.cell_overlap", cell_overlap_rules)
+        self._cell_overlap_obstacle_rule = select_rule(
+            "game_screen.cell_overlap_obstacle", cell_overlap_obstacle_rules
+        )
+        cell_overlap_mission_rules = {
+            "rule_moveandplace_over_mission_cell": self._rule_moveandplace_over_mission_cell,
+            "rule_block_moveandplace_over_mission_cell": self._rule_block_moveandplace_over_mission_cell,
+        }
+        self._cell_overlap_mission_rule = select_rule(
+            "game_screen.cell_overlap_mission", cell_overlap_mission_rules
+        )
         cell_overlap_action_rules = {
             "rule_old_cells_get_delete": self._rule_old_cells_get_delete,
         }
@@ -334,6 +365,8 @@ class GameScreen:
         # the board once dropped, but render through this batch so they stay
         # visually grouped and independently styleable.
         self._obstacle_batch = pyglet.graphics.Batch()
+        # Mission pieces get their own batch too, the twin of the obstacle batch.
+        self._mission_batch = pyglet.graphics.Batch()
 
         # Grid bundle, chosen by the YAML key game_screen.grid. The chosen
         # builder also wires up its own movement + clear rules and sizes the
@@ -349,7 +382,9 @@ class GameScreen:
         # list shown in the side pane.
         self._cleared_word_history = set()
         # Fresh per game: the starting obstacle cells the victory rule tracks.
-        self._original_cells = set()
+        self._obstacle_cells = set()
+        # Fresh per game: the starting mission cells (obstacles' twin).
+        self._mission_cells = set()
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
 
@@ -363,7 +398,18 @@ class GameScreen:
             gram_pick_rule=self._obstacle_gram_pick_rule,
             cell_color=self.OBSTACLE_CELL_COLOR
         )
-        self._place_obstacles()
+        # Starting missions: the obstacles' twin -- their own pool, piece set +
+        # gram-pick rules (square_mission.* / hex_mission.*), batch and tint.
+        self._mission_pool = PiecePool(
+            self.MISSION_COUNT, self._cell_size, self._mission_batch,
+            self._piece_class, self._mission_piece_types,
+            gram_pick_rule=self._mission_gram_pick_rule,
+            cell_color=self.MISSION_CELL_COLOR
+        )
+        # Obstacles and missions share one "occupied" set so the two never stack.
+        occupied = set()
+        self._place_obstacles(occupied)
+        self._place_missions(occupied)
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
@@ -372,31 +418,45 @@ class GameScreen:
         )
         self._init_first_piece()
 
-    def _place_obstacles(self):
-        """Drop every obstacle piece onto the board before play begins. Each is
-        oriented by the active orientation rule and scattered to a random,
-        on-board, non-overlapping spot so the obstacles don't stack. Clearing is
-        intentionally skipped here (we never call _begin_selection), so the
-        player doesn't start the game with words already cleared for free."""
-        occupied = set()
+    def _place_obstacles(self, occupied):
+        """Drop every obstacle piece onto the board before play begins, recording
+        each cell in _obstacle_cells for the obstacle victory rule. `occupied` is
+        shared with _place_missions so obstacles and missions never stack."""
+        self._drop_setup_pool(self._obstacle_pool, occupied, self._obstacle_cells)
+
+    def _place_missions(self, occupied):
+        """Drop every mission piece onto the board before play begins -- the
+        obstacles' twin -- recording each cell in _mission_cells for the mission
+        victory rules and <> encoding. Shares `occupied` with _place_obstacles."""
+        self._drop_setup_pool(self._mission_pool, occupied, self._mission_cells)
+
+    def _drop_setup_pool(self, pool, occupied, track_cells):
+        """Shared mechanism behind _place_obstacles / _place_missions: orient each
+        piece in the pool, scatter it to a random on-board spot clear of every
+        cell already in `occupied`, drop it on the board, and record its cells in
+        both `occupied` (so later setup pieces avoid it) and `track_cells` (the
+        per-track victory/encoding set). Clearing is intentionally skipped here
+        (we never call _begin_selection), so the player doesn't start the game
+        with words already cleared for free."""
         while True:
-            piece = self._obstacle_pool.current_piece()
+            piece = pool.current_piece()
             self._orient_rule(piece)
-            self._position_obstacle(piece, occupied)
+            self._position_setup_piece(piece, occupied)
             piece.place()
             for gx, gy, cell, label, gram in piece.get_cell_data():
                 self._board.place(gx, gy, cell, label, gram)
                 occupied.add((gx, gy))
-                # Record this as an original cell for the victory rule to track.
-                self._original_cells.add((gx, gy))
+                # Record this cell for its track's victory rule to count down.
+                track_cells.add((gx, gy))
             piece.set_visible(True)
-            if self._obstacle_pool.advance() is None:
+            if pool.advance() is None:
                 break
 
-    def _position_obstacle(self, piece, occupied):
-        """Pick a random spot whose cells are all on-board and clear of other
-        obstacles. Retries a bounded number of times, then keeps the last spot
-        rather than looping forever on a crowded board."""
+    def _position_setup_piece(self, piece, occupied):
+        """Pick a random spot whose cells are all on-board and clear of every
+        already-placed setup cell (obstacles + missions, via the shared
+        `occupied` set). Retries a bounded number of times, then keeps the last
+        spot rather than looping forever on a crowded board."""
         for _ in range(100):
             self._rule_spawn_random_spot(piece)
             cells = piece.get_cell_positions()
@@ -416,6 +476,9 @@ class GameScreen:
         # so they can differ from the playable pieces.
         self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
         self._obstacle_gram_pick_rule = SQUARE_OBSTACLE_GRAM_PICK_RULE
+        # Missions: the obstacles' twin, own piece set + gram-pick (square_mission.*).
+        self._mission_piece_types = SQUARE_MISSION_PIECE_TYPES
+        self._mission_gram_pick_rule = SQUARE_MISSION_GRAM_PICK_RULE
         self._movement_rule = self._rule_square_movement
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "|" marks a word formed on the square grid.
@@ -447,6 +510,9 @@ class GameScreen:
         # has a single piece type, so obstacle types match the main set.
         self._obstacle_piece_types = HEX_OBSTACLE_PIECE_TYPES
         self._obstacle_gram_pick_rule = HEX_OBSTACLE_GRAM_PICK_RULE
+        # Missions: the obstacles' twin, own piece set + gram-pick (hex_mission.*).
+        self._mission_piece_types = HEX_MISSION_PIECE_TYPES
+        self._mission_gram_pick_rule = HEX_MISSION_GRAM_PICK_RULE
 
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows
@@ -618,11 +684,27 @@ class GameScreen:
     # Each returns True when its win condition is met against the current board.
     # Selected in __init__; consulted by _check_victory after every clear and
     # before each spawn.
-    def _rule_victory_originals_cleared(self):
-        # Win once every starting obstacle cell has been cleared. _original_cells
+    def _rule_victory_missions_cleared(self):
+        # Win once every starting mission cell has been cleared, regardless of any
+        # obstacle or player cells left on the board. _mission_cells shrinks as
+        # cells clear (see _clear_paths) / get covered (see the overlap-action
+        # rule), so empty == all gone. Guard against a mission-less board never
+        # having had missions to clear.
+        return len(self._mission_cells) == 0 and self.MISSION_COUNT > 0
+
+    def _rule_victory_missions_and_obstacles_cleared(self):
+        # Win once every starting mission AND obstacle cell has been cleared,
+        # regardless of player cells left on the board. Both tracking sets must be
+        # empty; guard against a board that started with neither.
+        started_with_targets = self.MISSION_COUNT > 0 or self.OBSTACLE_COUNT > 0
+        all_gone = len(self._mission_cells) == 0 and len(self._obstacle_cells) == 0
+        return all_gone and started_with_targets
+
+    def _rule_victory_obstacles_cleared(self):
+        # Win once every starting obstacle cell has been cleared. _obstacle_cells
         # shrinks as cells clear (see _clear_paths), so empty == all gone. Guard
-        # against an obstacle-less board never having had originals to clear.
-        return len(self._original_cells) == 0 and self.OBSTACLE_COUNT > 0
+        # against an obstacle-less board never having had obstacles to clear.
+        return len(self._obstacle_cells) == 0 and self.OBSTACLE_COUNT > 0
 
     def _rule_victory_grid_empty(self):
         # Win once the board holds no cells at all.
@@ -633,35 +715,58 @@ class GameScreen:
         # original endless behavior, preserved as a selectable option).
         return False
 
-    def _rule_moveandplace_over_playerandobstacle_cell(self, overlapped):
-        # Cell-overlap rule: moving or placing a piece over cells already holding
-        # a player or obstacle cell is always permitted. Returns True so the move
-        # is never blocked. `overlapped` is the set of occupied cells the piece
-        # would cover; this rule ignores it.
+    # --- cell-overlap rules (game_screen.cell_overlap_player / _obstacle / _mission)
+    # One independent allow/block pair per piece track. Each receives the full set
+    # of occupied cells the piece would cover (`overlapped`) and filters to its own
+    # track; _overlap_allowed ANDs all three. A covered obstacle/mission cell is
+    # dropped from its tracking set by the overlap-action rule, so a player cell
+    # never lingers at an obstacle/mission coordinate and the block rules stay in
+    # sync with the victory rules. Player cells are the covered cells in neither
+    # tracking set.
+    def _players_covered(self, overlapped):
+        # The covered cells belonging to neither the obstacle nor mission track.
+        return overlapped - self._obstacle_cells - self._mission_cells
+
+    def _rule_moveandplace_over_player_cell(self, overlapped):
+        # Player-overlap rule: moving or placing over a player cell is always
+        # permitted. `overlapped` is ignored.
         return True
 
-    def _rule_block_moveandplace_over_playerandobstacle_cell(self, overlapped):
-        # Cell-overlap rule: a piece may not move onto or place over ANY occupied
-        # cell, player or obstacle. Permitted only when it covers nothing.
-        return len(overlapped) == 0
+    def _rule_block_moveandplace_over_player_cell(self, overlapped):
+        # Player-overlap rule: a piece may not move onto or place over a player
+        # cell. Permitted unless it would cover one.
+        return len(self._players_covered(overlapped)) == 0
+
+    def _rule_moveandplace_over_obstacle_cell(self, overlapped):
+        # Obstacle-overlap rule: moving or placing over an obstacle cell is always
+        # permitted. `overlapped` is ignored.
+        return True
 
     def _rule_block_moveandplace_over_obstacle_cell(self, overlapped):
-        # Cell-overlap rule: a piece may not move onto or place over an obstacle
-        # cell, but may still move over and cover player cells. Obstacle cells
-        # are the still-intact starting cells tracked in _original_cells (a
-        # covered obstacle is dropped from that set by the overlap-action rule,
-        # so a player cell never lingers at an _original_cells coordinate and
-        # this stays in sync with the victory rule). Permitted unless the piece
-        # would cover an obstacle.
-        obstacles_covered = overlapped & self._original_cells
+        # Obstacle-overlap rule: a piece may not move onto or place over an
+        # obstacle cell. Permitted unless it would cover one.
+        obstacles_covered = overlapped & self._obstacle_cells
         return len(obstacles_covered) == 0
+
+    def _rule_moveandplace_over_mission_cell(self, overlapped):
+        # Mission-overlap rule: moving or placing over a mission cell is always
+        # permitted. `overlapped` is ignored.
+        return True
+
+    def _rule_block_moveandplace_over_mission_cell(self, overlapped):
+        # Mission-overlap rule: a piece may not move onto or place over a mission
+        # cell. Permitted unless it would cover one.
+        missions_covered = overlapped & self._mission_cells
+        return len(missions_covered) == 0
 
     def _rule_old_cells_get_delete(self, overlapped):
         # Cell-overlap action rule: the cells a placement covers are treated as
         # gone. The board already overwrote their contents in place(); this drops
-        # any covered starting-obstacle coordinates from _original_cells so a
-        # covered obstacle counts as cleared for rule_victory_originals_cleared.
-        self._original_cells.difference_update(overlapped)
+        # any covered starting-obstacle / mission coordinates from their tracking
+        # sets so a covered obstacle (or mission) counts as cleared for its
+        # victory rule.
+        self._obstacle_cells.difference_update(overlapped)
+        self._mission_cells.difference_update(overlapped)
 
     def _check_victory(self):
         """If the active victory rule is satisfied, enter VICTORY and return
@@ -755,17 +860,21 @@ class GameScreen:
         dictionary: each cell's contributed letters in order, joined by the
         active grid's separator (_gram_separator -- "|" square, "/" hex). A wild
         cell wraps the run it resolved to in "?...?"; a starting-obstacle cell
-        wraps in "[ ]" (outside the wild marker, e.g. "[?ea?]"). Must run before
-        _clear_paths prunes _original_cells, so a just-cleared obstacle still
-        reads as one."""
+        wraps in "[ ]" and a starting-mission cell in "<>" (each outside the wild
+        marker, e.g. "[?ea?]" / "<?ea?>"). A cell is at most one of obstacle /
+        mission (distinct pieces never share a cell), so the wraps don't combine.
+        Must run before _clear_paths prunes the tracking sets, so a just-cleared
+        obstacle or mission still reads as one."""
         parts = []
         for (x, y), segment in zip(found.path, found.segments):
             gram = self._board.gram_at(x, y)
             text = segment.lower()
             if gram is not None and gram.is_wild:
                 text = "?" + text + "?"
-            if (x, y) in self._original_cells:
+            if (x, y) in self._obstacle_cells:
                 text = "[" + text + "]"
+            elif (x, y) in self._mission_cells:
+                text = "<" + text + ">"
             parts.append(text)
         return self._gram_separator.join(parts)
 
@@ -786,9 +895,10 @@ class GameScreen:
                 to_clear.update(fw.path)
         for (x, y) in to_clear:
             self._board.clear_cell(x, y)
-        # An original (starting obstacle) cell, once cleared, stays counted as
-        # gone even if a later piece reoccupies its coordinate.
-        self._original_cells.difference_update(to_clear)
+        # A starting obstacle or mission cell, once cleared, stays
+        # counted as gone even if a later piece reoccupies its coordinate.
+        self._obstacle_cells.difference_update(to_clear)
+        self._mission_cells.difference_update(to_clear)
         for word in cleared_words:
             self._cleared_word_history.add(word)
         if cleared_words:
@@ -821,7 +931,8 @@ class GameScreen:
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
             self._recompute_candidates()
             # This clear may have won the game immediately (e.g. it removed the
-            # last original cell); if so, stop here rather than ending selection.
+            # last obstacle/mission cell); if so, stop here rather than ending
+            # selection.
             if self._check_victory():
                 return
             # Leave SELECT once the placed piece is no longer adjacent to the
@@ -976,13 +1087,26 @@ class GameScreen:
                 overlapped.add((x, y))
         return overlapped
 
+    def _overlap_allowed(self, overlapped):
+        """Whether `overlapped` (the occupied cells a position would cover) is
+        permitted by ALL THREE independent overlap slots -- player
+        (game_screen.cell_overlap_player), obstacle (..._obstacle) and mission
+        (..._mission). A position holds only if none of them blocks it -- so a
+        player-allowing, obstacle-blocking config still refuses to cover an
+        obstacle. The single gate every move/place runs through."""
+        return (
+            self._cell_overlap_player_rule(overlapped)
+            and self._cell_overlap_obstacle_rule(overlapped)
+            and self._cell_overlap_mission_rule(overlapped)
+        )
+
     def _move_allowed(self, piece):
         """The shared move/rotate/place gate: a position is allowed only if every
         cell is on the grid AND the cells it covers satisfy the active cell-
-        overlap rule. Driving the overlap rule here -- not just at placement --
+        overlap rules. Driving the overlap rules here -- not just at placement --
         lets a blocking rule stop the piece from being moved onto a forbidden
         cell in the first place, so the player never drags it over one."""
-        return self._piece_on_board(piece) and self._cell_overlap_rule(
+        return self._piece_on_board(piece) and self._overlap_allowed(
             self._overlapped_cells(piece)
         )
 
@@ -1045,10 +1169,11 @@ class GameScreen:
             return
         # Cells already on the board this placement would cover.
         overlapped = self._overlapped_cells(piece)
-        # Cell-overlap rule: may the piece be placed when it covers those cells?
-        # A blocking rule refuses and aborts the place (movement is gated the
-        # same way, so a blocked piece should never reach here covering them).
-        if not self._cell_overlap_rule(overlapped):
+        # Cell-overlap rules: may the piece be placed when it covers those cells?
+        # A blocking rule (obstacle or mission) refuses and aborts the place
+        # (movement is gated the same way, so a blocked piece should never reach
+        # here covering them).
+        if not self._overlap_allowed(overlapped):
             return
         self._clear_hover_visibility()
         piece.place()
@@ -1063,7 +1188,7 @@ class GameScreen:
             placed_positions.append((gx, gy))
 
         # Cell-overlap action rule: handle the cells just covered (e.g. drop a
-        # covered obstacle from the original-cell tracking so it counts as gone).
+        # covered obstacle from the obstacle-cell tracking so it counts as gone).
         self._cell_overlap_action_rule(overlapped)
 
         # Runs stages 1-3: auto selectors clear and advance immediately;
@@ -1093,6 +1218,7 @@ class GameScreen:
         
         self._board_batch.draw()
         self._obstacle_batch.draw()
+        self._mission_batch.draw()
         self._piece_batch.draw()
         # The right pane swaps between the game-long cleared-word list (MOVING)
         # and the word-entry UI (SELECTING).

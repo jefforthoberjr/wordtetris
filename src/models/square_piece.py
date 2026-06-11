@@ -38,6 +38,9 @@ _PIECE_SET_RULES = {
 }
 PIECE_TYPES, PIECE_ROTATIONS = select_rule("square_piece.piece_set", _PIECE_SET_RULES)()
 OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()
+# Mission pieces (the light-red goal pieces) get their own piece set too, the
+# direct parallel of the obstacles above.
+MISSION_PIECE_TYPES, _MISSION_PIECE_ROTATIONS = select_rule("square_mission.piece_set", _PIECE_SET_RULES)()
 
 # A piece looks up its rotations by piece_type alone. Merging every set's table
 # (the type enums are distinct, so keys never collide) means one SquarePiece
@@ -61,6 +64,7 @@ _GRAM_PICK_RULES = {
 }
 _gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
+MISSION_GRAM_PICK_RULE = select_rule("square_mission.gram_pick", _GRAM_PICK_RULES)
 
 
 class SquarePiece:

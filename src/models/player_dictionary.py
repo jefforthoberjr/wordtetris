@@ -11,25 +11,27 @@ from pathlib import Path
 #
 # Line format: a ";"-separated list of the word's unique variations.
 #   A variation joins its per-cell grams with "|" (cleared in a square game) or
-#   "/" (a hex game); an obstacle gram is wrapped in "[ ]". The bare word is
-#   recovered by stripping "| / [ ]". Examples:
+#   "/" (a hex game); an obstacle gram is wrapped in "[ ]" and a mission gram in
+#   "<>". The bare word is recovered by stripping "| / [ ] < >". Examples:
 #     ca|t           -- "cat", square, grams ca + t
 #     b|a|rf;ba|rf   -- "barf", two known square groupings
 #     ge|[ar]        -- "gear", square, the "ar" gram came from an obstacle
 #     a/[re]/a       -- "area", hex
 #     c|?a?|t        -- "cat", square, the middle cell was a wild vowel (-> "a")
 #     [br]/?ea?/ch   -- "breach", hex, obstacle "br" + wild "ea" + "ch"
+#     g|<o>|al       -- "goal", square, the "o" gram came from a mission piece
 _DEFAULT_PATH = Path(__file__).resolve().parents[2] / "player_dictionary.txt"
 
 # The separator / annotation characters used inside a variation; stripping them
 # from a variation string leaves the bare word. "|" "/" separate grams; "[ ]"
-# wrap an obstacle gram; "?" wrap the letters a wild-vowel cell resolved to.
-_GRAM_MARKUP = "|/[]?"
+# wrap an obstacle gram; "<>" wrap a mission gram; "?" wrap the letters a
+# wild-vowel cell resolved to.
+_GRAM_MARKUP = "|/[]<>?"
 
 
 def word_of_variation(variation):
     """The bare lowercase word a variation encodes, with the gram separators and
-    obstacle brackets removed (e.g. "ge|[ar]" -> "gear")."""
+    obstacle / mission brackets removed (e.g. "ge|[ar]" -> "gear")."""
     bare = variation
     for ch in _GRAM_MARKUP:
         bare = bare.replace(ch, "")

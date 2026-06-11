@@ -43,20 +43,5 @@ Sometimes, between your edits of code, I will manually make some small changes. 
 
 When refactoring, try to preserve my manual comments in the code (unless of course, the relevant code is deleted).
 
-## SPEC
-This will contain many text decriptions on the rules of the game. This serves as documentation, and a TODO list.
-This will contain many single line sentences about the logic / rules / physics of the game. It will also contain descriptions about how the UI works, and how files and data are handled.
-
-This is not verbose; I want this as very concise sentences, to make it very scannable to the human eye.
-For example:
-"Blocks can do X"
-"Player can move X to Y"
-"Button will do Y"
-
-As we add to the game, we should also update this spec to reflect changes. ASK ME each time you think we should update the spec. Sometimes I will ask you to add a new line to the spec.
-
-In front of each line in the spec will be a status.
-"[TODO]" or "[DONE]".
-
 ## NOTES
 The notes folder is just for my personal notes. Do not refer to this at all. This is just brainstormed ideas that may contradict what is being developed.

@@ -170,9 +170,11 @@ def _game(board, interactive=True, history=None):
     # the player dictionary (these tests run square-geometry boards).
     g._gram_separator = "|"
     g._dictionary_count_rule = gs.rule_show_dictionary_count
-    # No victory in these selection-logic tests, and no starting obstacles to
-    # track; the victory rule just reports "not won" so flow proceeds normally.
-    g._original_cells = set()
+    # No victory in these selection-logic tests, and no starting obstacles or
+    # missions to track; the victory rule just reports "not won" so flow proceeds
+    # normally.
+    g._obstacle_cells = set()
+    g._mission_cells = set()
     g._victory_rule = lambda: False
     g._phase = gs.Phase.MOVING
     g._move_placed = set()
@@ -297,10 +299,32 @@ def test_wild_obstacle_encodes_brackets_outside_question_marks():
     g = _game(
         FakeBoard({(0, 0): "C", (1, 0): "X", (2, 0): "T"}, wild={(1, 0)}),
     )
-    g._original_cells = {(1, 0)}
+    g._obstacle_cells = {(1, 0)}
     g._begin_selection([(2, 0)])
     g._on_submit_word("cat")
     assert g._player_dict.added == [("cat", "c|[?a?]|t")]
+
+
+def test_mission_cell_encodes_with_angle_brackets():
+    # A starting-mission cell encodes as <...>, the obstacles' [...] twin.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._mission_cells = {(1, 0)}
+    g._begin_selection([(2, 0)])
+    g._on_submit_word("cat")
+    assert g._player_dict.added == [("cat", "c|<a>|t")]
+    # Clearing the mission cell empties the mission-tracking set.
+    assert g._mission_cells == set()
+
+
+def test_wild_mission_encodes_brackets_outside_question_marks():
+    # A wild cell that is also a starting mission encodes as <?...?>.
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "X", (2, 0): "T"}, wild={(1, 0)}),
+    )
+    g._mission_cells = {(1, 0)}
+    g._begin_selection([(2, 0)])
+    g._on_submit_word("cat")
+    assert g._player_dict.added == [("cat", "c|<?a?>|t")]
 
 
 def test_typed_word_prefers_fewest_cells():

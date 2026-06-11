@@ -65,33 +65,41 @@ rules:
   game_screen.dictionary_count: rule_hide_dictionary_count
 
   # Victory condition (only one active at a time):
-  game_screen.victory: rule_victory_originals_cleared
+  #   rule_victory_missions_cleared -- clear every mission (light-red) piece; left
+  #     over player and obstacle cells are fine
+  #   rule_victory_missions_and_obstacles_cleared -- clear every mission AND every
+  #     obstacle (light-orange) piece; left over player cells are fine
+  #   rule_victory_obstacles_cleared -- clear every obstacle piece only
+  game_screen.victory: rule_victory_missions_cleared
+  # game_screen.victory: rule_victory_missions_and_obstacles_cleared
+  # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
   # game_screen.victory: rule_victory_none
 
-  # Cell overlap: whether a piece may be moved onto / placed over cells that
-  # already hold a player or obstacle cell. The block_* rules also stop the
-  # piece from being moved onto a forbidden cell, not just placed there.
-  #   rule_moveandplace_over_playerandobstacle_cell -- overlap always allowed
-  #   rule_block_moveandplace_over_playerandobstacle_cell -- no overlap at all
-  #   rule_block_moveandplace_over_obstacle_cell -- block obstacles, allow players
-  # game_screen.cell_overlap: rule_moveandplace_over_playerandobstacle_cell
-  # game_screen.cell_overlap: rule_block_moveandplace_over_playerandobstacle_cell
-  game_screen.cell_overlap: rule_block_moveandplace_over_obstacle_cell
+  # Cell overlap: deciding whether a piece may be moved onto / placed over a type of occupied cell
+  
+  # game_screen.cell_overlap_player: rule_block_moveandplace_over_player_cell
+  game_screen.cell_overlap_player: rule_moveandplace_over_player_cell
+
+  # game_screen.cell_overlap_obstacle: rule_moveandplace_over_obstacle_cell
+  game_screen.cell_overlap_obstacle: rule_block_moveandplace_over_obstacle_cell
+
+  # game_screen.cell_overlap_mission: rule_moveandplace_over_mission_cell
+  game_screen.cell_overlap_mission: rule_block_moveandplace_over_mission_cell
 
   # Cell overlap action: what happens to the "old" cells a placement covers.
   # rule_old_cells_get_delete treats them as gone, so a covered starting
-  # obstacle counts as cleared for rule_victory_originals_cleared (otherwise
-  # covering an obstacle strands that victory condition).
+  # obstacle (or mission) counts as cleared for the mission/obstacle victory
+  # rules (otherwise covering one strands that victory condition).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
 
-  square_piece.gram_pick:   rule_scrabble_with_allvowelswild
-  # square_piece.gram_pick: rule_scrabble_distribution
+  # square_piece.gram_pick:   rule_scrabble_with_allvowelswild
+  square_piece.gram_pick: rule_scrabble_distribution
   # square_piece.gram_pick: rule_random_letters
   # square_piece.gram_pick: rule_englishcorpus_random_unigram
   # square_piece.gram_pick: rule_englishcorpus_random_digram
   # square_piece.gram_pick: rule_gramcorpus_distribution
-  # square_piece.gram_pick: rule_mixed_scrabble_digram52
+  square_piece.gram_pick: rule_mixed_scrabble_digram52
   # square_piece.gram_pick: rule_digram52_distribution
   # rule_scrabble_with_allvowelswild: scrabble weights, but vowels become wild cells
 
@@ -113,10 +121,24 @@ rules:
   # square_obstacle.piece_set: rule_use_tetriminos
   # square_obstacle.piece_set: rule_use_unimos
 
+  # Starting missions for the square grid (the light-red goal pieces): own
+  # gram-pick + piece set, the direct parallel of square_obstacle.*.
+  # square_mission.gram_pick: rule_scrabble_distribution
+  # square_mission.gram_pick: rule_random_letters
+  # square_mission.gram_pick: rule_englishcorpus_random_unigram
+  # square_mission.gram_pick: rule_englishcorpus_random_digram
+  # square_mission.gram_pick: rule_gramcorpus_distribution
+  # square_mission.gram_pick: rule_mixed_scrabble_digram52
+  square_mission.gram_pick: rule_digram52_distribution
+
+  square_mission.piece_set: rule_use_dominos
+  # square_mission.piece_set: rule_use_tetriminos
+  # square_mission.piece_set: rule_use_unimos
+
   # hex_piece.gram_pick:      rule_gramcorpus_distribution
   # hex_piece.gram_pick:    rule_random_lettersw
-  hex_piece.gram_pick:    rule_scrabble_with_allvowelswild
-  # hex_piece.gram_pick:    rule_scrabble_distribution
+  # hex_piece.gram_pick:    rule_scrabble_with_allvowelswild
+  hex_piece.gram_pick:    rule_scrabble_distribution
   # hex_piece.gram_pick:    rule_englishcorpus_random_unigram
   # hex_piece.gram_pick:    rule_englishcorpus_random_digram
   # hex_piece.gram_pick:    rule_mixed_scrabble_digram52
@@ -137,6 +159,19 @@ rules:
 
   # hex_obstacle.piece_set: rule_use_hex_dominos
   hex_obstacle.piece_set: rule_use_hex_unimos
+
+  # Starting missions for the hex grid (the light-red goal pieces): own gram-pick
+  # + piece set, the direct parallel of hex_obstacle.*.
+  # hex_mission.gram_pick: rule_scrabble_distribution
+  # hex_mission.gram_pick: rule_random_letters
+  # hex_mission.gram_pick: rule_englishcorpus_random_unigram
+  # hex_mission.gram_pick: rule_englishcorpus_random_digram
+  # hex_mission.gram_pick: rule_gramcorpus_distribution
+  # hex_mission.gram_pick: rule_mixed_scrabble_digram52
+  hex_mission.gram_pick: rule_digram52_distribution
+
+  # hex_mission.piece_set: rule_use_hex_dominos
+  hex_mission.piece_set: rule_use_hex_unimos
 
   # For piece sets that have multiple shapes, how to manage the distribution of shaped
   piece_pool.order:         rule_create_shuffled_roundrobin

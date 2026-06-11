@@ -11,12 +11,13 @@ def parse_variation(variation):
     """Split an encoded player-dictionary variation into (shape, grams).
 
     shape is "hex" when the variation used the "/" separator, else "square".
-    grams is an ordered list of (text, is_obstacle, is_wild): each gram's
-    letters uppercased for display, whether it was wrapped in "[ ]" as an
-    obstacle, and whether it was wrapped in "?...?" as a wild vowel (the obstacle
-    bracket sits outside the wild marker, e.g. "[?ea?]"). A wild gram renders as
-    the emblem, so its text is not shown -- but it is still parsed out.
-    e.g. "ge|[ar]" -> ("square", [("GE", False, False), ("AR", True, False)])."""
+    grams is an ordered list of (text, is_obstacle, is_mission, is_wild): each
+    gram's letters uppercased for display, whether it was wrapped in "[ ]" as an
+    obstacle, whether it was wrapped in "<>" as a mission, and whether it was
+    wrapped in "?...?" as a wild vowel (the obstacle/mission bracket sits outside
+    the wild marker, e.g. "[?ea?]"). A wild gram renders as the emblem, so its
+    text is not shown -- but it is still parsed out. e.g.
+    "ge|[ar]" -> ("square", [("GE", False, False, False), ("AR", True, False, False)])."""
     if "/" in variation:
         shape = "hex"
         separator = "/"
@@ -26,14 +27,15 @@ def parse_variation(variation):
     grams = []
     for part in variation.split(separator):
         is_obstacle = part.startswith("[") and part.endswith("]")
-        if is_obstacle:
+        is_mission = part.startswith("<") and part.endswith(">")
+        if is_obstacle or is_mission:
             inner = part[1:-1]
         else:
             inner = part
         is_wild = inner.startswith("?") and inner.endswith("?")
         if is_wild:
             inner = inner[1:-1]
-        grams.append((inner.upper(), is_obstacle, is_wild))
+        grams.append((inner.upper(), is_obstacle, is_mission, is_wild))
     return shape, grams
 
 
@@ -47,7 +49,7 @@ class GramPreview:
     "|" variation draws as bordered square boxes; a "/" variation draws point-up
     hexagons, mirroring the in-game cells but smaller. Fills/borders/text reuse
     the board.* colors, so a preview cell looks like its in-game counterpart;
-    obstacle grams take the obstacle fill."""
+    obstacle grams take the obstacle fill, mission grams the mission fill."""
 
     def __init__(self, cell_size, row_height):
         self._cell_size = cell_size
@@ -61,6 +63,7 @@ class GramPreview:
         self._visible = False
         self._cell_fill = get_color("board.cell_fill")
         self._obstacle_fill = get_color("board.obstacle_fill")
+        self._mission_fill = get_color("board.mission_fill")
         self._border_color = get_color("board.cell_border")
         self._text_color = get_color("board.cell_text")
         self._backing_color = get_color("dictionary.background")
@@ -91,9 +94,11 @@ class GramPreview:
             self._build_square_row(grams, left_x, center_y)
         self._visible = True
 
-    def _fill_for(self, is_obstacle):
+    def _fill_for(self, is_obstacle, is_mission):
         if is_obstacle:
             color = self._obstacle_fill
+        elif is_mission:
+            color = self._mission_fill
         else:
             color = self._cell_fill
         return color
@@ -135,11 +140,11 @@ class GramPreview:
     def _build_square_row(self, grams, left_x, center_y):
         cell = self._cell_size
         bottom = center_y - math.floor(cell / 2)
-        for i, (text, is_obstacle, is_wild) in enumerate(grams):
+        for i, (text, is_obstacle, is_mission, is_wild) in enumerate(grams):
             x = left_x + i * cell
             rect = pyglet.shapes.BorderedRectangle(
                 x, bottom, cell, cell, border=2,
-                color=self._fill_for(is_obstacle),
+                color=self._fill_for(is_obstacle, is_mission),
                 border_color=self._border_color, batch=self._batch,
             )
             self._shapes.append(rect)
@@ -169,7 +174,7 @@ class GramPreview:
         inner_size = size - border
         width = SQRT3 * size
         step = width
-        for i, (text, is_obstacle, is_wild) in enumerate(grams):
+        for i, (text, is_obstacle, is_mission, is_wild) in enumerate(grams):
             cx = left_x + math.floor(width / 2) + i * step
             outer = pyglet.shapes.Polygon(
                 *self._hex_verts(size, cx, center_y),
@@ -178,7 +183,7 @@ class GramPreview:
             self._shapes.append(outer)
             inner = pyglet.shapes.Polygon(
                 *self._hex_verts(inner_size, cx, center_y),
-                color=self._fill_for(is_obstacle), batch=self._batch,
+                color=self._fill_for(is_obstacle, is_mission), batch=self._batch,
             )
             self._shapes.append(inner)
             if is_wild:
