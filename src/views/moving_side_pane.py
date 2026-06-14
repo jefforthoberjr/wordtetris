@@ -12,6 +12,7 @@ class MovingSidePane:
 
     DIVIDER_COLOR = get_color("moving_side_pane.divider")
     COUNT_COLOR = get_color("moving_side_pane.word_count")
+    SELECT_COUNTER_COLOR = get_color("moving_side_pane.select_counter")
 
     def __init__(self, x, y, width, height):
         self._x = x
@@ -33,6 +34,15 @@ class MovingSidePane:
             program=get_shape_shader()
         )
 
+        # Placements left until the next selection phase ("Pieces: N"), pinned to
+        # the very top edge, above the cleared-word list.
+        counter_y = y + height - margin
+        self._select_counter = pyglet.text.Label(
+            "", font_size=base * 0.7, x=x + margin, y=counter_y,
+            anchor_x="left", anchor_y="top",
+            color=self.SELECT_COUNTER_COLOR, batch=self._batch,
+        )
+
         # Player's lifetime dictionary size, pinned to the very bottom edge.
         count_y = y + margin
         self._count = pyglet.text.Label(
@@ -41,10 +51,10 @@ class MovingSidePane:
             color=self.COUNT_COLOR, batch=self._batch,
         )
 
-        # The cleared-word list fills the pane above the count label, reserving
-        # one line for the latter at the bottom.
+        # The cleared-word list fills the pane between the count label (bottom)
+        # and the select-counter label (top), reserving one line for each.
         list_bottom = count_y + line_h
-        list_height = max(line_h, height - margin - line_h)
+        list_height = max(line_h, height - margin - line_h - line_h)
         self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
 
     @property
@@ -63,6 +73,10 @@ class MovingSidePane:
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
         self._count.text = f"Dictionary: {count} words"
+
+    def set_select_counter(self, count):
+        """Show how many more pieces until the next selection phase, top edge."""
+        self._select_counter.text = f"Pieces: {count}"
 
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""

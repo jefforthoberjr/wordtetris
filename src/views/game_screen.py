@@ -330,6 +330,31 @@ class GameScreen:
             "rule_select_by_text_input": TextInputSelect,
         }
         self._selector = select_rule("game_screen.word_select", select_rules)()
+
+        # Phase-transition rules: when a placement triggers the selection stage.
+        # The trigger rule (game_screen.select_trigger) counts placements and
+        # says whether this one is a selection turn; the skip rule
+        # (game_screen.skip_select_isolated) drops the turn when the placed piece
+        # is isolated. Both feed _begin_selection. _placements_until_select is the
+        # live countdown the trigger rule advances and the moving pane displays;
+        # reset per game in _start_new_game.
+        select_trigger_rules = {
+            "rule_select_every_placement": self._rule_select_every_placement,
+            "rule_select_after_n_placements": self._rule_select_after_n_placements,
+        }
+        self._select_trigger_rule = select_rule(
+            "game_screen.select_trigger", select_trigger_rules
+        )
+        self._select_trigger_count = CONFIG["rules"]["game_screen.select_trigger_count"]
+        self._placements_until_select = self._select_trigger_count
+        skip_select_rules = {
+            "rule_skip_select_if_isolated": self._rule_skip_select_if_isolated,
+            "rule_never_skip_select": self._rule_never_skip_select,
+        }
+        self._skip_select_rule = select_rule(
+            "game_screen.skip_select_isolated", skip_select_rules
+        )
+
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
         self._selecting_side_pane = self._selector.create_ui(
@@ -404,6 +429,9 @@ class GameScreen:
         self._mission_cells = set()
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
+        # Fresh per game: restart the selection-trigger countdown and show it.
+        self._placements_until_select = self._select_trigger_count
+        self._moving_side_pane.set_select_counter(self._placements_until_select)
 
         # Lay out the opening obstacle + mission pieces per the active starting-
         # formation rule (game_screen.setup_formation): it builds the obstacle and
@@ -847,17 +875,63 @@ class GameScreen:
         self._phase = Phase.VICTORY
         self._settle_placed_cells()
 
+    # --- selection-trigger rules (game_screen.select_trigger) --------------
+    # Decide whether the placement just made is a "selection turn". The counter
+    # they share (_placements_until_select) is the number the moving pane shows.
+    def _rule_select_every_placement(self):
+        """Original behavior: every placed piece is a selection turn. The
+        countdown is meaningless here, so pin it to 1 (always 'this piece')."""
+        self._placements_until_select = 1
+        return True
+
+    def _rule_select_after_n_placements(self):
+        """Selection turns come once every select_trigger_count placements. Tick
+        the countdown down each placement; when it hits zero this placement is
+        the selection turn and the counter resets for the next cycle."""
+        self._placements_until_select -= 1
+        if self._placements_until_select <= 0:
+            self._placements_until_select = self._select_trigger_count
+            return True
+        return False
+
+    # --- isolated-piece skip rules (game_screen.skip_select_isolated) -------
+    # On a selection turn, decide whether to skip it because the placed piece is
+    # isolated (touches nothing, so no word can bridge it). Applies to the
+    # triggering placement too -- a select turn landing on an isolated piece is
+    # simply skipped, per the placement rule.
+    def _rule_skip_select_if_isolated(self, placed_positions):
+        """Skip the selection stage when the placed piece touches nothing on the
+        board (original behavior)."""
+        return not self._piece_touches_existing(placed_positions)
+
+    def _rule_never_skip_select(self, placed_positions):
+        """Always run the selection stage, isolated piece or not."""
+        return False
+
     def _begin_selection(self, placed_positions):
         """Stages 1-3 for the piece just placed. Compute the move's candidates,
         then either auto-clear and move on, or hand off to the interactive
         selector and enter the SELECTING phase (next piece withheld). The placed
         piece keeps its light-blue tint while SELECT is active, then settles.
 
-        If the placed piece landed isolated -- not adjacent to any existing cell
-        -- no word can bridge it to the board, so skip the SELECT phase and move
-        straight on to the next piece."""
+        Two phase-transition rules gate the selection stage. The trigger rule
+        (game_screen.select_trigger) decides whether this placement is a
+        selection turn -- and advances the moving-pane countdown either way, so
+        it runs every placement. The skip rule (game_screen.skip_select_isolated)
+        then drops the turn for an isolated piece, since no word can bridge one
+        to the board. When selection is skipped, the piece settles and play moves
+        straight on to the next piece (no clearing, no SELECT phase)."""
         self._move_placed = set(placed_positions)
         self._recompute_candidates()
+        is_select_turn = self._select_trigger_rule()
+        # Reflect the (possibly reset) countdown in the moving pane now, so the
+        # right label is correct the moment that pane is next shown.
+        self._moving_side_pane.set_select_counter(self._placements_until_select)
+        do_select = is_select_turn and not self._skip_select_rule(placed_positions)
+        if not do_select:
+            self._settle_placed_cells()
+            self._advance_piece()
+            return
         if not self._selector.interactive:
             self._clear_paths(self._selector.choose(self._candidates))
             self._settle_placed_cells()
@@ -865,13 +939,10 @@ class GameScreen:
             # piece if it didn't.
             if not self._check_victory():
                 self._advance_piece()
-        elif self._piece_touches_existing(placed_positions):
+        else:
             self._phase = Phase.SELECTING
             self._selecting_side_pane.begin()
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
-        else:
-            self._settle_placed_cells()
-            self._advance_piece()
 
     def _recompute_candidates(self):
         """Re-run stages 1-2 against the current board and refresh the word sets

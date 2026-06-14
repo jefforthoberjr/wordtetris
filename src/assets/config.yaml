@@ -78,6 +78,18 @@ rules:
   # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
   game_screen.word_select: rule_select_by_text_input
 
+  # game_screen.select_trigger: rule_select_every_placement
+  game_screen.select_trigger: rule_select_after_n_placements
+  # Placements between selection turns for rule_select_after_n_placements
+  game_screen.select_trigger_count: 5
+
+  # Whether a placed piece touching nothing on the board skips the selection
+  # (If an isolated piece can't bridge into any word, auto-skip for UX flow)
+  #   rule_skip_select_if_isolated -- skip when the placed piece is isolated (orig)
+  #   rule_never_skip_select -- always run selection, isolated or not
+  game_screen.skip_select_isolated: rule_skip_select_if_isolated
+  # game_screen.skip_select_isolated: rule_never_skip_select
+
   # Whether the right pane shows the player's lifetime dictionary-size readout.
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count

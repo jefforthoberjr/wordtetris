@@ -29,8 +29,12 @@ class SelectingSidePane:
     BUTTON_COLOR = get_color("selecting_side_pane.button_text")
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
+    SELECT_COUNTER_COLOR = get_color("selecting_side_pane.select_counter")
     MAX_ERRORS = 3
     PROMPT = "Type a word:"
+    # Top-edge header, the SELECTING-state twin of the moving pane's "Pieces: N"
+    # countdown label (both pinned to the very top of the right pane).
+    HEADER = "pick words:"
 
     def __init__(self, x, y, width, height, on_submit, on_next):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
@@ -52,6 +56,15 @@ class SelectingSidePane:
             color=self.DIVIDER_COLOR, batch=self._batch,
             program=get_shape_shader(),
         )
+
+        # Top-edge header, the SELECTING twin of the moving pane's countdown.
+        # Everything below is pushed down one line from this header.
+        self._header = pyglet.text.Label(
+            self.HEADER, font_size=base * 0.7, x=left, y=top,
+            anchor_x="left", anchor_y="top",
+            color=self.SELECT_COUNTER_COLOR, batch=self._batch,
+        )
+        top = top - line_h
 
         # Prompt + typed-word field.
         self._prompt = pyglet.text.Label(

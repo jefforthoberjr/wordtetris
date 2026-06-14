@@ -2,9 +2,21 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+
+Different game mode: given a bunch of tiles, just click and drag them around, play with the tiles, then after a time limit, all the formed words get cleared.
+	Move around single celled pieces
+	The after 2 minutes, a "clear event" occurs
+	(or players could manually trigger it too)
+
+
 Add info/tutorial screen
 Add controls displayed on screen
 Add click controls for the grid
+
+Accidentally going to the next piece without typing in your word. Maybe allow for word clears always. Maybe a chance to undo the placement
+
+rule: While selecting words to be cleared, highlight them, instead of clearing then individually one by one.
+
 
 A game mode where pieces just spawn at a regular time interval, and you can click and re-arrange words
 
