@@ -29,7 +29,7 @@ class SelectingSidePane:
     BUTTON_COLOR = get_color("selecting_side_pane.button_text")
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
-    SELECT_COUNTER_COLOR = get_color("selecting_side_pane.select_counter")
+    PHASE_LABEL_COLOR = get_color("selecting_side_pane.phase_label")
     MAX_ERRORS = 3
     PROMPT = "Type a word:"
     # Top-edge header, the SELECTING-state twin of the moving pane's "Pieces: N"
@@ -62,7 +62,7 @@ class SelectingSidePane:
         self._header = pyglet.text.Label(
             self.HEADER, font_size=base * 0.7, x=left, y=top,
             anchor_x="left", anchor_y="top",
-            color=self.SELECT_COUNTER_COLOR, batch=self._batch,
+            color=self.PHASE_LABEL_COLOR, batch=self._batch,
         )
         top = top - line_h
 

@@ -165,9 +165,13 @@ class GameScreen:
     # keys); same config-surfaced count, same victory gate.
     MISSION_COUNT = CONFIG["rules"]["game_screen.mission_count"]
     MISSION_CELL_COLOR = get_color("board.mission_fill")
-    # The active/movable piece is tinted so it stands out from settled cells;
-    # each cell reverts to the settled fill when the piece is placed.
+    # The live/movable piece is tinted a darker blue so it stands out from both
+    # the settled cells and the lighter-blue pieces already placed this moving
+    # phase. On placement a piece's cells recolor to PLACED_PIECE_CELL_COLOR and
+    # stay lit through the next selection turn; they revert to the settled fill
+    # only once selection (auto or interactive) leaves them behind.
     ACTIVE_PIECE_CELL_COLOR = get_color("board.active_piece_fill")
+    PLACED_PIECE_CELL_COLOR = get_color("board.placed_piece_fill")
     SETTLED_CELL_COLOR = get_color("board.cell_fill")
 
     def __init__(self, window, screen_manager):
@@ -371,8 +375,13 @@ class GameScreen:
         # that meet the length minimum.
         self._board_words_any = set()
         self._length_ok_words = set()
-        # Cells the current piece added this move; nucleation re-runs against the
-        # ones still on the board as the player clears words.
+        # Cells of EVERY piece placed since the last selection turn -- the
+        # accumulated nucleation set for the moving phase. With the multi-
+        # placement select trigger several pieces land before selection opens, so
+        # this grows as each is placed (see _begin_selection) and empties once
+        # the pieces settle (see _settle_placed_cells). Nucleation and the
+        # candidate recompute run against the ones still on the board as words
+        # clear.
         self._move_placed = set()
 
         # Nucleation rule, chosen by the YAML key game_screen.word_nucleation.
@@ -380,7 +389,7 @@ class GameScreen:
         # just made -- the gate between pathfinding and selection. Grid-agnostic.
         # rule_nucleate_none qualifies nothing, which disables clearing entirely.
         nucleation_rules = {
-            "rule_adjacent_to_placed_piece": self._rule_adjacent_to_placed_piece,
+            "rule_adjacent_to_placed_pieces": self._rule_adjacent_to_placed_pieces,
             "rule_nucleate_none": self._rule_nucleate_none,
         }
         self._nucleation_rule = select_rule(
@@ -431,7 +440,7 @@ class GameScreen:
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         # Fresh per game: restart the selection-trigger countdown and show it.
         self._placements_until_select = self._select_trigger_count
-        self._moving_side_pane.set_select_counter(self._placements_until_select)
+        self._moving_side_pane.set_phase_label(self._placements_until_select)
 
         # Lay out the opening obstacle + mission pieces per the active starting-
         # formation rule (game_screen.setup_formation): it builds the obstacle and
@@ -744,12 +753,15 @@ class GameScreen:
     # stage 4 is mechanical; stages 2-3 are the swappable seams.
     def _piece_touches_existing(self, piece_cells):
         """True if any still-present cell of `piece_cells` is physically adjacent
-        to an occupied cell outside the piece. Gates the SELECT phase: a piece
-        that touches nothing can never bridge into a word, and its isolation is
-        plainly visible, so we skip SELECT for it. A piece that does touch the
-        board always opens SELECT, however -- regardless of whether a word can
-        actually be formed -- since opening only when one exists would tip the
-        player off that it does."""
+        to an occupied cell outside that set. Gates the SELECT phase: cells that
+        touch nothing can never bridge into a word, and their isolation is
+        plainly visible, so we skip SELECT for them. `piece_cells` may be one
+        piece (the mid-select exit check) or the whole accumulated placed set
+        (the entry skip rule) -- two placed pieces adjacent only to each other
+        still read as isolated, since each other's cells are inside the set. Cells
+        that DO touch the board always open SELECT, however -- regardless of
+        whether a word can actually be formed -- since opening only when one
+        exists would tip the player off that it does."""
         piece = set(piece_cells)
         for (x, y) in piece:
             if self._board.gram_at(x, y) is None:
@@ -759,15 +771,29 @@ class GameScreen:
                     return True
         return False
 
+    def _mark_placed_cells(self, positions):
+        """Tint a just-placed piece's cells the placed (light-blue) color and add
+        them to the accumulated nucleation set. They stay lit -- through every
+        further placement this moving phase -- until selection leaves them behind
+        (see _settle_placed_cells). Distinct from the live piece's darker active
+        tint, so the player can tell the movable piece from the placed ones."""
+        self._move_placed |= set(positions)
+        for (x, y) in positions:
+            cell = self._board.get_cell(x, y)
+            if cell is not None and cell.square is not None:
+                cell.square.color = self.PLACED_PIECE_CELL_COLOR
+
     def _settle_placed_cells(self):
-        """Revert the just-placed piece's still-present cells from the active
-        (light-blue) tint to the settled board color. Called when the piece is
-        left behind: on leaving SELECT, or when SELECT is skipped. Cells already
-        cleared (square is None) are skipped."""
+        """Revert every placed piece's still-present cells from the placed
+        (light-blue) tint to the settled board color, and empty the accumulated
+        nucleation set. Called when the pieces are left behind: on leaving
+        SELECT, when SELECT is skipped, or on victory. Cells already cleared
+        (square is None) are skipped."""
         for (x, y) in self._move_placed:
             cell = self._board.get_cell(x, y)
             if cell is not None and cell.square is not None:
                 cell.square.color = self.SETTLED_CELL_COLOR
+        self._move_placed = set()
 
     # --- victory rules (game_screen.victory) -----------------------------
     # Each returns True when its win condition is met against the current board.
@@ -895,40 +921,49 @@ class GameScreen:
         return False
 
     # --- isolated-piece skip rules (game_screen.skip_select_isolated) -------
-    # On a selection turn, decide whether to skip it because the placed piece is
-    # isolated (touches nothing, so no word can bridge it). Applies to the
-    # triggering placement too -- a select turn landing on an isolated piece is
-    # simply skipped, per the placement rule.
+    # On a selection turn, decide whether to skip it because the placed pieces
+    # are isolated (none touches the board, so no word can bridge them). Receives
+    # the accumulated placed set, so a turn is skipped only when EVERY piece
+    # placed this phase is stranded -- one adjacent piece keeps it.
     def _rule_skip_select_if_isolated(self, placed_positions):
-        """Skip the selection stage when the placed piece touches nothing on the
-        board (original behavior)."""
+        """Skip the selection stage when no placed piece touches anything on the
+        board (original behavior, generalized to the accumulated set)."""
         return not self._piece_touches_existing(placed_positions)
 
     def _rule_never_skip_select(self, placed_positions):
-        """Always run the selection stage, isolated piece or not."""
+        """Always run the selection stage, isolated pieces or not."""
         return False
 
     def _begin_selection(self, placed_positions):
-        """Stages 1-3 for the piece just placed. Compute the move's candidates,
-        then either auto-clear and move on, or hand off to the interactive
-        selector and enter the SELECTING phase (next piece withheld). The placed
-        piece keeps its light-blue tint while SELECT is active, then settles.
+        """Called after each placement. Add the new piece to the accumulated
+        placed set (kept lit in the placed tint), recompute the move's
+        candidates, then let the phase-transition rules decide what happens.
 
-        Two phase-transition rules gate the selection stage. The trigger rule
-        (game_screen.select_trigger) decides whether this placement is a
-        selection turn -- and advances the moving-pane countdown either way, so
-        it runs every placement. The skip rule (game_screen.skip_select_isolated)
-        then drops the turn for an isolated piece, since no word can bridge one
-        to the board. When selection is skipped, the piece settles and play moves
-        straight on to the next piece (no clearing, no SELECT phase)."""
-        self._move_placed = set(placed_positions)
+        Two rules gate the selection stage. The trigger rule
+        (game_screen.select_trigger) decides whether this placement ends the
+        moving phase -- and advances the moving-pane countdown either way, so it
+        runs every placement. On a non-selection turn the piece simply stays lit
+        and play moves to the next piece, the placed cells accumulating until the
+        trigger fires. On a selection turn the skip rule
+        (game_screen.skip_select_isolated) drops it when no placed piece touches
+        the board (no word can bridge one); otherwise the auto selector clears
+        instantly or the interactive selector enters the SELECTING phase (next
+        piece withheld). Every placed piece since the last selection settles
+        together once the turn resolves."""
+        self._mark_placed_cells(placed_positions)
         self._recompute_candidates()
         is_select_turn = self._select_trigger_rule()
         # Reflect the (possibly reset) countdown in the moving pane now, so the
         # right label is correct the moment that pane is next shown.
-        self._moving_side_pane.set_select_counter(self._placements_until_select)
-        do_select = is_select_turn and not self._skip_select_rule(placed_positions)
-        if not do_select:
+        self._moving_side_pane.set_phase_label(self._placements_until_select)
+        if not is_select_turn:
+            # Still mid-phase: leave the placed pieces lit and bring on the next.
+            self._advance_piece()
+            return
+        # Selection turn: skip it if none of the placed pieces touch the board.
+        # The accumulated set (not just the last piece) is the adjacency test, so
+        # a word bridging any placed piece keeps the turn.
+        if self._skip_select_rule(self._move_placed):
             self._settle_placed_cells()
             self._advance_piece()
             return
@@ -1165,12 +1200,14 @@ class GameScreen:
     # --- Nucleation rules (game_screen.word_nucleation) --------------------
     # Stage 2: of every word _find_words turned up, decide which count for the
     # move just made. The gate between pathfinding and selection.
-    def _rule_adjacent_to_placed_piece(self, found, placed_positions):
-        """Keep words that bridge the just-placed piece and the existing board:
-        a word must cover at least one placed cell and at least one pre-existing
-        cell. This is what makes a word 'nucleate' around the new piece rather
-        than clearing words made purely of old letters or purely of the piece's
-        own cells."""
+    def _rule_adjacent_to_placed_pieces(self, found, placed_positions):
+        """Keep words that bridge a piece placed this moving phase and the
+        existing board: a word must cover at least one placed cell and at least
+        one pre-existing cell. With the multi-placement select trigger, EVERY
+        piece placed since the last selection is a nucleation site (placed_
+        positions is the accumulated set), so a word nucleating around any of
+        them qualifies -- not just the last piece down. Words made purely of old
+        letters, or purely of placed cells, are dropped."""
         new_cells = set(placed_positions)
         candidates = []
         for fw in found:
@@ -1313,11 +1350,12 @@ class GameScreen:
         placed_positions = []
         for gx, gy, cell, label, gram in piece.get_cell_data():
             self._board.place(gx, gy, cell, label, gram)
-            # Keep the active (light-blue) tint for now: it stays lit through the
-            # SELECT phase to remind the player where words nucleate, and only
-            # reverts to the settled board color once the piece is left behind
-            # (see _settle_placed_cells).
             placed_positions.append((gx, gy))
+        # _begin_selection recolors these cells from the live piece's darker
+        # active tint to the lighter placed tint and keeps them lit -- through
+        # every further placement this moving phase -- to remind the player where
+        # words nucleate, until they settle once selection leaves them behind
+        # (see _mark_placed_cells / _settle_placed_cells).
 
         # Cell-overlap action rule: handle the cells just covered (e.g. drop a
         # covered obstacle from the obstacle-cell tracking so it counts as gone).

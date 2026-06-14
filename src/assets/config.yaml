@@ -64,10 +64,11 @@ rules:
   # hex_grid.word_pathfinding: rule_snake_straightline  #TODO retest these after refactor
   hex_grid.word_pathfinding: rule_snake_anydirection
 
-  # Stage 2 (nucleate): of every word found, which count for the move just made.
-  # rule_adjacent_to_placed_piece keeps words bridging the new piece and an
-  # existing cell; rule_nucleate_none qualifies nothing (clearing off).
-  game_screen.word_nucleation: rule_adjacent_to_placed_piece
+  # Stage 2 (nucleate): of every word found, which count for the moving phase
+  # just ended. rule_adjacent_to_placed_pieces keeps words bridging any piece
+  # placed this phase (all of them are nucleation sites, not just the last) and
+  # an existing cell; rule_nucleate_none qualifies nothing (clearing off).
+  game_screen.word_nucleation: rule_adjacent_to_placed_pieces
   # game_screen.word_nucleation: rule_nucleate_none
 
   # Stage 3 (select): of the nucleated candidates, which to actually clear.

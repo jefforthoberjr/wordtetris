@@ -5,7 +5,8 @@
 
 board:
   cell_fill:        [255, 255, 255]   # settled cell fill (placed pieces)
-  active_piece_fill: [173, 216, 230]  # light blue: the active/movable piece
+  active_piece_fill: [100, 180, 245]   # darker blue: the live/movable piece
+  placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
@@ -22,7 +23,7 @@ moving_side_pane:
   wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
-  select_counter:   [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
+  phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
 
 # Right pane shown during the SELECTING phase: type a word to clear.
 selecting_side_pane:
@@ -33,7 +34,7 @@ selecting_side_pane:
   button_text:      [40, 90, 170, 255]   # clickable Submit / Next labels
   error_text:       [200, 40, 40, 255]   # error messages
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
-  select_counter:   [40, 40, 40, 255]    # "pick words:" header, pinned top (matches moving pane)
+  phase_label:      [40, 40, 40, 255]    # "pick words:" header, pinned top (matches moving pane)
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
   #  styled by moving_side_pane.wordlist_text)
 

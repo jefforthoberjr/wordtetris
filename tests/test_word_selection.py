@@ -9,8 +9,9 @@ from views import game_screen as gs
 
 
 class _FakeSquare:
-    """The render quad of a board cell; only its .color is touched (when the
-    placed piece settles from its light-blue tint), which the logic tests ignore."""
+    """The render quad of a board cell; only its .color is touched (recolored to
+    the placed tint on placement, then to the settled color when the piece is
+    left behind), which the logic tests ignore."""
 
     def __init__(self):
         self.color = None
@@ -123,6 +124,10 @@ class FakeSidepane:
     def set_word_count(self, count):
         self.word_count = count
 
+    def set_phase_label(self, count):
+        # The "Pieces: N" countdown; recorded but unused by these logic tests.
+        self.phase_label = count
+
 
 class FakePlayerDict:
     """Stand-in for the persistent PlayerDictionary: tracks lifetime words so
@@ -161,7 +166,15 @@ def _game(board, interactive=True, history=None):
     g._word_length_rule = gs.rule_word_min3letters_min2cells
     g._cleared_word_history = set(history or ())
     g._repeat_rule = lambda w: w not in g._cleared_word_history
-    g._nucleation_rule = g._rule_adjacent_to_placed_piece
+    g._nucleation_rule = g._rule_adjacent_to_placed_pieces
+    # Phase-transition rules at their originals: every placement is a selection
+    # turn, and an isolated placement skips selection. So _begin_selection
+    # behaves as it did before the multi-placement trigger, which is what these
+    # selection-logic tests exercise.
+    g._select_trigger_rule = g._rule_select_every_placement
+    g._select_trigger_count = 1
+    g._placements_until_select = 1
+    g._skip_select_rule = g._rule_skip_select_if_isolated
     g._moving_side_pane = FakeSidepane()
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
@@ -314,6 +327,37 @@ def test_mission_cell_encodes_with_angle_brackets():
     assert g._player_dict.added == [("cat", "c|<a>|t")]
     # Clearing the mission cell empties the mission-tracking set.
     assert g._mission_cells == set()
+
+
+# --- multi-placement nucleation (the select-after-N trigger) ----------------
+
+def test_all_pieces_placed_this_phase_are_nucleation_sites():
+    # Two regions, TEA at row 0 and BEA at row 2. With select firing every 2nd
+    # placement, the first R (row 0) is placed without opening selection, then
+    # the second R (row 2) triggers it. Both placed pieces must count as
+    # nucleation sites, so TEAR (around the first R) and BEAR (around the second)
+    # are both clearable -- not just the word around the last piece down.
+    # The R cells sit on the board (the unit-test board is pre-populated; the
+    # placement just names which cells nucleate), one per region.
+    g = _game(
+        FakeBoard(
+            {
+                (0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R",
+                (0, 2): "B", (1, 2): "E", (2, 2): "A", (3, 2): "R",
+            }
+        )
+    )
+    g._select_trigger_rule = g._rule_select_after_n_placements
+    g._select_trigger_count = 2
+    g._placements_until_select = 2
+
+    g._begin_selection([(3, 0)])             # turn 1: no selection yet
+    assert g._phase is gs.Phase.MOVING
+    g._begin_selection([(3, 2)])             # turn 2: selection opens
+    assert g._phase is gs.Phase.SELECTING
+    # The accumulated placed set carries both pieces into nucleation.
+    assert g._move_placed == {(3, 0), (3, 2)}
+    assert {"TEAR", "BEAR"} <= set(g._candidate_words)
 
 
 def test_wild_mission_encodes_brackets_outside_question_marks():

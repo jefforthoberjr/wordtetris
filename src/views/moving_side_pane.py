@@ -12,7 +12,7 @@ class MovingSidePane:
 
     DIVIDER_COLOR = get_color("moving_side_pane.divider")
     COUNT_COLOR = get_color("moving_side_pane.word_count")
-    SELECT_COUNTER_COLOR = get_color("moving_side_pane.select_counter")
+    PHASE_LABEL_COLOR = get_color("moving_side_pane.phase_label")
 
     def __init__(self, x, y, width, height):
         self._x = x
@@ -36,11 +36,11 @@ class MovingSidePane:
 
         # Placements left until the next selection phase ("Pieces: N"), pinned to
         # the very top edge, above the cleared-word list.
-        counter_y = y + height - margin
-        self._select_counter = pyglet.text.Label(
-            "", font_size=base * 0.7, x=x + margin, y=counter_y,
+        phase_label_y = y + height - margin
+        self._phase_label = pyglet.text.Label(
+            "", font_size=base * 0.7, x=x + margin, y=phase_label_y,
             anchor_x="left", anchor_y="top",
-            color=self.SELECT_COUNTER_COLOR, batch=self._batch,
+            color=self.PHASE_LABEL_COLOR, batch=self._batch,
         )
 
         # Player's lifetime dictionary size, pinned to the very bottom edge.
@@ -74,9 +74,9 @@ class MovingSidePane:
         """Show the player's lifetime dictionary size along the bottom edge."""
         self._count.text = f"Dictionary: {count} words"
 
-    def set_select_counter(self, count):
+    def set_phase_label(self, count):
         """Show how many more pieces until the next selection phase, top edge."""
-        self._select_counter.text = f"Pieces: {count}"
+        self._phase_label.text = f"Pieces: {count}"
 
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""
