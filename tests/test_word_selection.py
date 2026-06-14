@@ -79,6 +79,11 @@ class FakeBoard:
             cell = _FakeCell()
         return cell
 
+    def cell_at(self, px, py):
+        # The select-click rule maps a pixel to a cell; these tests pass cell
+        # coordinates straight through, returning None off the populated board.
+        return (px, py) if (px, py) in self.cells else None
+
     def clear_cell(self, x, y):
         self.cells.pop((x, y), None)
 
@@ -91,6 +96,7 @@ class FakePane:
         self.errors = None
         self.began = False
         self.word_count = None
+        self.typed_grams = []
 
     def begin(self):
         self.began = True
@@ -109,6 +115,12 @@ class FakePane:
 
     def set_word_count(self, count):
         self.word_count = count
+
+    def type_gram(self, text):
+        # Records grams the board click-to-type rule sends; empty (wild) grams
+        # add nothing, mirroring the real pane.
+        if text:
+            self.typed_grams.append(text)
 
 
 class FakeSidepane:
@@ -358,6 +370,28 @@ def test_all_pieces_placed_this_phase_are_nucleation_sites():
     # The accumulated placed set carries both pieces into nucleation.
     assert g._move_placed == {(3, 0), (3, 2)}
     assert {"TEAR", "BEAR"} <= set(g._candidate_words)
+
+
+# --- select-phase board clicks (type-gram shortcut) -------------------------
+
+def test_select_click_types_gram_no_validation():
+    # Clicking board cells types their grams into the field with no rules: any
+    # occupied cell counts, repeats and non-adjacent cells included. Off-board /
+    # empty clicks add nothing.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T", (5, 5): "S"}))
+    g._select_click_rule = g._rule_select_click_type_gram
+    g._rule_select_click_type_gram(2, 0)     # T
+    g._rule_select_click_type_gram(0, 0)     # C
+    g._rule_select_click_type_gram(0, 0)     # C again (repeat allowed)
+    g._rule_select_click_type_gram(5, 5)     # S (non-adjacent allowed)
+    g._rule_select_click_type_gram(9, 9)     # off-board: ignored
+    assert g._selecting_side_pane.typed_grams == ["T", "C", "C", "S"]
+
+
+def test_select_click_none_does_nothing():
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._rule_select_click_none(1, 0)
+    assert g._selecting_side_pane.typed_grams == []
 
 
 def test_wild_mission_encodes_brackets_outside_question_marks():

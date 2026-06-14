@@ -91,6 +91,15 @@ rules:
   game_screen.skip_select_isolated: rule_skip_select_if_isolated
   # game_screen.skip_select_isolated: rule_never_skip_select
 
+  # What a left-click on a board cell does during the SELECTING phase.
+  #   rule_select_click_type_gram -- type the clicked cell's gram into the entry
+  #     field as a shortcut (no validation: repeats / non-adjacent cells are
+  #     fine; the word rules still apply only on submit)
+  #   rule_select_click_none -- board clicks do nothing while selecting
+  # (The "Clear word" control is always shown, independent of this rule.)
+  game_screen.select_click: rule_select_click_type_gram
+  # game_screen.select_click: rule_select_click_none
+
   # Whether the right pane shows the player's lifetime dictionary-size readout.
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count

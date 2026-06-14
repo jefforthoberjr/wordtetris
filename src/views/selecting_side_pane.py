@@ -11,15 +11,16 @@ class SelectingSidePane:
     from the moving side pane's game-long cleared-word ring buffer.
 
     Manual throughout, matching the in-game menu idiom: the text field is a
-    Label showing the typed word with a faux caret, and Submit/Next are plain
-    clickable Labels (bounds-checked in on_mouse_press) -- no hover/click
+    Label showing the typed word with a faux caret, and Clear/Submit/Next are
+    plain clickable Labels (bounds-checked in on_mouse_press) -- no hover/click
     styling. Validation lives in GameScreen; this pane only captures input and
     shows results via the on_submit / on_next callbacks plus accept_word /
-    show_errors.
+    show_errors. The field can also be filled by board clicks (GameScreen's
+    select-click rule calls type_gram); Clear word empties it.
 
-    Layout, top to bottom: prompt + typed-word field, error messages, the
-    Submit word and Next piece controls, then the accepted-word list filling
-    the remaining space.
+    Layout, top to bottom: header, prompt + typed-word field, error messages,
+    the Clear word / Submit word / Next piece controls, then the accepted-word
+    list filling the remaining space.
     """
 
     DIVIDER_COLOR = get_color("selecting_side_pane.divider")
@@ -92,14 +93,21 @@ class SelectingSidePane:
             color=self.ERROR_COLOR, batch=self._batch,
         )
 
-        # Controls (clickable labels).
+        # Controls (clickable labels). Clear word empties the field; it is always
+        # shown, independent of the board click-to-type rule.
         controls_top = error_top - self.MAX_ERRORS * error_step - line_h * 0.3
-        self._submit_btn = pyglet.text.Label(
-            "Submit word", font_size=base, x=left, y=controls_top,
+        self._clear_btn = pyglet.text.Label(
+            "Clear word", font_size=base, x=left, y=controls_top,
             anchor_x="left", anchor_y="top",
             color=self.BUTTON_COLOR, batch=self._batch,
         )
-        next_y = controls_top - line_h
+        submit_y = controls_top - line_h
+        self._submit_btn = pyglet.text.Label(
+            "Submit word", font_size=base, x=left, y=submit_y,
+            anchor_x="left", anchor_y="top",
+            color=self.BUTTON_COLOR, batch=self._batch,
+        )
+        next_y = submit_y - line_h
         self._next_btn = pyglet.text.Label(
             "Next piece", font_size=base, x=left, y=next_y,
             anchor_x="left", anchor_y="top",
@@ -151,8 +159,26 @@ class SelectingSidePane:
         # Swallow every key while selecting (there is no active piece to drive).
         return True
 
+    def type_gram(self, text):
+        """Append a clicked board cell's gram to the typed word (the board
+        click-to-type rule). No validation here -- like on_text, it only edits
+        the field; the word rules run on submit. A wild cell's gram is empty, so
+        it adds nothing."""
+        if text:
+            self._typed += text.upper()
+            self.clear_errors()
+            self._render_input()
+
+    def clear_word(self):
+        """Reset the typed-word field to empty (the Clear word control)."""
+        self._typed = ""
+        self.clear_errors()
+        self._render_input()
+
     def on_mouse_press(self, x, y, button, modifiers):
-        if self._hit(self._submit_btn, x, y):
+        if self._hit(self._clear_btn, x, y):
+            self.clear_word()
+        elif self._hit(self._submit_btn, x, y):
             self._on_submit(self._typed)
         elif self._hit(self._next_btn, x, y):
             self._on_next()

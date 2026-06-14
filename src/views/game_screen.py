@@ -359,6 +359,19 @@ class GameScreen:
             "game_screen.skip_select_isolated", skip_select_rules
         )
 
+        # Select-phase board-click rule (game_screen.select_click): what a click
+        # on a board cell does while SELECTING. The type-gram rule appends the
+        # clicked cell's gram to the entry field as a typing shortcut -- no
+        # validation, so repeats and non-adjacent cells are all fine; the word
+        # rules still run only on submit. The none rule disables board clicks.
+        select_click_rules = {
+            "rule_select_click_type_gram": self._rule_select_click_type_gram,
+            "rule_select_click_none": self._rule_select_click_none,
+        }
+        self._select_click_rule = select_rule(
+            "game_screen.select_click", select_click_rules
+        )
+
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
         self._selecting_side_pane = self._selector.create_ui(
@@ -934,6 +947,27 @@ class GameScreen:
         """Always run the selection stage, isolated pieces or not."""
         return False
 
+    # --- select-phase board-click rules (game_screen.select_click) ----------
+    # While SELECTING, decide what a left-click on a board cell does.
+    def _rule_select_click_type_gram(self, x, y):
+        """Type the clicked cell's gram into the entry field -- a typing
+        shortcut, nothing more. No path/nucleation/word checks: any occupied
+        cell counts, including repeats and non-adjacent cells. The word rules
+        still apply only when the player submits. Clicks off the board or on an
+        empty cell (no gram) do nothing; a wild cell has no fixed letters, so it
+        contributes nothing to type."""
+        cell = self._board.cell_at(x, y)
+        if cell is None:
+            return
+        gram = self._board.gram_at(*cell)
+        if gram is None:
+            return
+        self._selecting_side_pane.type_gram(gram.text)
+
+    def _rule_select_click_none(self, x, y):
+        """Board clicks do nothing while selecting (click-to-type disabled)."""
+        pass
+
     def _begin_selection(self, placed_positions):
         """Called after each placement. Add the new piece to the accumulated
         placed set (kept lit in the placed tint), recompute the move's
@@ -1476,6 +1510,11 @@ class GameScreen:
             return
         if self._phase == Phase.SELECTING:
             self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
+            # A left-click on the board (left of the pane) types that cell's gram
+            # into the entry field, per the select-click rule. The pane handles
+            # its own right-side button clicks above; this drives the board side.
+            if button == pyglet.window.mouse.LEFT:
+                self._select_click_rule(x, y)
         # MOVING: left-click drives the current piece -- click a cell it occupies
         # to rotate, click another on-board cell to jump it there. Right-click
         # places the piece, the same as the place key.
