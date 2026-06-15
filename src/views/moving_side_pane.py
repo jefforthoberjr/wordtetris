@@ -1,7 +1,7 @@
 import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
-from config import get_color
+from config import get_color, get_string
 
 
 class MovingSidePane:
@@ -72,11 +72,11 @@ class MovingSidePane:
 
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
-        self._count.text = f"Dictionary: {count} words"
+        self._count.text = get_string("dictionary_count", count=count)
 
     def set_phase_label(self, count):
         """Show how many more pieces until the next selection phase, top edge."""
-        self._phase_label.text = f"Pieces: {count}"
+        self._phase_label.text = get_string("pieces_count", count=count)
 
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""

@@ -2,7 +2,7 @@ import math
 import random
 from pathlib import Path
 import pyglet
-from config import CONFIG, get_color
+from config import CONFIG, get_color, get_string
 from controllers.screen_manager import ScreenType
 from models.player_dictionary import PlayerDictionary
 from views.gram_preview import GramPreview
@@ -256,7 +256,7 @@ class DictionaryScreen:
         # Any preview from a prior visit is stale now the words reloaded.
         self._preview.hide()
         self._hover_index = None
-        self._count_label.text = str(len(self._words)) + " words collected"
+        self._count_label.text = get_string("words_collected", count=len(self._words))
         # Build the A-Z page model and open on the first page (letter "a").
         self._pages, self._letter_first_page = self._build_pages(self._words)
         self._render_page(0)

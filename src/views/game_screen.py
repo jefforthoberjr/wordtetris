@@ -27,7 +27,7 @@ from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
-from config import select_rule, get_color, CONFIG
+from config import select_rule, get_color, get_string, CONFIG
 
 
 class Phase(Enum):
@@ -224,7 +224,7 @@ class GameScreen:
             batch=self._victory_batch,
         )
         self._victory_label = pyglet.text.Label(
-            "VICTORY", font_size=math.floor(window.height / 8),
+            get_string("victory"), font_size=math.floor(window.height / 8),
             x=grid_cx, y=grid_cy, anchor_x="center", anchor_y="center",
             color=get_color("victory.text"), batch=self._victory_batch,
         )
@@ -1352,8 +1352,8 @@ class GameScreen:
         spell it here is already held: distinct wording by how many ways exist."""
         total = len(self._candidate_word_options.get(word, []))
         if total <= 1:
-            return "Already selected (only one way to spell it here)"
-        return "Every way to spell that here is already selected"
+            return get_string("err_already_selected_one_way")
+        return get_string("err_every_way_selected")
 
     def _highlight_pending_cells(self, path):
         """Tint a held word's cells light green so the player sees what the
@@ -1370,14 +1370,14 @@ class GameScreen:
         on the board at all, a board word too short to clear, a board word that
         doesn't touch the placed piece, or one already cleared this game."""
         if not is_word(word):
-            return "Word is not in the dictionary"
+            return get_string("err_not_in_dictionary")
         if word not in self._board_words_any:
-            return "Word isn't on the board"
+            return get_string("err_not_on_board")
         if word not in self._length_ok_words:
-            return "Word is too short"
+            return get_string("err_too_short")
         if word not in self._candidate_words:
-            return "Word didn't involve placed piece"
-        return "Word already cleared"
+            return get_string("err_not_involved")
+        return get_string("err_already_cleared")
 
     def _advance_piece(self):
         """Spawn the next piece and resume play (or do nothing if the pool is

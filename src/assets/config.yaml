@@ -5,6 +5,10 @@ window:
 
 game:
   ups: 60
+  # UI language: a top-level key in assets/strings.yaml (e.g. en, es). Missing
+  # keys fall back to English.
+  # language: en
+  language: es
 
 audio:
   master_volume: 0.8

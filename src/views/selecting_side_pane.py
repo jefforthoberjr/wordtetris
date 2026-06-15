@@ -1,7 +1,7 @@
 import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
-from config import get_color
+from config import get_color, get_string
 
 
 class SelectingSidePane:
@@ -32,10 +32,9 @@ class SelectingSidePane:
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("selecting_side_pane.phase_label")
     MAX_ERRORS = 3
-    PROMPT = "Type a word:"
-    # Top-edge header, the SELECTING-state twin of the moving pane's "Pieces: N"
-    # countdown label (both pinned to the very top of the right pane).
-    HEADER = "pick words:"
+    # Prompt + top-edge header text come from the active language (see
+    # config.get_string); the header is the SELECTING twin of the moving pane's
+    # "Pieces: N" countdown label (both pinned to the very top of the right pane).
 
     def __init__(self, x, y, width, height, on_submit, on_next):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
@@ -61,7 +60,7 @@ class SelectingSidePane:
         # Top-edge header, the SELECTING twin of the moving pane's countdown.
         # Everything below is pushed down one line from this header.
         self._header = pyglet.text.Label(
-            self.HEADER, font_size=base * 0.7, x=left, y=top,
+            get_string("pick_words"), font_size=base * 0.7, x=left, y=top,
             anchor_x="left", anchor_y="top",
             color=self.PHASE_LABEL_COLOR, batch=self._batch,
         )
@@ -69,7 +68,7 @@ class SelectingSidePane:
 
         # Prompt + typed-word field.
         self._prompt = pyglet.text.Label(
-            self.PROMPT, font_size=base * 0.7, x=left, y=top,
+            get_string("type_a_word"), font_size=base * 0.7, x=left, y=top,
             anchor_x="left", anchor_y="top",
             color=self.PROMPT_COLOR, batch=self._batch,
         )
@@ -97,19 +96,19 @@ class SelectingSidePane:
         # shown, independent of the board click-to-type rule.
         controls_top = error_top - self.MAX_ERRORS * error_step - line_h * 0.3
         self._clear_btn = pyglet.text.Label(
-            "Clear word", font_size=base, x=left, y=controls_top,
+            get_string("clear_word"), font_size=base, x=left, y=controls_top,
             anchor_x="left", anchor_y="top",
             color=self.BUTTON_COLOR, batch=self._batch,
         )
         submit_y = controls_top - line_h
         self._submit_btn = pyglet.text.Label(
-            "Submit word", font_size=base, x=left, y=submit_y,
+            get_string("submit_word"), font_size=base, x=left, y=submit_y,
             anchor_x="left", anchor_y="top",
             color=self.BUTTON_COLOR, batch=self._batch,
         )
         next_y = submit_y - line_h
         self._next_btn = pyglet.text.Label(
-            "Next piece", font_size=base, x=left, y=next_y,
+            get_string("next_piece"), font_size=base, x=left, y=next_y,
             anchor_x="left", anchor_y="top",
             color=self.BUTTON_COLOR, batch=self._batch,
         )
@@ -194,7 +193,7 @@ class SelectingSidePane:
 
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
-        self._count.text = f"Dictionary: {count} words"
+        self._count.text = get_string("dictionary_count", count=count)
 
     def show_errors(self, messages):
         # One message at a time today; join defensively if several are passed.

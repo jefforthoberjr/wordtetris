@@ -1,6 +1,6 @@
 import math
 import pyglet
-from config import get_color
+from config import get_color, get_string
 
 
 class IngameMenu:
@@ -10,7 +10,7 @@ class IngameMenu:
         self._main_menu_screen_type = main_menu_screen_type
         self._batch = pyglet.graphics.Batch()
         
-        self._menu_items = ["Main Menu", "Exit"]
+        self._menu_items = [get_string("ingame_main_menu"), get_string("ingame_exit")]
         self._selected_index = 0
         self._labels = []
         self._highlight_color = get_color("menu.highlight")

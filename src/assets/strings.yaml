@@ -1,0 +1,71 @@
+# All user-facing text lives here, separate from code, so adding a language is
+# one edit point. The active language is chosen by game.language in config.yaml;
+# code looks strings up by key via config.get_string("key"). Missing keys fall
+# back to English. Templates use {placeholders} filled by get_string(key, ...).
+#
+# To add a language: copy the `en:` block, translate the values (keep the keys
+# and the {placeholders}), and set game.language to the new code.
+
+en:
+  # Title screen
+  title:                 "WordTetris!"
+  title_continue:        "press any button to continue"
+  # Main menu
+  menu_start:            "Start Game"
+  menu_dictionary:       "My Dictionary"
+  menu_exit:             "Exit"
+  # In-game (pause) menu
+  ingame_main_menu:      "Main Menu"
+  ingame_exit:           "Exit"
+  # Side panes (right of the board)
+  dictionary_count:      "Dictionary: {count} words"
+  pieces_count:          "Pieces: {count}"
+  type_a_word:           "Type a word:"
+  pick_words:            "pick words:"
+  clear_word:            "Clear word"
+  submit_word:           "Submit word"
+  next_piece:            "Next piece"
+  # Victory overlay
+  victory:               "VICTORY"
+  # My Dictionary screen
+  words_collected:       "{count} words collected"
+  # Word-submission errors
+  err_not_in_dictionary: "Word is not in the dictionary"
+  err_not_on_board:      "Word isn't on the board"
+  err_too_short:         "Word is too short"
+  err_not_involved:      "Word didn't involve placed piece"
+  err_already_cleared:   "Word already cleared"
+  err_already_selected_one_way: "Already selected (only one way to spell it here)"
+  err_every_way_selected:       "Every way to spell that here is already selected"
+
+es:
+  # Title screen
+  title:                 "¡WordTetris!"
+  title_continue:        "presiona cualquier botón para continuar"
+  # Main menu
+  menu_start:            "Comenzar Juego"
+  menu_dictionary:       "Mi Diccionario"
+  menu_exit:             "Salir"
+  # In-game (pause) menu
+  ingame_main_menu:      "Menú Principal"
+  ingame_exit:           "Salir"
+  # Side panes (right of the board)
+  dictionary_count:      "Diccionario: {count} palabras"
+  pieces_count:          "Piezas: {count}"
+  type_a_word:           "Escribe una palabra:"
+  pick_words:            "elige palabras:"
+  clear_word:            "Borrar palabra"
+  submit_word:           "Enviar palabra"
+  next_piece:            "Siguiente pieza"
+  # Victory overlay
+  victory:               "¡VICTORIA!"
+  # My Dictionary screen
+  words_collected:       "{count} palabras recopiladas"
+  # Word-submission errors
+  err_not_in_dictionary: "La palabra no está en el diccionario"
+  err_not_on_board:      "La palabra no está en el tablero"
+  err_too_short:         "La palabra es demasiado corta"
+  err_not_involved:      "La palabra no usó la pieza colocada"
+  err_already_cleared:   "La palabra ya fue eliminada"
+  err_already_selected_one_way: "Ya seleccionada (solo hay una forma de deletrearla aquí)"
+  err_every_way_selected:       "Todas las formas de deletrearla aquí ya están seleccionadas"
