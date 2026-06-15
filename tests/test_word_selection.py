@@ -87,6 +87,12 @@ class FakeBoard:
     def clear_cell(self, x, y):
         self.cells.pop((x, y), None)
 
+    def relabel_cell(self, x, y, text):
+        # Partial-gram leftover: the cell stays, holding only its leftover
+        # letters (visual re-fit is real-board only; gram_at reads self.cells).
+        if (x, y) in self.cells:
+            self.cells[(x, y)] = text
+
 
 class FakePane:
     """Stand-in for the SELECTING side pane (game_screen._selecting_side_pane)."""
@@ -196,6 +202,9 @@ def _game(board, interactive=True, history=None):
     g._endphase_clear_rule = g._rule_endphase_clear_none
     g._candidate_word_options = {}
     g._pending = []
+    # Gram usage at its original: a word consumes a cell's whole gram. Partial
+    # tests below flip this to rule_gram_use_partial.
+    g._gram_usage_rule = g._rule_gram_use_whole
     g._moving_side_pane = FakeSidepane()
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
@@ -475,6 +484,74 @@ def test_anywhere_plus_require_placed_cell_composes():
     g._recompute_candidates()
     assert "CAT" not in g._candidate_words   # no placed cell -> filtered out
     assert "CARD" in g._candidate_words      # touches the placed D -> kept
+
+
+# --- partial gram usage (game_screen.gram_usage) ----------------------------
+
+def _partial_game(board, min2=False):
+    g = _game(board)
+    g._gram_usage_rule = g._rule_gram_use_partial
+    g._nucleation_rule = g._rule_nucleate_anywhere   # words anywhere, for focus
+    if min2:
+        g._word_length_rule = gs.rule_word_min2letters_min2cells
+    g._phase = gs.Phase.SELECTING
+    return g
+
+
+def test_partial_gram_whole_rule_finds_only_full_grams():
+    # Control: with the whole-gram rule, W + ING spells only WING, not WIN.
+    g = _game(FakeBoard({(0, 0): "W", (1, 0): "ING"}))
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    g._phase = gs.Phase.SELECTING
+    g._recompute_candidates()
+    assert "WING" in g._candidate_words
+    assert "WIN" not in g._candidate_words
+
+
+def test_partial_gram_prefix_leaves_suffix():
+    # W + ING -> WIN (prefix IN of the last cell), leaving G on the board.
+    g = _partial_game(FakeBoard({(0, 0): "W", (1, 0): "ING"}))
+    g._recompute_candidates()
+    assert "WIN" in g._candidate_words
+    g._on_submit_word("win")
+    assert g._moving_side_pane.cleared == ["WIN"]
+    assert g._board.cells == {(1, 0): "G"}
+
+
+def test_partial_gram_suffix_leaves_prefix():
+    # ING + OO + D -> GOOD (suffix G of the first cell), leaving IN.
+    g = _partial_game(FakeBoard({(0, 0): "ING", (1, 0): "OO", (2, 0): "D"}))
+    g._recompute_candidates()
+    assert "GOOD" in g._candidate_words
+    g._on_submit_word("good")
+    assert g._moving_side_pane.cleared == ["GOOD"]
+    assert g._board.cells == {(0, 0): "IN"}
+
+
+def test_partial_gram_batch_two_bites_leave_middle():
+    # Batch: H ING O -> HI + GO bite both ends of ING, leaving its middle N.
+    g = _partial_game(FakeBoard({(0, 0): "H", (1, 0): "ING", (2, 0): "O"}), min2=True)
+    g._submit_clear_rule = g._rule_submit_defers
+    g._endphase_clear_rule = g._rule_endphase_clear_pending
+    g._recompute_candidates()
+    g._on_submit_word("hi")
+    g._on_submit_word("go")
+    assert g._board.cells == {(0, 0): "H", (1, 0): "ING", (2, 0): "O"}  # held
+    g._end_selection()
+    assert sorted(g._moving_side_pane.cleared) == ["GO", "HI"]
+    assert g._board.cells == {(1, 0): "N"}   # both ends eaten, middle remains
+
+
+def test_partial_gram_batch_two_bites_can_clear_whole():
+    # Batch: W ING O -> WIN + GO; prefix IN + suffix G eat all of ING, so it clears.
+    g = _partial_game(FakeBoard({(0, 0): "W", (1, 0): "ING", (2, 0): "O"}), min2=True)
+    g._submit_clear_rule = g._rule_submit_defers
+    g._endphase_clear_rule = g._rule_endphase_clear_pending
+    g._recompute_candidates()
+    g._on_submit_word("win")
+    g._on_submit_word("go")
+    g._end_selection()
+    assert g._board.cells == {}
 
 
 # --- batch clearing (clear-at-phase-end) ------------------------------------

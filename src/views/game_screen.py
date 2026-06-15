@@ -462,6 +462,20 @@ class GameScreen:
             "game_screen.placed_cell_requirement", placed_cell_rules
         )
 
+        # Gram-usage rule (game_screen.gram_usage): may a word use only part of a
+        # cell's gram. rule_gram_use_whole demands the entire gram (original
+        # behavior); rule_gram_use_partial lets a word start inside a gram (a
+        # suffix of its first cell) and end inside one (a prefix of its last
+        # cell), leaving the unused letters on the board. Drives _collect_words
+        # (pathfinding) and _clear_paths (leftover re-lettering).
+        gram_usage_rules = {
+            "rule_gram_use_whole": self._rule_gram_use_whole,
+            "rule_gram_use_partial": self._rule_gram_use_partial,
+        }
+        self._gram_usage_rule = select_rule(
+            "game_screen.gram_usage", gram_usage_rules
+        )
+
         self._start_new_game()
 
     def _start_new_game(self):
@@ -1140,26 +1154,58 @@ class GameScreen:
         return self._gram_separator.join(parts)
 
     def _clear_paths(self, found_words):
-        """Stage 4: clear the chosen FoundWords. Gates each through the repeat
-        rule, removes the cells, records history, and shows the words in the side
-        pane. Returns the words actually cleared."""
-        to_clear = set()
+        """Stage 4: apply the chosen FoundWords to the board. Gates each through
+        the repeat rule, then resolves every touched cell: a fully-consumed cell
+        clears, a partially-used one (a word that started or ended mid-gram) keeps
+        its leftover letters and is re-lettered in place. Records history and
+        lists the cleared words; returns the words actually cleared.
+
+        Partial bookkeeping per cell: how many letters are eaten from the head
+        (the largest prefix any word took) and the tail (the largest suffix). A
+        word's first cell gives up a suffix, its last cell a prefix, and every
+        middle cell the whole gram; wild and single-cell paths go whole. Since the
+        eats are a head run plus a tail run, the leftover is the contiguous middle
+        gram[head : n - tail] -- empty when the runs meet, so the cell clears.
+        This batches naturally: several words eating different bites of one gram
+        union here, so e.g. WIN + GO over W ING O clears ING, while HI + GO leaves
+        its middle N."""
         cleared_words = []
-        # The gram grouping each cleared word was made of, captured here -- before
-        # the obstacle pruning below -- so an obstacle gram still reads as one.
+        # The gram grouping each cleared word was made of, captured before any
+        # cell changes, so an obstacle / mission / partial gram still reads true.
         cleared_variations = []
+        force_clear = set()           # cells consumed whole (middle / wild / 1-cell)
+        eaten = {}                    # endpoint cell -> [head_eaten, tail_eaten]
+
+        def eat_head(cell, j):
+            slot = eaten.setdefault(cell, [0, 0])
+            slot[0] = max(slot[0], j)
+
+        def eat_tail(cell, k):
+            slot = eaten.setdefault(cell, [0, 0])
+            slot[1] = max(slot[1], k)
+
         for fw in found_words:
             word = fw.word
-            if self._repeat_rule(word):
-                cleared_words.append(word)
-                cleared_variations.append(self._encode_variation(fw))
-                to_clear.update(fw.path)
-        for (x, y) in to_clear:
-            self._board.clear_cell(x, y)
-        # A starting obstacle or mission cell, once cleared, stays
-        # counted as gone even if a later piece reoccupies its coordinate.
-        self._obstacle_cells.difference_update(to_clear)
-        self._mission_cells.difference_update(to_clear)
+            if not self._repeat_rule(word):
+                continue
+            cleared_words.append(word)
+            cleared_variations.append(self._encode_variation(fw))
+            last = len(fw.path) - 1
+            for idx, (cell, seg) in enumerate(zip(fw.path, fw.segments)):
+                gram = self._board.gram_at(*cell)
+                if gram is None:
+                    continue
+                if gram.is_wild or last == 0 or (idx != 0 and idx != last):
+                    force_clear.add(cell)        # whole gram consumed
+                elif idx == 0:
+                    eat_tail(cell, len(seg))     # word starts here: a suffix goes
+                else:                            # idx == last
+                    eat_head(cell, len(seg))     # word ends here: a prefix goes
+        fully_cleared = self._apply_partial_clears(force_clear, eaten)
+        # A starting obstacle or mission cell counts as gone only once FULLY
+        # cleared; a partially-used one stays tracked (still on the board).
+        self._obstacle_cells.difference_update(fully_cleared)
+        self._mission_cells.difference_update(fully_cleared)
         for word in cleared_words:
             self._cleared_word_history.add(word)
         if cleared_words:
@@ -1174,6 +1220,46 @@ class GameScreen:
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words
+
+    def _apply_partial_clears(self, force_clear, eaten):
+        """Clear the whole-gram cells outright, then resolve each partially-eaten
+        endpoint cell: clear it if head + tail eat the whole gram, else re-letter
+        it to the leftover middle run. Returns the set of cells fully cleared."""
+        fully_cleared = set()
+        for cell in force_clear:
+            self._board.clear_cell(*cell)
+            fully_cleared.add(cell)
+        for cell, (head, tail) in eaten.items():
+            if cell in force_clear:
+                continue
+            gram = self._board.gram_at(*cell)
+            if gram is None:
+                continue
+            n = len(gram.text)
+            if head + tail >= n:
+                self._board.clear_cell(*cell)
+                fully_cleared.add(cell)
+            else:
+                self._reletter_cell(*cell, gram.text[head:n - tail])
+        return fully_cleared
+
+    def _reletter_cell(self, x, y, text):
+        """Re-render an occupied cell to its leftover letters after a partial-gram
+        clear, then restore its resting color (it may have been tinted blue while
+        placed or green while pending)."""
+        self._board.relabel_cell(x, y, text)
+        cell = self._board.get_cell(x, y)
+        if cell is not None and cell.square is not None:
+            cell.square.color = self._cell_resting_color((x, y))
+
+    def _cell_resting_color(self, cell):
+        """The fill a cell shows when no piece tint applies: its obstacle /
+        mission tint if it is still one, else the plain settled color."""
+        if cell in self._obstacle_cells:
+            return self.OBSTACLE_CELL_COLOR
+        if cell in self._mission_cells:
+            return self.MISSION_CELL_COLOR
+        return self.SETTLED_CELL_COLOR
 
     def _on_submit_word(self, typed):
         """Interactive submit (Enter or the Submit control). Dispatches to the
@@ -1248,11 +1334,15 @@ class GameScreen:
         self._pending = []
 
     def _unused_pending_path(self, word, options):
-        """A clearable FoundWord for `word` whose exact path isn't already held
-        this phase -- the fewest-cell one among those still free, or None when
-        every distinct spelling here is taken."""
-        used = {tuple(fw.path) for fw in self._pending if fw.word == word}
-        fresh = [fw for fw in options if tuple(fw.path) not in used]
+        """A clearable FoundWord for `word` not already held this phase -- the
+        fewest-cell one still free, or None when every distinct spelling is taken.
+        Spellings are distinguished by path AND segments, so two different partial
+        bites of the same cells (e.g. the same word taking a different prefix /
+        suffix) each count as their own selection."""
+        def key(fw):
+            return (tuple(fw.path), tuple(fw.segments))
+        used = {key(fw) for fw in self._pending if fw.word == word}
+        fresh = [fw for fw in options if key(fw) not in used]
         if not fresh:
             return None
         return self._fewest_cell_word(fresh)
@@ -1328,6 +1418,37 @@ class GameScreen:
             self._collect_words(start, None, [], "", [], found, apply_length)
         return found
 
+    # --- Gram-usage rules (game_screen.gram_usage) -------------------------
+    # For a non-wild gram, split its letters into the contributions a word may
+    # take here, returning (continue_options, end_only_options):
+    #   continue_options -- substrings a word may take and then walk on through
+    #                       (whole gram, or any suffix when this is the word's
+    #                       first cell so it can start partway in)
+    #   end_only_options -- substrings that can only TERMINATE a word here (proper
+    #                       prefixes, so it can stop partway through the last cell)
+    # is_start says whether this is the word's first cell (path empty so far).
+    def _rule_gram_use_whole(self, gram, is_start):
+        """Whole-gram only: a word always consumes every letter of a cell's gram
+        (original behavior)."""
+        return [gram.text], []
+
+    def _rule_gram_use_partial(self, gram, is_start):
+        """Partial grams: the first cell may contribute any suffix of its gram
+        (the word starts partway in) and the last cell any prefix (the word ends
+        partway through); middle cells stay whole. Leftover letters remain on the
+        board (see _clear_paths)."""
+        text = gram.text
+        if is_start:
+            # Start partway in: every suffix (k == 0 is the whole gram).
+            continue_options = [text[k:] for k in range(len(text))]
+            end_only_options = []
+        else:
+            # Walk straight through with the whole gram, or end partway via a
+            # proper prefix (a full-gram ending is already a continue_option).
+            continue_options = [text]
+            end_only_options = [text[:j] for j in range(1, len(text))]
+        return continue_options, end_only_options
+
     def _collect_words(self, cell, prev_direction, path, text, segments, found, apply_length=True):
         """Pathfinding walk: step forward from `cell` (snaking via the board's
         forward_neighbors), collecting every dictionary word reachable. Grid-
@@ -1338,16 +1459,21 @@ class GameScreen:
 
         A wild-vowel cell contributes any of its vowel runs rather than one fixed
         gram, so the walk branches over each run (`segments` records the run
-        actually taken, so a matched word knows its exact spelling)."""
+        actually taken, so a matched word knows its exact spelling). Plain grams
+        go through the gram-usage rule, which may let a word take only a prefix /
+        suffix of a cell (see _rule_gram_use_partial)."""
         gram = self._board.gram_at(*cell)
         if gram is None:
             return
+        is_start = len(path) == 0
         if gram.is_wild:
-            options = wild_expansions()
+            # Wild cells keep their whole-run behavior (no partial usage).
+            continue_options = wild_expansions()
+            end_only_options = []
         else:
-            options = [gram.text]
+            continue_options, end_only_options = self._gram_usage_rule(gram, is_start)
         path = path + [cell]
-        for option in options:
+        for option in continue_options:
             text2 = text + option
             if not is_prefix(text2):
                 continue
@@ -1362,6 +1488,13 @@ class GameScreen:
                 # walk from looping.
                 if nxt not in path:
                     self._collect_words(nxt, direction, path, text2, segments2, found, apply_length)
+        # End-only options terminate the word here without walking on (a partial
+        # prefix leaves the rest of the gram behind, so the path can't continue).
+        for option in end_only_options:
+            text2 = text + option
+            segments2 = segments + [option]
+            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)):
+                found.append(FoundWord(path, segments2, text2))
 
     # --- Nucleation rules (game_screen.word_nucleation) --------------------
     # Stage 2a: of every word _find_words turned up, decide which count for the

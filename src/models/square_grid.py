@@ -1,6 +1,7 @@
 import math
 import pyglet
 from models.grid_cell import GridCell
+from models.gram import Gram, gram_font_size
 from views.shaders import get_shape_shader
 from config import get_color
 
@@ -96,6 +97,20 @@ class SquareGrid:
         cell = self.get_cell(x, y)
         if cell:
             cell.clear()
+
+    def relabel_cell(self, x, y, text):
+        """Replace an occupied cell's gram with `text` (its leftover letters after
+        a partial-gram clear), re-fitting the label to the new length. Same base
+        font as SquarePiece (int(cell_size * 0.6)), so the cell looks identical to
+        a freshly placed gram of that length. The cell stays on the board."""
+        cell = self.get_cell(x, y)
+        if cell is None or not cell.is_occupied():
+            return
+        gram = Gram(text)
+        cell.gram = gram
+        if cell.label is not None:
+            cell.label.text = text
+            cell.label.font_size = gram_font_size(int(self._cell_size * 0.6), gram)
 
     def forward_neighbors(self, x, y, prev_direction=None):
         """Cardinal neighbors of (x, y) for snaking words in any direction, with

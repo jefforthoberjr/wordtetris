@@ -11,7 +11,7 @@ board:
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
-  mission_fill:     [255, 153, 153]   # light red: pre-placed mission cells (the goal to clear)
+  mission_fill:     [204, 153, 255]   # light purple: pre-placed mission cells (the goal to clear)
   grid_line:        [200, 200, 200]   # grid lines (square + hex)
   background:       [255, 255, 255]   # game board window background
 

@@ -1,6 +1,7 @@
 import math
 import pyglet
 from models.grid_cell import GridCell
+from models.gram import Gram, gram_font_size
 from models.hex_domino import hex_neighbor, HEX_UP_RIGHT, HEX_DOWN, HEX_DOWN_RIGHT
 from models.hex_domino import HEX_UP, HEX_UP_LEFT, HEX_DOWN_LEFT
 from views.shaders import get_shape_shader
@@ -220,6 +221,20 @@ class HexGrid:
         cell = self.get_cell(x, y)
         if cell:
             cell.clear()
+
+    def relabel_cell(self, x, y, text):
+        """Replace an occupied cell's gram with `text` (its leftover letters after
+        a partial-gram clear), re-fitting the label to the new length. Same base
+        font as HexPiece (int(hex_size * SQRT3 * 0.5)), so the cell matches a
+        freshly placed gram of that length. The cell stays on the board."""
+        cell = self.get_cell(x, y)
+        if cell is None or not cell.is_occupied():
+            return
+        gram = Gram(text)
+        cell.gram = gram
+        if cell.label is not None:
+            cell.label.text = text
+            cell.label.font_size = gram_font_size(int(self._hex_size * SQRT3 * 0.5), gram)
 
     def gram_at(self, x, y):
         """The Gram a cell holds (its letters, or a wild vowel), or None if the
