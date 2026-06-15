@@ -187,6 +187,12 @@ def _game(board, interactive=True, history=None):
     g._select_trigger_count = 1
     g._placements_until_select = 1
     g._skip_select_rule = g._rule_skip_select_if_isolated
+    # Clear-timing at its original: each submit clears immediately. The batch
+    # tests below flip these two to the clear-at-phase-end pair.
+    g._submit_clear_rule = g._rule_submit_clears_now
+    g._endphase_clear_rule = g._rule_endphase_clear_none
+    g._candidate_word_options = {}
+    g._pending = []
     g._moving_side_pane = FakeSidepane()
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
@@ -420,3 +426,63 @@ def test_typed_word_prefers_fewest_cells():
     assert g._player_dict.added == [("oath", "?oa?|t|h")]
     # Only the three OATH cells cleared; the first wild remains on the board.
     assert g._board.cells == {(0, 0): "X"}
+
+
+# --- batch clearing (clear-at-phase-end) ------------------------------------
+
+def _batch_game(board, **kwargs):
+    g = _game(board, **kwargs)
+    g._submit_clear_rule = g._rule_submit_defers
+    g._endphase_clear_rule = g._rule_endphase_clear_pending
+    return g
+
+
+def test_batch_holds_words_until_phase_end_with_overlap():
+    # TEAR and EAR share the A-R cells. In batch mode both are held (the board
+    # never shrinks mid-phase, so the overlap is fine) and clear together only
+    # when the phase ends.
+    g = _batch_game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._begin_selection([(3, 0)])
+    assert g._phase is gs.Phase.SELECTING
+    g._on_submit_word("tear")
+    g._on_submit_word("ear")
+    # Held, not cleared: both listed, board untouched, nothing in the moving pane.
+    assert g._selecting_side_pane.accepted == ["TEAR", "EAR"]
+    assert g._board.cells != {}
+    assert g._moving_side_pane.cleared == []
+    g._end_selection()
+    # The whole batch clears together; the union of both paths is gone.
+    assert g._moving_side_pane.cleared == ["TEAR", "EAR"]
+    assert g._board.cells == {}
+    assert g._phase is gs.Phase.MOVING
+
+
+def test_batch_single_path_word_rejected_on_repeat():
+    g = _batch_game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("tear")
+    g._on_submit_word("tear")  # only one way to spell TEAR here
+    assert g._selecting_side_pane.accepted == ["TEAR"]
+    assert g._selecting_side_pane.errors == [
+        "Already selected (only one way to spell it here)"
+    ]
+
+
+def test_batch_same_word_allowed_once_per_distinct_path():
+    # ANT spellable two ways (across the row, down the column) sharing only the A.
+    # Each distinct path may be held once; a third submit is rejected.
+    fw_row = gs.FoundWord([(0, 0), (1, 0), (2, 0)], ["A", "N", "T"], "ANT")
+    fw_col = gs.FoundWord([(0, 0), (0, 1), (0, 2)], ["A", "N", "T"], "ANT")
+    g = _batch_game(
+        FakeBoard({(0, 0): "A", (1, 0): "N", (2, 0): "T", (0, 1): "N", (0, 2): "T"})
+    )
+    g._candidate_word_options = {"ANT": [fw_row, fw_col]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    g._on_submit_word("ant")
+    assert g._selecting_side_pane.accepted == ["ANT", "ANT"]
+    assert len(g._pending) == 2
+    g._on_submit_word("ant")
+    assert g._selecting_side_pane.errors == [
+        "Every way to spell that here is already selected"
+    ]

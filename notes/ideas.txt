@@ -2,11 +2,17 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+Users can click a word in the right plan, and it gets added to the board as its own piece, auto make it into a set of grams (into 3 grams)
 
 Different game mode: given a bunch of tiles, just click and drag them around, play with the tiles, then after a time limit, all the formed words get cleared.
 	Move around single celled pieces
 	The after 2 minutes, a "clear event" occurs
 	(or players could manually trigger it too)
+
+
+One-shotting a word feels like natural approach (i.e. push 2 pieces together). Setting up a 3 or 4 piece word feels daunting
+
+example: G + IN + W (can still spell WING backwards)
 
 
 Add info/tutorial screen

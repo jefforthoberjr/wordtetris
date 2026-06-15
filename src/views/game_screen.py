@@ -172,6 +172,9 @@ class GameScreen:
     # only once selection (auto or interactive) leaves them behind.
     ACTIVE_PIECE_CELL_COLOR = get_color("board.active_piece_fill")
     PLACED_PIECE_CELL_COLOR = get_color("board.placed_piece_fill")
+    # Batch (clear-at-phase-end) mode tints a selected word's cells light green
+    # until the phase commits the whole batch; see the clear-timing rules.
+    PENDING_WORD_CELL_COLOR = get_color("board.pending_word_fill")
     SETTLED_CELL_COLOR = get_color("board.cell_fill")
 
     def __init__(self, window, screen_manager):
@@ -372,6 +375,30 @@ class GameScreen:
             "game_screen.select_click", select_click_rules
         )
 
+        # Clear-timing rule (game_screen.clear_timing): when a typed word clears.
+        #   rule_clear_on_submit -- each submit clears immediately, recomputing
+        #     against the shrinking board (original interactive behavior)
+        #   rule_clear_at_phase_end -- submits are held (cells tinted green) and
+        #     all clear together at phase end, so cells reuse across words
+        #     (overlaps + repeats), the interactive twin of
+        #     rule_select_mostwords_withoverlaps_withrepeats
+        # One config key drives two seams -- what a submit does and what phase end
+        # does -- so two registries resolve the same key to a paired method.
+        submit_clear_rules = {
+            "rule_clear_on_submit": self._rule_submit_clears_now,
+            "rule_clear_at_phase_end": self._rule_submit_defers,
+        }
+        self._submit_clear_rule = select_rule(
+            "game_screen.clear_timing", submit_clear_rules
+        )
+        endphase_clear_rules = {
+            "rule_clear_on_submit": self._rule_endphase_clear_none,
+            "rule_clear_at_phase_end": self._rule_endphase_clear_pending,
+        }
+        self._endphase_clear_rule = select_rule(
+            "game_screen.clear_timing", endphase_clear_rules
+        )
+
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
         self._selecting_side_pane = self._selector.create_ui(
@@ -383,6 +410,14 @@ class GameScreen:
         # the full path list plus a word -> path map (first path wins a tie).
         self._candidates = []
         self._candidate_words = {}
+        # Every clearable spelling, mapped word -> list of FoundWords (all paths
+        # / wild expansions, not just the fewest-cell one). Batch mode reads it to
+        # hand out a distinct path each time a word is re-submitted.
+        self._candidate_word_options = {}
+        # Batch (clear-at-phase-end) mode: FoundWords selected this phase but not
+        # yet cleared. Their cells are tinted green; the whole list clears when
+        # the phase ends. Empty in clear-on-submit mode.
+        self._pending = []
         # Wider word sets the submission-error diagnosis reads (see
         # _recompute_candidates): every board word ignoring length, and those
         # that meet the length minimum.
@@ -1010,6 +1045,8 @@ class GameScreen:
                 self._advance_piece()
         else:
             self._phase = Phase.SELECTING
+            # Fresh batch for this selection phase (no-op in clear-on-submit mode).
+            self._pending = []
             self._selecting_side_pane.begin()
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
 
@@ -1041,6 +1078,9 @@ class GameScreen:
         by_word = {}
         for fw in self._candidates:
             by_word.setdefault(fw.word, []).append(fw)
+        # All spellings per word (batch mode hands out a distinct path per
+        # re-submit) plus the single fewest-cell pick (instant mode clears it).
+        self._candidate_word_options = by_word
         self._candidate_words = {}
         for word, options in by_word.items():
             self._candidate_words[word] = self._fewest_cell_word(options)
@@ -1116,35 +1156,103 @@ class GameScreen:
         return cleared_words
 
     def _on_submit_word(self, typed):
-        """Interactive submit (Enter or the Submit control). If the typed word is
-        a clearable candidate, clear it and recompute; otherwise show the single
-        most specific reason it can't be cleared."""
+        """Interactive submit (Enter or the Submit control). Dispatches to the
+        active clear-timing rule, which either clears the word now or holds it for
+        the phase-end batch; both show the most specific error on rejection."""
         word = typed.strip().upper()
         if not word:
             return
+        self._submit_clear_rule(word)
+
+    # --- clear-timing rules (game_screen.clear_timing) ---------------------
+    # Paired per timing: a submit rule (what one submit does) and a phase-end
+    # rule (what ending the phase does). See the registries in __init__.
+    def _rule_submit_clears_now(self, word):
+        """Clear-on-submit: if the word is a clearable candidate, clear it from
+        the board now and recompute against the smaller board; else show why
+        not. (Original interactive behavior.)"""
         found = self._candidate_words.get(word)
-        if found is not None and self._repeat_rule(word):
-            # Capture newness before _clear_paths adds the word to the player's
-            # dictionary, so the entry pane can list it green.
-            is_new = not self._player_dict.contains(word)
-            self._clear_paths([found])
-            self._selecting_side_pane.accept_word(word, is_new)
-            self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
-            self._recompute_candidates()
-            # This clear may have won the game immediately (e.g. it removed the
-            # last obstacle/mission cell); if so, stop here rather than ending
-            # selection.
-            if self._check_victory():
-                return
-            # Leave SELECT once the placed piece is no longer adjacent to the
-            # board -- its remaining cells were consumed or stranded -- mirroring
-            # the adjacency gate in _begin_selection. Keyed on adjacency, not the
-            # candidate count, so the transition never reveals whether a word is
-            # still formable.
-            if not self._piece_touches_existing(self._move_placed):
-                self._end_selection()
+        if found is None or not self._repeat_rule(word):
+            self._selecting_side_pane.show_errors([self._submission_error(word)])
             return
-        self._selecting_side_pane.show_errors([self._submission_error(word)])
+        # Capture newness before _clear_paths adds the word to the player's
+        # dictionary, so the entry pane can list it green.
+        is_new = not self._player_dict.contains(word)
+        self._clear_paths([found])
+        self._selecting_side_pane.accept_word(word, is_new)
+        self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
+        self._recompute_candidates()
+        # This clear may have won the game immediately (e.g. it removed the last
+        # obstacle/mission cell); if so, stop here rather than ending selection.
+        if self._check_victory():
+            return
+        # Leave SELECT once the placed piece is no longer adjacent to the board --
+        # its remaining cells were consumed or stranded -- mirroring the adjacency
+        # gate in _begin_selection. Keyed on adjacency, not the candidate count,
+        # so the transition never reveals whether a word is still formable.
+        if not self._piece_touches_existing(self._move_placed):
+            self._end_selection()
+
+    def _rule_submit_defers(self, word):
+        """Clear-at-phase-end: hold the word for the phase-end batch instead of
+        clearing now, tinting its cells green. The board never shrinks mid-phase,
+        so cells reuse across words (overlaps); a word can be held several times
+        as long as each takes a distinct path (repeats). Nothing clears until the
+        phase ends (see _rule_endphase_clear_pending)."""
+        options = self._candidate_word_options.get(word)
+        if not options or not self._repeat_rule(word):
+            self._selecting_side_pane.show_errors([self._submission_error(word)])
+            return
+        found = self._unused_pending_path(word, options)
+        if found is None:
+            # A candidate, but every distinct way to spell it here is already
+            # held -- a batch-mode-specific rejection.
+            self._selecting_side_pane.show_errors([self._no_more_paths_error(word)])
+            return
+        is_new = not self._player_dict.contains(word)
+        self._pending.append(found)
+        self._highlight_pending_cells(found.path)
+        self._selecting_side_pane.accept_word(word, is_new)
+
+    def _rule_endphase_clear_none(self):
+        """Clear-on-submit: phase end clears nothing extra (each word already
+        cleared as it was submitted)."""
+        pass
+
+    def _rule_endphase_clear_pending(self):
+        """Clear-at-phase-end: clear the whole held batch together when the phase
+        ends. Overlapping cells (shared across held words) clear once; each held
+        word still records its own gram grouping (see _encode_variation)."""
+        if self._pending:
+            self._clear_paths(self._pending)
+        self._pending = []
+
+    def _unused_pending_path(self, word, options):
+        """A clearable FoundWord for `word` whose exact path isn't already held
+        this phase -- the fewest-cell one among those still free, or None when
+        every distinct spelling here is taken."""
+        used = {tuple(fw.path) for fw in self._pending if fw.word == word}
+        fresh = [fw for fw in options if tuple(fw.path) not in used]
+        if not fresh:
+            return None
+        return self._fewest_cell_word(fresh)
+
+    def _no_more_paths_error(self, word):
+        """The batch-mode rejection when a word is on the board but every way to
+        spell it here is already held: distinct wording by how many ways exist."""
+        total = len(self._candidate_word_options.get(word, []))
+        if total <= 1:
+            return "Already selected (only one way to spell it here)"
+        return "Every way to spell that here is already selected"
+
+    def _highlight_pending_cells(self, path):
+        """Tint a held word's cells light green so the player sees what the
+        phase-end batch will clear. All cells go green -- including starting
+        obstacle / mission cells on the path -- since the batch clears them too."""
+        for (x, y) in path:
+            cell = self._board.get_cell(x, y)
+            if cell is not None and cell.square is not None:
+                cell.square.color = self.PENDING_WORD_CELL_COLOR
 
     def _submission_error(self, word):
         """The single most specific reason `word` can't be cleared right now,
@@ -1175,8 +1283,12 @@ class GameScreen:
 
     def _end_selection(self):
         """Leave the SELECTING phase (the Next piece control, or once the piece
-        is no longer adjacent to the board) and spawn the next piece. Settles the
-        placed piece's remaining cells from light blue back to the board color."""
+        is no longer adjacent to the board) and spawn the next piece. First runs
+        the phase-end clear rule -- in batch mode this clears the whole held
+        selection together (it may win the game, caught by _advance_piece) -- then
+        settles the placed piece's remaining cells from light blue back to the
+        board color."""
+        self._endphase_clear_rule()
         self._settle_placed_cells()
         self._phase = Phase.MOVING
         self._advance_piece()

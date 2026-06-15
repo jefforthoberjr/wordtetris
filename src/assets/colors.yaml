@@ -7,6 +7,7 @@ board:
   cell_fill:        [255, 255, 255]   # settled cell fill (placed pieces)
   active_piece_fill: [100, 180, 245]   # darker blue: the live/movable piece
   placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
+  pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
