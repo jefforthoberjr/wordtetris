@@ -64,12 +64,28 @@ rules:
   # hex_grid.word_pathfinding: rule_snake_straightline  #TODO retest these after refactor
   hex_grid.word_pathfinding: rule_snake_anydirection
 
-  # Stage 2 (nucleate): of every word found, which count for the moving phase
-  # just ended. rule_adjacent_to_placed_pieces keeps words bridging any piece
-  # placed this phase (all of them are nucleation sites, not just the last) and
-  # an existing cell; rule_nucleate_none qualifies nothing (clearing off).
-  game_screen.word_nucleation: rule_adjacent_to_placed_pieces
+  # Stage 2a (nucleate): of every word found, which count for the moving phase
+  # just ended.
+  #   rule_adjacent_to_placed_pieces -- keep words bridging any piece placed this
+  #     phase (all of them are nucleation sites, not just the last) AND an
+  #     existing cell
+  #   rule_nucleate_anywhere -- every board word counts, wherever it sits (no tie
+  #     to a placed piece, so words can be built anywhere)
+  #   rule_nucleate_none -- nothing qualifies (clearing off)
+  # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
+  game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
+
+  # Stage 2b (placed-cell requirement): an independent filter on the nucleated
+  # words -- whether a word must include a cell from a piece placed this phase.
+  # Orthogonal to word_nucleation, so it composes: e.g. rule_nucleate_anywhere +
+  # rule_require_placed_cell keeps any board word that also touches a placed cell.
+  #   rule_require_placed_cell -- word must cover >=1 placed cell
+  #   rule_placed_cell_optional -- no such requirement
+  # (Optional by default; rule_adjacent_to_placed_pieces already needs a placed
+  # cell, so the current behavior is unchanged.)
+  # game_screen.placed_cell_requirement: rule_placed_cell_optional
+  game_screen.placed_cell_requirement: rule_require_placed_cell
 
   # Stage 3 (select): of the nucleated candidates, which to actually clear.
   #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant
@@ -87,8 +103,8 @@ rules:
   #     cells can be reused across words (overlaps + repeats -- a word may be
   #     entered once per distinct path). The interactive twin of
   #     rule_select_mostwords_withoverlaps_withrepeats.
-  game_screen.clear_timing: rule_clear_at_phase_end
-  # game_screen.clear_timing: rule_clear_on_submit
+  # game_screen.clear_timing: rule_clear_at_phase_end
+  game_screen.clear_timing: rule_clear_on_submit
 
   # game_screen.select_trigger: rule_select_every_placement
   game_screen.select_trigger: rule_select_after_n_placements

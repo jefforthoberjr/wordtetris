@@ -435,13 +435,31 @@ class GameScreen:
         # Nucleation rule, chosen by the YAML key game_screen.word_nucleation.
         # Of every word found on the board, this decides which count for the move
         # just made -- the gate between pathfinding and selection. Grid-agnostic.
-        # rule_nucleate_none qualifies nothing, which disables clearing entirely.
+        #   rule_adjacent_to_placed_pieces -- bridge a placed cell and an old one
+        #   rule_nucleate_anywhere -- any board word counts (no placement tie)
+        #   rule_nucleate_none -- nothing qualifies (clearing off)
         nucleation_rules = {
             "rule_adjacent_to_placed_pieces": self._rule_adjacent_to_placed_pieces,
+            "rule_nucleate_anywhere": self._rule_nucleate_anywhere,
             "rule_nucleate_none": self._rule_nucleate_none,
         }
         self._nucleation_rule = select_rule(
             "game_screen.word_nucleation", nucleation_rules
+        )
+
+        # Placed-cell requirement, chosen by game_screen.placed_cell_requirement.
+        # An independent second stage-2 filter applied after nucleation: whether a
+        # word must include at least one cell from a piece placed this moving
+        # phase. Orthogonal to word_nucleation, so it composes -- e.g.
+        # rule_nucleate_anywhere + rule_require_placed_cell keeps any board word
+        # that also touches a placed cell. Default optional, so the existing
+        # nucleation rule's own placed-cell requirement is unchanged.
+        placed_cell_rules = {
+            "rule_require_placed_cell": self._rule_require_placed_cell,
+            "rule_placed_cell_optional": self._rule_placed_cell_optional,
+        }
+        self._placed_cell_rule = select_rule(
+            "game_screen.placed_cell_requirement", placed_cell_rules
         )
 
         self._start_new_game()
@@ -1070,7 +1088,9 @@ class GameScreen:
         self._board_words_any = {fw.word for fw in found_any}
         found = [fw for fw in found_any if self._word_length_rule(fw.word, fw.path)]
         self._length_ok_words = {fw.word for fw in found}
-        self._candidates = self._nucleation_rule(found, live_placed)
+        # Stage 2: nucleate, then apply the independent placed-cell requirement.
+        nucleated = self._nucleation_rule(found, live_placed)
+        self._candidates = self._placed_cell_rule(nucleated, live_placed)
         # Of several ways to spell the same word (different paths, or different
         # wild-vowel expansions), keep the one covering the fewest cells, so a
         # typed word makes the most compact clear -- e.g. a single wild as "OA"
@@ -1344,8 +1364,9 @@ class GameScreen:
                     self._collect_words(nxt, direction, path, text2, segments2, found, apply_length)
 
     # --- Nucleation rules (game_screen.word_nucleation) --------------------
-    # Stage 2: of every word _find_words turned up, decide which count for the
-    # move just made. The gate between pathfinding and selection.
+    # Stage 2a: of every word _find_words turned up, decide which count for the
+    # move just made. The gate between pathfinding and selection; its output is
+    # then narrowed by the placed-cell rule (stage 2b) below.
     def _rule_adjacent_to_placed_pieces(self, found, placed_positions):
         """Keep words that bridge a piece placed this moving phase and the
         existing board: a word must cover at least one placed cell and at least
@@ -1363,9 +1384,34 @@ class GameScreen:
                 candidates.append(fw)
         return candidates
 
+    def _rule_nucleate_anywhere(self, found, placed_positions):
+        """Every word found on the board counts, wherever it sits -- no tie to a
+        placed piece. A word made entirely of old cells qualifies, so the player
+        can build words anywhere on the board. (Pair with rule_require_placed_cell
+        to still demand a placed cell without the bridge-to-old requirement.)"""
+        return list(found)
+
     def _rule_nucleate_none(self, found, placed_positions):
         """No word ever qualifies, which disables clearing entirely."""
         return []
+
+    # --- Placed-cell requirement rules (game_screen.placed_cell_requirement) -
+    # Stage 2b: an independent filter on the nucleated words -- whether a word
+    # must include a cell from a piece placed this moving phase. Composes with
+    # any nucleation rule above.
+    def _rule_require_placed_cell(self, candidates, placed_positions):
+        """Keep only words covering at least one cell placed this moving phase.
+        On its own this is the 'at least one placed cell' requirement, separable
+        from nucleation's bridge-to-old rule."""
+        new_cells = set(placed_positions)
+        return [
+            fw for fw in candidates
+            if any(cell in new_cells for cell in fw.path)
+        ]
+
+    def _rule_placed_cell_optional(self, candidates, placed_positions):
+        """No placed-cell requirement: pass the nucleated words through as-is."""
+        return candidates
 
     def _current_piece(self):
         return self._piece_pool.current_piece()

@@ -179,6 +179,9 @@ def _game(board, interactive=True, history=None):
     g._cleared_word_history = set(history or ())
     g._repeat_rule = lambda w: w not in g._cleared_word_history
     g._nucleation_rule = g._rule_adjacent_to_placed_pieces
+    # Independent placed-cell filter (stage 2b); optional preserves the original
+    # adjacent-only behavior the existing tests assert.
+    g._placed_cell_rule = g._rule_placed_cell_optional
     # Phase-transition rules at their originals: every placement is a selection
     # turn, and an isolated placement skips selection. So _begin_selection
     # behaves as it did before the multi-placement trigger, which is what these
@@ -426,6 +429,52 @@ def test_typed_word_prefers_fewest_cells():
     assert g._player_dict.added == [("oath", "?oa?|t|h")]
     # Only the three OATH cells cleared; the first wild remains on the board.
     assert g._board.cells == {(0, 0): "X"}
+
+
+# --- nucleation + placed-cell requirement (stage 2) -------------------------
+
+def test_nucleate_anywhere_keeps_words_without_placed_cells():
+    # A word made purely of old cells (not touching any placed cell) still counts.
+    g = _game(FakeBoard({}))
+    placed = {(3, 0)}
+    fw_touch = gs.FoundWord([(2, 0), (3, 0)], ["A", "B"], "AB")
+    fw_far = gs.FoundWord([(7, 7), (8, 7)], ["C", "D"], "CD")
+    assert g._rule_nucleate_anywhere([fw_touch, fw_far], placed) == [fw_touch, fw_far]
+
+
+def test_require_placed_cell_filters_to_touching_words():
+    g = _game(FakeBoard({}))
+    placed = {(3, 0)}
+    fw_touch = gs.FoundWord([(2, 0), (3, 0)], ["A", "B"], "AB")
+    fw_far = gs.FoundWord([(7, 7), (8, 7)], ["C", "D"], "CD")
+    out = g._rule_require_placed_cell([fw_touch, fw_far], placed)
+    assert out == [fw_touch]
+
+
+def test_placed_cell_optional_passes_all_through():
+    g = _game(FakeBoard({}))
+    fws = [gs.FoundWord([(7, 7)], ["C"], "C")]
+    assert g._rule_placed_cell_optional(fws, {(3, 0)}) == fws
+
+
+def test_anywhere_plus_require_placed_cell_composes():
+    # CAT (row 0) sits apart from the placed D; CARD (row 2) is old CAR + placed
+    # D. With nucleate_anywhere both purely-old CAT and CARD are candidates;
+    # adding require_placed_cell drops CAT (no placed cell) but keeps CARD.
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T",
+                   (0, 2): "C", (1, 2): "A", (2, 2): "R", (3, 2): "D"})
+    )
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    g._move_placed = {(3, 2)}            # the placed D
+    g._placed_cell_rule = g._rule_placed_cell_optional
+    g._recompute_candidates()
+    assert "CAT" in g._candidate_words   # purely-old word counts under anywhere
+    assert "CARD" in g._candidate_words
+    g._placed_cell_rule = g._rule_require_placed_cell
+    g._recompute_candidates()
+    assert "CAT" not in g._candidate_words   # no placed cell -> filtered out
+    assert "CARD" in g._candidate_words      # touches the placed D -> kept
 
 
 # --- batch clearing (clear-at-phase-end) ------------------------------------
