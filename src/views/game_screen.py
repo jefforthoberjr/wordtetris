@@ -8,12 +8,12 @@ from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
-from models.square_piece import SquarePiece, PIECE_TYPES
+from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES as SQUARE_PLAYER_PIECE_TYPES
 from models.square_piece import OBSTACLE_PIECE_TYPES as SQUARE_OBSTACLE_PIECE_TYPES
 from models.square_piece import OBSTACLE_GRAM_PICK_RULE as SQUARE_OBSTACLE_GRAM_PICK_RULE
 from models.square_piece import MISSION_PIECE_TYPES as SQUARE_MISSION_PIECE_TYPES
 from models.square_piece import MISSION_GRAM_PICK_RULE as SQUARE_MISSION_GRAM_PICK_RULE
-from models.hex_piece import HexPiece, PIECE_TYPES as HEX_PIECE_TYPES
+from models.hex_piece import HexPiece, PLAYER_PIECE_TYPES as HEX_PLAYER_PIECE_TYPES
 from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
 from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
 from models.hex_piece import MISSION_PIECE_TYPES as HEX_MISSION_PIECE_TYPES
@@ -534,7 +534,7 @@ class GameScreen:
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
-            self._piece_class, self._piece_types,
+            self._piece_class, self._player_piece_types,
             cell_color=self.ACTIVE_PIECE_CELL_COLOR
         )
         self._init_first_piece()
@@ -649,7 +649,7 @@ class GameScreen:
         self._cell_size = math.floor(self._grid_area_size / self.GRID_WIDTH)
         self._board_height = math.floor(self._grid_area_size / self._cell_size)
         self._piece_class = SquarePiece
-        self._piece_types = PIECE_TYPES
+        self._player_piece_types = SQUARE_PLAYER_PIECE_TYPES
         # Obstacles get their own piece set + gram-pick (square_obstacle.* keys),
         # so they can differ from the playable pieces.
         self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
@@ -683,7 +683,7 @@ class GameScreen:
         self._cell_size = hex_size
         self._board_height = board.height
         self._piece_class = HexPiece
-        self._piece_types = HEX_PIECE_TYPES
+        self._player_piece_types = HEX_PLAYER_PIECE_TYPES
         # Obstacles get their own gram-pick (hex_obstacle.gram_pick); the hex set
         # has a single piece type, so obstacle types match the main set.
         self._obstacle_piece_types = HEX_OBSTACLE_PIECE_TYPES

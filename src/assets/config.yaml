@@ -7,8 +7,8 @@ game:
   ups: 60
   # UI language: a top-level key in assets/strings.yaml (e.g. en, es). Missing
   # keys fall back to English.
-  # language: en
-  language: es
+  language: en
+  # language: es
 
 audio:
   master_volume: 0.8
@@ -50,8 +50,8 @@ rules:
   #     missions, each at a random non-overlapping spot (the original opening)
   #   rule_formation_mission_center_obstacle_ring -- 1 mission on the center cell,
   #     ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
-  game_screen.setup_formation: rule_formation_scattered
-  # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
+  # game_screen.setup_formation: rule_formation_scattered
+  game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -99,8 +99,8 @@ rules:
   #     (e.g. W + ING -> WIN leaves G; ING + OO + D -> GOOD leaves IN). In batch
   #     mode (clear_at_phase_end) several words may take different bites of one
   #     gram (H ING O -> HI + GO leaves N; W ING O -> WIN + GO clears it).
-  game_screen.gram_usage: rule_gram_use_whole
-  # game_screen.gram_usage: rule_gram_use_partial
+  # game_screen.gram_usage: rule_gram_use_whole
+  game_screen.gram_usage: rule_gram_use_partial
 
   # Stage 3 (select): of the nucleated candidates, which to actually clear.
   #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant
@@ -170,21 +170,21 @@ rules:
   # rules (otherwise covering one strands that victory condition).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
 
-  # square_piece.gram_pick:   rule_scrabble_with_allvowelswild
-  square_piece.gram_pick: rule_scrabble_distribution
-  # square_piece.gram_pick: rule_random_letters
-  # square_piece.gram_pick: rule_englishcorpus_random_unigram
-  # square_piece.gram_pick: rule_englishcorpus_random_digram
-  # square_piece.gram_pick: rule_gramcorpus_distribution
-  square_piece.gram_pick: rule_mixed_scrabble_digram52
-  # square_piece.gram_pick: rule_digram52_distribution
-  # square_piece.gram_pick: rule_trigram_equalweight
+  # square_player.gram_pick:   rule_scrabble_with_allvowelswild
+  square_player.gram_pick: rule_scrabble_distribution
+  # square_player.gram_pick: rule_random_letters
+  # square_player.gram_pick: rule_englishcorpus_random_unigram
+  # square_player.gram_pick: rule_englishcorpus_random_digram
+  # square_player.gram_pick: rule_gramcorpus_distribution
+  square_player.gram_pick: rule_mixed_scrabble_digram52
+  # square_player.gram_pick: rule_digram52_distribution
+  # square_player.gram_pick: rule_trigram_equalweight
   # rule_scrabble_with_allvowelswild: scrabble weights, but vowels become wild cells
   # rule_trigram_equalweight: every trigram in jpo_5.2.2_trigrams.csv, equal odds
 
-  # square_piece.piece_set:   rule_use_tetriminos
-  square_piece.piece_set: rule_use_dominos
-  # square_piece.piece_set: rule_use_unimos
+  # square_player.piece_set:   rule_use_tetriminos
+  square_player.piece_set: rule_use_dominos
+  # square_player.piece_set: rule_use_unimos
 
   # Starting obstacles for the square grid: own gram-pick + piece set, so they
   # can differ from the playable pieces (e.g. unigram dominos as obstacles).
@@ -216,18 +216,18 @@ rules:
   # square_mission.piece_set: rule_use_tetriminos
   # square_mission.piece_set: rule_use_unimos
 
-  # hex_piece.gram_pick:      rule_gramcorpus_distribution
-  # hex_piece.gram_pick:    rule_random_lettersw
-  # hex_piece.gram_pick:    rule_scrabble_with_allvowelswild
-  hex_piece.gram_pick:    rule_scrabble_distribution
-  # hex_piece.gram_pick:    rule_englishcorpus_random_unigram
-  # hex_piece.gram_pick:    rule_englishcorpus_random_digram
-  # hex_piece.gram_pick:    rule_mixed_scrabble_digram52
-  # hex_piece.gram_pick:    rule_digram52_distribution
-  # hex_piece.gram_pick:    rule_trigram_equalweight
+  # hex_player.gram_pick:      rule_gramcorpus_distribution
+  # hex_player.gram_pick:    rule_random_lettersw
+  # hex_player.gram_pick:    rule_scrabble_with_allvowelswild
+  hex_player.gram_pick:    rule_scrabble_distribution
+  # hex_player.gram_pick:    rule_englishcorpus_random_unigram
+  # hex_player.gram_pick:    rule_englishcorpus_random_digram
+  # hex_player.gram_pick:    rule_mixed_scrabble_digram52
+  # hex_player.gram_pick:    rule_digram52_distribution
+  # hex_player.gram_pick:    rule_trigram_equalweight
 
-  hex_piece.piece_set:    rule_use_hex_dominos
-  # hex_piece.piece_set:  rule_use_hex_unimos
+  hex_player.piece_set:    rule_use_hex_dominos
+  # hex_player.piece_set:  rule_use_hex_unimos
 
   # Starting obstacles for the hex grid: own gram-pick + piece set, so they can
   # differ from the playable pieces.

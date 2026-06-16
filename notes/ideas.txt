@@ -2,6 +2,16 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+word ideation doesn't occur natually in this game. Something needs to spark it.
+
+Maybe words clicked onto the board from your words, could be pre-divided into grams, like recommended useful subgrams (e.g. IZE). The words then appear in the word list like rendered cells. It could even be smart enough to bundle compound word cells like "OVER" "INNER" "MULTI"
+
+Add iternationalization for IZE vs. ISE, etc.)
+
+Maybe the buried pieces don't reveal their faces until they've been surfaced? Like, otherwise looking ahead at it is only so useful.
+
+Allow player to scrunch, combine multiple cells into one cell. consolidating the board, prepping for longer words
+
 Users can click a word in the right plan, and it gets added to the board as its own piece, auto make it into a set of grams (into 3 grams)
 
 Different game mode: given a bunch of tiles, just click and drag them around, play with the tiles, then after a time limit, all the formed words get cleared.
@@ -225,3 +235,41 @@ Rotate the blocks
 
 
 Simulate word connections like molecule chunks and magnets, and valence electron shells
+
+
+
+1 letter grams: 26 entries; ~166k total weight
+2 letter grams: ~300 entries; ~141k total weight
+3 letter grams: ~700 entries; ~81k total weight
+4 letter grams: ~150 entries; ~15k total weight
+
+
+
+[TODO] refactor hex _create_outlines to prevent double line draws
+
+
+[TODO] PyInstaller build tested
+[TODO] Setup with Steamworks
+[TODO] Steam upload tested
+[TODO] Add logging
+[TODO] Setup apitrace; debug sessions for gl_* call counts
+[TODO] Implement versioning x.y.z
+[TODO] Customizable controls menu; assign keys
+[TODO] Sprite counts in debug menu
+
+
+Add highlighting UI section which words were captured
+
+Add a confirmation 
+
+
+"Max" wasn't in the dictionary? huh
+(how should I add it?)
+
+
+[TODO]
+Make the existing min_length_rules, at least 2 letter and at least 2 grams/cells
+
+
+New rule to Allow/Disallow partial split of words
+

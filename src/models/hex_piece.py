@@ -26,15 +26,15 @@ def _rule_use_hex_unimos():
     return HexUnimoType, HEX_UNIMO_DIRECTIONS
 
 
-# Which hex piece set to use (mirrors square_piece's pattern). The main pieces
-# follow hex_piece.piece_set; the starting obstacles follow their own
+# Which hex piece set to use (mirrors square_player's pattern). The main (player)
+# pieces follow hex_player.piece_set; the starting obstacles follow their own
 # hex_obstacle.piece_set, so obstacles can be (say) unimos while the playable
 # pieces are dominos.
 _PIECE_SET_RULES = {
     "rule_use_hex_dominos": _rule_use_hex_dominos,
     "rule_use_hex_unimos": _rule_use_hex_unimos,
 }
-PIECE_TYPES, PIECE_DIRECTIONS = select_rule("hex_piece.piece_set", _PIECE_SET_RULES)()
+PLAYER_PIECE_TYPES, PLAYER_PIECE_DIRECTIONS = select_rule("hex_player.piece_set", _PIECE_SET_RULES)()
 OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_DIRECTIONS = select_rule("hex_obstacle.piece_set", _PIECE_SET_RULES)()
 # Mission pieces (the light-red goal pieces) get their own piece set too, the
 # direct parallel of the obstacles above.
@@ -47,7 +47,7 @@ ALL_PIECE_DIRECTIONS = {}
 ALL_PIECE_DIRECTIONS.update(HEX_DOMINO_DIRECTIONS)
 ALL_PIECE_DIRECTIONS.update(HEX_UNIMO_DIRECTIONS)
 
-# How each piece's grams are picked. The main pieces follow hex_piece.gram_pick;
+# How each piece's grams are picked. The main (player) pieces follow hex_player.gram_pick;
 # the starting obstacles follow their own hex_obstacle.gram_pick.
 _GRAM_PICK_RULES = {
     "rule_random_letters": rule_random_letters,
@@ -60,7 +60,7 @@ _GRAM_PICK_RULES = {
     "rule_trigram_equalweight": rule_trigram_equalweight,
     "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
-_gram_pick_rule = select_rule("hex_piece.gram_pick", _GRAM_PICK_RULES)
+_gram_pick_rule = select_rule("hex_player.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("hex_obstacle.gram_pick", _GRAM_PICK_RULES)
 MISSION_GRAM_PICK_RULE = select_rule("hex_mission.gram_pick", _GRAM_PICK_RULES)
 

@@ -31,7 +31,7 @@ STRINGS = load_strings()
 
 
 def select_rule(slot, registry):
-    """Resolve the rule name configured for `slot` (e.g. "square_piece.gram_pick")
+    """Resolve the rule name configured for `slot` (e.g. "square_player.gram_pick")
     to a function in `registry`. The YAML `rules` block is the single edit point;
     `registry` is a {name: function} map declared at each rule's swap point."""
     name = CONFIG["rules"][slot]

@@ -1,5 +1,5 @@
 import random
-from models.square_piece import SquarePiece, PIECE_TYPES
+from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES
 from config import select_rule
 
 
@@ -14,7 +14,7 @@ class PiecePool:
         # geometry rule in GameScreen). Defaults keep the square behavior.
         self._piece_class = piece_class
         if piece_types is None:
-            piece_types = PIECE_TYPES
+            piece_types = PLAYER_PIECE_TYPES
         self._piece_types = piece_types
         # Injected so an obstacle pool can pick grams by a different rule than
         # the main pool. None lets each piece fall back to its configured default.

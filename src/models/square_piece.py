@@ -29,15 +29,15 @@ def _rule_use_unimos():
     return SquareUnimoType, SQUARE_UNIMO_ROTATIONS
 
 
-# Which piece set to use. The main pieces follow square_piece.piece_set; the
-# starting obstacles follow their own square_obstacle.piece_set, so obstacles
+# Which piece set to use. The main (player) pieces follow square_player.piece_set;
+# the starting obstacles follow their own square_obstacle.piece_set, so obstacles
 # can be (say) unimos while the playable pieces are tetriminos.
 _PIECE_SET_RULES = {
     "rule_use_tetriminos": _rule_use_tetriminos,
     "rule_use_dominos": _rule_use_dominos,
     "rule_use_unimos": _rule_use_unimos,
 }
-PIECE_TYPES, PIECE_ROTATIONS = select_rule("square_piece.piece_set", _PIECE_SET_RULES)()
+PLAYER_PIECE_TYPES, PLAYER_PIECE_ROTATIONS = select_rule("square_player.piece_set", _PIECE_SET_RULES)()
 OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()
 # Mission pieces (the light-red goal pieces) get their own piece set too, the
 # direct parallel of the obstacles above.
@@ -51,7 +51,7 @@ ALL_PIECE_ROTATIONS.update(SQUARE_TETRIMINO_ROTATIONS)
 ALL_PIECE_ROTATIONS.update(SQUARE_DOMINO_ROTATIONS)
 ALL_PIECE_ROTATIONS.update(SQUARE_UNIMO_ROTATIONS)
 
-# How each piece's grams are picked. The main pieces follow square_piece.gram_pick;
+# How each piece's grams are picked. The main (player) pieces follow square_player.gram_pick;
 # the starting obstacles follow their own square_obstacle.gram_pick.
 _GRAM_PICK_RULES = {
     "rule_random_letters": rule_random_letters,
@@ -64,7 +64,7 @@ _GRAM_PICK_RULES = {
     "rule_trigram_equalweight": rule_trigram_equalweight,
     "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
-_gram_pick_rule = select_rule("square_piece.gram_pick", _GRAM_PICK_RULES)
+_gram_pick_rule = select_rule("square_player.gram_pick", _GRAM_PICK_RULES)
 OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
 MISSION_GRAM_PICK_RULE = select_rule("square_mission.gram_pick", _GRAM_PICK_RULES)
 
