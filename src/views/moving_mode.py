@@ -224,7 +224,9 @@ class TypewriterMovingMode(MovingMode):
         if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
             return
         self._swap_grams(self._cursor, cell)
-        gs._begin_selection([self._cursor, cell])
+        # Which swapped cell(s) count as placed is configurable; the other is left
+        # settled (game_screen.typewriter_swap).
+        gs._begin_selection(gs._typewriter_swap_rule(self._cursor, cell))
 
     def _swap_grams(self, a, b):
         """Exchange the letters of two occupied cells, leaving each cell's own

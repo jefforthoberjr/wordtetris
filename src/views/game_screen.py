@@ -155,8 +155,8 @@ _DICTIONARY_COUNT_RULES = {
 
 
 class GameScreen:
-    GRID_WIDTH = 14
-    PIECE_POOL_SIZE = 100
+    GRID_WIDTH = CONFIG["rules"]["game_screen.grid_width"]
+    PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
     # Obstacle pieces the scattered formation drops before play begins; also gates
     # the obstacle victory rule (0 == board never had obstacles). Config-surfaced
     # near game_screen.setup_formation; the ring formation derives its own count.
@@ -431,6 +431,18 @@ class GameScreen:
         self._word_piece_enabled = (
             CONFIG["rules"]["game_screen.player_word_piece"]
             == "rule_player_word_piece_enabled"
+        )
+
+        # Typewriter swap rule (game_screen.typewriter_swap): on a cursor<->cell
+        # swap, which of the two cells count as placed (nucleation sites) this
+        # turn. The TypewriterMovingMode hands the swapped pair here and feeds the
+        # result to _begin_selection; see the _rule_swap_places_* methods.
+        typewriter_swap_rules = {
+            "rule_swap_places_cursor_only": self._rule_swap_places_cursor_only,
+            "rule_swap_places_both": self._rule_swap_places_both,
+        }
+        self._typewriter_swap_rule = select_rule(
+            "game_screen.typewriter_swap", typewriter_swap_rules
         )
 
         # Clear-timing rule (game_screen.clear_timing): when a typed word clears.
@@ -1143,6 +1155,20 @@ class GameScreen:
             self._placements_until_select = self._select_trigger_count
             return True
         return False
+
+    # --- typewriter swap-placed rules (game_screen.typewriter_swap) ---------
+    # On a MOVING_TYPEWRITER cursor<->cell swap, decide which of the two cells
+    # count as placed (nucleation sites) this turn. Whatever isn't returned here
+    # is left as a settled board cell.
+    def _rule_swap_places_cursor_only(self, cursor, other):
+        """Only the cursor cell is placed; the swapped-in cell settles, so a
+        cleared word must nucleate around the cursor."""
+        return [cursor]
+
+    def _rule_swap_places_both(self, cursor, other):
+        """Both swapped cells are placed (original behavior): a word may nucleate
+        around either end of the swap."""
+        return [cursor, other]
 
     # --- isolated-piece skip rules (game_screen.skip_select_isolated) -------
     # On a selection turn, decide whether to skip it because the placed pieces

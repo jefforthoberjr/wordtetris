@@ -3,6 +3,13 @@ GAME NAMES
 * blast-tionary
 
 
+Should I also allow for word nucleation next to the cursor?
+
+Allow for swapping next to the cursor
+(what are the controls for this?)
+
+The cursor has a feel that it shoud be the 
+
 Game idea: the whole board is filled with grams, every cell.
 Then the player is arranging, from the start of the grid (top left, line by line, to the bottom right) click individual cells to rearrange with the individual tiles to form words, sentences.
 

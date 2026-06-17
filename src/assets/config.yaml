@@ -30,6 +30,12 @@ rules:
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 
+  # Board sizing. grid_width is the number of columns (the grid area is a square,
+  # so cell size derives from it). piece_pool_size is how many player pieces the
+  # pool pre-builds for a game.
+  game_screen.grid_width:       8
+  game_screen.piece_pool_size:  100
+
   # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy runs.
   # The mode owns how the moving phase presents its active element and turns one
   # input into one committed action; the shared SELECT pipeline, word-finding,
@@ -45,6 +51,15 @@ rules:
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
   #     down, ending bottom-right (jittery on the offset hex rows; fine for now)
   game_screen.cursor_path:  rule_cursor_typewriter
+
+  # On a MOVING_TYPEWRITER swap (cursor cell <-> another board cell), which cells
+  # count as "placed" this turn -- i.e. nucleation sites for word-finding. The
+  # other (non-placed) cell is treated as a settled board cell.
+  #   rule_swap_places_cursor_only -- only the cursor cell is placed; the swapped-
+  #     in cell settles (a word must nucleate around the cursor)
+  #   rule_swap_places_both -- both swapped cells are placed (original behavior)
+  game_screen.typewriter_swap: rule_swap_places_cursor_only
+  # game_screen.typewriter_swap: rule_swap_places_both
 
   # TYPEWRITER PRESET -- to play MOVING_TYPEWRITER, set game_screen.mode above to
   # rule_mode_typewriter and also flip these (so the board starts full, formed
@@ -108,8 +123,8 @@ rules:
   #   rule_nucleate_anywhere -- every board word counts, wherever it sits (no tie
   #     to a placed piece, so words can be built anywhere)
   #   rule_nucleate_none -- nothing qualifies (clearing off)
-  # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
-  game_screen.word_nucleation: rule_nucleate_anywhere
+  game_screen.word_nucleation: rule_adjacent_to_placed_pieces
+  # game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
 
   # Stage 2b (placed-cell requirement): an independent filter on the nucleated
@@ -274,13 +289,14 @@ rules:
   # square_mission.piece_set: rule_use_tetriminos
   # square_mission.piece_set: rule_use_unimos
 
+  # Also governs the initial board formation cells
   # hex_player.gram_pick:      rule_gramcorpus_distribution
   # hex_player.gram_pick:    rule_random_lettersw
   # hex_player.gram_pick:    rule_scrabble_with_allvowelswild
-  hex_player.gram_pick:    rule_scrabble_distribution
+  # hex_player.gram_pick:    rule_scrabble_distribution
   # hex_player.gram_pick:    rule_englishcorpus_random_unigram
   # hex_player.gram_pick:    rule_englishcorpus_random_digram
-  # hex_player.gram_pick:    rule_mixed_scrabble_digram52
+  hex_player.gram_pick:    rule_mixed_scrabble_digram52
   # hex_player.gram_pick:    rule_digram52_distribution
   # hex_player.gram_pick:    rule_trigram_equalweight
 
