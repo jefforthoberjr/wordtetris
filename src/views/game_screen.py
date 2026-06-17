@@ -385,7 +385,18 @@ class GameScreen:
             "game_screen.select_trigger", select_trigger_rules
         )
         self._select_trigger_count = CONFIG["rules"]["game_screen.select_trigger_count"]
-        self._placements_until_select = self._select_trigger_count
+        # Initial countdown shown before the first placement, picked by the same
+        # trigger rule (single edit point in YAML). "Every placement" always shows
+        # 1 ("this piece"); "after N" starts a full cycle at N. Without this the
+        # label flashed the after-N count on the first turn under every-placement.
+        select_trigger_initial = {
+            "rule_select_every_placement": 1,
+            "rule_select_after_n_placements": self._select_trigger_count,
+        }
+        self._initial_placements_until_select = select_rule(
+            "game_screen.select_trigger", select_trigger_initial
+        )
+        self._placements_until_select = self._initial_placements_until_select
         skip_select_rules = {
             "rule_skip_select_if_isolated": self._rule_skip_select_if_isolated,
             "rule_never_skip_select": self._rule_never_skip_select,
@@ -583,7 +594,9 @@ class GameScreen:
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         # Fresh per game: restart the selection-trigger countdown and show it.
-        self._placements_until_select = self._select_trigger_count
+        # Uses the rule-specific initial value so the label is right before the
+        # first placement (every-placement shows 1, not the after-N count).
+        self._placements_until_select = self._initial_placements_until_select
         self._moving_side_pane.set_phase_label(self._placements_until_select)
 
         # Lay out the opening obstacle + mission pieces per the active starting-
