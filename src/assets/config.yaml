@@ -162,8 +162,8 @@ rules:
   # (If an isolated piece can't bridge into any word, auto-skip for UX flow)
   #   rule_skip_select_if_isolated -- skip when the placed piece is isolated (orig)
   #   rule_never_skip_select -- always run selection, isolated or not
-  game_screen.skip_select_isolated: rule_skip_select_if_isolated
-  # game_screen.skip_select_isolated: rule_never_skip_select
+  # game_screen.skip_select_isolated: rule_skip_select_if_isolated
+  game_screen.skip_select_isolated: rule_never_skip_select
 
   # What a left-click on a board cell does during the SELECTING phase.
   #   rule_select_click_type_gram -- type the clicked cell's gram into the entry

@@ -7,6 +7,7 @@ from views.ingame_menu import IngameMenu
 from views.moving_mode import JigsawMovingMode, TypewriterMovingMode
 from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
+from views.victory_overlay import VictoryOverlay
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES as SQUARE_PLAYER_PIECE_TYPES
@@ -219,24 +220,9 @@ class GameScreen:
             side_pane_x, 0, side_pane_width, window.height
         )
 
-        # Victory overlay: a solid panel + big "VICTORY" centered over the grid
-        # region (the left square). Built once and drawn only in the VICTORY
-        # phase. Sized off the window so it scales with the framebuffer.
-        self._victory_batch = pyglet.graphics.Batch()
-        grid_cx = math.floor(self._grid_area_size / 2)
-        grid_cy = math.floor(window.height / 2)
-        panel_w = math.floor(self._grid_area_size * 0.7)
-        panel_h = math.floor(window.height * 0.22)
-        self._victory_panel = pyglet.shapes.Rectangle(
-            grid_cx - math.floor(panel_w / 2), grid_cy - math.floor(panel_h / 2),
-            panel_w, panel_h, color=get_color("victory.panel"),
-            batch=self._victory_batch,
-        )
-        self._victory_label = pyglet.text.Label(
-            get_string("victory"), font_size=math.floor(window.height / 8),
-            x=grid_cx, y=grid_cy, anchor_x="center", anchor_y="center",
-            color=get_color("victory.text"), batch=self._victory_batch,
-        )
+        # Victory overlay: a solid panel + big centered label drawn over the grid
+        # region only in the VICTORY phase. See views/victory_overlay.py.
+        self._victory_overlay = VictoryOverlay(self._grid_area_size, window.height)
 
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.
@@ -1129,7 +1115,7 @@ class GameScreen:
         is the single frozen end-state -- the overlay is drawn by draw() and the
         right pane reverts to the cleared-word list (phase no longer SELECTING);
         the label is what distinguishes a win from a plain finish."""
-        self._victory_label.text = label_text
+        self._victory_overlay.set_text(label_text)
         self._phase = Phase.VICTORY
         self._settle_placed_cells()
 
@@ -1977,7 +1963,7 @@ class GameScreen:
         # On a win, the VICTORY panel sits over the grid; the pane above already
         # reverted to the cleared-word list (phase is no longer SELECTING).
         if self._phase == Phase.VICTORY:
-            self._victory_batch.draw()
+            self._victory_overlay.draw()
 
         if self._menu_open:
             self._ingame_menu.draw()
