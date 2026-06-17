@@ -18,6 +18,9 @@ from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
 from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
 from models.hex_piece import MISSION_PIECE_TYPES as HEX_MISSION_PIECE_TYPES
 from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RULE
+from models.square_unimo import SquareUnimoType
+from models.hex_unimo import HexUnimoType
+from models.gram import Gram
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
@@ -375,6 +378,18 @@ class GameScreen:
             "game_screen.select_click", select_click_rules
         )
 
+        # Player word-piece rule (game_screen.player_word_piece): whether clicking
+        # a cleared word in the right pane during MOVING swaps the live piece for a
+        # single-cell piece carrying that whole word. The handler returns whether a
+        # swap happened, so on_mouse_press knows to consume the click.
+        player_word_piece_rules = {
+            "rule_player_word_piece_enabled": self._rule_player_word_piece_enabled,
+            "rule_player_word_piece_disabled": self._rule_player_word_piece_disabled,
+        }
+        self._player_word_piece_rule = select_rule(
+            "game_screen.player_word_piece", player_word_piece_rules
+        )
+
         # Clear-timing rule (game_screen.clear_timing): when a typed word clears.
         #   rule_clear_on_submit -- each submit clears immediately, recomputing
         #     against the shrinking board (original interactive behavior)
@@ -537,6 +552,10 @@ class GameScreen:
             self._piece_class, self._player_piece_types,
             cell_color=self.ACTIVE_PIECE_CELL_COLOR
         )
+        # No word-piece swap active at the start of a game (the player word-piece
+        # feature; see _swap_to_word_piece). Cleared here so a swap left dangling
+        # by a previous game's restart is dropped with its old batch.
+        self._override_piece = None
         self._init_first_piece()
 
     # --- starting-formation rules (game_screen.setup_formation) ------------
@@ -650,6 +669,9 @@ class GameScreen:
         self._board_height = math.floor(self._grid_area_size / self._cell_size)
         self._piece_class = SquarePiece
         self._player_piece_types = SQUARE_PLAYER_PIECE_TYPES
+        # Single-cell shape a clicked-word piece uses on this grid (see
+        # _swap_to_word_piece / game_screen.player_word_piece).
+        self._unimo_type = SquareUnimoType.SINGLE
         # Obstacles get their own piece set + gram-pick (square_obstacle.* keys),
         # so they can differ from the playable pieces.
         self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
@@ -684,6 +706,9 @@ class GameScreen:
         self._board_height = board.height
         self._piece_class = HexPiece
         self._player_piece_types = HEX_PLAYER_PIECE_TYPES
+        # Single-cell shape a clicked-word piece uses on this grid (see
+        # _swap_to_word_piece / game_screen.player_word_piece).
+        self._unimo_type = HexUnimoType.SINGLE
         # Obstacles get their own gram-pick (hex_obstacle.gram_pick); the hex set
         # has a single piece type, so obstacle types match the main set.
         self._obstacle_piece_types = HEX_OBSTACLE_PIECE_TYPES
@@ -1379,11 +1404,69 @@ class GameScreen:
             return get_string("err_not_involved")
         return get_string("err_already_cleared")
 
+    # --- Player word-piece rules (game_screen.player_word_piece) -----------
+    # Clicking a cleared word in the right pane (MOVING) swaps the live piece for
+    # a single-cell unimo whose one gram is that whole word, a normal player
+    # piece in every other respect (overlap rules, placement, word formation).
+    # The displaced pool piece is set aside, not consumed, and returns as the
+    # next piece once the word-piece is placed (see _advance_piece). Only one
+    # swap per piece: a word-piece can't be re-swapped until it's placed and a
+    # fresh pool piece appears.
+
+    def _rule_player_word_piece_enabled(self, x, y):
+        """Feature on: try to swap the live piece for the clicked word. Returns
+        True if a swap happened so the click is consumed."""
+        return self._swap_to_word_piece(x, y)
+
+    def _rule_player_word_piece_disabled(self, x, y):
+        """Feature off: right-pane clicks do nothing during MOVING."""
+        return False
+
+    def _swap_to_word_piece(self, x, y):
+        """Replace the live pool piece with a single-cell word-piece for the word
+        clicked in the right pane. No-op (returns False) unless a normal pool
+        piece is live, unplaced, and the click landed on a non-blank word row."""
+        # Already holding a word-piece (override set) -> one swap per piece only.
+        if self._override_piece is not None:
+            return False
+        pool_piece = self._piece_pool.current_piece()
+        if pool_piece.placed:
+            return False
+        word = self._moving_side_pane.word_at(x, y)
+        if not word:
+            return False
+        # Set the pool piece aside: clear the cells it hover-hides and hide it.
+        # It stays at its pool index, so _advance_piece restores it next.
+        self._clear_hover_visibility()
+        pool_piece.set_visible(False)
+        # Build the word-piece: the active grid's unimo, its single gram forced to
+        # the clicked word. Same cell size / batch / tint as a normal pool piece.
+        word_piece = self._piece_class(
+            self._unimo_type, self._cell_size, self._piece_batch, visible=False,
+            gram_pick_rule=lambda count: [Gram(word)],
+            cell_color=self.ACTIVE_PIECE_CELL_COLOR,
+        )
+        self._override_piece = word_piece
+        self._spawn_piece(word_piece)
+        word_piece.set_visible(True)
+        self._update_hover_visibility()
+        return True
+
     def _advance_piece(self):
         """Spawn the next piece and resume play (or do nothing if the pool is
         exhausted). Checks victory first, so a win is caught before the next
         piece spawns (rule_victory_grid_empty's 'before spawning' point)."""
         if self._check_victory():
+            return
+        # A just-placed word-piece restores the pool piece set aside for it,
+        # rather than consuming the next pooled piece (the swap left the pool
+        # index untouched, so current_piece() is still that set-aside piece).
+        if self._override_piece is not None:
+            self._override_piece = None
+            piece = self._piece_pool.current_piece()
+            self._spawn_piece(piece)
+            piece.set_visible(True)
+            self._update_hover_visibility()
             return
         next_piece = self._piece_pool.advance()
         if next_piece:
@@ -1547,6 +1630,10 @@ class GameScreen:
         return candidates
 
     def _current_piece(self):
+        # A live word-piece (game_screen.player_word_piece) overrides the pool's
+        # current piece until it's placed and _advance_piece clears the override.
+        if self._override_piece is not None:
+            return self._override_piece
         return self._piece_pool.current_piece()
     
     def _update_hover_visibility(self):
@@ -1806,10 +1893,19 @@ class GameScreen:
             # its own right-side button clicks above; this drives the board side.
             if button == pyglet.window.mouse.LEFT:
                 self._select_click_rule(x, y)
+            # Stop here: the pane click may have ended selection (Next piece),
+            # flipping the phase to MOVING. Without this return, the same click
+            # would fall through to the MOVING handling below and be re-read as a
+            # board move / word-piece swap at the Next-piece button's position.
+            return
         # MOVING: left-click drives the current piece -- click a cell it occupies
         # to rotate, click another on-board cell to jump it there. Right-click
         # places the piece, the same as the place key.
         if self._phase == Phase.MOVING and button == pyglet.window.mouse.LEFT:
+            # A click on a cleared word in the right pane may swap the live piece
+            # for a word-piece; if it does, it consumes the click (no board move).
+            if self._player_word_piece_rule(x, y):
+                return
             self._handle_move_click(x, y)
         elif self._phase == Phase.MOVING and button == pyglet.window.mouse.RIGHT:
             self._place_current_piece()

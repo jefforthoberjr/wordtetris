@@ -2,9 +2,20 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+
+Game idea: the whole board is filled with grams, every cell.
+Then the player is arranging, from the start of the grid (top left, line by line, to the bottom right) click individual cells to rearrange with the individual tiles to form words, sentences.
+
+Like there is a forced cursor, the cursor moving one by one (and the player can skip a space if they want. Otherwise the player is scaning the whole board set, each turn. Lots multigrams mixed in.
+
+
 word ideation doesn't occur natually in this game. Something needs to spark it.
 
 Maybe words clicked onto the board from your words, could be pre-divided into grams, like recommended useful subgrams (e.g. IZE). The words then appear in the word list like rendered cells. It could even be smart enough to bundle compound word cells like "OVER" "INNER" "MULTI"
+Then maybe players can only drop in 1 cell pieces.
+So I have BELT become BE LT, BEL T, B ELT?
+
+I need to develope a smart gram algorithm (and probably pre-calculate the different recommended gram splits).
 
 Add iternationalization for IZE vs. ISE, etc.)
 

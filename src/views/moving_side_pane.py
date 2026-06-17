@@ -70,6 +70,14 @@ class MovingSidePane:
         which words are new to the player's dictionary (shown green)."""
         self._word_list.add_words(words, new_flags)
 
+    def word_at(self, x, y):
+        """The cleared word displayed at pixel (x, y), or None if the click is
+        outside the pane or on a blank row. Drives the player word-piece feature
+        (a click on a word swaps the live piece for that word; see GameScreen)."""
+        if x < self._x or x > self._x + self._width:
+            return None
+        return self._word_list.word_at(x, y)
+
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
         self._count.text = get_string("dictionary_count", count=count)

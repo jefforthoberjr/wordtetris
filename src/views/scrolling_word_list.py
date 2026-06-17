@@ -83,6 +83,21 @@ class ScrollingWordList:
         for word, is_new in zip(words, new_flags):
             self.add_word(word, is_new)
 
+    def word_at(self, x, y):
+        """The word shown at pixel y, or None if y is above the top row, below
+        the last row, or on a blank row. Rows are top-anchored from self._top_y,
+        each self._row_height tall; rank r (0 = top) is r steps forward of head.
+        x is ignored here -- the pane bounds the horizontal hit (see
+        MovingSidePane.word_at)."""
+        if y > self._top_y:
+            return None
+        rank = int((self._top_y - y) // self._row_height)
+        if rank < 0 or rank >= self._rows:
+            return None
+        idx = (self._head + rank) % self._rows
+        word = self._labels[idx].text.rstrip()
+        return word or None
+
     def reset(self):
         """Blank every row and restore the top-anchored order, for a new game."""
         self._head = 0

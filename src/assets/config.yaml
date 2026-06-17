@@ -142,6 +142,17 @@ rules:
   game_screen.select_click: rule_select_click_type_gram
   # game_screen.select_click: rule_select_click_none
 
+  # Player word-piece: clicking a cleared word in the right pane during the
+  # MOVING phase swaps the live piece for a single-cell piece carrying that whole
+  # word as a multigram (usable to complete words like any other player piece).
+  # The displaced piece is set aside and returns as the next piece once the
+  # word-piece is placed. Only one swap per piece -- you can't click another word
+  # until the word-piece is placed and a fresh pre-selected piece appears.
+  #   rule_player_word_piece_enabled  -- allow the swap (clicks consume the word)
+  #   rule_player_word_piece_disabled -- right-pane clicks do nothing
+  game_screen.player_word_piece: rule_player_word_piece_enabled
+  # game_screen.player_word_piece: rule_player_word_piece_disabled
+
   # Whether the right pane shows the player's lifetime dictionary-size readout.
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count
