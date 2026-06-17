@@ -4,6 +4,7 @@ from collections import namedtuple
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
+from views.moving_mode import JigsawMovingMode, TypewriterMovingMode
 from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
 from controllers.screen_manager import ScreenType
@@ -179,6 +180,11 @@ class GameScreen:
     # until the phase commits the whole batch; see the clear-timing rules.
     PENDING_WORD_CELL_COLOR = get_color("board.pending_word_fill")
     SETTLED_CELL_COLOR = get_color("board.settled_cell_fill")
+    # The MOVING_TYPEWRITER cursor cell's tint (dark grey); see TypewriterMovingMode.
+    CURSOR_CELL_COLOR = get_color("board.cursor_fill")
+    # A fossilized cell's tint (stone grey): a formed word frozen on the board,
+    # dead to word-finding and swapping. See the clear-action / fossilize rules.
+    FOSSILIZED_CELL_COLOR = get_color("board.fossilized_fill")
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -261,6 +267,10 @@ class GameScreen:
         # The mission-piece twin of _obstacle_cells: the starting mission cells
         # not yet cleared, tracked for the mission victory rules and <> encoding.
         self._mission_cells = set()
+        # Cells fossilized by a formed word (game_screen.clear_action: fossilize):
+        # dead to word-finding, un-swappable, and skipped by the typewriter cursor.
+        # Stays empty under the default remove clear-action. See _is_fossilized.
+        self._fossilized_cells = set()
 
         # Cell-overlap rules: one independent slot per piece track, each deciding
         # whether a piece may be moved onto / placed over a cell of that track.
@@ -289,11 +299,29 @@ class GameScreen:
         self._cell_overlap_mission_rule = select_rule(
             "game_screen.cell_overlap_mission", cell_overlap_mission_rules
         )
+        cell_overlap_fossilized_rules = {
+            "rule_moveandplace_over_fossilized_cell": self._rule_moveandplace_over_fossilized_cell,
+            "rule_block_moveandplace_over_fossilized_cell": self._rule_block_moveandplace_over_fossilized_cell,
+        }
+        self._cell_overlap_fossilized_rule = select_rule(
+            "game_screen.cell_overlap_fossilized", cell_overlap_fossilized_rules
+        )
         cell_overlap_action_rules = {
             "rule_old_cells_get_delete": self._rule_old_cells_get_delete,
         }
         self._cell_overlap_action_rule = select_rule(
             "game_screen.cell_overlap_action", cell_overlap_action_rules
+        )
+
+        # Clear-action rule (game_screen.clear_action): the fate of the cells a
+        # formed word covers -- remove them (the original) or fossilize them in
+        # place (frozen + dead). See _clear_paths / the _rule_clear_* methods.
+        clear_action_rules = {
+            "rule_clear_remove": self._rule_clear_remove,
+            "rule_clear_fossilize": self._rule_clear_fossilize,
+        }
+        self._clear_action_rule = select_rule(
+            "game_screen.clear_action", clear_action_rules
         )
 
         # Player-piece spawn positioning (one live piece at a time), chosen by the
@@ -389,6 +417,23 @@ class GameScreen:
         }
         self._player_word_piece_rule = select_rule(
             "game_screen.player_word_piece", player_word_piece_rules
+        )
+
+        # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy
+        # runs. The mode owns how the moving phase presents its active element and
+        # turns one input into one committed action; the shared SELECT pipeline,
+        # word-finding, board and dictionary stay on this engine. See MovingMode.
+        moving_modes = {
+            "rule_mode_jigsaw": JigsawMovingMode,
+            "rule_mode_typewriter": TypewriterMovingMode,
+        }
+        self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
+        # Whether the word-piece feature is on, as a plain flag a mode can read
+        # before doing its own mode-specific replacement (jigsaw swaps the live
+        # piece via _player_word_piece_rule; typewriter replaces the cursor gram).
+        self._word_piece_enabled = (
+            CONFIG["rules"]["game_screen.player_word_piece"]
+            == "rule_player_word_piece_enabled"
         )
 
         # Clear-timing rule (game_screen.clear_timing): when a typed word clears.
@@ -532,6 +577,9 @@ class GameScreen:
         self._obstacle_cells = set()
         # Fresh per game: the starting mission cells (obstacles' twin).
         self._mission_cells = set()
+        # Fresh per game: cells fossilized by formed words (empty until a fossilize
+        # clear-action runs; see _is_fossilized).
+        self._fossilized_cells = set()
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         # Fresh per game: restart the selection-trigger countdown and show it.
@@ -557,7 +605,9 @@ class GameScreen:
         # feature; see _swap_to_word_piece). Cleared here so a swap left dangling
         # by a previous game's restart is dropped with its old batch.
         self._override_piece = None
-        self._init_first_piece()
+        # The active mode sets up its first MOVING turn (jigsaw spawns the first
+        # piece; other modes place their own active element).
+        self._moving_mode.start()
 
     # --- starting-formation rules (game_screen.setup_formation) ------------
     # Each lays out the full opening set of obstacle + mission pieces: builds the
@@ -936,7 +986,9 @@ class GameScreen:
         for (x, y) in self._move_placed:
             cell = self._board.get_cell(x, y)
             if cell is not None and cell.square is not None:
-                cell.square.color = self.SETTLED_CELL_COLOR
+                # Resting color, not a hardcoded settled fill: a cell fossilized
+                # this turn keeps its stone tint instead of reverting to white.
+                cell.square.color = self._cell_resting_color((x, y))
         self._move_placed = set()
 
     # --- victory rules (game_screen.victory) -----------------------------
@@ -1018,6 +1070,18 @@ class GameScreen:
         missions_covered = overlapped & self._mission_cells
         return len(missions_covered) == 0
 
+    def _rule_moveandplace_over_fossilized_cell(self, overlapped):
+        # Fossilized-overlap rule: moving or placing over a fossilized cell is
+        # always permitted. `overlapped` is ignored.
+        return True
+
+    def _rule_block_moveandplace_over_fossilized_cell(self, overlapped):
+        # Fossilized-overlap rule: a fossilized cell is frozen -- a piece may not
+        # move onto or place over one. Permitted unless it would cover one. (The
+        # typewriter swap gates on _is_fossilized directly; this is the move/place
+        # gate, so a fossilize+jigsaw combo is blocked too.)
+        return len(overlapped & self._fossilized_cells) == 0
+
     def _rule_old_cells_get_delete(self, overlapped):
         # Cell-overlap action rule: the cells a placement covers are treated as
         # gone. The board already overwrote their contents in place(); this drops
@@ -1038,12 +1102,29 @@ class GameScreen:
         return won
 
     def _enter_victory(self):
-        """Transition to the VICTORY state: settle the last placed piece (so no
-        cell is left tinted) and stop play. The VICTORY overlay is drawn by
-        draw(); the right pane reverts to the cleared-word list automatically
-        since the phase is no longer SELECTING."""
+        """End the game on a win: show the end panel reading VICTORY."""
+        self._enter_endstate(get_string("victory"))
+
+    def _enter_endgame(self):
+        """End the game with no win/lose verdict -- the MOVING_TYPEWRITER cursor
+        ran off the board: show the end panel reading FINISHED."""
+        self._enter_endstate(get_string("finished"))
+
+    def _enter_endstate(self, label_text):
+        """Shared end transition: label the end panel `label_text`, settle the
+        last placed piece (so no cell is left tinted) and stop play. Phase.VICTORY
+        is the single frozen end-state -- the overlay is drawn by draw() and the
+        right pane reverts to the cleared-word list (phase no longer SELECTING);
+        the label is what distinguishes a win from a plain finish."""
+        self._victory_label.text = label_text
         self._phase = Phase.VICTORY
         self._settle_placed_cells()
+
+    def _is_fossilized(self, cell):
+        """Whether (x, y) `cell` has been fossilized by a formed word -- dead to
+        word-finding and swapping, skipped by the typewriter cursor. Always False
+        until a fossilize clear-action populates _fossilized_cells."""
+        return cell in self._fossilized_cells
 
     # --- selection-trigger rules (game_screen.select_trigger) --------------
     # Decide whether the placement just made is a "selection turn". The counter
@@ -1122,15 +1203,15 @@ class GameScreen:
         # right label is correct the moment that pane is next shown.
         self._moving_side_pane.set_phase_label(self._placements_until_select)
         if not is_select_turn:
-            # Still mid-phase: leave the placed pieces lit and bring on the next.
-            self._advance_piece()
+            # Still mid-phase: leave the placed pieces lit and advance the turn.
+            self._moving_mode.advance()
             return
         # Selection turn: skip it if none of the placed pieces touch the board.
         # The accumulated set (not just the last piece) is the adjacency test, so
         # a word bridging any placed piece keeps the turn.
         if self._skip_select_rule(self._move_placed):
             self._settle_placed_cells()
-            self._advance_piece()
+            self._moving_mode.advance()
             return
         if not self._selector.interactive:
             self._clear_paths(self._selector.choose(self._candidates))
@@ -1138,7 +1219,7 @@ class GameScreen:
             # The clear may have met the victory condition; only spawn the next
             # piece if it didn't.
             if not self._check_victory():
-                self._advance_piece()
+                self._moving_mode.advance()
         else:
             self._phase = Phase.SELECTING
             # Fresh batch for this selection phase (no-op in clear-on-submit mode).
@@ -1218,56 +1299,20 @@ class GameScreen:
         return self._gram_separator.join(parts)
 
     def _clear_paths(self, found_words):
-        """Stage 4: apply the chosen FoundWords to the board. Gates each through
-        the repeat rule, then resolves every touched cell: a fully-consumed cell
-        clears, a partially-used one (a word that started or ended mid-gram) keeps
-        its leftover letters and is re-lettered in place. Records history and
-        lists the cleared words; returns the words actually cleared.
-
-        Partial bookkeeping per cell: how many letters are eaten from the head
-        (the largest prefix any word took) and the tail (the largest suffix). A
-        word's first cell gives up a suffix, its last cell a prefix, and every
-        middle cell the whole gram; wild and single-cell paths go whole. Since the
-        eats are a head run plus a tail run, the leftover is the contiguous middle
-        gram[head : n - tail] -- empty when the runs meet, so the cell clears.
-        This batches naturally: several words eating different bites of one gram
-        union here, so e.g. WIN + GO over W ING O clears ING, while HI + GO leaves
-        its middle N."""
-        cleared_words = []
-        # The gram grouping each cleared word was made of, captured before any
-        # cell changes, so an obstacle / mission / partial gram still reads true.
-        cleared_variations = []
-        force_clear = set()           # cells consumed whole (middle / wild / 1-cell)
-        eaten = {}                    # endpoint cell -> [head_eaten, tail_eaten]
-
-        def eat_head(cell, j):
-            slot = eaten.setdefault(cell, [0, 0])
-            slot[0] = max(slot[0], j)
-
-        def eat_tail(cell, k):
-            slot = eaten.setdefault(cell, [0, 0])
-            slot[1] = max(slot[1], k)
-
-        for fw in found_words:
-            word = fw.word
-            if not self._repeat_rule(word):
-                continue
-            cleared_words.append(word)
-            cleared_variations.append(self._encode_variation(fw))
-            last = len(fw.path) - 1
-            for idx, (cell, seg) in enumerate(zip(fw.path, fw.segments)):
-                gram = self._board.gram_at(*cell)
-                if gram is None:
-                    continue
-                if gram.is_wild or last == 0 or (idx != 0 and idx != last):
-                    force_clear.add(cell)        # whole gram consumed
-                elif idx == 0:
-                    eat_tail(cell, len(seg))     # word starts here: a suffix goes
-                else:                            # idx == last
-                    eat_head(cell, len(seg))     # word ends here: a prefix goes
-        fully_cleared = self._apply_partial_clears(force_clear, eaten)
+        """Stage 4: apply the chosen FoundWords to the board. Gates each word
+        through the repeat rule, captures its gram grouping (before any cell
+        changes), then hands the accepted words to the active clear-action rule
+        (game_screen.clear_action) -- which removes or fossilizes their cells and
+        reports which (if any) fully left the board. Records history + the player
+        dictionary and lists the words; returns the words actually applied."""
+        accepted = [fw for fw in found_words if self._repeat_rule(fw.word)]
+        cleared_words = [fw.word for fw in accepted]
+        # The gram grouping each word was made of, captured BEFORE any cell change
+        # so an obstacle / mission / partial gram still reads true.
+        cleared_variations = [self._encode_variation(fw) for fw in accepted]
+        fully_cleared = self._clear_action_rule(accepted)
         # A starting obstacle or mission cell counts as gone only once FULLY
-        # cleared; a partially-used one stays tracked (still on the board).
+        # cleared; a partially-used (or fossilized) one stays tracked.
         self._obstacle_cells.difference_update(fully_cleared)
         self._mission_cells.difference_update(fully_cleared)
         for word in cleared_words:
@@ -1284,6 +1329,64 @@ class GameScreen:
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words
+
+    # --- clear-action rules (game_screen.clear_action) ---------------------
+    # Stage 4's cell fate for the accepted words. Both record the words the same
+    # way (see _clear_paths); they differ only in what becomes of the cells. Each
+    # returns the cells that FULLY left the board (for obstacle/mission tracking).
+    def _rule_clear_remove(self, accepted):
+        """Original: the consumed cells leave the board, partial-gram aware. Per
+        cell, count letters eaten from the head (largest prefix any word took) and
+        tail (largest suffix): a word's first cell gives up a suffix, its last a
+        prefix, every middle cell the whole gram; wild / single-cell paths go
+        whole. The leftover is the contiguous middle gram[head : n - tail] -- empty
+        when the runs meet, so the cell clears. Batches naturally: WIN + GO over
+        W ING O clears ING, while HI + GO leaves its middle N (see
+        _apply_partial_clears)."""
+        force_clear = set()           # cells consumed whole (middle / wild / 1-cell)
+        eaten = {}                    # endpoint cell -> [head_eaten, tail_eaten]
+
+        def eat_head(cell, j):
+            slot = eaten.setdefault(cell, [0, 0])
+            slot[0] = max(slot[0], j)
+
+        def eat_tail(cell, k):
+            slot = eaten.setdefault(cell, [0, 0])
+            slot[1] = max(slot[1], k)
+
+        for fw in accepted:
+            last = len(fw.path) - 1
+            for idx, (cell, seg) in enumerate(zip(fw.path, fw.segments)):
+                gram = self._board.gram_at(*cell)
+                if gram is None:
+                    continue
+                if gram.is_wild or last == 0 or (idx != 0 and idx != last):
+                    force_clear.add(cell)        # whole gram consumed
+                elif idx == 0:
+                    eat_tail(cell, len(seg))     # word starts here: a suffix goes
+                else:                            # idx == last
+                    eat_head(cell, len(seg))     # word ends here: a prefix goes
+        return self._apply_partial_clears(force_clear, eaten)
+
+    def _rule_clear_fossilize(self, accepted):
+        """Typewriter: every cell on each accepted word's path FOSSILIZES -- it
+        stays on the board with its whole gram intact (no partial split, even
+        under rule_gram_use_partial) but goes permanently dead: tracked in
+        _fossilized_cells, tinted the fossil color, un-swappable, and skipped by
+        the pathfinder (_collect_words) and the cursor. Nothing leaves the board,
+        so no cell is reported cleared (obstacle/mission tracking is untouched)."""
+        for fw in accepted:
+            for cell in fw.path:
+                if self._board.gram_at(*cell) is not None:
+                    self._fossilize_cell(cell)
+        return set()
+
+    def _fossilize_cell(self, cell):
+        """Freeze one cell: record it dead and tint it the fossil color in place."""
+        self._fossilized_cells.add(cell)
+        c = self._board.get_cell(*cell)
+        if c is not None and c.square is not None:
+            c.square.color = self.FOSSILIZED_CELL_COLOR
 
     def _apply_partial_clears(self, force_clear, eaten):
         """Clear the whole-gram cells outright, then resolve each partially-eaten
@@ -1317,8 +1420,12 @@ class GameScreen:
             cell.square.color = self._cell_resting_color((x, y))
 
     def _cell_resting_color(self, cell):
-        """The fill a cell shows when no piece tint applies: its obstacle /
-        mission tint if it is still one, else the plain settled color."""
+        """The fill a cell shows when no piece tint applies: its fossilized tint
+        if it is dead, else its obstacle / mission tint if it is still one, else
+        the plain settled color. Fossilized wins -- a fossilized cell is its
+        permanent end state regardless of what it started as."""
+        if cell in self._fossilized_cells:
+            return self.FOSSILIZED_CELL_COLOR
         if cell in self._obstacle_cells:
             return self.OBSTACLE_CELL_COLOR
         if cell in self._mission_cells:
@@ -1523,7 +1630,7 @@ class GameScreen:
         self._endphase_clear_rule()
         self._settle_placed_cells()
         self._phase = Phase.MOVING
-        self._advance_piece()
+        self._moving_mode.advance()
 
     def _find_words(self, apply_length=True):
         """Stage 1 (pathfind): every dictionary word spellable on the board, as
@@ -1584,6 +1691,10 @@ class GameScreen:
         actually taken, so a matched word knows its exact spelling). Plain grams
         go through the gram-usage rule, which may let a word take only a prefix /
         suffix of a cell (see _rule_gram_use_partial)."""
+        # Fossilized cells are dead to word-finding: a new word can neither start
+        # on one nor route through one, so the walk treats them as walls.
+        if cell in self._fossilized_cells:
+            return
         gram = self._board.gram_at(*cell)
         if gram is None:
             return
@@ -1709,15 +1820,17 @@ class GameScreen:
 
     def _overlap_allowed(self, overlapped):
         """Whether `overlapped` (the occupied cells a position would cover) is
-        permitted by ALL THREE independent overlap slots -- player
-        (game_screen.cell_overlap_player), obstacle (..._obstacle) and mission
-        (..._mission). A position holds only if none of them blocks it -- so a
-        player-allowing, obstacle-blocking config still refuses to cover an
-        obstacle. The single gate every move/place runs through."""
+        permitted by ALL FOUR independent overlap slots -- player
+        (game_screen.cell_overlap_player), obstacle (..._obstacle), mission
+        (..._mission) and fossilized (..._fossilized). A position holds only if
+        none of them blocks it -- so a player-allowing, obstacle-blocking config
+        still refuses to cover an obstacle. The single gate every move/place
+        runs through."""
         return (
             self._cell_overlap_player_rule(overlapped)
             and self._cell_overlap_obstacle_rule(overlapped)
             and self._cell_overlap_mission_rule(overlapped)
+            and self._cell_overlap_fossilized_rule(overlapped)
         )
 
     def _move_allowed(self, piece):
@@ -1893,23 +2006,8 @@ class GameScreen:
                 return True
             return self._selecting_side_pane.on_key_press(symbol, modifiers)
 
-        if self._current_piece().placed:
-            return False
-
-        if self._movement_rule(symbol, modifiers):
-            return True
-
-        if symbol == self._keys["rotate_clockwise"]:
-            self._rotate_piece_cw()
-            return True
-        elif symbol == self._keys["rotate_counterclockwise"]:
-            self._rotate_piece_ccw()
-            return True
-        elif symbol == self._keys["place"]:
-            self._place_current_piece()
-            return True
-        
-        return False
+        # MOVING phase: the active mode owns piece/cursor input.
+        return self._moving_mode.on_key_press(symbol, modifiers)
     
     def on_text(self, text):
         # Typed characters only matter while selecting words; on_key_press
@@ -1937,17 +2035,9 @@ class GameScreen:
             # would fall through to the MOVING handling below and be re-read as a
             # board move / word-piece swap at the Next-piece button's position.
             return
-        # MOVING: left-click drives the current piece -- click a cell it occupies
-        # to rotate, click another on-board cell to jump it there. Right-click
-        # places the piece, the same as the place key.
-        if self._phase == Phase.MOVING and button == pyglet.window.mouse.LEFT:
-            # A click on a cleared word in the right pane may swap the live piece
-            # for a word-piece; if it does, it consumes the click (no board move).
-            if self._player_word_piece_rule(x, y):
-                return
-            self._handle_move_click(x, y)
-        elif self._phase == Phase.MOVING and button == pyglet.window.mouse.RIGHT:
-            self._place_current_piece()
+        # MOVING phase: the active mode owns piece/cursor input.
+        if self._phase == Phase.MOVING:
+            self._moving_mode.on_mouse_press(x, y, button)
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:

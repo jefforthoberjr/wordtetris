@@ -27,6 +27,8 @@ en:
   next_piece:            "Next piece"
   # Victory overlay
   victory:               "VICTORY"
+  # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
+  finished:              "FINISHED"
   # My Dictionary screen
   words_collected:       "{count} words collected"
   # Word-submission errors
@@ -59,6 +61,8 @@ es:
   next_piece:            "Siguiente pieza"
   # Victory overlay
   victory:               "¡VICTORIA!"
+  # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
+  finished:              "FIN"
   # My Dictionary screen
   words_collected:       "{count} palabras recopiladas"
   # Word-submission errors

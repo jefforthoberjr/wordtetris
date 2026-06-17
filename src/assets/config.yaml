@@ -30,6 +30,34 @@ rules:
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 
+  # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy runs.
+  # The mode owns how the moving phase presents its active element and turns one
+  # input into one committed action; the shared SELECT pipeline, word-finding,
+  # board and dictionary are mode-agnostic.
+  #   rule_mode_jigsaw -- MOVING_JIGSAWPUZZLE: one live piece at a time, free
+  #     movement, place anywhere (the original mode)
+  #   rule_mode_typewriter -- MOVING_TYPEWRITER: a single-cell cursor sweeps the
+  #     pre-filled board; each turn swaps/replaces/passes the cursor cell (WIP)
+  # game_screen.mode:         rule_mode_jigsaw
+  game_screen.mode:       rule_mode_typewriter
+
+  # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
+  #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
+  #     down, ending bottom-right (jittery on the offset hex rows; fine for now)
+  game_screen.cursor_path:  rule_cursor_typewriter
+
+  # TYPEWRITER PRESET -- to play MOVING_TYPEWRITER, set game_screen.mode above to
+  # rule_mode_typewriter and also flip these (so the board starts full, formed
+  # words freeze instead of clearing, there's no instant win, a pass always opens
+  # word entry, and every action is a select turn):
+  #   setup_formation     -> rule_formation_fill_player
+  #   clear_action        -> rule_clear_fossilize
+  #   victory             -> rule_victory_none
+  #   skip_select_isolated -> rule_never_skip_select
+  #   select_trigger      -> rule_select_every_placement
+  #   word_nucleation     -> rule_nucleate_anywhere   (so words can form anywhere)
+  # (word_select stays rule_select_by_text_input.)
+
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
 
@@ -125,8 +153,8 @@ rules:
   game_screen.clear_timing: rule_clear_at_phase_end
   # game_screen.clear_timing: rule_clear_on_submit
 
-  # game_screen.select_trigger: rule_select_every_placement
-  game_screen.select_trigger: rule_select_after_n_placements
+  game_screen.select_trigger: rule_select_every_placement
+  # game_screen.select_trigger: rule_select_after_n_placements
   # Placements between selection turns for rule_select_after_n_placements
   game_screen.select_trigger_count: 5
 
@@ -180,6 +208,19 @@ rules:
 
   # game_screen.cell_overlap_mission: rule_moveandplace_over_mission_cell
   game_screen.cell_overlap_mission: rule_block_moveandplace_over_mission_cell
+
+  # game_screen.cell_overlap_fossilized: rule_moveandplace_over_fossilized_cell
+  game_screen.cell_overlap_fossilized: rule_block_moveandplace_over_fossilized_cell
+
+  # Clear action (game_screen.clear_action): the fate of the cells a formed word
+  # covers when it is applied (clear-on-submit or the phase-end batch).
+  #   rule_clear_remove -- the consumed cells leave the board, partial-gram aware
+  #     (a word ending mid-gram leaves the leftover letters) -- the original
+  #   rule_clear_fossilize -- every cell on the word's path freezes in place: the
+  #     whole cell stays (letters intact) but goes dead -- un-swappable, skipped
+  #     by word-finding and the typewriter cursor, tinted stone grey
+  # game_screen.clear_action: rule_clear_remove
+  game_screen.clear_action: rule_clear_fossilize
 
   # Cell overlap action: what happens to the "old" cells a placement covers.
   # rule_old_cells_get_delete treats them as gone, so a covered starting
