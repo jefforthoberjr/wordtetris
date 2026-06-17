@@ -178,7 +178,7 @@ class GameScreen:
     # Batch (clear-at-phase-end) mode tints a selected word's cells light green
     # until the phase commits the whole batch; see the clear-timing rules.
     PENDING_WORD_CELL_COLOR = get_color("board.pending_word_fill")
-    SETTLED_CELL_COLOR = get_color("board.cell_fill")
+    SETTLED_CELL_COLOR = get_color("board.settled_cell_fill")
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -312,6 +312,7 @@ class GameScreen:
         setup_formation_rules = {
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
+            "rule_formation_fill_player": self._rule_formation_fill_player,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -593,6 +594,38 @@ class GameScreen:
                 self._obstacle_pool, cell, self._obstacle_cells, occupied
             )
 
+    def _rule_formation_fill_player(self):
+        """Start with every board cell filled by a single-cell player piece
+        (player gram-pick + tint), so the board opens completely packed with
+        playable grams and no empty cells. Single-cell pieces tile any grid
+        exactly, so this fills the square and hex boards alike. Lays down no
+        obstacle or mission pieces, so the obstacle/mission victory rules have
+        nothing to trigger on -- pair with game_screen.victory: rule_victory_none
+        so the full board isn't an instant win or an unwinnable state. The filled
+        cells are ordinary player cells (not tracked in _obstacle_cells /
+        _mission_cells), and a player-overlap-allowing rule lets live pieces still
+        be placed over them."""
+        for y in range(self._board.height):
+            for x in range(self._board.width):
+                if not self._board.is_valid(x, y):
+                    continue
+                # gram_pick_rule=None falls back to the configured player gram-pick
+                # (square_player.gram_pick / hex_player.gram_pick); the unimo shape
+                # makes each piece exactly one cell so the fill tiles the board.
+                # Tinted SETTLED (white board color), not the live piece's blue
+                # active fill: these open already settled, like long-placed cells,
+                # not freshly dropped (see _settle_placed_cells).
+                piece = self._piece_class(
+                    self._unimo_type, self._cell_size, self._piece_batch,
+                    visible=False, gram_pick_rule=None,
+                    cell_color=self.SETTLED_CELL_COLOR,
+                )
+                piece.set_position(x, y)
+                piece.place()
+                for gx, gy, cell, label, gram in piece.get_cell_data():
+                    self._board.place(gx, gy, cell, label, gram)
+                piece.set_visible(True)
+
     def _build_obstacle_pool(self, count):
         """(Re)build the obstacle pool with `count` pieces, using the obstacle
         piece set / gram-pick / batch / tint set up by the grid builder."""
@@ -728,6 +761,12 @@ class GameScreen:
         piece = self._piece_pool.current_piece()
         self._spawn_piece(piece)
         piece.set_visible(True)
+        # Hide the board cells beneath the live piece so it sits cleanly on top,
+        # the same as every later spawn (_advance_piece). Without this the first
+        # piece overlaps any settled cells already under it -- invisible on an
+        # empty opening, but visible glyph overlap on a pre-filled board (see
+        # rule_formation_fill_player).
+        self._update_hover_visibility()
     
     def _spawn_piece(self, piece):
         """Apply the current spawn orientation, then positioning rule."""

@@ -61,7 +61,7 @@ class GramPreview:
         # would drop their vertex lists out of the batch).
         self._shapes = []
         self._visible = False
-        self._cell_fill = get_color("board.cell_fill")
+        self._cell_fill = get_color("board.settled_cell_fill")
         self._obstacle_fill = get_color("board.obstacle_fill")
         self._mission_fill = get_color("board.mission_fill")
         self._border_color = get_color("board.cell_border")

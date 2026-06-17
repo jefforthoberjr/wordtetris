@@ -121,7 +121,7 @@ class HexPiece:
         # Inner-hexagon fill color; pools tint obstacles differently from the
         # default playable pieces. None falls back to the configured cell fill.
         if cell_color is None:
-            cell_color = get_color("board.cell_fill")
+            cell_color = get_color("board.settled_cell_fill")
         border_color = get_color("board.cell_border")
         text_color = get_color("board.cell_text")
 

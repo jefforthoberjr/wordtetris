@@ -39,7 +39,7 @@ def select_rule(slot, registry):
 
 
 def get_color(path):
-    """Resolve a dotted color name (e.g. "board.cell_fill") from colors.yaml to
+    """Resolve a dotted color name (e.g. "board.settled_cell_fill") from colors.yaml to
     an (r, g, b) or (r, g, b, a) tuple. colors.yaml is the single edit point for
     styling; channels are 0-255."""
     node = COLORS

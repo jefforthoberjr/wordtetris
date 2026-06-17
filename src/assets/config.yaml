@@ -50,8 +50,12 @@ rules:
   #     missions, each at a random non-overlapping spot (the original opening)
   #   rule_formation_mission_center_obstacle_ring -- 1 mission on the center cell,
   #     ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
+  #   rule_formation_fill_player -- fill every board cell with a single-cell
+  #     player piece (no obstacles/missions). Board opens fully packed; pair with
+  #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win.
   # game_screen.setup_formation: rule_formation_scattered
-  game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
+  # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
+  game_screen.setup_formation: rule_formation_fill_player
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -158,11 +162,13 @@ rules:
   game_screen.dictionary_count: rule_hide_dictionary_count
 
   # Victory condition (only one active at a time):
-  game_screen.victory: rule_victory_missions_cleared
+  # game_screen.victory: rule_victory_missions_cleared
   # game_screen.victory: rule_victory_missions_and_obstacles_cleared
   # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
-  # game_screen.victory: rule_victory_none
+  # rule_victory_none -- no win condition at all; the game runs until the player
+  # quits (use with rule_formation_fill_player, which has no missions/obstacles).
+  game_screen.victory: rule_victory_none
 
   # Cell overlap: deciding whether a piece may be moved onto / placed over a type of occupied cell
   

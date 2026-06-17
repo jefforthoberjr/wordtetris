@@ -1,10 +1,10 @@
 # All game colors live here, separate from the behavior rules in config.yaml,
 # so restyling is one edit point. Values are RGB or RGBA, 0-255 per channel
 # (the alpha channel is only needed for text labels and translucent panels).
-# Names are addressed by dotted path in code, e.g. get_color("board.cell_fill").
+# Names are addressed by dotted path in code, e.g. get_color("board.settled_cell_fill").
 
 board:
-  cell_fill:        [255, 255, 255]   # settled cell fill (placed pieces)
+  settled_cell_fill: [255, 255, 255]   # settled cell fill (placed pieces)
   active_piece_fill: [100, 180, 245]   # darker blue: the live/movable piece
   placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
