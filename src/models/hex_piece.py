@@ -5,7 +5,7 @@ from models.gram_picker import rule_random_letters
 from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
 from models.gram_picker import rule_englishcorpus_random_digram
-from models.gram_picker import rule_gramcorpus_distribution
+from models.gram_picker import rule_grams_greater_than_47
 from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
 from models.gram_picker import rule_trigram_equalweight
@@ -54,7 +54,7 @@ _GRAM_PICK_RULES = {
     "rule_scrabble_distribution": rule_scrabble_distribution,
     "rule_englishcorpus_random_unigram": rule_englishcorpus_random_unigram,
     "rule_englishcorpus_random_digram": rule_englishcorpus_random_digram,
-    "rule_gramcorpus_distribution": rule_gramcorpus_distribution,
+    "rule_grams_greater_than_47": rule_grams_greater_than_47,
     "rule_mixed_scrabble_digram52": rule_mixed_scrabble_digram52,
     "rule_digram52_distribution": rule_digram52_distribution,
     "rule_trigram_equalweight": rule_trigram_equalweight,

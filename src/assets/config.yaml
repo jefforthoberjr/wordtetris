@@ -279,7 +279,7 @@ rules:
   # square_player.gram_pick: rule_random_letters
   # square_player.gram_pick: rule_englishcorpus_random_unigram
   # square_player.gram_pick: rule_englishcorpus_random_digram
-  # square_player.gram_pick: rule_gramcorpus_distribution
+  # square_player.gram_pick: rule_grams_greater_than_47
   square_player.gram_pick: rule_mixed_scrabble_digram52
   # square_player.gram_pick: rule_digram52_distribution
   # square_player.gram_pick: rule_trigram_equalweight
@@ -296,7 +296,7 @@ rules:
   # square_obstacle.gram_pick: rule_random_letters
   # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # square_obstacle.gram_pick: rule_englishcorpus_random_digram
-  # square_obstacle.gram_pick: rule_gramcorpus_distribution
+  # square_obstacle.gram_pick: rule_grams_greater_than_47
   # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
   square_obstacle.gram_pick: rule_digram52_distribution
   # square_obstacle.gram_pick: rule_trigram_equalweight
@@ -311,7 +311,7 @@ rules:
   # square_mission.gram_pick: rule_random_letters
   # square_mission.gram_pick: rule_englishcorpus_random_unigram
   # square_mission.gram_pick: rule_englishcorpus_random_digram
-  # square_mission.gram_pick: rule_gramcorpus_distribution
+  # square_mission.gram_pick: rule_grams_greater_than_47
   # square_mission.gram_pick: rule_mixed_scrabble_digram52
   square_mission.gram_pick: rule_digram52_distribution
   # square_mission.gram_pick: rule_trigram_equalweight
@@ -321,13 +321,13 @@ rules:
   # square_mission.piece_set: rule_use_unimos
 
   # Also governs the initial board formation cells
-  # hex_player.gram_pick:      rule_gramcorpus_distribution
-  # hex_player.gram_pick:    rule_random_lettersw
+  hex_player.gram_pick:      rule_grams_greater_than_47
+  # hex_player.gram_pick:    rule_random_letters
   # hex_player.gram_pick:    rule_scrabble_with_allvowelswild
   # hex_player.gram_pick:    rule_scrabble_distribution
   # hex_player.gram_pick:    rule_englishcorpus_random_unigram
   # hex_player.gram_pick:    rule_englishcorpus_random_digram
-  hex_player.gram_pick:    rule_mixed_scrabble_digram52
+  # hex_player.gram_pick:    rule_mixed_scrabble_digram52
   # hex_player.gram_pick:    rule_digram52_distribution
   # hex_player.gram_pick:    rule_trigram_equalweight
 
@@ -340,7 +340,7 @@ rules:
   # hex_obstacle.gram_pick: rule_random_letters
   # hex_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # hex_obstacle.gram_pick: rule_englishcorpus_random_digram
-  # hex_obstacle.gram_pick: rule_gramcorpus_distribution
+  # hex_obstacle.gram_pick: rule_grams_greater_than_47
   # hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
   hex_obstacle.gram_pick: rule_digram52_distribution
   # hex_obstacle.gram_pick: rule_trigram_equalweight
@@ -354,7 +354,7 @@ rules:
   # hex_mission.gram_pick: rule_random_letters
   # hex_mission.gram_pick: rule_englishcorpus_random_unigram
   # hex_mission.gram_pick: rule_englishcorpus_random_digram
-  # hex_mission.gram_pick: rule_gramcorpus_distribution
+  # hex_mission.gram_pick: rule_grams_greater_than_47
   # hex_mission.gram_pick: rule_mixed_scrabble_digram52
   # hex_mission.gram_pick: rule_digram52_distribution
   hex_mission.gram_pick: rule_trigram_equalweight

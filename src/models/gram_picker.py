@@ -170,9 +170,10 @@ def _load_gram_corpus():
             _corpus_weights.append(int(row['freq']))
 
 
-def rule_gramcorpus_distribution(count):
+def rule_grams_greater_than_47(count):
     """
-    Pick grams from the JPO gram corpus, weighted by each gram's frequency.
+    Pick grams from the JPO gram corpus (jpo_allGramsGreaterThan47InFreq.csv),
+    weighted by each gram's frequency.
 
     The corpus mixes 1-4 letter grams, so cells get a frequency-realistic
     blend of unigrams through quadgrams.

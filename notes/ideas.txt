@@ -2,6 +2,18 @@ GAME NAMES
 * vocabu-blast
 * blast-tionary
 
+Maybe clicking on a cell doubles the letter on it (or a power up)
+Maybe clicking on a cell flips the order of a piece
+
+The game start should be a slower intro animation, rather than a flashbang of words.
+
+A secret key so snapshot game state (and all it's variables) to a file, for AI diagnosis. Basically, the ability to "save a game", in the middle, with any rule sets applied, etc.
+
+With only 1 swap, we can only arrange 1 piece, so long words can't be made
+
+Just allow as many swaps as possible before the 60 second timer. No cursor.
+
+Maybe cursor randomly dance around, and you must spell a word with it, taking as many swaps as you need, then it immediately advances when you type in one word that uses it. Also, a 60 second timer, which will end the game.
 
 Should I also allow for word nucleation next to the cursor?
 
