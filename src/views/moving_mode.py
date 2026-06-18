@@ -198,9 +198,11 @@ class TypewriterMovingMode(MovingMode):
         if self._cursor is None:
             return False
         # Spacebar = pass: no board change, but still commit a turn (which may
-        # open a SELECT phase per the cadence) and advance the cursor.
+        # open a SELECT phase per the cadence) and advance the cursor. The cursor
+        # cell still counts as placed (see _commit_turn), so a word can nucleate
+        # around it even on a pass.
         if symbol == gs._keys["place"]:
-            gs._begin_selection([])
+            self._commit_turn()
             return True
         return False
 
@@ -214,7 +216,7 @@ class TypewriterMovingMode(MovingMode):
             word = gs._moving_side_pane.word_at(x, y)
             if word:
                 gs._board.relabel_cell(self._cursor[0], self._cursor[1], word)
-                gs._begin_selection([self._cursor])
+                self._commit_turn()
                 return
         # 2) A click on another board cell: swap grams with the cursor cell. Any
         #    non-fossilized, occupied cell anywhere is a valid swap source.
@@ -224,9 +226,23 @@ class TypewriterMovingMode(MovingMode):
         if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
             return
         self._swap_grams(self._cursor, cell)
-        # Which swapped cell(s) count as placed is configurable; the other is left
-        # settled (game_screen.typewriter_swap).
-        gs._begin_selection(gs._typewriter_swap_rule(self._cursor, cell))
+        # The cursor cell is always placed; whether the swapped-in cell joins it is
+        # configurable (game_screen.typewriter_swap). _commit_turn keeps the cursor
+        # in either way and de-dups.
+        self._commit_turn(gs._typewriter_swap_rule(self._cursor, cell))
+
+    def _commit_turn(self, changed_cells=()):
+        """Commit this turn into the shared SELECT pipeline. The cursor cell is
+        ALWAYS a placed (nucleation) cell -- even on a pass -- so a word can
+        always nucleate around where the cursor rests; `changed_cells` adds any
+        others the action placed (e.g. a swapped-in cell, per
+        game_screen.typewriter_swap). (Previously a pass committed an empty placed
+        set, so no word could nucleate on a pass.)"""
+        placed = [self._cursor]
+        for cell in changed_cells:
+            if cell != self._cursor:
+                placed.append(cell)
+        self._gs._begin_selection(placed)
 
     def _swap_grams(self, a, b):
         """Exchange the letters of two occupied cells, leaving each cell's own

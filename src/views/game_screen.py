@@ -469,6 +469,18 @@ class GameScreen:
             "game_screen.clear_timing", endphase_clear_rules
         )
 
+        # Select word-limit rule (game_screen.select_word_limit): whether the
+        # interactive SELECT phase ends after the first accepted word or stays
+        # open for more. Consulted after each accepted submit; composes with the
+        # clear-timing rules above. See the _rule_*_per_select methods.
+        select_word_limit_rules = {
+            "rule_unlimited_words": self._rule_unlimited_words,
+            "rule_one_word_per_select": self._rule_one_word_per_select,
+        }
+        self._select_word_limit_rule = select_rule(
+            "game_screen.select_word_limit", select_word_limit_rules
+        )
+
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
         self._selecting_side_pane = self._selector.create_ui(
@@ -1488,6 +1500,11 @@ class GameScreen:
         # obstacle/mission cell); if so, stop here rather than ending selection.
         if self._check_victory():
             return
+        # One-word-per-select ends the phase right after this first clear,
+        # regardless of adjacency (game_screen.select_word_limit).
+        if self._select_word_limit_rule():
+            self._end_selection()
+            return
         # Leave SELECT once the placed piece is no longer adjacent to the board --
         # its remaining cells were consumed or stranded -- mirroring the adjacency
         # gate in _begin_selection. Keyed on adjacency, not the candidate count,
@@ -1515,6 +1532,10 @@ class GameScreen:
         self._pending.append(found)
         self._highlight_pending_cells(found.path)
         self._selecting_side_pane.accept_word(word, is_new)
+        # One-word-per-select ends the phase now; _end_selection clears the single
+        # held word on the way out (game_screen.select_word_limit).
+        if self._select_word_limit_rule():
+            self._end_selection()
 
     def _rule_endphase_clear_none(self):
         """Clear-on-submit: phase end clears nothing extra (each word already
@@ -1528,6 +1549,18 @@ class GameScreen:
         if self._pending:
             self._clear_paths(self._pending)
         self._pending = []
+
+    # --- select word-limit rules (game_screen.select_word_limit) -----------
+    # Consulted after each accepted word in the interactive SELECT phase: return
+    # True to end the phase now (back to MOVING), False to stay open for more.
+    def _rule_unlimited_words(self):
+        """Stay in SELECT after an accepted word; the phase ends only on Next
+        piece or (clear-on-submit) when the placed piece is stranded. Original."""
+        return False
+
+    def _rule_one_word_per_select(self):
+        """End the SELECT phase as soon as one word is accepted."""
+        return True
 
     def _unused_pending_path(self, word, options):
         """A clearable FoundWord for `word` not already held this phase -- the

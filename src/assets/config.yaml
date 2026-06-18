@@ -168,6 +168,15 @@ rules:
   game_screen.clear_timing: rule_clear_at_phase_end
   # game_screen.clear_timing: rule_clear_on_submit
 
+  # How many words the player may clear in one interactive SELECT phase before it
+  # ends and play returns to MOVING. Composes with clear_timing above.
+  #   rule_unlimited_words -- the phase stays open until the player hits Next piece
+  #     (or, in clear-on-submit mode, the placed piece is stranded). Original.
+  #   rule_one_word_per_select -- the first accepted word ends the phase at once
+  #     (in batch mode that one held word clears on the way out).
+  # game_screen.select_word_limit: rule_unlimited_words
+  game_screen.select_word_limit: rule_one_word_per_select
+
   game_screen.select_trigger: rule_select_every_placement
   # game_screen.select_trigger: rule_select_after_n_placements
   # Placements between selection turns for rule_select_after_n_placements
