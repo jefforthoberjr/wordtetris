@@ -44,8 +44,16 @@ rules:
   #     movement, place anywhere (the original mode)
   #   rule_mode_typewriter -- MOVING_TYPEWRITER: a single-cell cursor sweeps the
   #     pre-filled board; each turn swaps/replaces/passes the cursor cell (WIP)
+  #   rule_mode_omniswap_vs_timer -- MOVING_OMNISWAP: a pre-filled board, no
+  #     cursor sweep or piece queue; the player freely swaps any two cells against
+  #     a countdown, then SELECT (timer-zero or spacebar). See the OMNISWAP PRESET.
   # game_screen.mode:         rule_mode_jigsaw
-  game_screen.mode:       rule_mode_typewriter
+  # game_screen.mode:       rule_mode_typewriter
+  game_screen.mode:       rule_mode_omniswap_vs_timer
+
+  # Seconds the MOVING_OMNISWAP countdown starts at; reset to full each time play
+  # returns to MOVING (only used by rule_mode_omniswap_vs_timer).
+  game_screen.omniswap_timer_seconds: 60
 
   # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
@@ -71,6 +79,20 @@ rules:
   #   skip_select_isolated -> rule_never_skip_select
   #   select_trigger      -> rule_select_every_placement
   #   word_nucleation     -> rule_nucleate_anywhere   (so words can form anywhere)
+  # (word_select stays rule_select_by_text_input.)
+
+  # OMNISWAP PRESET -- to play MOVING_OMNISWAP, set game_screen.mode above to
+  # rule_mode_omniswap_vs_timer and flip these (board starts full and swappable,
+  # formed words freeze, no instant win, words can form anywhere with no placed
+  # piece, every commit is a select turn). Tune omniswap_timer_seconds for length;
+  # select_word_limit picks one-word-then-MOVING vs many-words-per-SELECT:
+  #   setup_formation      -> rule_formation_fill_player
+  #   clear_action         -> rule_clear_fossilize
+  #   victory              -> rule_victory_none
+  #   skip_select_isolated -> rule_never_skip_select
+  #   select_trigger       -> rule_select_every_placement
+  #   word_nucleation      -> rule_nucleate_anywhere
+  #   select_word_limit    -> rule_one_word_per_select  (or rule_unlimited_words)
   # (word_select stays rule_select_by_text_input.)
 
   game_screen.word_length:  rule_word_min3letters_min2cells
@@ -123,8 +145,8 @@ rules:
   #   rule_nucleate_anywhere -- every board word counts, wherever it sits (no tie
   #     to a placed piece, so words can be built anywhere)
   #   rule_nucleate_none -- nothing qualifies (clearing off)
-  game_screen.word_nucleation: rule_adjacent_to_placed_pieces
-  # game_screen.word_nucleation: rule_nucleate_anywhere
+  # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
+  game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
 
   # Stage 2b (placed-cell requirement): an independent filter on the nucleated
@@ -146,8 +168,8 @@ rules:
   #     (e.g. W + ING -> WIN leaves G; ING + OO + D -> GOOD leaves IN). In batch
   #     mode (clear_at_phase_end) several words may take different bites of one
   #     gram (H ING O -> HI + GO leaves N; W ING O -> WIN + GO clears it).
-  # game_screen.gram_usage: rule_gram_use_whole
-  game_screen.gram_usage: rule_gram_use_partial
+  game_screen.gram_usage: rule_gram_use_whole
+  # game_screen.gram_usage: rule_gram_use_partial
 
   # Stage 3 (select): of the nucleated candidates, which to actually clear.
   #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant

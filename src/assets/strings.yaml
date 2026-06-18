@@ -20,6 +20,8 @@ en:
   # Side panes (right of the board)
   dictionary_count:      "Dictionary: {count} words"
   pieces_count:          "Pieces: {count}"
+  # MOVING_OMNISWAP countdown (seconds left in the moving phase)
+  time_count:            "Time: {count}"
   type_a_word:           "Type a word:"
   pick_words:            "pick words:"
   clear_word:            "Clear word"
@@ -54,6 +56,7 @@ es:
   # Side panes (right of the board)
   dictionary_count:      "Diccionario: {count} palabras"
   pieces_count:          "Piezas: {count}"
+  time_count:            "Tiempo: {count}"
   type_a_word:           "Escribe una palabra:"
   pick_words:            "elige palabras:"
   clear_word:            "Borrar palabra"

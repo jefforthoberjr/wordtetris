@@ -4,7 +4,7 @@ from collections import namedtuple
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
-from views.moving_mode import JigsawMovingMode, TypewriterMovingMode
+from views.moving_mode import JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode
 from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
 from views.victory_overlay import VictoryOverlay
@@ -423,8 +423,12 @@ class GameScreen:
         moving_modes = {
             "rule_mode_jigsaw": JigsawMovingMode,
             "rule_mode_typewriter": TypewriterMovingMode,
+            "rule_mode_omniswap_vs_timer": OmniswapVsTimerMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
+        # Seconds the MOVING_OMNISWAP countdown starts at (game_screen.mode:
+        # rule_mode_omniswap_vs_timer); ignored by the other modes.
+        self._omniswap_timer_seconds = CONFIG["rules"]["game_screen.omniswap_timer_seconds"]
         # Whether the word-piece feature is on, as a plain flag a mode can read
         # before doing its own mode-specific replacement (jigsaw swaps the live
         # piece via _player_word_piece_rule; typewriter replaces the cursor gram).
@@ -500,6 +504,10 @@ class GameScreen:
         # yet cleared. Their cells are tinted green; the whole list clears when
         # the phase ends. Empty in clear-on-submit mode.
         self._pending = []
+        # Words accepted during the current interactive SELECT phase. Reset on
+        # entering SELECT, bumped on each accepted submit; MOVING_OMNISWAP reads
+        # it to decide whether leaving SELECT continues the game or ends it.
+        self._words_submitted_this_select = 0
         # Wider word sets the submission-error diagnosis reads (see
         # _recompute_candidates): every board word ignoring length, and those
         # that meet the length minimum.
@@ -1261,6 +1269,7 @@ class GameScreen:
             self._phase = Phase.SELECTING
             # Fresh batch for this selection phase (no-op in clear-on-submit mode).
             self._pending = []
+            self._words_submitted_this_select = 0
             self._selecting_side_pane.begin()
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
 
@@ -1493,6 +1502,7 @@ class GameScreen:
         # dictionary, so the entry pane can list it green.
         is_new = not self._player_dict.contains(word)
         self._clear_paths([found])
+        self._words_submitted_this_select += 1
         self._selecting_side_pane.accept_word(word, is_new)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._recompute_candidates()
@@ -1530,6 +1540,7 @@ class GameScreen:
             return
         is_new = not self._player_dict.contains(word)
         self._pending.append(found)
+        self._words_submitted_this_select += 1
         self._highlight_pending_cells(found.path)
         self._selecting_side_pane.accept_word(word, is_new)
         # One-word-per-select ends the phase now; _end_selection clears the single
@@ -2028,7 +2039,11 @@ class GameScreen:
             self._ingame_menu.draw()
     
     def update(self, dt):
-        pass
+        # Drive the active mode's per-tick hook only during MOVING (and never
+        # while the pause menu is open), so a timed mode counts down only when the
+        # player can actually act. Event-driven modes ignore this.
+        if self._phase == Phase.MOVING and not self._menu_open:
+            self._moving_mode.update(dt)
     
     def _handle_menu_action(self, action):
         if action == "resume":

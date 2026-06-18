@@ -1,3 +1,4 @@
+import math
 import pyglet
 from config import select_rule
 
@@ -64,6 +65,11 @@ class MovingMode:
         return False
 
     def on_mouse_press(self, x, y, button):
+        pass
+
+    def update(self, dt):
+        """Per-tick hook, called by GameScreen.update only while MOVING. Most
+        modes are event-driven and ignore it; the timed modes count down here."""
         pass
 
     def advance(self):
@@ -247,6 +253,153 @@ class TypewriterMovingMode(MovingMode):
     def _swap_grams(self, a, b):
         """Exchange the letters of two occupied cells, leaving each cell's own
         background square (so the cursor tint stays on the cursor cell)."""
+        board = self._gs._board
+        ta = board.gram_at(*a).text
+        tb = board.gram_at(*b).text
+        board.relabel_cell(a[0], a[1], tb)
+        board.relabel_cell(b[0], b[1], ta)
+
+
+class OmniswapVsTimerMode(MovingMode):
+    """MOVING_OMNISWAP -- a board pre-filled by the starting formation, no cursor
+    sweep and no piece queue. The whole moving phase is one countdown: the player
+    freely swaps any two cells (a two-click pick-then-swap) for as long as the
+    timer allows, then the phase ends -- either when the timer hits zero or when
+    the player commits early with the place key (spacebar). Both routes open the
+    interactive SELECT phase the same way; the timer is paused there (SELECT has
+    unlimited time). Entering SELECT is a commitment: leaving it without having
+    submitted a word ends the game (a plain 'finished', not a win). Submitting at
+    least one word fossilizes those cells (game_screen.clear_action) and returns
+    to MOVING with the timer reset to full.
+
+    Pairs with the OMNISWAP preset: rule_formation_fill_player (so every cell is
+    swappable), rule_clear_fossilize, rule_victory_none, rule_nucleate_anywhere
+    (no placed piece to nucleate around), rule_never_skip_select and
+    rule_select_every_placement. The timer length is game_screen.omniswap_timer_
+    seconds.
+
+    (WIP: swapping into a truly EMPTY cell isn't handled yet -- under
+    fill_player+fossilize the board never empties, so both swap ends are always
+    occupied. Other formations that leave gaps are a follow-up.)"""
+
+    def __init__(self, game_screen):
+        super().__init__(game_screen)
+        self._remaining = 0.0       # seconds left this moving phase
+        self._last_shown = None     # last whole-second value pushed to the pane
+        self._selected = None       # (x, y) of the first-click cell, or None
+
+    def start(self):
+        self._selected = None
+        self._reset_timer()
+
+    def update(self, dt):
+        # Called only while MOVING (see GameScreen.update), so the timer ticks
+        # exclusively in the moving phase. At zero the player is forced into a
+        # last-chance SELECT.
+        self._remaining -= dt
+        if self._remaining <= 0:
+            self._remaining = 0
+            self._show_time()
+            self._enter_select()
+            return
+        self._show_time()
+
+    def advance(self):
+        # Called once when SELECT resolves back to MOVING. If the player left
+        # SELECT without submitting any word, the game ends; otherwise the timer
+        # resets to full for a fresh moving phase.
+        gs = self._gs
+        self._clear_selection()
+        if gs._words_submitted_this_select == 0:
+            gs._enter_endgame()
+            return
+        self._reset_timer()
+
+    def active_cells(self):
+        # No live piece to hover-hide; the pick cursor is just a tint.
+        return []
+
+    # --- input -----------------------------------------------------------
+    def on_key_press(self, symbol, modifiers):
+        # Place key (spacebar) commits to SELECT early.
+        if symbol == self._gs._keys["place"]:
+            self._enter_select()
+            return True
+        return False
+
+    def on_mouse_press(self, x, y, button):
+        gs = self._gs
+        if button != pyglet.window.mouse.LEFT:
+            return
+        # Word-piece (game_screen.player_word_piece): with a pick cursor down, a
+        # click on a cleared word in the side pane replaces that cell's gram with
+        # the whole word (its old gram disappears), then drops the cursor. With no
+        # cursor placed yet, a pane-word click does nothing. Like the swap, this is
+        # a plain MOVING board edit -- it does not commit to SELECT.
+        if gs._word_piece_enabled and self._selected is not None:
+            word = gs._moving_side_pane.word_at(x, y)
+            if word:
+                gs._board.relabel_cell(self._selected[0], self._selected[1], word)
+                self._clear_selection()
+                return
+        cell = gs._board.cell_at(x, y)
+        if cell is None:
+            return
+        if self._selected is None:
+            # First click: drop the pick cursor on an eligible (occupied, non-
+            # fossilized) cell. Empty / fossilized clicks are ignored.
+            if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
+                return
+            self._selected = cell
+            self._tint(cell, gs.CURSOR_CELL_COLOR)
+            return
+        # Second click.
+        if cell == self._selected:
+            # Re-click the cursor cell: cancel the pick.
+            self._clear_selection()
+            return
+        if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
+            # Invalid swap target (fossilized or empty): keep the cursor, ignore.
+            return
+        self._swap_grams(self._selected, cell)
+        self._restore(cell)
+        self._clear_selection()
+
+    # --- phase / timer helpers -------------------------------------------
+    def _enter_select(self):
+        """Leave MOVING for the interactive SELECT phase (timer-zero or spacebar).
+        The pick cursor disappears; placed set is empty (nucleate anywhere)."""
+        self._clear_selection()
+        self._gs._begin_selection([])
+
+    def _reset_timer(self):
+        self._remaining = float(self._gs._omniswap_timer_seconds)
+        self._last_shown = None
+        self._show_time()
+
+    def _show_time(self):
+        secs = int(math.ceil(self._remaining))
+        if secs != self._last_shown:
+            self._last_shown = secs
+            self._gs._moving_side_pane.set_time_label(secs)
+
+    # --- pick-cursor helpers ---------------------------------------------
+    def _clear_selection(self):
+        if self._selected is not None:
+            self._restore(self._selected)
+            self._selected = None
+
+    def _tint(self, cell, color):
+        c = self._gs._board.get_cell(*cell)
+        if c is not None and c.square is not None:
+            c.square.color = color
+
+    def _restore(self, cell):
+        self._tint(cell, self._gs._cell_resting_color(cell))
+
+    def _swap_grams(self, a, b):
+        """Exchange the letters of two occupied cells (same as the typewriter
+        swap), leaving each cell's own background square in place."""
         board = self._gs._board
         ta = board.gram_at(*a).text
         tb = board.gram_at(*b).text

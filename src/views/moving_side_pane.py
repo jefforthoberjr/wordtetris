@@ -86,6 +86,11 @@ class MovingSidePane:
         """Show how many more pieces until the next selection phase, top edge."""
         self._phase_label.text = get_string("pieces_count", count=count)
 
+    def set_time_label(self, seconds):
+        """Show the seconds left in the moving phase, top edge -- the
+        MOVING_OMNISWAP countdown, in place of the pieces-until-select count."""
+        self._phase_label.text = get_string("time_count", count=seconds)
+
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""
         self._word_list.reset()
