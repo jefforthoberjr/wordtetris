@@ -162,7 +162,7 @@ def _load_gram_corpus():
     _corpus_grams = []
     _corpus_weights = []
 
-    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'jpo_allGramsGreaterThan47InFreq.csv')
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', 'jpo_allGramsGreaterThan47InFreq_cleaned.csv')
     with open(csv_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -172,7 +172,7 @@ def _load_gram_corpus():
 
 def rule_grams_greater_than_47(count):
     """
-    Pick grams from the JPO gram corpus (jpo_allGramsGreaterThan47InFreq.csv),
+    Pick grams from the JPO gram corpus (jpo_allGramsGreaterThan47InFreq_cleaned.csv),
     weighted by each gram's frequency.
 
     The corpus mixes 1-4 letter grams, so cells get a frequency-realistic

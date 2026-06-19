@@ -24,8 +24,11 @@ dictionary:
 # Note: game_screen.grid is a bundle:
 # (the chosen grid builder wires up its own movement + clear rules)
 rules:
-  gram.font_size:           rule_gram_font_scale_by_length
+  # All length grams are beholden to auto-sizing
+  # gram.font_size:           rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
+  # Single letters take the 2-letter size; longer grams still autosize:
+  gram.font_size:         rule_gram_font_scale_single_as_double
 
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
@@ -53,7 +56,7 @@ rules:
 
   # Seconds the MOVING_OMNISWAP countdown starts at; reset to full each time play
   # returns to MOVING (only used by rule_mode_omniswap_vs_timer).
-  game_screen.omniswap_timer_seconds: 60
+  game_screen.omniswap_timer_seconds: 600
 
   # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return

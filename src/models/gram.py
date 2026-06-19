@@ -47,10 +47,21 @@ def rule_gram_font_scale_by_length(base_size, gram):
     return int(scaled)
 
 
+def rule_gram_font_scale_single_as_double(base_size, gram):
+    """Like scale_by_length, but a single letter takes the 2-letter size instead
+    of the full base, so a unigram no longer towers over a digram. Lengths >= 2
+    are unchanged; only length 1 differs: 1 -> ~0.59 (was base), 2 -> ~0.59,
+    3 -> ~0.42, 4 -> ~0.32."""
+    length = max(len(gram), 2)
+    scaled = base_size / (1 + 0.7 * (length - 1))
+    return int(scaled)
+
+
 # Active font-sizing rule, chosen by the YAML key gram.font_size.
 _GRAM_FONT_SIZE_RULES = {
     "rule_gram_font_fixed": rule_gram_font_fixed,
     "rule_gram_font_scale_by_length": rule_gram_font_scale_by_length,
+    "rule_gram_font_scale_single_as_double": rule_gram_font_scale_single_as_double,
 }
 _gram_font_size_rule = select_rule("gram.font_size", _GRAM_FONT_SIZE_RULES)
 
