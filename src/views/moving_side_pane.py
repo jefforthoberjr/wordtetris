@@ -91,6 +91,11 @@ class MovingSidePane:
         MOVING_OMNISWAP countdown, in place of the pieces-until-select count."""
         self._phase_label.text = get_string("time_count", count=seconds)
 
+    def set_finished_label(self):
+        """Replace the top-edge countdown / pieces label with the game-over text,
+        shown the moment the game ends (e.g. the omniswap race clock hits zero)."""
+        self._phase_label.text = get_string("finished")
+
     def reset(self):
         """Clear the cleared-words list back to empty for a new game."""
         self._word_list.reset()

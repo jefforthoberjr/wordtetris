@@ -10,7 +10,7 @@ We will be building a video game, piece by piece.
 
 In this game, players are spelling out words. The player manipulate 'pieces' and 'cells'. Pieces are comprised of one or more cells. Cells contain word chunks with one or more letters in each cell (aka "grams"). 
 
-The game_screen.py transitions between "phases" (e.g. MOVING and SELECT). The game_screen has some major ways in which its gameplay is configured (see config.yaml), including "grid" square vs. hex grid (game_screen.grid), and different game "modes" (game_screen.mode). The different game modes defines about roughly half of the logic, UI and player's controls that get used at runtime. These are the biggest aspects of the game to clarify/specify when adding new rules to the game.
+The game_screen.py transitions between "phases" (e.g. MOVING and SELECTING). The game_screen has some major ways in which its gameplay is configured (see config.yaml), including "grid" square vs. hex grid (game_screen.grid), and different game "modes" (game_screen.mode). The different game modes defines about roughly half of the logic, UI and player's controls that get used at runtime. These are the biggest aspects of the game to clarify/specify when adding new rules to the game.
 
 As we experiment with adding more rules, I playtest, commenting in/out different rule combinations in config.yaml.
 

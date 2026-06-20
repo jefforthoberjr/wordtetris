@@ -239,6 +239,10 @@ class GameScreen:
         # Victory overlay: a solid panel + big centered label drawn over the grid
         # region only in the VICTORY phase. See views/victory_overlay.py.
         self._victory_overlay = VictoryOverlay(self._grid_area_size, window.height)
+        # The end-state overlay is dismissable: a click in the VICTORY phase hides
+        # it, leaving the player looking at the final board. Reset each time the
+        # game ends (see _enter_endstate).
+        self._end_overlay_dismissed = False
 
         # Cleared-word path trails, overlaid on top of the board. Accumulate all
         # game; cleared on each new game. The game_screen.word_trail rule gates
@@ -1294,7 +1298,10 @@ class GameScreen:
 
     def _enter_endgame(self):
         """End the game with no win/lose verdict -- the MOVING_TYPEWRITER cursor
-        ran off the board: show the end panel reading FINISHED."""
+        ran off the board, or the omniswap race clock hit zero: show the end panel
+        reading FINISHED, and swap the moving pane's top label to match (so the
+        last countdown value isn't left frozen behind the overlay)."""
+        self._moving_side_pane.set_finished_label()
         self._enter_endstate(get_string("finished"))
 
     def _enter_endstate(self, label_text):
@@ -1304,6 +1311,7 @@ class GameScreen:
         right pane reverts to the cleared-word list (phase no longer SELECTING);
         the label is what distinguishes a win from a plain finish."""
         self._victory_overlay.set_text(label_text)
+        self._end_overlay_dismissed = False
         self._phase = Phase.VICTORY
         self._settle_placed_cells()
 
@@ -2222,8 +2230,9 @@ class GameScreen:
             self._moving_side_pane.draw()
 
         # On a win, the VICTORY panel sits over the grid; the pane above already
-        # reverted to the cleared-word list (phase is no longer SELECTING).
-        if self._phase == Phase.VICTORY:
+        # reverted to the cleared-word list (phase is no longer SELECTING). A click
+        # dismisses it (see on_mouse_press), leaving just the final board on view.
+        if self._phase == Phase.VICTORY and not self._end_overlay_dismissed:
             self._victory_overlay.draw()
 
         if self._menu_open:
@@ -2317,6 +2326,12 @@ class GameScreen:
             action = self._ingame_menu.on_mouse_press(x, y, button, modifiers)
             if action:
                 self._handle_menu_action(action)
+            return
+        # Once the game has ended, a click dismisses the end-state overlay (if it's
+        # still up), leaving the player looking at the final board. The game stays
+        # frozen otherwise -- only the menu (Escape) responds.
+        if self._phase == Phase.VICTORY:
+            self._end_overlay_dismissed = True
             return
         if self._phase == Phase.SELECTING:
             self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
