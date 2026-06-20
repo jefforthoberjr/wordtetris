@@ -593,6 +593,28 @@ class GameScreen:
             "game_screen.gram_usage", gram_usage_rules
         )
 
+        # Fossil-word-use rule (game_screen.fossil_word_use): may a NEW word use fossilized
+        # cells. One config key drives two seams of _collect_words -- whether the
+        # walk treats a fossil as a wall, and whether a finished word's fossil mix
+        # is allowed -- so the two registries below share the same key.
+        #   rule_fossil_block -- fossils are walls (original behavior)
+        #   rule_fossil_allow -- fossils are walkable, but a word must include at
+        #     least one non-fossilized cell.
+        fossil_wall_rules = {
+            "rule_fossil_block": self._rule_fossil_block_is_wall,
+            "rule_fossil_allow": self._rule_fossil_allow_is_wall,
+        }
+        self._fossil_is_wall_rule = select_rule(
+            "game_screen.fossil_word_use", fossil_wall_rules
+        )
+        fossil_word_rules = {
+            "rule_fossil_block": self._rule_fossil_block_word_ok,
+            "rule_fossil_allow": self._rule_fossil_allow_word_ok,
+        }
+        self._fossil_word_ok_rule = select_rule(
+            "game_screen.fossil_word_use", fossil_word_rules
+        )
+
         self._start_new_game()
 
     def _start_new_game(self):
@@ -1872,6 +1894,29 @@ class GameScreen:
             end_only_options = [text[:j] for j in range(1, len(text))]
         return continue_options, end_only_options
 
+    # --- Fossil-word-use rules (game_screen.fossil_word_use) -------------------------
+    # Whether a fossilized cell (a frozen formed word) can take part in a NEW
+    # word. Two seams of _collect_words, both keyed off game_screen.fossil_word_use:
+    # the *_is_wall pair gates the pathfinding walk (block walls fossils off for
+    # speed + correctness); the *_word_ok pair gates a finished word (allow still
+    # demands at least one non-fossilized cell, so a word isn't built purely from
+    # frozen ones).
+    def _rule_fossil_block_is_wall(self, cell):
+        """Walk: a fossilized cell walls off word-finding (original behavior)."""
+        return cell in self._fossilized_cells
+
+    def _rule_fossil_allow_is_wall(self, cell):
+        """Walk: fossilized cells are walkable; the word gate enforces freshness."""
+        return False
+
+    def _rule_fossil_block_word_ok(self, path):
+        """Word: block never admits a fossil into a path, so always accept."""
+        return True
+
+    def _rule_fossil_allow_word_ok(self, path):
+        """Word: require at least one non-fossilized cell in the path."""
+        return any(cell not in self._fossilized_cells for cell in path)
+
     def _collect_words(self, cell, prev_direction, path, text, segments, found, apply_length=True):
         """Pathfinding walk: step forward from `cell` (snaking via the board's
         forward_neighbors), collecting every dictionary word reachable. Grid-
@@ -1885,9 +1930,10 @@ class GameScreen:
         actually taken, so a matched word knows its exact spelling). Plain grams
         go through the gram-usage rule, which may let a word take only a prefix /
         suffix of a cell (see _rule_gram_use_partial)."""
-        # Fossilized cells are dead to word-finding: a new word can neither start
-        # on one nor route through one, so the walk treats them as walls.
-        if cell in self._fossilized_cells:
+        # Fossilized cells and word-finding: the fossil-use rule decides whether a
+        # fossil walls off the walk (block) or is walkable (allow). The companion
+        # _fossil_word_ok_rule gates finished words below.
+        if self._fossil_is_wall_rule(cell):
             return
         gram = self._board.gram_at(*cell)
         if gram is None:
@@ -1905,7 +1951,7 @@ class GameScreen:
             if not is_prefix(text2):
                 continue
             segments2 = segments + [option]
-            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)):
+            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)) and self._fossil_word_ok_rule(path):
                 found.append(FoundWord(path, segments2, text2))
             for nxt, direction in self._board.forward_neighbors(*cell, prev_direction):
                 # Never step backwards onto a cell already in this word's path.
@@ -1920,7 +1966,7 @@ class GameScreen:
         for option in end_only_options:
             text2 = text + option
             segments2 = segments + [option]
-            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)):
+            if is_word(text2) and (not apply_length or self._word_length_rule(text2, path)) and self._fossil_word_ok_rule(path):
                 found.append(FoundWord(path, segments2, text2))
 
     # --- Nucleation rules (game_screen.word_nucleation) --------------------

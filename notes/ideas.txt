@@ -4,6 +4,10 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+Maybe just a game time for the full game (until game over is displayed) then as many word enter turns as possible?
+
+
+Separate from font size, keeping the different number grams visually separate could still be helpful (like maybe different color?)
 
 A game mode where it's more of a spelling quiz
 A few static enzym pieces are on the side (suffixes) with a "falling" sideways piece. players have a few seconds to direct where the piece connects to one of the enzyms, to clear the word (or it getting marked as as failure.

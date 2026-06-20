@@ -190,6 +190,15 @@ rules:
   game_screen.gram_usage: rule_gram_use_whole
   # game_screen.gram_usage: rule_gram_use_partial
 
+  # Fossil word use (game_screen.fossil_word_use): may a NEW word use fossilized cells
+  # (frozen formed words; only present under clear_action: rule_clear_fossilize).
+  #   rule_fossil_block -- fossils are walls: a word can't start on, pass through,
+  #     or end on one (original behavior).
+  #   rule_fossil_allow -- a word may use fossilized cells, but must include at
+  #     least one non-fossilized cell (never built purely from frozen ones).
+  # game_screen.fossil_word_use: rule_fossil_block
+  game_screen.fossil_word_use: rule_fossil_allow
+
   # Stage 3 (select): of the nucleated candidates, which to actually clear.
   #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant
   #     (keep maximal paths: overlaps + repeats included, strict sub-words dropped)

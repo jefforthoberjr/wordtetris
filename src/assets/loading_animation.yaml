@@ -30,7 +30,7 @@ categories:
   mission:       { delay: 0,  duration: 0 }   # goal pieces
   fossilized:    { delay: 0,  duration: 0 }   # frozen cells (none in current modes; future-proofed)
   obstacle:      { delay: 0,  duration: 0 }   # obstacle pieces
-  settled_3plus: { delay: 0,  duration: 2 }   # settled formation cells, 3+ letter grams
+  settled_3plus: { delay: 0,  duration: 1 }   # settled formation cells, 3+ letter grams
   settled_2:     { delay: 3,  duration: 2 }   # settled formation cells, 2-letter grams
-  settled_1:     { delay: 6, duration: 2 }   # settled formation cells, single letters
-  grid_lines:    { delay: 8, duration: 2 }   # hex/square 
+  settled_1:     { delay: 6, duration: 3 }   # settled formation cells, single letters
+  grid_lines:    { delay: 8, duration: 1 }   # hex/square 
