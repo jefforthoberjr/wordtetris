@@ -4,6 +4,30 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+
+Maybe just have a drawer of common mophemes to pull from on the right pane
+	Maybe the right pane is prefilled with common ones?
+	Maybe the gram drawer fills will elements as pulled from words made in the game
+
+Maybe draw a little line in the formation of the word. Like a neat little line tree that builds up over the game
+
+Avoid placing the same multigram during initial board placement
+
+rule: ignore extra dup letter
+FO RM MA T => format
+
+rule: allow missing extra letter
+SESION => session
+
+Allow for creation of words from fosillized cells
+	(then the arrangement of fosilizzed cells matters more, exposing for branching on, adjecnt?
+
+Right click to change a cell (flip, drop letter, etc)
+
+
+overlapping cell segments can collapse into a common gram? Free up some space?
+
+
 Maybe just a game time for the full game (until game over is displayed) then as many word enter turns as possible?
 
 
