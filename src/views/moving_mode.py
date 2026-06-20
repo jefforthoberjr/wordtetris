@@ -321,8 +321,12 @@ class OmniswapVsTimerMode(MovingMode):
 
     # --- input -----------------------------------------------------------
     def on_key_press(self, symbol, modifiers):
-        # Place key (spacebar) commits to SELECT early.
-        if symbol == self._gs._keys["place"]:
+        # ENTER commits to SELECT early (so the SELECT phase keeps ENTER as its
+        # one action key: submit / surrender). Spacebar no longer triggers SELECT
+        # -- in SELECT it clears the typed word -- which stops a reflexive space
+        # tap from ending the game. Old behavior (place key / spacebar):
+        #   if symbol == self._gs._keys["place"]:
+        if symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN):
             self._enter_select()
             return True
         return False

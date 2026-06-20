@@ -2259,12 +2259,23 @@ class GameScreen:
         if self._phase == Phase.VICTORY:
             return True
 
-        # While selecting words, keys drive the entry pane (Backspace/Enter);
-        # letters arrive separately via on_text. The place key (spacebar) ends
-        # selection, same as clicking Next piece.
+        # While selecting words, keys drive the entry pane; letters arrive
+        # separately via on_text. Control scheme (anti-fat-finger): ENTER is the
+        # one action key -- with text it submits the word (pane default), on an
+        # empty field it ends selection (Next piece / omniswap surrender).
+        # Spacebar clears the typed word (a lingering failed attempt), so it can
+        # no longer end the game by reflex. Old scheme (spacebar ended selection):
+        #   if symbol == self._keys["place"]:
+        #       self._end_selection()
+        #       return True
+        #   return self._selecting_side_pane.on_key_press(symbol, modifiers)
         if self._phase == Phase.SELECTING:
-            if symbol == self._keys["place"]:
-                self._end_selection()
+            if symbol == self._keys["place"]:            # spacebar -> clear field
+                self._selecting_side_pane.clear_word()
+                return True
+            if (symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN)
+                    and self._selecting_side_pane.is_empty()):
+                self._end_selection()                    # ENTER on empty -> end
                 return True
             return self._selecting_side_pane.on_key_press(symbol, modifiers)
 

@@ -169,10 +169,16 @@ class SelectingSidePane:
             self._render_input()
 
     def clear_word(self):
-        """Reset the typed-word field to empty (the Clear word control)."""
+        """Reset the typed-word field to empty (the Clear word control, and the
+        SELECT-phase spacebar)."""
         self._typed = ""
         self.clear_errors()
         self._render_input()
+
+    def is_empty(self):
+        """Whether the typed-word field is empty (no lingering word attempt).
+        Drives the ENTER-on-empty -> end-selection control in GameScreen."""
+        return self._typed == ""
 
     def on_mouse_press(self, x, y, button, modifiers):
         if self._hit(self._clear_btn, x, y):
