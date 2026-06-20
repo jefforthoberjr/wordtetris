@@ -72,6 +72,12 @@ class MovingMode:
         modes are event-driven and ignore it; the timed modes count down here."""
         pass
 
+    def update_during_select(self, dt):
+        """Per-tick hook, called by GameScreen.update only while SELECTING. Off by
+        default -- only a mode whose clock spans both phases (the omniswap race
+        variant) ticks here; every other mode leaves SELECT untimed."""
+        pass
+
     def advance(self):
         raise NotImplementedError
 
@@ -262,15 +268,25 @@ class TypewriterMovingMode(MovingMode):
 
 class OmniswapVsTimerMode(MovingMode):
     """MOVING_OMNISWAP -- a board pre-filled by the starting formation, no cursor
-    sweep and no piece queue. The whole moving phase is one countdown: the player
-    freely swaps any two cells (a two-click pick-then-swap) for as long as the
-    timer allows, then the phase ends -- either when the timer hits zero or when
-    the player commits early with the place key (spacebar). Both routes open the
-    interactive SELECT phase the same way; the timer is paused there (SELECT has
-    unlimited time). Entering SELECT is a commitment: leaving it without having
-    submitted a word ends the game (a plain 'finished', not a win). Submitting at
-    least one word fossilizes those cells (game_screen.clear_action) and returns
-    to MOVING with the timer reset to full.
+    sweep and no piece queue. The player freely swaps any two cells (a two-click
+    pick-then-swap) against a countdown, opening the interactive SELECT phase with
+    ENTER (or, in the per-phase variant, automatically when the timer expires).
+
+    game_screen.omniswap_timer picks how the clock and endgame work:
+
+    * rule_omniswap_timer_per_phase -- the countdown runs only while MOVING and is
+      paused during SELECT (unlimited time there). Timer-zero forces a last-chance
+      SELECT. Entering SELECT is a commitment: leaving it without submitting a word
+      ends the game (a plain 'finished', not a win). Submitting at least one word
+      fossilizes those cells (game_screen.clear_action) and returns to MOVING with
+      the timer reset to full.
+
+    * rule_omniswap_timer_race -- one continuous clock counts down across BOTH
+      phases (shown on the moving and selecting panes alike). The player toggles
+      MOVING/SELECT freely -- ENTER opens SELECT, Next piece returns to MOVING,
+      neither ends the game -- racing to form as many words as possible. The
+      instant the clock hits zero the game ends ('finished', no win check). The
+      timer never resets; add_time() is the seam for future word-time bonuses.
 
     Pairs with the OMNISWAP preset: rule_formation_fill_player (so every cell is
     swappable), rule_clear_fossilize, rule_victory_none, rule_nucleate_anywhere
@@ -293,23 +309,51 @@ class OmniswapVsTimerMode(MovingMode):
         self._reset_timer()
 
     def update(self, dt):
-        # Called only while MOVING (see GameScreen.update), so the timer ticks
-        # exclusively in the moving phase. At zero the player is forced into a
-        # last-chance SELECT.
+        # Called while MOVING (see GameScreen.update). Both variants tick here.
+        self._tick(dt)
+
+    def update_during_select(self, dt):
+        # Called while SELECTING. Only the race variant keeps counting here -- its
+        # one clock spans both phases; per-phase leaves SELECT untimed.
+        if self._gs._omniswap_timer_race:
+            self._tick(dt)
+
+    def _tick(self, dt):
+        # Decrement the shared countdown and act when it hits zero. What zero means
+        # is the variant's only timer difference: the race ends the game outright,
+        # the per-phase one forces a last-chance SELECT.
         self._remaining -= dt
         if self._remaining <= 0:
             self._remaining = 0
             self._show_time()
-            self._enter_select()
+            if self._gs._omniswap_timer_race:
+                self._gs._enter_endgame()
+            else:
+                self._enter_select()
             return
         self._show_time()
 
+    def add_time(self, seconds):
+        """Extend the countdown by `seconds` and repaint it. Scaffolding for
+        future rules that reward a submitted word with extra time -- the timer is
+        one running accumulator, so a bonus is just an add here."""
+        self._remaining += seconds
+        self._show_time()
+
     def advance(self):
-        # Called once when SELECT resolves back to MOVING. If the player left
-        # SELECT without submitting any word, the game ends; otherwise the timer
-        # resets to full for a fresh moving phase.
+        # Called once when SELECT resolves back to MOVING. The race variant runs
+        # one continuous clock, so it neither resets nor surrenders -- the player
+        # bounces between phases freely until the clock runs out. The per-phase
+        # variant resets the clock to full for a fresh moving phase, or ends the
+        # game if the player left SELECT without submitting any word.
         gs = self._gs
         self._clear_selection()
+        if gs._omniswap_timer_race:
+            # Entering SELECT repainted the moving pane's top label with the
+            # pieces count; restore the countdown there for the moving phase.
+            self._last_shown = None
+            self._show_time()
+            return
         if gs._words_submitted_this_select == 0:
             gs._enter_endgame()
             return
@@ -371,10 +415,15 @@ class OmniswapVsTimerMode(MovingMode):
 
     # --- phase / timer helpers -------------------------------------------
     def _enter_select(self):
-        """Leave MOVING for the interactive SELECT phase (timer-zero or spacebar).
-        The pick cursor disappears; placed set is empty (nucleate anywhere)."""
+        """Leave MOVING for the interactive SELECT phase (timer-zero or ENTER).
+        The pick cursor disappears; placed set is empty (nucleate anywhere). In
+        the race variant the clock keeps running, so paint it on the selecting
+        pane immediately (its header still reads the placeholder until then)."""
         self._clear_selection()
         self._gs._begin_selection([])
+        if self._gs._omniswap_timer_race:
+            self._last_shown = None
+            self._show_time()
 
     def _reset_timer(self):
         self._remaining = float(self._gs._omniswap_timer_seconds)
@@ -386,6 +435,9 @@ class OmniswapVsTimerMode(MovingMode):
         if secs != self._last_shown:
             self._last_shown = secs
             self._gs._moving_side_pane.set_time_label(secs)
+            # The race clock is visible in SELECTING too; keep that pane in sync.
+            if self._gs._omniswap_timer_race:
+                self._gs._selecting_side_pane.set_time_label(secs)
 
     # --- pick-cursor helpers ---------------------------------------------
     def _clear_selection(self):

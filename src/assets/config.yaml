@@ -62,9 +62,27 @@ rules:
   # game_screen.mode:       rule_mode_typewriter
   game_screen.mode:       rule_mode_omniswap_vs_timer
 
-  # Seconds the MOVING_OMNISWAP countdown starts at; reset to full each time play
-  # returns to MOVING (only used by rule_mode_omniswap_vs_timer).
-  game_screen.omniswap_timer_seconds: 600
+  # Seconds the MOVING_OMNISWAP countdown starts at (only used by
+  # rule_mode_omniswap_vs_timer). Under rule_omniswap_timer_per_phase this is the
+  # per-phase budget, reset to full each time play returns to MOVING; under
+  # rule_omniswap_timer_race it is the single whole-game clock (try ~360).
+  game_screen.omniswap_timer_seconds: 360
+
+  # MOVING_OMNISWAP timer + endgame variant (game_screen.omniswap_timer). Both
+  # share the OMNISWAP PRESET below and omniswap_timer_seconds above; they differ
+  # only in WHEN the clock runs and HOW the game ends:
+  #   rule_omniswap_timer_per_phase -- the countdown runs only while MOVING and
+  #     resets to full each time a submitted word returns play to MOVING. Timer-
+  #     zero forces a last-chance SELECT; leaving SELECT without submitting a word
+  #     ends the game (a "surrender", FINISHED). The original omniswap behavior.
+  #   rule_omniswap_timer_race -- one continuous clock counts down across BOTH
+  #     phases (visible in MOVING and SELECTING). The player toggles MOVING/SELECT
+  #     freely -- ENTER opens SELECT, Next piece returns to MOVING, neither ends
+  #     the game -- racing to form as many words as possible. The instant the
+  #     clock hits zero the game ends (FINISHED, no win check). Pair with a
+  #     shorter omniswap_timer_seconds (~360).
+  # game_screen.omniswap_timer:  rule_omniswap_timer_per_phase
+  game_screen.omniswap_timer: rule_omniswap_timer_race
 
   # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
@@ -95,7 +113,8 @@ rules:
   # OMNISWAP PRESET -- to play MOVING_OMNISWAP, set game_screen.mode above to
   # rule_mode_omniswap_vs_timer and flip these (board starts full and swappable,
   # formed words freeze, no instant win, words can form anywhere with no placed
-  # piece, every commit is a select turn). Tune omniswap_timer_seconds for length;
+  # piece, every commit is a select turn). Tune omniswap_timer_seconds for length
+  # and omniswap_timer (above) for the per-phase vs race timer/endgame variant;
   # select_word_limit picks one-word-then-MOVING vs many-words-per-SELECT:
   #   setup_formation      -> rule_formation_fill_player
   #   clear_action         -> rule_clear_fossilize

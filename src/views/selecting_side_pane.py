@@ -197,6 +197,12 @@ class SelectingSidePane:
         self.clear_errors()
         self._render_input()
 
+    def set_time_label(self, seconds):
+        """Show the seconds left on the clock in the top-edge header, in place of
+        the 'pick words' prompt -- the twin of the moving pane's countdown, used
+        only by the omniswap race variant where one clock spans both phases."""
+        self._header.text = get_string("time_count", count=seconds)
+
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
         self._count.text = get_string("dictionary_count", count=count)

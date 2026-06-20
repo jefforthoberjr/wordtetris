@@ -456,6 +456,22 @@ class GameScreen:
         # Seconds the MOVING_OMNISWAP countdown starts at (game_screen.mode:
         # rule_mode_omniswap_vs_timer); ignored by the other modes.
         self._omniswap_timer_seconds = CONFIG["rules"]["game_screen.omniswap_timer_seconds"]
+        # Omniswap timer + endgame variant (game_screen.omniswap_timer), read by
+        # OmniswapVsTimerMode. Both variants share the timer length above:
+        #   rule_omniswap_timer_per_phase (False) -- the clock runs only in MOVING
+        #     and resets to full each time a word returns play to MOVING; timer-
+        #     zero forces a last-chance SELECT and leaving SELECT with no word ends
+        #     the game (surrender). The original omniswap behavior.
+        #   rule_omniswap_timer_race (True) -- one continuous clock counts down
+        #     across BOTH phases; the player toggles MOVING/SELECT freely and the
+        #     game ends the instant the clock hits zero (FINISHED, no win check).
+        omniswap_timer_variants = {
+            "rule_omniswap_timer_per_phase": False,
+            "rule_omniswap_timer_race": True,
+        }
+        self._omniswap_timer_race = select_rule(
+            "game_screen.omniswap_timer", omniswap_timer_variants
+        )
         # Whether the word-piece feature is on, as a plain flag a mode can read
         # before doing its own mode-specific replacement (jigsaw swaps the live
         # piece via _player_word_piece_rule; typewriter replaces the cursor gram).
@@ -2225,9 +2241,15 @@ class GameScreen:
             return
         # Drive the active mode's per-tick hook only during MOVING (and never
         # while the pause menu is open), so a timed mode counts down only when the
-        # player can actually act. Event-driven modes ignore this.
-        if self._phase == Phase.MOVING and not self._menu_open:
+        # player can actually act. Event-driven modes ignore this. SELECTING gets
+        # its own hook, used only by a mode whose clock spans both phases (the
+        # omniswap race variant); every other mode leaves it a no-op.
+        if self._menu_open:
+            return
+        if self._phase == Phase.MOVING:
             self._moving_mode.update(dt)
+        elif self._phase == Phase.SELECTING:
+            self._moving_mode.update_during_select(dt)
     
     def _handle_menu_action(self, action):
         if action == "resume":
