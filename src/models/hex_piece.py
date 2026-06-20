@@ -96,6 +96,33 @@ class HexCellShape:
 
     color = property(_get_color, _set_color)
 
+    def _get_opacity(self):
+        return self._inner.opacity
+
+    def _set_opacity(self, value):
+        # Fade both hexagons together (0 = transparent, 255 = opaque) so a cell
+        # dims/reveals as one, matching the square BorderedRectangle's .opacity.
+        # The original LOADING fade used this (alpha both halves); it caused the
+        # black outer to bleed through the half-transparent inner as a gray cell
+        # interior mid-fade. The reveal now white-fades the inner and alpha-fades
+        # the outer separately (see .inner / .outer); kept for restore.
+        self._outer.opacity = value
+        self._inner.opacity = value
+
+    opacity = property(_get_opacity, _set_opacity)
+
+    @property
+    def inner(self):
+        """The white/colored fill hexagon. The LOADING reveal white-fades this
+        (held opaque, color lerped from white) so it masks the outer -- no gray
+        interior. See views.loading_animation.WhiteFade."""
+        return self._inner
+
+    @property
+    def outer(self):
+        """The black border hexagon. The LOADING reveal alpha-fades just its rim."""
+        return self._outer
+
 
 class HexPiece:
     def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):

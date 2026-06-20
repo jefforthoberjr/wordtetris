@@ -30,6 +30,15 @@ def load_strings():
 STRINGS = load_strings()
 
 
+def load_loading_anim():
+    loading_path = Path(__file__).parent / "assets" / "loading_animation.yaml"
+    with open(loading_path) as f:
+        return yaml.safe_load(f)
+
+
+LOADING_ANIM = load_loading_anim()
+
+
 def select_rule(slot, registry):
     """Resolve the rule name configured for `slot` (e.g. "square_player.gram_pick")
     to a function in `registry`. The YAML `rules` block is the single edit point;
@@ -46,6 +55,15 @@ def get_color(path):
     for key in path.split("."):
         node = node[key]
     return tuple(node)
+
+
+def get_loading_anim(path):
+    """Resolve a dotted key (e.g. "categories.mission") from loading_animation.yaml.
+    Single edit point for the LOADING fade-in timeline."""
+    node = LOADING_ANIM
+    for key in path.split("."):
+        node = node[key]
+    return node
 
 
 def get_string(key, **kwargs):

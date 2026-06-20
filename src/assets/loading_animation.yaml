@@ -1,0 +1,25 @@
+# Loading-phase fade-in animation (the opening reveal). Each category fades its
+# cells -- fill + glyph -- (and grid_lines fades the board outline) from fully
+# transparent up to opaque over `duration` seconds, starting at `delay` seconds.
+#
+# `delay` is ABSOLUTE: measured from the start of the whole loading screen, with
+# no dependency between categories. Empty categories (no such cells this game)
+# simply leave dead air on the timeline -- there is no fast-forward yet. The
+# whole LOADING phase ends once the last (delay + duration) elapses; only then
+# does the live piece spawn / the mode timer start. All times are seconds.
+#
+# Reveal order encodes UX importance: missions + any fossils first, then
+# obstacles, then the settled board longest-grams-first, then the grid lines.
+
+# Easing rule for the alpha ramp -- how opacity moves 0 -> 255 across `duration`.
+#   rule_fade_linear -- constant-rate ramp (ease-in-out can be added later)
+easing: rule_fade_linear
+
+categories:
+  mission:       { delay: 0,  duration: 3 }   # goal pieces
+  fossilized:    { delay: 0,  duration: 3 }   # frozen cells (none in current modes; future-proofed)
+  obstacle:      { delay: 3,  duration: 3 }   # obstacle pieces
+  settled_3plus: { delay: 6,  duration: 3 }   # settled formation cells, 3+ letter grams
+  settled_2:     { delay: 9,  duration: 3 }   # settled formation cells, 2-letter grams
+  settled_1:     { delay: 12, duration: 3 }   # settled formation cells, single letters
+  grid_lines:    { delay: 15, duration: 3 }   # hex/square outline, fills the gaps last

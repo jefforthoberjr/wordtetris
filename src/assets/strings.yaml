@@ -18,6 +18,7 @@ en:
   ingame_main_menu:      "Main Menu"
   ingame_exit:           "Exit"
   # Side panes (right of the board)
+  loading:               "LOADING..."
   dictionary_count:      "Dictionary: {count} words"
   pieces_count:          "Pieces: {count}"
   # MOVING_OMNISWAP countdown (seconds left in the moving phase)
@@ -54,6 +55,7 @@ es:
   ingame_main_menu:      "Menú Principal"
   ingame_exit:           "Salir"
   # Side panes (right of the board)
+  loading:               "CARGANDO..."
   dictionary_count:      "Diccionario: {count} palabras"
   pieces_count:          "Piezas: {count}"
   time_count:            "Tiempo: {count}"

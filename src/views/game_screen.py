@@ -7,6 +7,8 @@ from views.ingame_menu import IngameMenu
 from views.moving_mode import JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode
 from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
+from views.load_side_pane import LoadSidePane
+from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from views.victory_overlay import VictoryOverlay
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
@@ -36,12 +38,15 @@ from config import select_rule, get_color, get_string, CONFIG
 
 
 class Phase(Enum):
-    """Game-screen phases. MOVING: a piece is live and the player moves/places
-    it. SELECTING: a piece has been placed and the player is choosing which
-    words to clear before the next piece spawns (interactive selection rules
-    only; the auto selector never leaves MOVING). VICTORY: the active victory
-    rule was met -- no live piece, no word entry; the player can only open the
-    menu (Escape)."""
+    """Game-screen phases. LOADING: the opening reveal -- formation cells and
+    grid lines fade in on a timeline and all input is blocked; no live piece,
+    no timer (see loading_animation). MOVING: a piece is live and the player
+    moves/places it. SELECTING: a piece has been placed and the player is
+    choosing which words to clear before the next piece spawns (interactive
+    selection rules only; the auto selector never leaves MOVING). VICTORY: the
+    active victory rule was met -- no live piece, no word entry; the player can
+    only open the menu (Escape)."""
+    LOADING = 0
     MOVING = 1
     SELECTING = 2
     VICTORY = 3
@@ -219,6 +224,15 @@ class GameScreen:
         self._moving_side_pane = MovingSidePane(
             side_pane_x, 0, side_pane_width, window.height
         )
+        # Shown only during the LOADING phase (the opening reveal); its own class
+        # so its UI can diverge later (progress bar, spinner) without touching the
+        # play panes.
+        self._load_side_pane = LoadSidePane(
+            side_pane_x, 0, side_pane_width, window.height
+        )
+        # The active opening-reveal animation, or None once play has begun (set
+        # in _begin_loading, cleared in _finish_loading).
+        self._loading_anim = None
 
         # Victory overlay: a solid panel + big centered label drawn over the grid
         # region only in the VICTORY phase. See views/victory_overlay.py.
@@ -576,7 +590,10 @@ class GameScreen:
         Each game gets brand-new batches so every shape from the previous game
         (grid lines, placed pieces, obstacles) is released together for GC,
         rather than piling up invisible behind the new board."""
-        self._phase = Phase.MOVING
+        # Every game opens in LOADING: the formation + grid lines fade in on a
+        # timeline (see _begin_loading) before play starts. _finish_loading flips
+        # to MOVING and starts the active mode (spawn / timer).
+        self._phase = Phase.LOADING
         if self._selecting_side_pane is not None:
             self._selecting_side_pane.begin()
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
@@ -636,8 +653,78 @@ class GameScreen:
         # feature; see _swap_to_word_piece). Cleared here so a swap left dangling
         # by a previous game's restart is dropped with its old batch.
         self._override_piece = None
-        # The active mode sets up its first MOVING turn (jigsaw spawns the first
-        # piece; other modes place their own active element).
+        # Begin the opening reveal: gather the just-built cells/lines, fade them
+        # in over the LOADING timeline, and only then start the active mode's
+        # first MOVING turn (jigsaw spawns the first piece; other modes place
+        # their own active element / start their timer). See _begin_loading.
+        self._begin_loading()
+
+    # --- LOADING phase (opening reveal) ------------------------------------
+    def _begin_loading(self):
+        """Enter LOADING: bucket every just-placed cell (and the grid lines) into
+        fade categories and build the LoadingAnimation that reveals them on the
+        loading_animation.yaml timeline (its constructor blanks them). The active
+        mode is NOT started yet -- _finish_loading does that when the reveal ends,
+        so no piece spawns and no timer runs during it."""
+        handles = {
+            "mission": [],
+            "fossilized": [],
+            "obstacle": [],
+            "settled_3plus": [],
+            "settled_2": [],
+            "settled_1": [],
+            # Grid lines alpha-fade (background-agnostic), filling the gaps last.
+            "grid_lines": [AlphaFade(line) for line in self._board.line_shapes()],
+        }
+        for (x, y) in self._board.occupied_cells():
+            cell = self._board.get_cell(x, y)
+            if cell is None:
+                continue
+            category = self._loading_category_for_cell((x, y), cell)
+            self._add_cell_fade_handles(handles[category], cell)
+        self._loading_anim = LoadingAnimation(handles)
+
+    def _add_cell_fade_handles(self, into, cell):
+        """Append the fade handles for one placed cell to its category list. The
+        hex inner fill white-fades (held opaque, so it masks the black outer and
+        no gray bleeds through mid-fade); everything else alpha-fades."""
+        square = cell.square
+        if hasattr(square, "inner"):
+            # Hex cell: two polygons. White-fade the opaque inner, alpha-fade the
+            # outer rim. (Old uniform-alpha version -- caused the gray interior --
+            # was: into.append(AlphaFade(square)).)
+            into.append(WhiteFade(square.inner))
+            into.append(AlphaFade(square.outer))
+        else:
+            # Square cell: one BorderedRectangle. Its fill region stays white over
+            # the white board at any opacity, so plain alpha-fade is gray-free.
+            into.append(AlphaFade(square))
+        if cell.label is not None:
+            into.append(AlphaFade(cell.label))
+
+    def _loading_category_for_cell(self, pos, cell):
+        """Which fade category a placed cell belongs to: mission / obstacle /
+        fossilized by its tracking set, else a settled formation cell bucketed by
+        gram length (3+ / 2 / 1; wild vowels -- empty text -- fade with singles)."""
+        if pos in self._mission_cells:
+            return "mission"
+        if pos in self._obstacle_cells:
+            return "obstacle"
+        if pos in self._fossilized_cells:
+            return "fossilized"
+        length = len(cell.gram) if cell.gram is not None else 1
+        if length >= 3:
+            return "settled_3plus"
+        if length == 2:
+            return "settled_2"
+        return "settled_1"
+
+    def _finish_loading(self):
+        """End LOADING: drop the animation, flip to MOVING, and start the active
+        mode's first turn (spawn / timer). Called from update() once the reveal
+        completes."""
+        self._loading_anim = None
+        self._phase = Phase.MOVING
         self._moving_mode.start()
 
     # --- starting-formation rules (game_screen.setup_formation) ------------
@@ -2023,9 +2110,11 @@ class GameScreen:
         self._obstacle_batch.draw()
         self._mission_batch.draw()
         self._piece_batch.draw()
-        # The right pane swaps between the game-long cleared-word list (MOVING)
-        # and the word-entry UI (SELECTING).
-        if self._phase == Phase.SELECTING:
+        # The right pane swaps between the opening "LOADING..." pane, the
+        # game-long cleared-word list (MOVING) and the word-entry UI (SELECTING).
+        if self._phase == Phase.LOADING:
+            self._load_side_pane.draw()
+        elif self._phase == Phase.SELECTING:
             self._selecting_side_pane.draw()
         else:
             self._moving_side_pane.draw()
@@ -2039,6 +2128,15 @@ class GameScreen:
             self._ingame_menu.draw()
     
     def update(self, dt):
+        # During the opening reveal, drive the fade-in (paused while the menu is
+        # open, like the moving timer below); when it finishes, hand off to the
+        # active mode. No piece spawns and no timer runs until then.
+        if self._phase == Phase.LOADING:
+            if not self._menu_open:
+                self._loading_anim.update(dt)
+                if self._loading_anim.done:
+                    self._finish_loading()
+            return
         # Drive the active mode's per-tick hook only during MOVING (and never
         # while the pause menu is open), so a timed mode counts down only when the
         # player can actually act. Event-driven modes ignore this.
@@ -2063,6 +2161,11 @@ class GameScreen:
         if symbol == self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
+            return True
+
+        # During the opening reveal nothing on the board responds; only the pause
+        # menu (handled above) works -- no move, rotate, place, or word entry.
+        if self._phase == Phase.LOADING:
             return True
 
         # Once won, the game is frozen: no piece movement, rotation, placement,

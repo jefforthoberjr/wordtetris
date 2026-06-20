@@ -66,7 +66,12 @@ class SquareGrid:
         if not self.is_valid(x, y):
             return None
         return self._cells[y][x]
-    
+
+    def line_shapes(self):
+        """The grid-line shapes, so callers can restyle them as a group (e.g. the
+        LOADING fade-in ramps their .opacity)."""
+        return self._lines
+
     def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         if cell is None:

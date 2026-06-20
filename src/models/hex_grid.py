@@ -179,6 +179,11 @@ class HexGrid:
             cell = self._cells[y][x]
         return cell
 
+    def line_shapes(self):
+        """The grid-outline shapes, so callers can restyle them as a group (e.g.
+        the LOADING fade-in ramps their .opacity)."""
+        return self._lines
+
     def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         result = False
