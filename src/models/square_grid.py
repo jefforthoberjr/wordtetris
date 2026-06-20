@@ -72,6 +72,12 @@ class SquareGrid:
         LOADING fade-in ramps their .opacity)."""
         return self._lines
 
+    def cell_center(self, x, y):
+        """Pixel center of cell (x, y) -- parallels HexGrid.cell_center, so the
+        word trail can ask either grid for centers the same way."""
+        return (x * self._cell_size + self._cell_size / 2,
+                y * self._cell_size + self._cell_size / 2)
+
     def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         if cell is None:

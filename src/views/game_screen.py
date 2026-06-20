@@ -9,6 +9,7 @@ from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
 from views.load_side_pane import LoadSidePane
 from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
+from views.word_trail import WordTrail
 from views.victory_overlay import VictoryOverlay
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
@@ -239,6 +240,11 @@ class GameScreen:
         # region only in the VICTORY phase. See views/victory_overlay.py.
         self._victory_overlay = VictoryOverlay(self._grid_area_size, window.height)
 
+        # Cleared-word path trails, overlaid on top of the board. Accumulate all
+        # game; cleared on each new game. The game_screen.word_trail rule gates
+        # whether _clear_paths records into it. See views/word_trail.py.
+        self._word_trail = WordTrail()
+
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.
         self._player_dict = PlayerDictionary()
@@ -360,6 +366,12 @@ class GameScreen:
             "rule_repeat_block": self._rule_repeat_block,
         }
         self._repeat_rule = select_rule("game_screen.word_repeat", repeat_rules)
+
+        word_trail_rules = {
+            "rule_word_trail_on": self._rule_word_trail_on,
+            "rule_word_trail_off": self._rule_word_trail_off,
+        }
+        self._word_trail_rule = select_rule("game_screen.word_trail", word_trail_rules)
 
         # Stage-3 selection strategy, chosen by the YAML key
         # game_screen.word_select. The auto strategy clears instantly; the text-
@@ -600,6 +612,8 @@ class GameScreen:
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
+        # Drop last game's path trails (they accumulate within a game only).
+        self._word_trail.clear()
         # Separate batch for the starting obstacle pieces. Their cells live on
         # the board once dropped, but render through this batch so they stay
         # visually grouped and independently styleable.
@@ -1057,6 +1071,18 @@ class GameScreen:
         """Block a word that has already been cleared earlier this game."""
         return word not in self._cleared_word_history
 
+    # Word-trail rule (game_screen.word_trail): whether a cleared word leaves a
+    # path trail overlaid on the board (see _clear_paths / views.word_trail).
+    def _rule_word_trail_on(self, accepted):
+        """Record a path trail for each cleared word, center to center."""
+        for fw in accepted:
+            points = [self._board.cell_center(x, y) for (x, y) in fw.path]
+            self._word_trail.add_path(points)
+
+    def _rule_word_trail_off(self, accepted):
+        """No path trails (the original behavior)."""
+        pass
+
     # The word-clearing pipeline runs in four stages, each its own seam:
     #   1. pathfind  -- find every dictionary word on the board (_find_words)
     #   2. nucleate  -- keep the words that count for this move
@@ -1445,6 +1471,10 @@ class GameScreen:
         dictionary and lists the words; returns the words actually applied."""
         accepted = [fw for fw in found_words if self._repeat_rule(fw.word)]
         cleared_words = [fw.word for fw in accepted]
+        # Leave a path trail per accepted word (gated by game_screen.word_trail).
+        # Captured here, before any cell change, so the centers are still valid
+        # even when the clear-action removes the cells.
+        self._word_trail_rule(accepted)
         # The gram grouping each word was made of, captured BEFORE any cell change
         # so an obstacle / mission / partial gram still reads true.
         cleared_variations = [self._encode_variation(fw) for fw in accepted]
@@ -2118,6 +2148,8 @@ class GameScreen:
         self._obstacle_batch.draw()
         self._mission_batch.draw()
         self._piece_batch.draw()
+        # Cleared-word path trails, on top of the board cells and glyphs.
+        self._word_trail.draw()
         # The right pane swaps between the opening "LOADING..." pane, the
         # game-long cleared-word list (MOVING) and the word-entry UI (SELECTING).
         if self._phase == Phase.LOADING:

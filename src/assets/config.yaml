@@ -112,6 +112,14 @@ rules:
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 
+  # Word trail: overlay a polyline along each cleared word's cell path (center to
+  # center) on top of the board. Trails accumulate for the whole game (cleared on
+  # a new game). Thickness is in pixels; opacity is a 0-1 fraction (0.5 = 50%).
+  game_screen.word_trail:           rule_word_trail_on
+  # game_screen.word_trail:         rule_word_trail_off
+  game_screen.word_trail_thickness: 8
+  game_screen.word_trail_opacity:   0.5
+
   # Player-piece spawn: where each single live piece appears, one at a time.
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center
