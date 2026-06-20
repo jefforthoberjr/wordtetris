@@ -10,6 +10,7 @@ from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
 from models.gram_picker import rule_trigram_equalweight
 from models.gram_picker import rule_scrabble_with_allvowelswild
+from models.gram_picker import pick_grams
 from models.square_tetrimino import SquareTetriminoType, SQUARE_TETRIMINO_ROTATIONS
 from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
 from models.square_unimo import SquareUnimoType, SQUARE_UNIMO_ROTATIONS
@@ -70,7 +71,7 @@ MISSION_GRAM_PICK_RULE = select_rule("square_mission.gram_pick", _GRAM_PICK_RULE
 
 
 class SquarePiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None, dedup_grams=True):
         self._piece_type = piece_type
         self._rotations = ALL_PIECE_ROTATIONS[piece_type]
         self._rotation_state = 0
@@ -86,7 +87,14 @@ class SquarePiece:
         # from the main pieces; falling back to the configured default.
         if gram_pick_rule is None:
             gram_pick_rule = _gram_pick_rule
-        self._grams = gram_pick_rule(len(self._shapes_data))
+        # Through pick_grams so the active gram.dedup rule (no-duplicate-multigram
+        # toggle) applies to every piece, here and in the pools/formation.
+        # dedup_grams=False bypasses it for player-chosen pieces (the word-piece
+        # swap), whose gram is a deliberate fixed word.
+        if dedup_grams:
+            self._grams = pick_grams(gram_pick_rule, len(self._shapes_data))
+        else:
+            self._grams = gram_pick_rule(len(self._shapes_data))
 
         # Cell fill color; pools tint obstacles differently from the default
         # playable pieces. None falls back to the configured cell fill.

@@ -10,6 +10,7 @@ from models.gram_picker import rule_mixed_scrabble_digram52
 from models.gram_picker import rule_digram52_distribution
 from models.gram_picker import rule_trigram_equalweight
 from models.gram_picker import rule_scrabble_with_allvowelswild
+from models.gram_picker import pick_grams
 from models.hex_domino import HexDominoType, HEX_DOMINO_DIRECTIONS, hex_neighbor
 from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
@@ -125,7 +126,7 @@ class HexCellShape:
 
 
 class HexPiece:
-    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None):
+    def __init__(self, piece_type, cell_size, batch, visible=False, gram_pick_rule=None, cell_color=None, dedup_grams=True):
         self._piece_type = piece_type
         # 'cell_size' carries the hex size (float) so the piece aligns exactly
         # with HexGrid, which is built from the same value.
@@ -143,7 +144,14 @@ class HexPiece:
         # from the main pieces; falling back to the configured default.
         if gram_pick_rule is None:
             gram_pick_rule = _gram_pick_rule
-        self._grams = gram_pick_rule(cell_count)
+        # Through pick_grams so the active gram.dedup rule (no-duplicate-multigram
+        # toggle) applies to every piece, here and in the pools/formation.
+        # dedup_grams=False bypasses it for player-chosen pieces (the word-piece
+        # swap), whose gram is a deliberate fixed word.
+        if dedup_grams:
+            self._grams = pick_grams(gram_pick_rule, cell_count)
+        else:
+            self._grams = gram_pick_rule(cell_count)
 
         # Inner-hexagon fill color; pools tint obstacles differently from the
         # default playable pieces. None falls back to the configured cell fill.

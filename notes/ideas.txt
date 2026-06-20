@@ -1,6 +1,80 @@
 GAME NAMES
 * vocabu-blast
 * blast-tionary
+* big dict energy
+* how big's your dictionary
+
+
+A game mode where it's more of a spelling quiz
+A few static enzym pieces are on the side (suffixes) with a "falling" sideways piece. players have a few seconds to direct where the piece connects to one of the enzyms, to clear the word (or it getting marked as as failure.
+
+	This would be a mostly prearranged set of pieces, for a specific spelling lession.
+	example: "ck" sounding endings
+	OPA  => QUE
+	DU => CK
+
+	T+ION
+	S+ION
+	C+ION
+
+Clicking a multigram downgrades it to a double gram, single gram; (or maybe just a single gram), less points, but people can use it to complete a word.
+I couldn't quite spell out COMPLICATED
+
+
+Categoryies of visceral rejection of large grams upons first site
+* Already a small word ("pal" "prop"). The bind closes to word building
+* Smells like a mophologic chunk mis-split ("lly") ("lism")
+* vowel confoundments ("ala") ("efu") ("olo")
+* Feels like digraph/consonant pairing dependency missing "cin" "hen"
+* Pure repulsing impossible combos ("rh")
+* Needs a trim. I see what it's going for, but I'd rather have the lesser gram ("ency" -> "ncy")
+* Forced morphology ("mper") ("ber") ("ger")
+* I understand, but just feels too rare ("mn") ("rh") ("rth")
+* Just has a rare letter in it ("az") "q" (only have as qu isolated) "j" "gh" (only have as gh isocation
+	* Maybe "w" and "k" too?
+	* Maybe "y"? Maybe "v"?
+* Too much of a root word ("part" "form" "lect", "duc", "vers", "dict", "over"
+** Hm... only one class of word, huh.. ("dec", "uni", "dia", "eco")
+* double letter confusing pause ("mme")
+* otherwise well formed, just 'doesnt click' ("phe")
+* snaps to a plural ending feeling "ls"
+* forced vowel dipthong ("hoo")
+* when in doubt starting with "c" and "h" or "l" feels weird; drop
+* when in doubt ending with "c" feels weird; drop
+* got it.. but I'm still mad ("rge", "nth", "dle", "tle", "nch", "dy", "ld", "cc", "cy", "mb")
+	* oh god, I don't know science words...
+* uncommon bare dipthongs / vowel combos (hard to ideate without any surrounding consnants.
+
+* morphemes that are extremely flexible, attachable, aren't weird/daunting, because it feels like you can attach it after the fact to almost any words; I don't need to brainstorm the origin front of the word in advance of groking its usefulnedd
+* Morphemes that are semi flexible "ier" are daunting, lots of possibilities, and I must pre-brainstorm a set of different frontwords that correctly pair with it ("ese" "ier" "tent", "ular", "dent", "anti", "port", "tory", "ture", "ien", "ian", "tive" "dis")
+* Morpheme that is more rare, is actually less daunting. The word space to search for the front half is less abundant, and a more natural autocomplete.
+
+* just an "ugly" gram ("ard")
+
+* many variations on the dark L or dark R at the end of a word; it's also hard to ideate backwards from the dark sounds
+* similar dark N and dark M ending sounds
+
+KEEPING
+aXX grams
+*ry grams
+
+(recover "ability")
+Keeping "ship" (maybe drop; lives in the daunting middleground)
+
+Longer words (many cells) tend to ball up, get clusted, crunched prett quickly. (they don't spike out, and they take a lot of arranging
+
+New game mode: Enzyme
+A fixed block, that cannot be cleared itself, but can be used to clear words on the board. Then the game is arranging all other o
+May the blocks that are selected to be enzymes are random better rounds?
+(This would still use the "omni-swap" movement scheme)
+(This would not have fossilized, they would just get cleared? 
+
+Maybe a no fossilization mode, just clear, and replenish?
+
+
+
+Some insentive needs to exist to go for the longer words, otherwise players would just keep making smaller words
+
 
 Maybe clicking on a cell doubles the letter on it (or a power up)
 Maybe clicking on a cell flips the order of a piece

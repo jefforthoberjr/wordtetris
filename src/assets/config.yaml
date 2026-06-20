@@ -30,6 +30,14 @@ rules:
   # Single letters take the 2-letter size; longer grams still autosize:
   gram.font_size:         rule_gram_font_scale_single_as_double
 
+  # Duplicate grams: one toggle for EVERY gram picker (player / obstacle /
+  # mission, square + hex; the initial formation and the piece queue). The
+  # no-duplicate rule avoids repeating any 2+-letter gram across a game (single
+  # letters and wild vowels are never deduped); it falls back to allowing repeats
+  # if the picker's corpus runs out of fresh multigrams.
+  gram.dedup:             rule_no_duplicate_multigrams
+  # gram.dedup:           rule_allow_duplicate_grams
+
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 

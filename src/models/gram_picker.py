@@ -3,8 +3,70 @@ import os
 import random
 import string
 
+from config import select_rule
 from models.gram import Gram
 from models.wild_vowel import is_vowel
+
+
+# --- duplicate-gram rule (gram.dedup) ----------------------------------
+# One toggle governs EVERY gram picker (player / obstacle / mission, square +
+# hex): all of them funnel through pick_grams() in the piece constructors. The
+# dedup is best-effort across a whole game -- the initial formation AND the
+# piece queue share one set of already-used multi-letter grams, reset per game.
+
+# Multi-letter grams already handed out this game (e.g. {"TH", "ING"}). Single
+# letters and wild vowels are never tracked. Cleared at the start of each game.
+_used_multigrams = set()
+
+
+def reset_gram_dedup():
+    """Forget every multi-letter gram used so far, so a new game starts fresh.
+    Call once before building a game's formation + pools."""
+    _used_multigrams.clear()
+
+
+def rule_allow_duplicate_grams(rule, count):
+    """No dedup: hand back exactly what the picker chose (the original behavior;
+    multi-letter grams may repeat across the board / queue)."""
+    return rule(count)
+
+
+def rule_no_duplicate_multigrams(rule, count):
+    """Avoid repeating any 2+-letter gram across the whole game: re-roll a multi-
+    letter gram already used. Single letters and wild vowels pass freely (the
+    board needs many of them). If the picker's corpus runs out of fresh
+    multigrams, fall back to allowing repeats so every cell still gets a gram
+    (best-effort -- never returns fewer than `count`)."""
+    chosen = []
+    cap = max(50, count * 50)  # re-roll budget before giving up on freshness
+    attempts = 0
+    while len(chosen) < count and attempts < cap:
+        gram = rule(1)[0]
+        attempts += 1
+        if len(gram) > 1 and not gram.is_wild:
+            if gram.text in _used_multigrams:
+                continue  # duplicate multigram -- re-roll
+            _used_multigrams.add(gram.text)
+        chosen.append(gram)
+    # Corpus exhausted of fresh multigrams: top up allowing repeats.
+    while len(chosen) < count:
+        chosen.append(rule(1)[0])
+    return chosen
+
+
+_GRAM_DEDUP_RULES = {
+    "rule_allow_duplicate_grams": rule_allow_duplicate_grams,
+    "rule_no_duplicate_multigrams": rule_no_duplicate_multigrams,
+}
+_gram_dedup_rule = select_rule("gram.dedup", _GRAM_DEDUP_RULES)
+
+
+def pick_grams(rule, count):
+    """The single choke point every piece's grams pass through: apply the active
+    gram.dedup rule to the picker `rule`. Both SquarePiece and HexPiece call
+    this, so one toggle spans the player queue, obstacles, missions and the
+    initial board fill."""
+    return _gram_dedup_rule(rule, count)
 
 
 _scrabble_letters = None

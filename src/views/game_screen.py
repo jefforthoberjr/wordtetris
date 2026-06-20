@@ -25,6 +25,7 @@ from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RUL
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
 from models.gram import Gram
+from models.gram_picker import reset_gram_dedup
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
@@ -642,6 +643,10 @@ class GameScreen:
         # and the mission twins) and their own batches. Separate from the
         # per-piece player spawn rule. Rebuilt every game, so each game gets a
         # fresh opening.
+        # Fresh per game: forget multi-letter grams used by the previous game so
+        # the gram.dedup rule starts clean. Must run before any piece is built
+        # (formation below + the player pool), since both pick through pick_grams.
+        reset_gram_dedup()
         self._setup_formation_rule()
 
         self._piece_pool = PiecePool(
@@ -1743,10 +1748,13 @@ class GameScreen:
         pool_piece.set_visible(False)
         # Build the word-piece: the active grid's unimo, its single gram forced to
         # the clicked word. Same cell size / batch / tint as a normal pool piece.
+        # dedup_grams=False: a player-chosen word bypasses the no-duplicate-multigram
+        # rule (it's a deliberate fixed word, never re-rolled).
         word_piece = self._piece_class(
             self._unimo_type, self._cell_size, self._piece_batch, visible=False,
             gram_pick_rule=lambda count: [Gram(word)],
             cell_color=self.ACTIVE_PIECE_CELL_COLOR,
+            dedup_grams=False,
         )
         self._override_piece = word_piece
         self._spawn_piece(word_piece)
