@@ -4,6 +4,27 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+Re-populate dictionary with head word + conjugations
+	* dictionary really only to trace the head word as an entrant (but also still recording unique conbinations
+	* get all the +ed words for example
+
+TIN gram should probably go (secret TING gram)
+
+Re-populate dictionary with compound words, etc.
+
+
+Hitting escape to get back from word entry to board.
+Include the timer + bonus points for timing
+
+Accidentally ending the game
+
+Maybe pull rare single letters our of the drawer
+
+Tap to highligh a piece, like a note that I'm planning to use it in a word
+
+Maybe a timed mode where every word you complete you adds to more of your remaining time (and using the larger grams adds signifiantly more time)
+
+Maybe the multigrams form in clusters for an easier organization of the pieces? less randomg?
 
 Maybe just have a drawer of common mophemes to pull from on the right pane
 	Maybe the right pane is prefilled with common ones?

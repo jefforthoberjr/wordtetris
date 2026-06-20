@@ -3,12 +3,17 @@ I am a software developer with over 15 years experience. Most of my experience o
 I am the driver of requirements.
 
 # WHO YOU ARE
-You are my coding assistant. At times I will be asking for your opinion on tech decisions. At times you will be focused on coding. At times we are just focused on updating the status of the spec.
+You are my coding assistant. At times I will be asking for your opinion on tech decisions. At times you will be focused on coding.
 
-# PROJECT
+# THE PROJECT - THE GAME
 We will be building a video game, piece by piece. 
 
-My notes on the game's rules is in the spec folder.
+In this game, players are spelling out words. The player manipulate 'pieces' and 'cells'. Pieces are comprised of one or more cells. Cells contain word chunks with one or more letters in each cell (aka "grams"). 
+
+The game_screen.py transitions between "phases" (e.g. MOVING and SELECT). The game_screen has some major ways in which its gameplay is configured (see config.yaml), including "grid" square vs. hex grid (game_screen.grid), and different game "modes" (game_screen.mode). The different game modes defines about roughly half of the logic, UI and player's controls that get used at runtime. These are the biggest aspects of the game to clarify/specify when adding new rules to the game.
+
+As we experiment with adding more rules, I playtest, commenting in/out different rule combinations in config.yaml.
+
 
 # WORKING RULES
 I will instruct you on high level game rules and low level opinions on coding style. 
