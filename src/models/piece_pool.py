@@ -1,10 +1,13 @@
-import random
 from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES
 from config import select_rule
+# Pool ordering draws route through the swappable Source seam (see source.py) so
+# a replay reproduces the same piece queue.
+from source import rand
+import log_codes as L
 
 
 class PiecePool:
-    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None, gram_pick_rule=None, cell_color=None):
+    def __init__(self, size, cell_size, batch, piece_class=SquarePiece, piece_types=None, gram_pick_rule=None, cell_color=None, kind="player"):
         self._pieces = []
         self._current_index = 0
         self._size = size
@@ -22,6 +25,8 @@ class PiecePool:
         # Injected so an obstacle pool can tint its cells differently from the
         # main pool. None lets each piece fall back to its default (white).
         self._cell_color = cell_color
+        # Which pool this is (player / obstacle / mission), for the session log.
+        self._kind = kind
 
         self._rule_fixed_size()
 
@@ -35,6 +40,8 @@ class PiecePool:
             "rule_create_random_even_distribution": self._rule_create_random_even_distribution,
         }
         piece_types = select_rule("piece_pool.order", order_rules)()
+        # Record the resolved deal order so a replay/analysis sees the queue.
+        L.log_06001(self._kind, piece_types)
 
         for p_type in piece_types:
             piece = self._piece_class(
@@ -46,7 +53,7 @@ class PiecePool:
     def _rule_create_pure_random(self):
         """Generate a list of piece types using pure random selection."""
         all_types = list(self._piece_types)
-        return [random.choice(all_types) for _ in range(self._size)]
+        return [rand().choice(all_types) for _ in range(self._size)]
     
     def _rule_create_random_even_distribution(self):
         """Generate a list of piece types with even distribution, shuffled."""
@@ -60,10 +67,10 @@ class PiecePool:
         for p_type in all_types:
             types_list.extend([p_type] * base_count)
         
-        extras = random.sample(all_types, remainder)
+        extras = rand().sample(all_types, remainder)
         types_list.extend(extras)
-        
-        random.shuffle(types_list)
+
+        rand().shuffle(types_list)
         return types_list
     
     def _rule_create_fixed_roundrobin(self):
@@ -81,7 +88,7 @@ class PiecePool:
         
         while len(types_list) < self._size:
             batch = all_types.copy()
-            random.shuffle(batch)
+            rand().shuffle(batch)
             types_list.extend(batch)
         
         return types_list[:self._size]

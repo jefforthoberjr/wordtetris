@@ -13,6 +13,12 @@ game:
 audio:
   master_volume: 0.8
 
+# Session logging: capture a full play session to sessions/<id>.log for later
+# analysis and replay (see src/session_log.py, src/log_codes.py). Toggle off for
+# quick playtests where you don't want a file written.
+logging:
+  enabled: true
+
 dictionary:
   # TEMP (playtest): page the large mock word list so the A-Z tabs and sub-pages
   # can be exercised before the player has collected thousands of words. Set

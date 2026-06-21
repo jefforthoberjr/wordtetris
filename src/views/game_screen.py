@@ -1,5 +1,4 @@
 import math
-import random
 from collections import namedtuple
 from enum import Enum
 import pyglet
@@ -37,6 +36,11 @@ from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color, get_string, CONFIG
+import session_log
+import log_codes as L
+# All gameplay/setup randomness routes through the swappable Source seam (see
+# source.py) so a replay reproduces or overrides formation, spawns and tie-breaks.
+from source import rand
 
 
 class Phase(Enum):
@@ -128,6 +132,21 @@ CONTROL_KEYS = {
 def _get_key(action):
     key_name = CONTROL_KEYS[action]
     return getattr(pyglet.window.key, key_name)
+
+
+# Modifier bits worth recording on a logged key press; the OS lock keys
+# (NUMLOCK / CAPSLOCK / SCROLLLOCK) are dropped as noise. See log_20001.
+_LOG_MODIFIERS = (
+    (pyglet.window.key.MOD_SHIFT, "SHIFT"),
+    (pyglet.window.key.MOD_CTRL, "CTRL"),
+    (pyglet.window.key.MOD_ALT, "ALT"),
+    (pyglet.window.key.MOD_COMMAND, "CMD"),
+)
+
+
+def _mods_str(modifiers):
+    """The meaningful held modifiers as a '+'-joined string ('' if none)."""
+    return "+".join(name for bit, name in _LOG_MODIFIERS if modifiers & bit)
 
 # Note: a cell can hold a multi-letter gram
 #   - letters: how many letters the word spells (len of `text`)
@@ -538,7 +557,7 @@ class GameScreen:
             self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
             on_submit=self._on_submit_word, on_next=self._end_selection,
         )
-        self._phase = Phase.MOVING
+        self._set_phase(Phase.MOVING)
         # Candidate word-paths for the move being selected (interactive only):
         # the full path list plus a word -> path map (first path wins a tie).
         self._candidates = []
@@ -648,7 +667,7 @@ class GameScreen:
         # Every game opens in LOADING: the formation + grid lines fade in on a
         # timeline (see _begin_loading) before play starts. _finish_loading flips
         # to MOVING and starts the active mode (spawn / timer).
-        self._phase = Phase.LOADING
+        self._set_phase(Phase.LOADING)
         if self._selecting_side_pane is not None:
             self._selecting_side_pane.begin()
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
@@ -785,7 +804,7 @@ class GameScreen:
         mode's first turn (spawn / timer). Called from update() once the reveal
         completes."""
         self._loading_anim = None
-        self._phase = Phase.MOVING
+        self._set_phase(Phase.MOVING)
         self._moving_mode.start()
 
     # --- starting-formation rules (game_screen.setup_formation) ------------
@@ -801,8 +820,8 @@ class GameScreen:
         self._build_obstacle_pool(self.OBSTACLE_COUNT)
         self._build_mission_pool(self.MISSION_COUNT)
         occupied = set()
-        self._scatter_pool(self._obstacle_pool, occupied, self._obstacle_cells)
-        self._scatter_pool(self._mission_pool, occupied, self._mission_cells)
+        self._scatter_pool(self._obstacle_pool, occupied, self._obstacle_cells, "obstacle")
+        self._scatter_pool(self._mission_pool, occupied, self._mission_cells, "mission")
 
     def _rule_formation_mission_center_obstacle_ring(self):
         """One mission piece on the board's center cell, ringed by obstacle pieces
@@ -816,11 +835,11 @@ class GameScreen:
         self._build_obstacle_pool(len(ring))
         occupied = set()
         self._place_one_setup_piece(
-            self._mission_pool, center, self._mission_cells, occupied
+            self._mission_pool, center, self._mission_cells, occupied, "mission"
         )
         for cell in ring:
             self._place_one_setup_piece(
-                self._obstacle_pool, cell, self._obstacle_cells, occupied
+                self._obstacle_pool, cell, self._obstacle_cells, occupied, "obstacle"
             )
 
     def _rule_formation_fill_player(self):
@@ -851,8 +870,11 @@ class GameScreen:
                 )
                 piece.set_position(x, y)
                 piece.place()
+                logged_cells = []
                 for gx, gy, cell, label, gram in piece.get_cell_data():
                     self._board.place(gx, gy, cell, label, gram)
+                    logged_cells.append((gx, gy, gram))
+                L.log_06002("fill", logged_cells)
                 piece.set_visible(True)
 
     def _build_obstacle_pool(self, count):
@@ -862,7 +884,7 @@ class GameScreen:
             count, self._cell_size, self._obstacle_batch,
             self._piece_class, self._obstacle_piece_types,
             gram_pick_rule=self._obstacle_gram_pick_rule,
-            cell_color=self.OBSTACLE_CELL_COLOR
+            cell_color=self.OBSTACLE_CELL_COLOR, kind="obstacle"
         )
 
     def _build_mission_pool(self, count):
@@ -872,41 +894,45 @@ class GameScreen:
             count, self._cell_size, self._mission_batch,
             self._piece_class, self._mission_piece_types,
             gram_pick_rule=self._mission_gram_pick_rule,
-            cell_color=self.MISSION_CELL_COLOR
+            cell_color=self.MISSION_CELL_COLOR, kind="mission"
         )
 
-    def _scatter_pool(self, pool, occupied, track_cells):
+    def _scatter_pool(self, pool, occupied, track_cells, kind):
         """Place every piece in `pool` at a random on-board spot clear of
         `occupied`, recording each cell in `occupied` (so later pieces avoid it)
         and `track_cells` (its victory/encoding set). The scattered formation's
-        per-pool worker."""
+        per-pool worker. `kind` labels the pieces in the session log."""
         while True:
             piece = pool.current_piece()
             self._orient_rule(piece)
             self._position_scattered(piece, occupied)
-            self._settle_setup_piece(piece, track_cells, occupied)
+            self._settle_setup_piece(piece, track_cells, occupied, kind)
             if pool.advance() is None:
                 break
 
-    def _place_one_setup_piece(self, pool, cell, track_cells, occupied):
+    def _place_one_setup_piece(self, pool, cell, track_cells, occupied, kind):
         """Place the pool's current piece at a specific `cell` -- for formation
         rules that lay pieces at fixed coordinates -- record it, and advance the
-        pool."""
+        pool. `kind` labels the piece in the session log."""
         piece = pool.current_piece()
         self._orient_rule(piece)
         piece.set_position(*cell)
-        self._settle_setup_piece(piece, track_cells, occupied)
+        self._settle_setup_piece(piece, track_cells, occupied, kind)
         pool.advance()
 
-    def _settle_setup_piece(self, piece, track_cells, occupied):
+    def _settle_setup_piece(self, piece, track_cells, occupied, kind):
         """Drop an already-positioned setup piece onto the board: place it, record
         each of its cells in `occupied` (so later setup pieces avoid it) and
         `track_cells` (its victory/encoding set), and reveal it."""
         piece.place()
+        logged_cells = []
         for gx, gy, cell, label, gram in piece.get_cell_data():
             self._board.place(gx, gy, cell, label, gram)
             occupied.add((gx, gy))
             track_cells.add((gx, gy))
+            logged_cells.append((gx, gy, gram))
+        # Record the opening cells + grams so a replay can rebuild this piece.
+        L.log_06002(kind, logged_cells)
         piece.set_visible(True)
 
     def _position_scattered(self, piece, occupied):
@@ -915,8 +941,8 @@ class GameScreen:
         rather than looping forever on a crowded board. Independent of the player
         spawn rule -- starting pieces lay themselves out, they don't spawn live."""
         for _ in range(100):
-            x = random.randint(0, self.GRID_WIDTH - 1)
-            y = random.randint(0, self._board_height - 1)
+            x = rand().randint(0, self.GRID_WIDTH - 1)
+            y = rand().randint(0, self._board_height - 1)
             piece.set_position(x, y)
             cells = piece.get_cell_positions()
             on_board = all(self._board.get_cell(cx, cy) is not None for (cx, cy) in cells)
@@ -1001,6 +1027,8 @@ class GameScreen:
         """Apply the current spawn orientation, then positioning rule."""
         self._orient_rule(piece)
         self._spawn_rule(piece)
+        # Record the deal: this live piece's type, grams, and resting cells.
+        L.log_06003(piece)
 
     def _rule_orient_default(self, piece):
         """Spawn in the piece's default orientation (rotation state 0)."""
@@ -1008,7 +1036,7 @@ class GameScreen:
 
     def _rule_orient_random(self, piece):
         """Spawn in a random rotation: turn clockwise a random number of times."""
-        turns = random.randrange(piece.rotation_count)
+        turns = rand().randrange(piece.rotation_count)
         for _ in range(turns):
             piece.rotate_cw()
 
@@ -1032,8 +1060,8 @@ class GameScreen:
         (overlapping) spot and could be stuck. Fine while boards are sparse;
         revisit with a board-full / game-over condition once they fill up."""
         for _ in range(100):
-            x = random.randint(0, self.GRID_WIDTH - 1)
-            y = random.randint(0, self._board_height - 1)
+            x = rand().randint(0, self.GRID_WIDTH - 1)
+            y = rand().randint(0, self._board_height - 1)
             piece.set_position(x, y)
             if self._move_allowed(piece):
                 return
@@ -1282,6 +1310,17 @@ class GameScreen:
         self._obstacle_cells.difference_update(overlapped)
         self._mission_cells.difference_update(overlapped)
 
+    def _set_phase(self, new_phase):
+        """Single point for phase changes: log the transition (log_10001) then
+        switch. Every `self._phase` assignment routes through here so the session
+        log's phase track is complete and the format lives in one place. A no-op
+        repeat (same phase) is not logged; the construction-time default is logged
+        only as a no-session no-op."""
+        old = getattr(self, "_phase", None)
+        self._phase = new_phase
+        if old is not new_phase:
+            L.log_10001(old, new_phase)
+
     def _check_victory(self):
         """If the active victory rule is satisfied, enter VICTORY and return
         True; otherwise return False. Already being in VICTORY counts as True so
@@ -1312,8 +1351,14 @@ class GameScreen:
         the label is what distinguishes a win from a plain finish."""
         self._victory_overlay.set_text(label_text)
         self._end_overlay_dismissed = False
-        self._phase = Phase.VICTORY
+        self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
+        # Close out the session: the final tally, then the session-end line, then
+        # flush + close. on_exit finds nothing open afterward.
+        L.log_50001(label_text, len(self._cleared_word_history),
+                    len(self._obstacle_cells), len(self._mission_cells))
+        L.log_00002(label_text)
+        session_log.close(reason=label_text)
 
     def _is_fossilized(self, cell):
         """Whether (x, y) `cell` has been fossilized by a formed word -- dead to
@@ -1430,7 +1475,7 @@ class GameScreen:
             if not self._check_victory():
                 self._moving_mode.advance()
         else:
-            self._phase = Phase.SELECTING
+            self._set_phase(Phase.SELECTING)
             # Fresh batch for this selection phase (no-op in clear-on-submit mode).
             self._pending = []
             self._words_submitted_this_select = 0
@@ -1483,7 +1528,7 @@ class GameScreen:
         for fw in found_words:
             if len(fw.path) == fewest:
                 smallest.append(fw)
-        return random.choice(smallest)
+        return rand().choice(smallest)
 
     def _encode_variation(self, found):
         """Encode the gram grouping a cleared word was made of, for the player
@@ -1538,8 +1583,11 @@ class GameScreen:
             # with a new grouping saves the grouping but stays black (the count
             # didn't grow).
             new_flags = []
-            for word, variation in zip(cleared_words, cleared_variations):
-                new_flags.append(self._player_dict.add(word, variation))
+            for fw, variation in zip(accepted, cleared_variations):
+                is_new = self._player_dict.add(fw.word, variation)
+                new_flags.append(is_new)
+                # Single sink for every clear (interactive / batch / auto).
+                L.log_30002(fw.word, fw.path, variation, is_new)
             self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words
@@ -1653,6 +1701,7 @@ class GameScreen:
         word = typed.strip().upper()
         if not word:
             return
+        L.log_30001(word)
         self._submit_clear_rule(word)
 
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
@@ -1759,9 +1808,9 @@ class GameScreen:
         """The batch-mode rejection when a word is on the board but every way to
         spell it here is already held: distinct wording by how many ways exist."""
         total = len(self._candidate_word_options.get(word, []))
-        if total <= 1:
-            return get_string("err_already_selected_one_way")
-        return get_string("err_every_way_selected")
+        reason = "already_selected_one_way" if total <= 1 else "every_way_selected"
+        L.log_30003(word, reason)
+        return get_string(f"err_{reason}")
 
     def _highlight_pending_cells(self, path):
         """Tint a held word's cells light green so the player sees what the
@@ -1776,16 +1825,20 @@ class GameScreen:
         """The single most specific reason `word` can't be cleared right now,
         walking the pipeline from the typed word inward: a non-word, a word not
         on the board at all, a board word too short to clear, a board word that
-        doesn't touch the placed piece, or one already cleared this game."""
+        doesn't touch the placed piece, or one already cleared this game. Logs the
+        stable reason key, then returns the localized message string."""
         if not is_word(word):
-            return get_string("err_not_in_dictionary")
-        if word not in self._board_words_any:
-            return get_string("err_not_on_board")
-        if word not in self._length_ok_words:
-            return get_string("err_too_short")
-        if word not in self._candidate_words:
-            return get_string("err_not_involved")
-        return get_string("err_already_cleared")
+            reason = "not_in_dictionary"
+        elif word not in self._board_words_any:
+            reason = "not_on_board"
+        elif word not in self._length_ok_words:
+            reason = "too_short"
+        elif word not in self._candidate_words:
+            reason = "not_involved"
+        else:
+            reason = "already_cleared"
+        L.log_30003(word, reason)
+        return get_string(f"err_{reason}")
 
     # --- Player word-piece rules (game_screen.player_word_piece) -----------
     # Clicking a cleared word in the right pane (MOVING) swaps the live piece for
@@ -1869,7 +1922,7 @@ class GameScreen:
         board color."""
         self._endphase_clear_rule()
         self._settle_placed_cells()
-        self._phase = Phase.MOVING
+        self._set_phase(Phase.MOVING)
         self._moving_mode.advance()
 
     def _find_words(self, apply_length=True):
@@ -2197,12 +2250,23 @@ class GameScreen:
     def on_enter(self):
         self._menu_open = False
         self._ingame_menu.reset()
+        # Open a fresh session log before the game is built so the formation /
+        # gram draws (logged in a later chunk) land in the file. The construction
+        # call to _start_new_game runs before any on_enter, so its throwaway board
+        # is never recorded. log_00001 marks the first body line.
+        session_log.start_session(self._window)
+        L.log_00001()
         # Entering from the menu ("Start Game") begins a fresh game, which lays
         # down a new random obstacle set.
         self._start_new_game()
-    
+
     def on_exit(self):
-        pass
+        # Leaving the game screen without reaching an end state (surrender to
+        # menu, quit) still closes the session so no file is left dangling open.
+        # A game that ended via _enter_endstate already closed it -- no-op here.
+        if session_log.is_open():
+            L.log_00002("left_screen")
+            session_log.close(reason="left_screen")
     
     def draw(self):
         # glClearColor wants 0-1 floats, but colors.yaml stores 0-255 channels,
@@ -2269,6 +2333,10 @@ class GameScreen:
             self._window.close()
     
     def on_key_press(self, symbol, modifiers):
+        # Log the raw press before any delegation so the session log holds the
+        # complete control stream a replay re-feeds (record #2).
+        L.log_20001(pyglet.window.key.symbol_string(symbol),
+                    _mods_str(modifiers), self._phase.name)
         if self._menu_open:
             action = self._ingame_menu.on_key_press(symbol, modifiers)
             if action:
@@ -2316,12 +2384,15 @@ class GameScreen:
     def on_text(self, text):
         # Typed characters only matter while selecting words; on_key_press
         # handles Backspace/Enter and the pane filters to letters.
+        L.log_20002(text, self._phase.name)
         if self._menu_open:
             return
         if self._phase == Phase.SELECTING:
             self._selecting_side_pane.on_text(text)
 
     def on_mouse_press(self, x, y, button, modifiers):
+        L.log_20003(x, y, pyglet.window.mouse.buttons_string(button),
+                    self._phase.name)
         if self._menu_open:
             action = self._ingame_menu.on_mouse_press(x, y, button, modifiers)
             if action:

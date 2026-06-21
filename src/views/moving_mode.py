@@ -1,6 +1,7 @@
 import math
 import pyglet
 from config import select_rule
+import log_codes as L
 
 
 # --- cursor-path rules (game_screen.cursor_path) ---------------------------
@@ -327,8 +328,10 @@ class OmniswapVsTimerMode(MovingMode):
             self._remaining = 0
             self._show_time()
             if self._gs._omniswap_timer_race:
+                L.log_40002("race", "ended_game")
                 self._gs._enter_endgame()
             else:
+                L.log_40002("per_phase", "forced_select")
                 self._enter_select()
             return
         self._show_time()
@@ -428,6 +431,7 @@ class OmniswapVsTimerMode(MovingMode):
     def _reset_timer(self):
         self._remaining = float(self._gs._omniswap_timer_seconds)
         self._last_shown = None
+        L.log_40001(int(self._remaining))
         self._show_time()
 
     def _show_time(self):

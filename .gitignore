@@ -4,3 +4,6 @@ __pycache__/
 
 # Per-player lifetime word collection, written at runtime.
 player_dictionary.txt
+
+# Captured play-session logs, written at runtime (see src/session_log.py).
+sessions/

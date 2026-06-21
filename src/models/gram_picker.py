@@ -1,11 +1,13 @@
 import csv
 import os
-import random
 import string
 
 from config import select_rule
 from models.gram import Gram
 from models.wild_vowel import is_vowel
+# Every random draw routes through the swappable Source seam (see source.py) so a
+# replay can reproduce or override the grams a session drew.
+from source import rand
 
 
 # --- duplicate-gram rule (gram.dedup) ----------------------------------
@@ -107,7 +109,7 @@ def rule_random_letters(count):
     """
     grams = []
     for _ in range(count):
-        grams.append(Gram(random.choice(string.ascii_uppercase)))
+        grams.append(Gram(rand().choice(string.ascii_uppercase)))
     return grams
 
 
@@ -122,7 +124,7 @@ def rule_scrabble_distribution(count):
         List of unigram Grams
     """
     _load_scrabble_distribution()
-    letters = random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+    letters = rand().choices(_scrabble_letters, weights=_scrabble_weights, k=count)
     grams = []
     for letter in letters:
         grams.append(Gram(letter))
@@ -144,7 +146,7 @@ def rule_scrabble_with_allvowelswild(count):
         List of Grams, with vowels replaced by wild-vowel Grams
     """
     _load_scrabble_distribution()
-    letters = random.choices(_scrabble_letters, weights=_scrabble_weights, k=count)
+    letters = rand().choices(_scrabble_letters, weights=_scrabble_weights, k=count)
     grams = []
     for letter in letters:
         if is_vowel(letter):
@@ -181,8 +183,8 @@ def rule_englishcorpus_random_unigram(count):
     _load_english_words()
     grams = []
     for _ in range(count):
-        word = random.choice(_english_words)
-        idx = random.randint(0, len(word) - 1)
+        word = rand().choice(_english_words)
+        idx = rand().randint(0, len(word) - 1)
         grams.append(Gram(word[idx]))
     return grams
 
@@ -201,10 +203,10 @@ def rule_englishcorpus_random_digram(count):
     _load_english_words()
     grams = []
     while len(grams) < count:
-        word = random.choice(_english_words)
+        word = rand().choice(_english_words)
         if len(word) < 2:
             continue
-        idx = random.randint(0, len(word) - 2)
+        idx = rand().randint(0, len(word) - 2)
         grams.append(Gram(word[idx:idx + 2]))
     return grams
 
@@ -247,7 +249,7 @@ def rule_grams_greater_than_47(count):
         List of Grams (each 1-4 letters)
     """
     _load_gram_corpus()
-    picks = random.choices(_corpus_grams, weights=_corpus_weights, k=count)
+    picks = rand().choices(_corpus_grams, weights=_corpus_weights, k=count)
     grams = []
     for text in picks:
         grams.append(Gram(text))
@@ -294,10 +296,10 @@ def rule_mixed_scrabble_digram52(count):
     _load_digrams52()
     grams = []
     for _ in range(count):
-        if random.random() < _DIGRAM52_CHANCE:
-            text = random.choices(_digrams52, weights=_digrams52_weights, k=1)[0]
+        if rand().random() < _DIGRAM52_CHANCE:
+            text = rand().choices(_digrams52, weights=_digrams52_weights, k=1)[0]
         else:
-            text = random.choices(_scrabble_letters, weights=_scrabble_weights, k=1)[0]
+            text = rand().choices(_scrabble_letters, weights=_scrabble_weights, k=1)[0]
         grams.append(Gram(text))
     return grams
 
@@ -315,7 +317,7 @@ def rule_digram52_distribution(count):
         List of digram Grams (each 2 letters)
     """
     _load_digrams52()
-    picks = random.choices(_digrams52, weights=_digrams52_weights, k=count)
+    picks = rand().choices(_digrams52, weights=_digrams52_weights, k=count)
     grams = []
     for text in picks:
         grams.append(Gram(text))
@@ -351,7 +353,7 @@ def rule_trigram_equalweight(count):
         List of trigram Grams (each 3 letters)
     """
     _load_trigrams()
-    picks = random.choices(_trigrams, k=count)
+    picks = rand().choices(_trigrams, k=count)
     grams = []
     for text in picks:
         grams.append(Gram(text))

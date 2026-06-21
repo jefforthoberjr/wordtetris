@@ -1,0 +1,204 @@
+"""Replay a recorded session log by re-running it through the real GameScreen.
+
+    python replay.py sessions/<id>.log [--speed 2.0] [--invisible]
+
+How it works: the log records the RNG seed and a verbatim config snapshot, so
+re-seeding the global RNG with that seed and running the SAME code + config
+reproduces every random draw (formation, piece queue, grams). The recorded input
+events (keys / clicks / text) are then re-dispatched on their timeline into the
+real handlers. Replay is watched, not interactive -- no live controls.
+
+Faithfulness depends on matching code + config. The config snapshot is loaded
+from the log (so config edits since don't matter); a git_commit mismatch is only
+warned about, since reproducing old *code* would mean checking that commit out.
+
+Known limit: the log stores wall-clock timestamps, not the per-frame dt sequence,
+so timer-driven modes can drift slightly from the original run.
+
+Structured so the pieces (config load, game build, input decode) are importable
+and testable without running the windowed event loop."""
+import argparse
+import random
+import sys
+
+import yaml
+
+import config
+import replay_log
+
+# config globals must be patched BEFORE game_screen (and its transitive imports)
+# read them at import time, so pyglet/game modules are imported lazily in run().
+_EMBED_TO_GLOBAL = {
+    "config.yaml": "CONFIG",
+    "colors.yaml": "COLORS",
+    "strings.yaml": "STRINGS",
+    "loading_animation.yaml": "LOADING_ANIM",
+}
+
+
+def load_embedded_config(log):
+    """Replace the config module's globals with the log's embedded snapshot, and
+    force logging off (replay must not record a new file or re-seed). Must run
+    before importing game_screen so every module reads the snapshot."""
+    for name, attr in _EMBED_TO_GLOBAL.items():
+        lines = log.embedded.get(name)
+        if lines:
+            setattr(config, attr, yaml.safe_load("\n".join(lines)))
+    config.CONFIG.setdefault("logging", {})["enabled"] = False
+
+
+def build_game(log, visible=True, player_dict_path=None):
+    """Build a GameScreen seeded to reproduce the recorded session and started
+    into its opening board. Returns (window, game_screen). Assumes
+    load_embedded_config(log) has already run.
+
+    `player_dict_path`, when given, points the player dictionary at the snapshot
+    stashed beside the log at record time -- so first-time/"new word" green
+    highlighting matches the original run rather than the player's current
+    collection (which has since grown). Replay then reads/writes that stash, not
+    the live player_dictionary.txt."""
+    import pyglet
+    import source
+    from controllers.screen_manager import ScreenManager
+    from views.game_screen import GameScreen
+    from models.player_dictionary import PlayerDictionary
+
+    win = pyglet.window.Window(
+        width=config.CONFIG["window"]["width"],
+        height=config.CONFIG["window"]["height"],
+        caption=f"REPLAY {log.session_id or ''}",
+        visible=visible,
+    )
+    sm = ScreenManager()
+    # Constructing GameScreen builds a throwaway opening board (consuming RNG),
+    # exactly as at record time before on_enter re-seeded. So seed AFTER __init__
+    # and BEFORE on_enter -- the same point start_session seeded during recording.
+    gs = GameScreen(win, sm)
+    if player_dict_path is not None:
+        gs._player_dict = PlayerDictionary(path=player_dict_path)
+    source.reset()
+    random.seed(log.rng_seed)
+    gs.on_enter()
+    return win, gs
+
+
+# --- input decoding (record -> pyglet call) ----------------------------------
+def _key_consts():
+    import pyglet
+    key = pyglet.window.key
+    mods = {
+        "SHIFT": key.MOD_SHIFT, "CTRL": key.MOD_CTRL,
+        "ALT": key.MOD_ALT, "CMD": key.MOD_COMMAND,
+    }
+    return key, mods
+
+
+def dispatch(gs, event):
+    """Replay one recorded input event into the game's handlers."""
+    import pyglet
+    f = event.fields
+    if event.code == 20001:                       # key press
+        key, mod_map = _key_consts()
+        symbol = getattr(key, f.get("key", ""), None)
+        if symbol is None:
+            return
+        modifiers = 0
+        if f.get("mods", "-") != "-":
+            for name in f["mods"].split("+"):
+                modifiers |= mod_map.get(name, 0)
+        gs.on_key_press(symbol, modifiers)
+    elif event.code == 20002:                     # text typed
+        text = f.get("text", "").replace("\\n", "\n").replace("\\r", "\r").replace("_", " ")
+        gs.on_text(text)
+    elif event.code == 20003:                     # mouse click
+        mouse = pyglet.window.mouse
+        button = getattr(mouse, f.get("button", "LEFT"), mouse.LEFT)
+        gs.on_mouse_press(int(f["x"]), int(f["y"]), button, 0)
+
+
+def run(path, speed=1.0, visible=True):
+    """Load, build, and play back the session at `path` in a window."""
+    import pyglet
+
+    log = replay_log.load(path)
+    if log.rng_seed is None:
+        print("error: log has no rng_seed; cannot reproduce randomness.", file=sys.stderr)
+        return 1
+    _warn_on_commit_mismatch(log)
+    load_embedded_config(log)
+    # The player-dictionary snapshot stashed beside the log at record time
+    # (sessions/<id>.dict), if present, so green "new word" highlighting matches.
+    from pathlib import Path
+    stash = Path(path).with_suffix(".dict")
+    win, gs = build_game(log, visible=visible,
+                         player_dict_path=str(stash) if stash.exists() else None)
+
+    inputs = log.events_for(20001, 20002, 20003)
+    last_t = log.events[-1].t if log.events else 0.0
+    state = {"i": 0, "t": 0.0, "done": False}
+
+    @win.event
+    def on_draw():
+        win.clear()
+        gs.draw()
+
+    def tick(dt):
+        # Once the run has played out, freeze on the final frame: stop advancing
+        # the game and dispatching inputs, but keep the window open (the clock
+        # stays scheduled so on_draw keeps presenting the last frame) until the
+        # user closes it.
+        if state["done"]:
+            return
+        state["t"] += dt * speed
+        while state["i"] < len(inputs) and inputs[state["i"]].t <= state["t"]:
+            dispatch(gs, inputs[state["i"]])
+            state["i"] += 1
+        gs.update(dt * speed)
+        # Played out: the game reached its end state, or we ran several seconds
+        # past the last recorded event (left-screen endings).
+        ended = getattr(gs, "_phase", None) is not None and gs._phase.name == "VICTORY"
+        if state["i"] >= len(inputs) and (ended or state["t"] > last_t + 5.0):
+            state["done"] = True
+            # Dismiss the end-state overlay so the freeze shows the bare final
+            # board (same flag a click sets in the live VICTORY phase).
+            gs._end_overlay_dismissed = True
+            print("replay finished; close the window to exit.")
+
+    pyglet.clock.schedule_interval(tick, 1.0 / config.CONFIG["game"]["ups"])
+    pyglet.app.run()
+    return 0
+
+
+def _warn_on_commit_mismatch(log):
+    """Warn (don't fail) if the working tree isn't the commit the log was made on
+    -- replay reproduces randomness from the seed, but only against matching code."""
+    import subprocess
+    from pathlib import Path
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(Path(__file__).resolve().parent), capture_output=True,
+            text=True, timeout=2,
+        )
+        current = out.stdout.strip()
+    except Exception:
+        current = ""
+    if current and log.git_commit and current != log.git_commit:
+        print(f"warning: log recorded at commit {log.git_commit}, "
+              f"replaying on {current}; randomness/behavior may differ.",
+              file=sys.stderr)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Replay a recorded session log.")
+    parser.add_argument("logfile", help="path to a sessions/<id>.log file")
+    parser.add_argument("--speed", type=float, default=1.0,
+                        help="playback speed multiplier (default 1.0)")
+    parser.add_argument("--invisible", action="store_true",
+                        help="run without showing the window (for testing)")
+    args = parser.parse_args(argv)
+    return run(args.logfile, speed=args.speed, visible=not args.invisible)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

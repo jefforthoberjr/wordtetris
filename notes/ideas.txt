@@ -4,6 +4,31 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+Drop the font side of the right pane
+
+(remove FY) cannot be used with IFY
+(remove TIN) secret ING 
+(remove RAN) existing word blocking thoughts
+
+Include some more trigram variety? (if even possible?)
+
+
+Bug: Sometimes when I click off screen, then back on screen. The clicks don't work quite right, I have to click twice to get an cell selection to work (the first click does nothing)
+2026-06-21 00:45:12.602 Python[28913:2039256] Warning: Window move completed without beginning
+
+Sometimes the gram ratios are off (to many digrams)
+
+I need a way to save or capture the end state of a game, for later analysis. Or even for later replay.
+Do I capture every user action.
+
+Not enough 'off consonants' in the single letters, to stich things together.
+
+auto selecting the wrong word, if can be spelled multiple times
+
+On the dictionary page, the single letters are rendering too small (maybe some kind of decouple from the in game render?
+
+Can do a quick search within the board for pieces
+
 Re-populate dictionary with head word + conjugations
 	* dictionary really only to trace the head word as an entrant (but also still recording unique conbinations
 	* get all the +ed words for example
