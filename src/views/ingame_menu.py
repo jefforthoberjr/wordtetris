@@ -1,6 +1,7 @@
 import math
 import pyglet
 from config import get_color, get_string
+from controls import control_keys
 
 
 class IngameMenu:
@@ -76,17 +77,17 @@ class IngameMenu:
         self._batch.draw()
     
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.UP:
+        if symbol in control_keys("pause_menu.nav_up"):
             self._selected_index = (self._selected_index - 1) % len(self._menu_items)
             self._update_highlight()
             return None
-        elif symbol == pyglet.window.key.DOWN:
+        elif symbol in control_keys("pause_menu.nav_down"):
             self._selected_index = (self._selected_index + 1) % len(self._menu_items)
             self._update_highlight()
             return None
-        elif symbol == pyglet.window.key.ENTER or symbol == pyglet.window.key.RETURN:
+        elif symbol in control_keys("pause_menu.select"):
             return self._select_current()
-        elif symbol == pyglet.window.key.ESCAPE:
+        elif symbol in control_keys("pause_menu.resume"):
             return "resume"
         return None
     

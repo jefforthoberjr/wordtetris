@@ -112,13 +112,13 @@ class JigsawMovingMode(MovingMode):
             return False
         if gs._movement_rule(symbol, modifiers):
             return True
-        if symbol == gs._keys["rotate_clockwise"]:
+        if symbol in gs._keys["rotate_clockwise"]:
             gs._rotate_piece_cw()
             return True
-        elif symbol == gs._keys["rotate_counterclockwise"]:
+        elif symbol in gs._keys["rotate_counterclockwise"]:
             gs._rotate_piece_ccw()
             return True
-        elif symbol == gs._keys["place"]:
+        elif symbol in gs._keys["place"]:
             gs._place_current_piece()
             return True
         return False
@@ -128,12 +128,12 @@ class JigsawMovingMode(MovingMode):
         # Left-click: a cleared-word click may swap the live piece for a word-
         # piece (consumes the click); otherwise it drives the piece on the board
         # -- click a cell it occupies to rotate, another on-board cell to jump it.
-        if button == pyglet.window.mouse.LEFT:
+        if button == gs._buttons["move_primary"]:
             if gs._player_word_piece_rule(x, y):
                 return
             gs._handle_move_click(x, y)
-        # Right-click places the piece, the same as the place key.
-        elif button == pyglet.window.mouse.RIGHT:
+        # The place-piece button places the piece, the same as the place key.
+        elif button == gs._buttons["place_piece"]:
             gs._place_current_piece()
 
 
@@ -214,14 +214,14 @@ class TypewriterMovingMode(MovingMode):
         # open a SELECT phase per the cadence) and advance the cursor. The cursor
         # cell still counts as placed (see _commit_turn), so a word can nucleate
         # around it even on a pass.
-        if symbol == gs._keys["place"]:
+        if symbol in gs._keys["place"]:
             self._commit_turn()
             return True
         return False
 
     def on_mouse_press(self, x, y, button):
         gs = self._gs
-        if self._cursor is None or button != pyglet.window.mouse.LEFT:
+        if self._cursor is None or button != gs._buttons["move_primary"]:
             return
         # 1) A click on a cleared word in the right pane (word-piece feature):
         #    replace the cursor cell's gram with that whole word, then commit.
@@ -368,19 +368,20 @@ class OmniswapVsTimerMode(MovingMode):
 
     # --- input -----------------------------------------------------------
     def on_key_press(self, symbol, modifiers):
-        # ENTER commits to SELECT early (so the SELECT phase keeps ENTER as its
-        # one action key: submit / surrender). Spacebar no longer triggers SELECT
-        # -- in SELECT it clears the typed word -- which stops a reflexive space
-        # tap from ending the game. Old behavior (place key / spacebar):
-        #   if symbol == self._gs._keys["place"]:
-        if symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN):
+        # select_open (ENTER) commits to SELECT early (so the SELECT phase keeps
+        # ENTER as its one action key: submit / surrender). Spacebar no longer
+        # triggers SELECT -- in SELECT it clears the typed word -- which stops a
+        # reflexive space tap from ending the game. Old behavior (place key /
+        # spacebar):
+        #   if symbol in self._gs._keys["place"]:
+        if symbol in self._gs._keys["select_open"]:
             self._enter_select()
             return True
         return False
 
     def on_mouse_press(self, x, y, button):
         gs = self._gs
-        if button != pyglet.window.mouse.LEFT:
+        if button != gs._buttons["move_primary"]:
             return
         # Word-piece (game_screen.player_word_piece): with a pick cursor down, a
         # click on a cleared word in the side pane replaces that cell's gram with

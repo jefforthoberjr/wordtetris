@@ -4,11 +4,27 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+Should I allow S plurals or not?
+	Then you'd have to feel like you need to find every word in the dictionary multiple times
+
+A click only way to enter SELECT mode
+
+Could do a gram split, where if the first or last cell in a word, the cell split, the letters used in the word are pulled into the last cell, and the other later is left in the 
+
+Do a quick pre game caluclation, that at least 1 word can be created from each multigram.
+
 Drop the font side of the right pane
+
+later is not in the dictionary?
+mushroom is not in the dictionary?
+
+dipthlongs feel weird, a brain shift away from consonant oriented ideation
 
 (remove FY) cannot be used with IFY
 (remove TIN) secret ING 
 (remove RAN) existing word blocking thoughts
+(remove IO) only scret TION?
+(remove VAT? (ATE scret?)
 
 ESP??
 

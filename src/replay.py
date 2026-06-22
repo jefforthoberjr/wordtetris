@@ -20,6 +20,7 @@ and testable without running the windowed event loop."""
 import argparse
 import random
 import sys
+from pathlib import Path
 
 import yaml
 
@@ -189,15 +190,62 @@ def _warn_on_commit_mismatch(log):
               file=sys.stderr)
 
 
+# sessions/ lives at the repo root (this file is src/replay.py).
+_SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
+
+
+def resolve_recent_log(n):
+    """Return the path to the n-th most recent session log (0 = most recent).
+    Session filenames are ISO-timestamp prefixed, so lexical sort is
+    chronological."""
+    logs = sorted(_SESSIONS_DIR.glob("*.log"), reverse=True)
+    if not logs:
+        raise SystemExit(f"no session logs found in {_SESSIONS_DIR}")
+    if n >= len(logs):
+        raise SystemExit(f"-{n}: only {len(logs)} session log(s) available "
+                         f"(valid range 0..{len(logs) - 1})")
+    return str(logs[n])
+
+
+def _extract_recent_flag(argv):
+    """Pull a -N selector (-0, -1, ...) out of argv. argparse would treat these
+    as unknown options, so handle them before parsing. Returns (n, remaining)."""
+    n = None
+    remaining = []
+    for tok in argv:
+        if len(tok) >= 2 and tok[0] == "-" and tok[1:].isdigit():
+            n = int(tok[1:])
+        else:
+            remaining.append(tok)
+    return n, remaining
+
+
 def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    recent_n, argv = _extract_recent_flag(argv)
+
     parser = argparse.ArgumentParser(description="Replay a recorded session log.")
-    parser.add_argument("logfile", help="path to a sessions/<id>.log file")
+    parser.add_argument("logfile", nargs="?",
+                        help="path to a sessions/<id>.log file; omit and use "
+                             "-N to pick the N-th most recent session "
+                             "(-0 = most recent, -1 = the one before, ...)")
     parser.add_argument("--speed", type=float, default=1.0,
                         help="playback speed multiplier (default 1.0)")
     parser.add_argument("--invisible", action="store_true",
                         help="run without showing the window (for testing)")
     args = parser.parse_args(argv)
-    return run(args.logfile, speed=args.speed, visible=not args.invisible)
+
+    if recent_n is not None:
+        if args.logfile is not None:
+            parser.error("give either a logfile or a -N selector, not both")
+        logfile = resolve_recent_log(recent_n)
+    elif args.logfile is not None:
+        logfile = args.logfile
+    else:
+        parser.error("a logfile or a -N selector (e.g. -0) is required")
+
+    return run(logfile, speed=args.speed, visible=not args.invisible)
 
 
 if __name__ == "__main__":

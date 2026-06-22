@@ -3,6 +3,7 @@ import random
 from pathlib import Path
 import pyglet
 from config import CONFIG, get_color, get_string
+from controls import control_keys
 from controllers.screen_manager import ScreenType
 from models.player_dictionary import PlayerDictionary
 from views.gram_preview import GramPreview
@@ -307,13 +308,13 @@ class DictionaryScreen:
 
     def on_key_press(self, symbol, modifiers):
         handled = False
-        if symbol == pyglet.window.key.ESCAPE:
+        if symbol in control_keys("dictionary.back"):
             self._screen_manager.switch_to(ScreenType.MAIN_MENU)
             handled = True
-        elif symbol == pyglet.window.key.LEFT:
+        elif symbol in control_keys("dictionary.page_prev"):
             self._go_to_page(self._page_index - 1)
             handled = True
-        elif symbol == pyglet.window.key.RIGHT:
+        elif symbol in control_keys("dictionary.page_next"):
             self._go_to_page(self._page_index + 1)
             handled = True
         return handled

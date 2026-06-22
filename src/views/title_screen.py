@@ -1,6 +1,7 @@
 import math
 import pyglet
 from config import get_string
+from controls import control_keys
 
 
 class TitleScreen:
@@ -44,7 +45,9 @@ class TitleScreen:
         pass
     
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.F3:
+        # The title advances on ANY key except the global debug toggle, which is
+        # let through (return False) so main.py can handle it.
+        if symbol in control_keys("global.debug_panel_toggle"):
             return False
         self._screen_manager.switch_to(self._next_screen_type)
         return True

@@ -5,6 +5,7 @@ import pyglet
 ram_overhead.measure("after_pyglet")
 
 from config import CONFIG
+from controls import control_keys
 import debug_panel
 from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
@@ -52,7 +53,7 @@ def on_key_press(symbol, modifiers):
     global debug_visible
     debug_panel.start_event()
     
-    if symbol == pyglet.window.key.F3:
+    if symbol in control_keys("global.debug_panel_toggle"):
         debug_visible = not debug_visible
         result = True
     else:

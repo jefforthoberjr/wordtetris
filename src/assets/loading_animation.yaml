@@ -32,5 +32,5 @@ categories:
   obstacle:      { delay: 0,  duration: 0 }   # obstacle pieces
   settled_3plus: { delay: 0,  duration: 1 }   # settled formation cells, 3+ letter grams
   settled_2:     { delay: 3,  duration: 2 }   # settled formation cells, 2-letter grams
-  settled_1:     { delay: 6, duration: 5 }   # settled formation cells, single letters
-  grid_lines:    { delay: 8, duration: 1 }   # hex/square 
+  settled_1:     { delay: 7, duration: 5 }   # settled formation cells, single letters
+  grid_lines:    { delay: 9, duration: 1 }   # hex/square 

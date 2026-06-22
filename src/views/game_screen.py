@@ -40,6 +40,7 @@ from models.word_dictionary import is_word, is_prefix, select_maximal_paths
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color, get_string, CONFIG
+from controls import control_keys, control_button, control_modifier
 import session_log
 import log_codes as L
 # All gameplay/setup randomness routes through the swappable Source seam (see
@@ -119,23 +120,13 @@ class TextInputSelect:
         return SelectingSidePane(x, y, width, height, on_submit, on_next)
 
 
-# Control key bindings (formerly config.json "controls"). These now live next to
-# the rule functions, ready to be folded into rule bundles in a later refactor.
-CONTROL_KEYS = {
-    "move_left": "A",
-    "move_right": "D",
-    "move_up": "W",
-    "move_down": "S",
-    "rotate_clockwise": "LEFT",
-    "rotate_counterclockwise": "RIGHT",
-    "place": "SPACE",
-    "pause": "ESCAPE",
-}
-
-
-def _get_key(action):
-    key_name = CONTROL_KEYS[action]
-    return getattr(pyglet.window.key, key_name)
+# Control key bindings now live in assets/controls.yaml (loaded via controls.py).
+# The old in-code CONTROL_KEYS dict moved there wholesale; self._keys / self._
+# buttons below are built from it. Old version, for reference:
+#   CONTROL_KEYS = {"move_left": "A", "move_right": "D", "move_up": "W",
+#       "move_down": "S", "rotate_clockwise": "LEFT",
+#       "rotate_counterclockwise": "RIGHT", "place": "SPACE", "pause": "ESCAPE"}
+#   def _get_key(action): return getattr(pyglet.window.key, CONTROL_KEYS[action])
 
 
 # Modifier bits worth recording on a logged key press; the OS lock keys
@@ -221,15 +212,27 @@ class GameScreen:
         self._window = window
         self._screen_manager = screen_manager
 
+        # Each value is a TUPLE of accepted key symbols (controls.yaml may bind one
+        # key or several to an action), so every check below is `symbol in ...`.
         self._keys = {
-            "move_left": _get_key("move_left"),
-            "move_right": _get_key("move_right"),
-            "move_up": _get_key("move_up"),
-            "move_down": _get_key("move_down"),
-            "rotate_clockwise": _get_key("rotate_clockwise"),
-            "rotate_counterclockwise": _get_key("rotate_counterclockwise"),
-            "place": _get_key("place"),
-            "pause": _get_key("pause"),
+            "move_left": control_keys("game.move_left"),
+            "move_right": control_keys("game.move_right"),
+            "move_up": control_keys("game.move_up"),
+            "move_down": control_keys("game.move_down"),
+            "rotate_clockwise": control_keys("game.rotate_clockwise"),
+            "rotate_counterclockwise": control_keys("game.rotate_counterclockwise"),
+            "place": control_keys("game.place"),
+            "pause": control_keys("game.pause"),
+            "select_open": control_keys("game.select_open"),
+            "word_clear": control_keys("game.word_clear"),
+            "selection_end": control_keys("game.selection_end"),
+        }
+        # Mouse buttons (single constants; see controls.yaml "mouse" + "ONLY WHEN"
+        # rule-combo notes for what each does per game_screen.mode).
+        self._buttons = {
+            "move_primary": control_button("mouse.move_primary"),
+            "place_piece": control_button("mouse.place_piece"),
+            "select_primary": control_button("mouse.select_primary"),
         }
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
@@ -1078,13 +1081,13 @@ class GameScreen:
     def _rule_square_movement(self, symbol, modifiers):
         """Square grid: A/D/W/S nudge the piece by one cell. Returns handled."""
         handled = True
-        if symbol == self._keys["move_left"]:
+        if symbol in self._keys["move_left"]:
             self._move_piece(-1, 0)
-        elif symbol == self._keys["move_right"]:
+        elif symbol in self._keys["move_right"]:
             self._move_piece(1, 0)
-        elif symbol == self._keys["move_up"]:
+        elif symbol in self._keys["move_up"]:
             self._move_piece(0, 1)
-        elif symbol == self._keys["move_down"]:
+        elif symbol in self._keys["move_down"]:
             self._move_piece(0, -1)
         else:
             handled = False
@@ -1092,16 +1095,17 @@ class GameScreen:
 
     def _rule_hex_movement_holdshift(self, symbol, modifiers):
         """Flat-top hex: A=up-left, Shift+A=down-left, D=up-right,
-        Shift+D=down-right, W=up, S=down. Returns handled."""
-        shift = (modifiers & pyglet.window.key.MOD_SHIFT) != 0
+        Shift+D=down-right, W=up, S=down. Returns handled. (The hold modifier is
+        controls.yaml game.hex_down_modifier; A/D/W/S are game.move_*.)"""
+        shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
         handled = True
-        if symbol == self._keys["move_left"]:
+        if symbol in self._keys["move_left"]:
             self._move_piece_hexdir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
-        elif symbol == self._keys["move_right"]:
+        elif symbol in self._keys["move_right"]:
             self._move_piece_hexdir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
-        elif symbol == self._keys["move_up"]:
+        elif symbol in self._keys["move_up"]:
             self._move_piece_hexdir(HEX_UP)
-        elif symbol == self._keys["move_down"]:
+        elif symbol in self._keys["move_down"]:
             self._move_piece_hexdir(HEX_DOWN)
         else:
             handled = False
@@ -1111,26 +1115,27 @@ class GameScreen:
         """Flat-top hex, arrow-key chords: up+A=up-left, down+A=down-left,
         up+D=up-right, down+D=down-right, W=up, S=down. A/D alone do nothing.
         Returns handled."""
-        up = self._key_state[pyglet.window.key.UP]
-        down = self._key_state[pyglet.window.key.DOWN]
+        # Held-key chord: only the first key bound to each arrow is consulted.
+        up = self._key_state[control_keys("game.hex_arrow_up")[0]]
+        down = self._key_state[control_keys("game.hex_arrow_down")[0]]
         handled = True
-        if symbol == self._keys["move_left"]:
+        if symbol in self._keys["move_left"]:
             if up:
                 self._move_piece_hexdir(HEX_UP_LEFT)
             elif down:
                 self._move_piece_hexdir(HEX_DOWN_LEFT)
             else:
                 handled = False
-        elif symbol == self._keys["move_right"]:
+        elif symbol in self._keys["move_right"]:
             if up:
                 self._move_piece_hexdir(HEX_UP_RIGHT)
             elif down:
                 self._move_piece_hexdir(HEX_DOWN_RIGHT)
             else:
                 handled = False
-        elif symbol == self._keys["move_up"]:
+        elif symbol in self._keys["move_up"]:
             self._move_piece_hexdir(HEX_UP)
-        elif symbol == self._keys["move_down"]:
+        elif symbol in self._keys["move_down"]:
             self._move_piece_hexdir(HEX_DOWN)
         else:
             handled = False
@@ -2352,7 +2357,7 @@ class GameScreen:
                 self._handle_menu_action(action)
             return True
         
-        if symbol == self._keys["pause"]:
+        if symbol in self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
             return True
@@ -2371,17 +2376,18 @@ class GameScreen:
         # separately via on_text. Control scheme (anti-fat-finger): ENTER is the
         # one action key -- with text it submits the word (pane default), on an
         # empty field it ends selection (Next piece / omniswap surrender).
-        # Spacebar clears the typed word (a lingering failed attempt), so it can
-        # no longer end the game by reflex. Old scheme (spacebar ended selection):
-        #   if symbol == self._keys["place"]:
+        # word_clear (spacebar) clears the typed word (a lingering failed attempt),
+        # so it can no longer end the game by reflex. Old scheme (spacebar ended
+        # selection):
+        #   if symbol in self._keys["place"]:
         #       self._end_selection()
         #       return True
         #   return self._selecting_side_pane.on_key_press(symbol, modifiers)
         if self._phase == Phase.SELECTING:
-            if symbol == self._keys["place"]:            # spacebar -> clear field
+            if symbol in self._keys["word_clear"]:       # spacebar -> clear field
                 self._selecting_side_pane.clear_word()
                 return True
-            if (symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN)
+            if (symbol in self._keys["selection_end"]
                     and self._selecting_side_pane.is_empty()):
                 self._end_selection()                    # ENTER on empty -> end
                 return True
@@ -2418,7 +2424,7 @@ class GameScreen:
             # A left-click on the board (left of the pane) types that cell's gram
             # into the entry field, per the select-click rule. The pane handles
             # its own right-side button clicks above; this drives the board side.
-            if button == pyglet.window.mouse.LEFT:
+            if button == self._buttons["select_primary"]:
                 self._select_click_rule(x, y)
             # Stop here: the pane click may have ended selection (Next piece),
             # flipping the phase to MOVING. Without this return, the same click

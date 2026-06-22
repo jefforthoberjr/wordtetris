@@ -1,6 +1,7 @@
 import math
 import pyglet
 from config import get_color, get_string
+from controls import control_keys
 
 
 class MainMenuScreen:
@@ -78,16 +79,15 @@ class MainMenuScreen:
         pass
     
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.UP:
+        if symbol in control_keys("main_menu.nav_up"):
             self._selected_index = (self._selected_index - 1) % len(self._menu_items)
             self._update_highlight()
             return True
-        elif symbol == pyglet.window.key.DOWN:
+        elif symbol in control_keys("main_menu.nav_down"):
             self._selected_index = (self._selected_index + 1) % len(self._menu_items)
             self._update_highlight()
             return True
-        elif symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN,
-                        pyglet.window.key.SPACE):
+        elif symbol in control_keys("main_menu.select"):
             self._select_current()
             return True
         return False

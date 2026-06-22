@@ -2,6 +2,7 @@ import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
 from config import get_color, get_string
+from controls import control_keys
 
 
 class SelectingSidePane:
@@ -149,11 +150,11 @@ class SelectingSidePane:
             self._render_input()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.BACKSPACE:
+        if symbol in control_keys("game.word_backspace"):
             self._typed = self._typed[:-1]
             self.clear_errors()
             self._render_input()
-        elif symbol in (pyglet.window.key.ENTER, pyglet.window.key.RETURN):
+        elif symbol in control_keys("game.word_submit"):
             self._on_submit(self._typed)
         # Swallow every key while selecting (there is no active piece to drive).
         return True
