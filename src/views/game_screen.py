@@ -175,6 +175,54 @@ _DICTIONARY_COUNT_RULES = {
 }
 
 
+# --- gram-manipulation rules (game_screen.rightclick_*) --------------------
+# A RIGHT-click on a board cell during the MOVING phase manipulates that one
+# cell's gram, dispatched by the gram's length (a separate rule for unigrams,
+# digrams, and trigrams-or-larger) plus a fourth for wild-vowel cells. Each rule
+# takes the cell's current gram TEXT and returns the NEW text, or None to leave
+# the cell untouched -- so rule_rightclick_none restores the original behavior
+# (right-click did nothing). The dispatcher (_handle_gram_manipulate) relabels
+# the cell with whatever non-None text comes back.
+
+def rule_unigram_double(text):
+    """Unigram: double the single letter (O -> OO, B -> BB)."""
+    return text + text
+
+def rule_digram_flip(text):
+    """Digram: reverse the two letters' order (UL -> LU, GN -> NG)."""
+    return text[::-1]
+
+def rule_digram_dedup_or_flip(text):
+    """Digram: a DOUBLED letter collapses to a single (EE -> E), the dedup taking
+    precedence; any other digram flips (UL -> LU). Pairs with rule_unigram_double
+    for a right-click toggle E -> EE -> E, and lets the player single an
+    initially-spawned double (EE -> E)."""
+    if text[0] == text[1]:
+        result = text[0]
+    else:
+        result = text[::-1]
+    return result
+
+def rule_gram_reverse(text):
+    """Reverse a gram of any length (ING -> GNI). Offered for the trigram-or-
+    larger slot; identical to rule_digram_flip on a 2-letter gram."""
+    return text[::-1]
+
+def rule_rightclick_none(text):
+    """Right-click leaves this gram untouched -- the original behavior, before
+    cell gram-manipulation existed. Returns None so the dispatcher relabels
+    nothing."""
+    return None
+
+_GRAM_MANIP_RULES = {
+    "rule_unigram_double": rule_unigram_double,
+    "rule_digram_flip": rule_digram_flip,
+    "rule_digram_dedup_or_flip": rule_digram_dedup_or_flip,
+    "rule_gram_reverse": rule_gram_reverse,
+    "rule_rightclick_none": rule_rightclick_none,
+}
+
+
 class GameScreen:
     GRID_WIDTH = CONFIG["rules"]["game_screen.grid_width"]
     PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
@@ -228,11 +276,21 @@ class GameScreen:
             "selection_end": control_keys("game.selection_end"),
         }
         # Mouse buttons (single constants; see controls.yaml "mouse" + "ONLY WHEN"
-        # rule-combo notes for what each does per game_screen.mode).
+        # rule-combo notes for what each does per game_screen.mode). place_piece
+        # is None when unassigned (so right-click is free for gram_manipulate).
         self._buttons = {
             "move_primary": control_button("mouse.move_primary"),
             "place_piece": control_button("mouse.place_piece"),
+            "gram_manipulate": control_button("mouse.gram_manipulate"),
             "select_primary": control_button("mouse.select_primary"),
+        }
+        # Cell gram-manipulation rules (right-click a cell during MOVING), one per
+        # gram length plus wild; see the rule functions and game_screen.rightclick_*.
+        self._rightclick_rules = {
+            "unigram": select_rule("game_screen.rightclick_unigram", _GRAM_MANIP_RULES),
+            "digram": select_rule("game_screen.rightclick_digram", _GRAM_MANIP_RULES),
+            "trigram_plus": select_rule("game_screen.rightclick_trigram_plus", _GRAM_MANIP_RULES),
+            "vowelwild": select_rule("game_screen.rightclick_vowelwild", _GRAM_MANIP_RULES),
         }
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
@@ -1146,6 +1204,31 @@ class GameScreen:
         piece = self._current_piece()
         nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
+
+    def _handle_gram_manipulate(self, x, y):
+        """Right-click a board cell during MOVING (controls.yaml
+        mouse.gram_manipulate): transform that cell's gram via the
+        game_screen.rightclick_* rule for its length (unigram / digram /
+        trigram-plus) or wild-ness. Empty and fossilized cells are left alone,
+        the same as the swap rules. Mode-agnostic -- the MOVING modes never see
+        this button. A rule returning None (e.g. rule_rightclick_none) is a no-op."""
+        cell = self._board.cell_at(x, y)
+        if cell is None:
+            return
+        if self._is_fossilized(cell) or self._board.gram_at(*cell) is None:
+            return
+        gram = self._board.gram_at(*cell)
+        if gram.is_wild:
+            rule = self._rightclick_rules["vowelwild"]
+        elif len(gram) == 1:
+            rule = self._rightclick_rules["unigram"]
+        elif len(gram) == 2:
+            rule = self._rightclick_rules["digram"]
+        else:
+            rule = self._rightclick_rules["trigram_plus"]
+        new_text = rule(gram.text)
+        if new_text is not None:
+            self._board.relabel_cell(cell[0], cell[1], new_text)
 
     def _rule_repeat_allow(self, word):
         """Allow a word to clear even if it cleared before (original behavior)."""
@@ -2431,9 +2514,16 @@ class GameScreen:
             # would fall through to the MOVING handling below and be re-read as a
             # board move / word-piece swap at the Next-piece button's position.
             return
-        # MOVING phase: the active mode owns piece/cursor input.
+        # MOVING phase: the gram-manipulate button (right-click) transforms a
+        # cell's gram, mode-agnostic; every other button goes to the active mode
+        # (which owns piece/cursor input). The guard keeps an UNASSIGNED
+        # gram_manipulate (None) from swallowing clicks.
         if self._phase == Phase.MOVING:
-            self._moving_mode.on_mouse_press(x, y, button)
+            manip_button = self._buttons["gram_manipulate"]
+            if manip_button is not None and button == manip_button:
+                self._handle_gram_manipulate(x, y)
+            else:
+                self._moving_mode.on_mouse_press(x, y, button)
 
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:

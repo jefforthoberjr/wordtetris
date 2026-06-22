@@ -294,6 +294,40 @@ rules:
   game_screen.player_word_piece: rule_player_word_piece_enabled
   # game_screen.player_word_piece: rule_player_word_piece_disabled
 
+  # Cell gram-manipulation: a RIGHT-click on a board cell during the MOVING phase
+  # transforms the letters in that one cell (the controls.yaml mouse.gram_manipulate
+  # button; mode-agnostic, so it works in jigsaw / typewriter / omniswap). The rule
+  # is chosen by the gram's LENGTH -- a separate slot for unigrams, digrams, and
+  # trigrams-or-larger -- plus a fourth slot for wild-vowel cells. Empty and
+  # fossilized cells are never affected. Each slot's rule_rightclick_none option
+  # restores the original "right-click does nothing" behavior. (NOTE: by default
+  # controls.yaml leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
+
+  # Unigram (1-letter cell): double the letter (O -> OO, B -> BB).
+  game_screen.rightclick_unigram: rule_unigram_double
+  # game_screen.rightclick_unigram: rule_rightclick_none
+
+  # Digram (2-letter cell):
+  #   rule_digram_dedup_or_flip -- a DOUBLED letter collapses to a single (EE -> E,
+  #     the dedup taking precedence); any other digram flips (UL -> LU). Pairs with
+  #     rule_unigram_double for a right-click toggle E -> EE -> E, and lets the
+  #     player single an initially-spawned double.
+  #   rule_digram_flip -- always flip the two letters' order (UL -> LU, GN -> NG)
+  #   rule_rightclick_none -- right-click does nothing
+  game_screen.rightclick_digram: rule_digram_dedup_or_flip
+  # game_screen.rightclick_digram: rule_digram_flip
+  # game_screen.rightclick_digram: rule_rightclick_none
+
+  # Trigram or larger (3+ letter cell): no transform yet -- right-click does
+  # nothing. rule_gram_reverse (ING -> GNI) is available if you want to turn one on.
+  game_screen.rightclick_trigram_plus: rule_rightclick_none
+  # game_screen.rightclick_trigram_plus: rule_gram_reverse
+
+  # Wild-vowel cell (the rule_scrabble_with_allvowelswild emblem cells): no
+  # transform yet -- right-click does nothing. A wild cell holds no fixed letters,
+  # so a manipulation rule for it is still TBD.
+  game_screen.rightclick_vowelwild: rule_rightclick_none
+
   # Whether the right pane shows the player's lifetime dictionary-size readout.
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count

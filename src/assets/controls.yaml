@@ -1,0 +1,154 @@
+# ============================================================================
+# controls.yaml -- every player control (keyboard + mouse) in one editable place.
+#
+# Loaded by src/controls.py (mirrors how config.py loads colors.yaml /
+# strings.yaml). Resolve a binding with:
+#   control_keys("game.move_left")          -> tuple of pyglet key symbols
+#   control_button("mouse.place_piece")     -> a pyglet mouse-button constant
+#   control_modifier("game.hex_down_modifier") -> a pyglet key modifier bit
+#
+# VALUES:
+#   * Key names are pyglet.window.key constants: single letters "A".."Z",
+#     "LEFT"/"RIGHT"/"UP"/"DOWN", "SPACE", "ENTER", "RETURN", "ESCAPE",
+#     "BACKSPACE", "F3", etc. A value may be ONE name or a LIST of names (any of
+#     which triggers the action, e.g. [ENTER, RETURN] so the numpad Enter and the
+#     main Enter both work).
+#   * Mouse button names are pyglet.window.mouse constants: "LEFT", "RIGHT",
+#     "MIDDLE".
+#   * Modifier names are the pyglet MOD_* bits without the prefix: "SHIFT",
+#     "CTRL", "ALT", "COMMAND".
+#
+# RULE-COMBO GATING: some controls are only LIVE under certain config.yaml rule
+# selections (the game mode, the grid type, etc.). Those are flagged inline below
+# with "ONLY WHEN ..." so you can see at a glance which config.yaml rules turn a
+# control on. Rebinding a key here never changes WHETHER it is gated -- that is
+# still decided by config.yaml; this file only decides which physical key/button
+# fires it.
+# ============================================================================
+
+# --- Global (any screen) ----------------------------------------------------
+global:
+  # Toggle the on-screen debug panel (FPS / frame timings). Handled in
+  # src/main.py before the event reaches any screen, so it works everywhere.
+  debug_panel_toggle: F3
+
+# --- Title screen -----------------------------------------------------------
+# The title advances on ANY key or ANY mouse click (except F3, which still
+# toggles the debug panel) -- there is no single binding to rebind. Listed here
+# only for completeness; see src/views/title_screen.py.
+
+# --- Main menu screen -------------------------------------------------------
+main_menu:
+  nav_up: UP                    # highlight previous item
+  nav_down: DOWN                # highlight next item
+  select: [ENTER, RETURN, SPACE]  # activate the highlighted item
+  # (Mouse: left-click an item to select it; hover to highlight.)
+
+# --- In-game pause menu (opened with game.pause) ----------------------------
+pause_menu:
+  nav_up: UP
+  nav_down: DOWN
+  select: [ENTER, RETURN]       # activate the highlighted item (NO space here --
+                                # space is the word-clear key during play)
+  resume: ESCAPE                # close the menu and return to the game
+  # (Mouse: left-click an item to select it; hover to highlight.)
+
+# --- Dictionary screen ------------------------------------------------------
+dictionary:
+  back: ESCAPE                  # return to the main menu
+  page_prev: LEFT               # previous page of words
+  page_next: RIGHT              # next page of words
+  # (Typing any A-Z letter jumps to that letter's first tab, via on_text -- not a
+  # single rebindable key. Mouse: left-click a letter tab to jump; hover a word.)
+
+# --- In-game: shared keyboard (any MOVING mode, any phase) ------------------
+game:
+  # Open the in-game pause menu. Shares ESCAPE with pause_menu.resume, which then
+  # closes it again.
+  pause: ESCAPE
+
+  # === MOVING phase: piece / cursor controls ===
+  # WHICH of these are live depends on game_screen.mode in config.yaml:
+  #   rule_mode_jigsaw            -> move_*, rotate_*, place, + mouse
+  #                                  move_primary / place_piece
+  #   rule_mode_typewriter        -> place (acts as PASS), + mouse move_primary
+  #                                  (swap the cursor cell)
+  #   rule_mode_omniswap_vs_timer -> select_open, + mouse move_primary
+  #                                  (pick-then-swap)
+
+  # Nudge / move the live piece. On the SQUARE grid (game_screen.grid:
+  # rule_use_square_grid) these are the 4 cardinal nudges. On the HEX grid
+  # (rule_use_hex_grid) under rule_hex_movement_holdshift: move_left/move_right
+  # reach the up-left/up-right neighbors, holding hex_down_modifier (below) with
+  # them reaches down-left/down-right, and move_up/move_down go straight up/down.
+  # ONLY WHEN game_screen.mode: rule_mode_jigsaw.
+  move_left: A
+  move_right: D
+  move_up: W
+  move_down: S
+  # Held with move_left/move_right to reach the DOWNWARD hex neighbors.
+  # ONLY WHEN game_screen.grid: rule_use_hex_grid (with the hold-shift hex
+  # movement rule active -- see _rule_hex_movement_holdshift in game_screen.py).
+  hex_down_modifier: SHIFT
+  # Alternative hex movement -- the DISABLED _rule_hex_movement_arrows variant:
+  # instead of hex_down_modifier, hold an arrow with move_left/move_right to pick
+  # the up/down diagonal. Only live if you switch _movement_rule to
+  # _rule_hex_movement_arrows in game_screen.py. (Held as a chord, so only the
+  # FIRST key bound to each is used.)
+  hex_arrow_up: UP
+  hex_arrow_down: DOWN
+
+  # Rotate the live piece. ONLY WHEN game_screen.mode: rule_mode_jigsaw.
+  rotate_clockwise: LEFT
+  rotate_counterclockwise: RIGHT
+
+  # Commit the active element:
+  #   jigsaw     -> DROP / place the live piece
+  #   typewriter -> PASS the cursor cell (no board change, but still a turn)
+  # (Unused by omniswap, which commits via select_open instead.)
+  place: SPACE
+
+  # Leave MOVING and open the interactive SELECT phase.
+  # ONLY WHEN game_screen.mode: rule_mode_omniswap_vs_timer.
+  select_open: [ENTER, RETURN]
+
+  # === SELECTING phase: word entry ===
+  # Live only while game_screen.word_select: rule_select_by_text_input (the
+  # interactive SELECT phase). Letters A-Z are typed via on_text (not rebindable).
+  word_backspace: BACKSPACE       # delete the last typed letter
+  word_clear: SPACE               # clear the whole typed word (anti-fat-finger)
+  word_submit: [ENTER, RETURN]    # submit the typed word (when the field is NOT empty)
+  # ENTER on an EMPTY field ends the SELECT phase (jigsaw/typewriter: "Next
+  # piece"; omniswap per-phase: surrender; omniswap race: return to MOVING). Same
+  # physical key as word_submit -- the field being empty is what splits them.
+  selection_end: [ENTER, RETURN]
+
+# --- In-game: mouse ---------------------------------------------------------
+mouse:
+  # MOVING phase, primary (left) button. Behavior depends on game_screen.mode:
+  #   jigsaw     -> move/rotate the live piece on the board; OR, when
+  #                 game_screen.player_word_piece: rule_player_word_piece_enabled,
+  #                 a click on a cleared word in the side pane swaps it in.
+  #   typewriter -> swap the cursor cell with the clicked board cell (or click a
+  #                 pane word to replace the cursor gram, if word-piece enabled).
+  #   omniswap   -> first click picks a cell, second swaps the two; a pane-word
+  #                 click replaces the picked cell (if word-piece enabled).
+  move_primary: LEFT
+  # MOVING phase: place the live piece (same effect as the `game.place` key).
+  # ONLY WHEN game_screen.mode: rule_mode_jigsaw.
+  # UNASSIGNED (was RIGHT): freed so the right button can drive cell gram-
+  # manipulation (gram_manipulate, below) without colliding. The `place` KEY
+  # still drops the piece; set this back to RIGHT if you'd rather right-click
+  # place and turn gram-manipulation off in config.yaml. "none" / blank = unbound.
+  place_piece: none
+  # MOVING phase: right-click a board cell to manipulate its gram, per the
+  # game_screen.rightclick_* rules in config.yaml (double a unigram, flip a
+  # digram, etc.). Mode-agnostic -- works in any MOVING mode. Set to "none" to
+  # disable; if you rebind this to LEFT it would shadow move_primary, so keep it
+  # off the primary button.
+  gram_manipulate: RIGHT
+  # SELECTING phase, primary (left) button: clicks the side-pane buttons (Clear
+  # word / Submit / Next piece -- always active), and clicks a BOARD cell to type
+  # that cell's gram into the field ONLY WHEN game_screen.select_click:
+  # rule_select_click_type_gram.
+  select_primary: LEFT
