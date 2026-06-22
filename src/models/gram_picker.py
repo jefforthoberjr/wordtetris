@@ -20,11 +20,40 @@ from source import rand
 # letters and wild vowels are never tracked. Cleared at the start of each game.
 _used_multigrams = set()
 
+# Single-letter grams handed out so far during the opening formation, with a
+# running count each (e.g. {"E": 3, "S": 1}). The unigram dedup rule (gram.
+# unigram_dedup) caps how many of any one letter the formation may use; the
+# piece pool is exempt (see _in_formation below). Wild vowels and multigrams are
+# never counted. Cleared at the start of each game alongside _used_multigrams.
+_unigram_counts = {}
+
+# True only while the opening board formation is being built. The unigram cap
+# applies to the formation alone -- the piece pool (100+ pieces) would exhaust
+# the 26 letters under a 3-each cap, so its draws skip the cap entirely.
+_in_formation = False
+
 
 def reset_gram_dedup():
-    """Forget every multi-letter gram used so far, so a new game starts fresh.
-    Call once before building a game's formation + pools."""
+    """Forget every multi-letter gram (and formation unigram count) used so far,
+    so a new game starts fresh. Call once before building a game's formation +
+    pools."""
     _used_multigrams.clear()
+    _unigram_counts.clear()
+
+
+def begin_formation_gram_run():
+    """Mark the start of the opening-formation build so the unigram dedup rule
+    starts capping. Pair with end_formation_gram_run() once the formation's
+    pieces are all built (before the piece pool is built)."""
+    global _in_formation
+    _in_formation = True
+
+
+def end_formation_gram_run():
+    """Mark the end of the opening-formation build so later draws (the piece
+    pool) skip the unigram cap. The twin of begin_formation_gram_run()."""
+    global _in_formation
+    _in_formation = False
 
 
 def rule_allow_duplicate_grams(rule, count):
@@ -63,12 +92,69 @@ _GRAM_DEDUP_RULES = {
 _gram_dedup_rule = select_rule("gram.dedup", _GRAM_DEDUP_RULES)
 
 
+# --- duplicate-unigram rule (gram.unigram_dedup) -----------------------
+# A SEPARATE toggle from gram.dedup above: that one governs multi-letter grams;
+# this one governs single letters. Both run on every draw (composed in
+# pick_grams), so a board can dedup multigrams and cap unigrams at once. The
+# unigram cap applies to the opening formation only (see _in_formation) -- the
+# piece pool is never beholden to it, since 100+ pieces can't fit under a few
+# copies of each of 26 letters.
+
+# How many copies of any one single letter the formation may use. Named to match
+# rule_max_3_duplicate_unigrams; kept as a constant so the cap is easy to retune.
+_UNIGRAM_MAX = 3
+
+
+def rule_nolimit_duplicate_unigrams(rule, count):
+    """No unigram cap: hand back exactly what the picker chose (single letters may
+    repeat freely across the board). The original behavior, named so it can sit
+    opposite rule_max_3_duplicate_unigrams in the gram.unigram_dedup slot."""
+    return rule(count)
+
+
+def rule_max_3_duplicate_unigrams(rule, count):
+    """During the opening formation, allow at most _UNIGRAM_MAX (3) copies of any
+    one single letter across the whole board: re-roll a unigram already at the
+    cap. Multi-letter grams and wild vowels pass freely (this rule only counts
+    fixed single letters; multigrams are the other toggle's job). Outside the
+    formation (the piece pool) the cap is skipped entirely. If the picker keeps
+    handing back capped letters, fall back to allowing repeats so every cell
+    still gets a gram (best-effort -- never returns fewer than `count`)."""
+    if not _in_formation:
+        return rule(count)
+    chosen = []
+    cap = max(50, count * 50)  # re-roll budget before giving up on the cap
+    attempts = 0
+    while len(chosen) < count and attempts < cap:
+        gram = rule(1)[0]
+        attempts += 1
+        if len(gram) == 1 and not gram.is_wild:
+            if _unigram_counts.get(gram.text, 0) >= _UNIGRAM_MAX:
+                continue  # this letter is at its cap -- re-roll
+            _unigram_counts[gram.text] = _unigram_counts.get(gram.text, 0) + 1
+        chosen.append(gram)
+    # Letters exhausted under the cap: top up allowing repeats.
+    while len(chosen) < count:
+        chosen.append(rule(1)[0])
+    return chosen
+
+
+_UNIGRAM_DEDUP_RULES = {
+    "rule_nolimit_duplicate_unigrams": rule_nolimit_duplicate_unigrams,
+    "rule_max_3_duplicate_unigrams": rule_max_3_duplicate_unigrams,
+}
+_unigram_dedup_rule = select_rule("gram.unigram_dedup", _UNIGRAM_DEDUP_RULES)
+
+
 def pick_grams(rule, count):
-    """The single choke point every piece's grams pass through: apply the active
-    gram.dedup rule to the picker `rule`. Both SquarePiece and HexPiece call
-    this, so one toggle spans the player queue, obstacles, missions and the
-    initial board fill."""
-    return _gram_dedup_rule(rule, count)
+    """The single choke point every piece's grams pass through: apply BOTH the
+    active gram.dedup (multigram) rule and the gram.unigram_dedup (unigram) rule
+    to the picker `rule`. Both SquarePiece and HexPiece call this, so the two
+    toggles span the player queue, obstacles, missions and the initial board
+    fill. The unigram rule wraps the multigram-deduped picker: each single draw
+    is first multigram-deduped, then checked against the unigram cap."""
+    multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
+    return _unigram_dedup_rule(multigram_deduped, count)
 
 
 _scrabble_letters = None

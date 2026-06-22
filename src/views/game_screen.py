@@ -25,7 +25,11 @@ from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RUL
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
 from models.gram import Gram
-from models.gram_picker import reset_gram_dedup
+from models.gram_picker import (
+    reset_gram_dedup,
+    begin_formation_gram_run,
+    end_formation_gram_run,
+)
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
 from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
@@ -722,7 +726,12 @@ class GameScreen:
         # the gram.dedup rule starts clean. Must run before any piece is built
         # (formation below + the player pool), since both pick through pick_grams.
         reset_gram_dedup()
+        # The unigram cap (gram.unigram_dedup) applies to the opening formation
+        # only -- bracket the formation build so the piece pool below draws
+        # uncapped (100+ pieces can't fit under a few copies of each letter).
+        begin_formation_gram_run()
         self._setup_formation_rule()
+        end_formation_gram_run()
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,

@@ -48,3 +48,14 @@ Avoid raw pixel math; instead things should be relative to screen size.
 # PYGLET STYLE
 
 Note: On a Retina window, window.width reports the physical framebuffer size
+
+# RUN GAME
+
+python src/main.py
+
+# RUN SESSION REPLAY
+For debbugging purposes
+
+python replay.py sessions/<id>.log [--speed 2.0] [--invisible]
+Example:
+python src/replay.py sessions/2026-06-21T14-28-44_46ae.log 

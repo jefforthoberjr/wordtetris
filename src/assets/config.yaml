@@ -44,6 +44,16 @@ rules:
   gram.dedup:             rule_no_duplicate_multigrams
   # gram.dedup:           rule_allow_duplicate_grams
 
+  # Formation dedup (Piece pool not deduped)
+  # Duplicate single letters: a SEPARATE toggle from gram.dedup above (which
+  # governs multi-letter grams). The max-3 rule caps any one letter at 3 copies
+  # across the OPENING FORMATION only -- the piece pool is exempt, since 100+
+  # pieces can't fit under a 3-each cap of 26 letters. The nolimit rule lets
+  # single letters repeat freely (the original behavior). Both run on top of the
+  # gram.dedup multigram rule.
+  gram.unigram_dedup:     rule_max_3_duplicate_unigrams
+  # gram.unigram_dedup:   rule_nolimit_duplicate_unigrams
+
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 
