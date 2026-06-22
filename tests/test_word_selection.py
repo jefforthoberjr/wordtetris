@@ -175,6 +175,19 @@ class FakePool:
         return None
 
 
+class FakeMovingMode:
+    """Stand-in for the MOVING-phase mode (game_screen._moving_mode). The
+    selection pipeline only pokes it to advance the turn once a phase ends; the
+    selection-logic tests don't assert on the moving phase, so advance is a
+    no-op that just records it was called."""
+
+    def __init__(self):
+        self.advanced = 0
+
+    def advance(self):
+        self.advanced += 1
+
+
 class _InteractiveStub:
     interactive = True
 
@@ -205,6 +218,28 @@ def _game(board, interactive=True, history=None):
     # Gram usage at its original: a word consumes a cell's whole gram. Partial
     # tests below flip this to rule_gram_use_partial.
     g._gram_usage_rule = g._rule_gram_use_whole
+    # Fossil-word-use at its original "block": the word-finding walk treats a
+    # fossilized cell as a wall and a finished word never contains one. These
+    # tests start with no fossilized cells, so the rules never actually fire --
+    # they just satisfy the fossil seam _collect_words / _clear_paths now call.
+    g._fossilized_cells = set()
+    g._fossil_is_wall_rule = g._rule_fossil_block_is_wall
+    g._fossil_word_ok_rule = g._rule_fossil_block_word_ok
+    # Word-trail off (original): no path trails recorded on a cleared word, so the
+    # selection-logic tests need no _word_trail / board cell_center geometry.
+    g._word_trail_rule = g._rule_word_trail_off
+    # Select word-limit at its original "unlimited": an accepted word leaves the
+    # SELECT phase open, matching the flow these tests assert.
+    g._select_word_limit_rule = g._rule_unlimited_words
+    # Clear-action at its original "remove": consumed cells leave the board
+    # (partial-gram aware), the behavior the clear / partial-gram tests assert.
+    g._clear_action_rule = g._rule_clear_remove
+    # Per-select submit counter, reset each time a SELECT phase opens in
+    # production; initialized here so the submit handlers can bump it.
+    g._words_submitted_this_select = 0
+    # Fake moving mode: the pipeline advances the turn through it once a phase
+    # ends; these tests don't assert on the moving phase.
+    g._moving_mode = FakeMovingMode()
     g._moving_side_pane = FakeSidepane()
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()

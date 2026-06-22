@@ -10,6 +10,12 @@ Drop the font side of the right pane
 (remove TIN) secret ING 
 (remove RAN) existing word blocking thoughts
 
+ESP??
+
+More Ys>
+
+Just pull from a set a raw prefix>
+
 Include some more trigram variety? (if even possible?)
 
 
@@ -97,6 +103,7 @@ I couldn't quite spell out COMPLICATED
 
 Categoryies of visceral rejection of large grams upons first site
 * Already a small word ("pal" "prop"). The bind closes to word building
+* Almost already spells a small word, still a bit distracting ("pas")
 * Smells like a mophologic chunk mis-split ("lly") ("lism")
 * vowel confoundments ("ala") ("efu") ("olo")
 * Feels like digraph/consonant pairing dependency missing "cin" "hen"
