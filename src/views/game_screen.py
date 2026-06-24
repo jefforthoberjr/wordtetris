@@ -820,17 +820,18 @@ class GameScreen:
         # feature; see _swap_to_word_piece). Cleared here so a swap left dangling
         # by a previous game's restart is dropped with its old batch.
         self._override_piece = None
-        # Optional debug/analysis pass (game_screen.starting_coverage_dictionary):
-        # enumerate every word this opening board could spell. Runs after the
-        # formation is fully placed and BEFORE the reveal below, so it measures the
-        # untouched starting board; blocking, so nothing animates until it returns.
-        # No-op under the default 'off' rule.
-        self._starting_coverage_rule()
-        # Begin the opening reveal: gather the just-built cells/lines, fade them
-        # in over the LOADING timeline, and only then start the active mode's
-        # first MOVING turn (jigsaw spawns the first piece; other modes place
-        # their own active element / start their timer). See _begin_loading.
+        # Begin the opening reveal FIRST: constructing the LoadingAnimation blanks
+        # every just-placed cell (opacity 0 / white-faded), so the board starts
+        # empty and nothing flashes before the fade. This must precede the coverage
+        # pass below, which may force a frame (its CALCULATING label) mid-load --
+        # otherwise that frame would show the whole board for an instant.
         self._begin_loading()
+        # Optional debug/analysis pass (game_screen.starting_coverage_dictionary):
+        # enumerate every word this opening board could spell. It reads the grams
+        # from the board data, which the blanking above (opacity only) doesn't
+        # touch, so it still measures the untouched starting formation. Blocking,
+        # so nothing animates until it returns; a no-op under the default 'off' rule.
+        self._starting_coverage_rule()
 
     # --- LOADING phase (opening reveal) ------------------------------------
     def _begin_loading(self):
