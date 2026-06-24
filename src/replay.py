@@ -48,7 +48,20 @@ def load_embedded_config(log):
     config.CONFIG.setdefault("logging", {})["enabled"] = False
 
 
-def build_game(log, visible=True, player_dict_path=None):
+def coverage_recorded_seconds(log):
+    """The recorded starting-coverage compute time (log_06004 `seconds`), or 0.0
+    if the session ran no coverage pass. Replay reproduces it as a scaled
+    CALCULATING pause and offsets its own clock by it, since every recorded
+    timestamp after the pass already includes this delay."""
+    for ev in log.events_for(6004):
+        try:
+            return float(ev.fields["seconds"])
+        except (KeyError, ValueError):
+            return 0.0
+    return 0.0
+
+
+def build_game(log, visible=True, player_dict_path=None, coverage_sim_seconds=None):
     """Build a GameScreen seeded to reproduce the recorded session and started
     into its opening board. Returns (window, game_screen). Assumes
     load_embedded_config(log) has already run.
@@ -77,6 +90,10 @@ def build_game(log, visible=True, player_dict_path=None):
     gs = GameScreen(win, sm)
     if player_dict_path is not None:
         gs._player_dict = PlayerDictionary(path=player_dict_path)
+    # If the recorded session ran the (blocking) starting-coverage pass, replay
+    # SIMULATES it: on_enter's coverage rule pauses for this scaled duration
+    # showing CALCULATING, but never recomputes or rewrites the file.
+    gs._coverage_sim_seconds = coverage_sim_seconds
     source.reset()
     random.seed(log.rng_seed)
     gs.on_enter()
@@ -131,12 +148,18 @@ def run(path, speed=1.0, visible=True):
     # (sessions/<id>.dict), if present, so green "new word" highlighting matches.
     from pathlib import Path
     stash = Path(path).with_suffix(".dict")
-    win, gs = build_game(log, visible=visible,
-                         player_dict_path=str(stash) if stash.exists() else None)
+    # Recorded coverage time: drive the scaled CALCULATING pause (build_game) and
+    # start the replay clock past it, so recorded input timestamps -- which already
+    # include the pause -- line up without a dead gap at the opening.
+    cov_seconds = coverage_recorded_seconds(log)
+    win, gs = build_game(
+        log, visible=visible,
+        player_dict_path=str(stash) if stash.exists() else None,
+        coverage_sim_seconds=(cov_seconds / speed if cov_seconds else None))
 
     inputs = log.events_for(20001, 20002, 20003)
     last_t = log.events[-1].t if log.events else 0.0
-    state = {"i": 0, "t": 0.0, "done": False}
+    state = {"i": 0, "t": cov_seconds, "done": False}
 
     @win.event
     def on_draw():

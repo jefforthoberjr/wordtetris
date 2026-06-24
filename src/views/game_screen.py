@@ -350,6 +350,12 @@ class GameScreen:
                 "rule_starting_coverage_on": self._rule_starting_coverage_on,
                 "rule_starting_coverage_off": self._rule_starting_coverage_off,
             })
+        # Replay seam: when replaying a session that did a coverage pass, the
+        # harness sets this to the recorded compute time (already scaled by
+        # playback speed). The "on" rule then SIMULATES that pause -- shows
+        # CALCULATING for the duration -- instead of recomputing or rewriting the
+        # file. None during live play (the real compute runs). See replay.py.
+        self._coverage_sim_seconds = None
 
         # Whether the right pane shows the dictionary-size readout; routed
         # through this rule so every set_word_count call honors the toggle.
@@ -909,6 +915,11 @@ class GameScreen:
         before the opening reveal, so it sees the untouched starting board and the
         player can't act until it finishes. Needs an open session (logging.enabled)
         to have somewhere to write; a silent no-op otherwise."""
+        if self._coverage_sim_seconds is not None:
+            # Replay: reproduce the recorded CALCULATING pause (already scaled to
+            # playback speed) without recomputing or writing the file.
+            self._simulate_starting_coverage(self._coverage_sim_seconds)
+            return
         path = session_log.coverage_path()
         if path is None:
             return
@@ -928,6 +939,17 @@ class GameScreen:
         t0 = time.perf_counter()
         stats = write_coverage_csv(str(path), all_words(), grams, accept, sep)
         L.log_06004(time.perf_counter() - t0, stats)
+        self._load_side_pane.set_loading()
+
+    def _simulate_starting_coverage(self, seconds):
+        """Replay-only: show CALCULATING for `seconds` (the recorded compute time,
+        already scaled by playback speed) and block, but do NOT run the
+        enumeration or write any file -- the recorded log already holds the
+        result. Keeps a replay's opening visually faithful to the original run."""
+        self._load_side_pane.set_calculating()
+        self._force_paint()
+        if seconds > 0:
+            time.sleep(seconds)
         self._load_side_pane.set_loading()
 
     def _force_paint(self):
