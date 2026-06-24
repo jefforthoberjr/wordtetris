@@ -160,6 +160,19 @@ def log_06002(kind, cells):
                      kind=kind, cells=spec)
 
 
+def log_06004(seconds, stats):
+    """The starting-coverage enumeration finished (game_screen.starting_coverage_
+    dictionary = on): the blocking pass that wrote sessions/<id>.coverage.csv.
+    `seconds` is its wall-clock cost -- a replay re-reads this and simulates the
+    delay (scaled) WITHOUT recomputing or rewriting the file. `stats` carries the
+    word / formable / grouping counts for cross-board analysis."""
+    session_log.emit(6004,
+                     f"starting coverage: {stats['covered']}/{stats['words']} words "
+                     f"formable ({stats['combos']} groupings) in {seconds:.3f}s",
+                     seconds=round(seconds, 3), words=stats["words"],
+                     covered=stats["covered"], combos=stats["combos"])
+
+
 def log_06003(piece):
     """A live piece dealt into play (jigsaw spawn / word-piece swap): its type
     and the cells + grams it carries at spawn. The player-pool twin of the

@@ -144,6 +144,17 @@ rules:
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
 
+  # Starting-coverage dictionary (debug/analysis): once at game start, before the
+  # opening reveal, enumerate EVERY dictionary word the initial board could spell
+  # (any arrangement -- ignores adjacency/nucleation/fit; respects word_length and
+  # no-cell-reuse; pools player+obstacle+mission grams; ignores wild vowels, the
+  # jigsaw pool, and gram-manipulation). Writes sessions/<id>.coverage.csv and logs
+  # how long it took. BLOCKING -- the player can't act until it finishes. Requires
+  # logging.enabled (the file lives beside the log). Off by default; 'on' slows the
+  # opening of every game.
+  game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
+  # game_screen.starting_coverage_dictionary: rule_starting_coverage_on
+
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 

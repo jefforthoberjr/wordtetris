@@ -1,5 +1,6 @@
 import math
-from collections import namedtuple
+import time
+from collections import namedtuple, Counter
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
@@ -36,7 +37,8 @@ from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
-from models.word_dictionary import is_word, is_prefix, select_maximal_paths
+from models.word_dictionary import is_word, is_prefix, select_maximal_paths, all_words
+from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color, get_string, CONFIG
@@ -339,6 +341,15 @@ class GameScreen:
 
         # Minimum word to clear (letters + cells); see _WORD_LENGTH_RULES.
         self._word_length_rule = select_rule("game_screen.word_length", _WORD_LENGTH_RULES)
+
+        # Whether to enumerate every word the opening board could spell at game
+        # start (debug/analysis). Bound methods so the rule can read the live board
+        # and rules; see _rule_starting_coverage_* near the loading section.
+        self._starting_coverage_rule = select_rule(
+            "game_screen.starting_coverage_dictionary", {
+                "rule_starting_coverage_on": self._rule_starting_coverage_on,
+                "rule_starting_coverage_off": self._rule_starting_coverage_off,
+            })
 
         # Whether the right pane shows the dictionary-size readout; routed
         # through this rule so every set_word_count call honors the toggle.
@@ -803,6 +814,12 @@ class GameScreen:
         # feature; see _swap_to_word_piece). Cleared here so a swap left dangling
         # by a previous game's restart is dropped with its old batch.
         self._override_piece = None
+        # Optional debug/analysis pass (game_screen.starting_coverage_dictionary):
+        # enumerate every word this opening board could spell. Runs after the
+        # formation is fully placed and BEFORE the reveal below, so it measures the
+        # untouched starting board; blocking, so nothing animates until it returns.
+        # No-op under the default 'off' rule.
+        self._starting_coverage_rule()
         # Begin the opening reveal: gather the just-built cells/lines, fade them
         # in over the LOADING timeline, and only then start the active mode's
         # first MOVING turn (jigsaw spawns the first piece; other modes place
@@ -876,6 +893,49 @@ class GameScreen:
         self._loading_anim = None
         self._set_phase(Phase.MOVING)
         self._moving_mode.start()
+
+    # --- starting-coverage rules (game_screen.starting_coverage_dictionary) -
+    # Optionally enumerate EVERY word the opening board could spell, once, before
+    # the reveal -- a debug/analysis snapshot of how rich/limited a formation is.
+    # See starting_coverage.py for the (decoupled, unit-tested) algorithm.
+    def _rule_starting_coverage_off(self):
+        """Starting-coverage disabled (the default): no enumeration, no file."""
+        pass
+
+    def _rule_starting_coverage_on(self):
+        """Enumerate every dictionary word the initial board could spell and write
+        it beside the session log as <id>.coverage.csv, logging how long it took.
+        Blocking and synchronous: called after the formation is fully placed and
+        before the opening reveal, so it sees the untouched starting board and the
+        player can't act until it finishes. Needs an open session (logging.enabled)
+        to have somewhere to write; a silent no-op otherwise."""
+        path = session_log.coverage_path()
+        if path is None:
+            return
+        grams = self._starting_gram_multiset()
+        # Grouping separator mirrors player_dictionary's grid-aware scheme.
+        sep = "/" if CONFIG["rules"]["game_screen.grid"] == "rule_use_hex_grid" else "|"
+        # The word-length rule reads only len(text) and len(path), so feed it a
+        # placeholder path of the grouping's cell count: coverage honors the same
+        # min-letters/min-cells gate as live play while ignoring all nucleation.
+        accept = lambda word, n_cells: self._word_length_rule(word, [None] * n_cells)
+        t0 = time.perf_counter()
+        stats = write_coverage_csv(str(path), all_words(), grams, accept, sep)
+        L.log_06004(time.perf_counter() - t0, stats)
+
+    def _starting_gram_multiset(self):
+        """The multiset {gram text -> cell count} of the INITIAL board: every
+        occupied cell -- player, obstacle and mission alike -- pooled by letters,
+        skipping wild-vowel cells. The raw material the starting-coverage pass
+        counts assignments against."""
+        counts = Counter()
+        for (x, y) in self._board.occupied_cells():
+            cell = self._board.get_cell(x, y)
+            if cell is None or cell.gram is None or cell.gram.is_wild:
+                continue
+            if cell.gram.text:
+                counts[cell.gram.text] += 1
+        return counts
 
     # --- starting-formation rules (game_screen.setup_formation) ------------
     # Each lays out the full opening set of obstacle + mission pieces: builds the

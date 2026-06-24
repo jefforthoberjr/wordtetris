@@ -48,11 +48,21 @@ _PLAYER_DICT_PATH = Path(__file__).resolve().parent.parent / "player_dictionary.
 _file = None
 _t0 = None
 _seed = None
+_session_id_str = None
 
 
 def is_open():
     """Whether a session file is currently open for writing."""
     return _file is not None
+
+
+def coverage_path():
+    """Path of the starting-coverage CSV for the open session
+    (sessions/<id>.coverage.csv), or None when no session is open. The
+    starting-coverage rule writes here so the analysis file sits beside the log."""
+    if _session_id_str is None:
+        return None
+    return _SESSIONS_DIR / f"{_session_id_str}.coverage.csv"
 
 
 def current_seed():
@@ -156,7 +166,7 @@ def start_session(window):
     Seeding the global `random` here is the cheap, broad-strokes determinism
     foundation; the per-function Source seam (a later chunk) is what actually
     lets replay mock individual draws. Returns the session_id, or None."""
-    global _file, _t0, _seed
+    global _file, _t0, _seed, _session_id_str
     if not _logging_enabled():
         return None
     if _file is not None:
@@ -167,6 +177,7 @@ def start_session(window):
     random.seed(_seed)
     now = datetime.now().astimezone()
     session_id = _session_id(now)
+    _session_id_str = session_id
     _SESSIONS_DIR.mkdir(exist_ok=True)
     _stash_player_dictionary(session_id)
     # Metadata goes to the <id>.meta sidecar (written once); body lines stream to
@@ -189,7 +200,7 @@ def close(reason="closed"):
     """Flush and close the open session file (no-op if none). `reason` is only
     used for the trailing footer comment; the body's end-of-session log line is
     emitted by its log_NNNNN() code at the call site, before this runs."""
-    global _file, _t0, _seed
+    global _file, _t0, _seed, _session_id_str
     if _file is None:
         return
     _file.write(f"# ===== END ({reason}) =====\n")
@@ -198,3 +209,4 @@ def close(reason="closed"):
     _file = None
     _t0 = None
     _seed = None
+    _session_id_str = None

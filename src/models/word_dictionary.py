@@ -37,6 +37,12 @@ def _prefix_set():
     return _prefixes
 
 
+def all_words():
+    """The full uppercase word set (the shared instance, not a copy) -- for bulk
+    analysis like the starting-coverage enumeration. Callers must not mutate it."""
+    return _word_set()
+
+
 def is_word(text):
     """True if `text` is a valid dictionary word (case-insensitive)."""
     return text.upper() in _word_set()
