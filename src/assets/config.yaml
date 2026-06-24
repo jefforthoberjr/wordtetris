@@ -152,8 +152,8 @@ rules:
   # how long it took. BLOCKING -- the player can't act until it finishes. Requires
   # logging.enabled (the file lives beside the log). Off by default; 'on' slows the
   # opening of every game.
-  game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
-  # game_screen.starting_coverage_dictionary: rule_starting_coverage_on
+  # game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
+  game_screen.starting_coverage_dictionary: rule_starting_coverage_on
 
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow

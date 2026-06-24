@@ -89,17 +89,21 @@ def coverage_for_word(word, grams, max_len, accept, sep):
 
 def write_coverage_csv(path, words, grams, accept, sep):
     """Write the starting-coverage CSV: one line per dictionary word (sorted,
-    INCLUDING zero-coverage words), `word,total_count,combos` where combos is a
-    ";"-separated list of `grouping:count`. Returns summary stats for logging."""
+    INCLUDING zero-coverage words), columns
+    `word,word_length,is_present,total_count,combos` where word_length is the
+    letter count, is_present is "true"/"false" (whether the board can form it at
+    all, i.e. total_count > 0), and combos is a ";"-separated list of
+    `grouping:count`. Returns summary stats for logging."""
     grams = {g.upper(): c for g, c in grams.items()}
     max_len = max((len(g) for g in grams), default=0)
     n_words = n_covered = n_combos = 0
     with open(path, "w") as f:
-        f.write("word,total_count,combos\n")
+        f.write("word,word_length,is_present,total_count,combos\n")
         for word in sorted(set(w.lower() for w in words)):
             total, combos = coverage_for_word(word, grams, max_len, accept, sep)
             field = ";".join(f"{g}:{c}" for g, c in combos)
-            f.write(f"{word},{total},{field}\n")
+            is_present = "true" if total else "false"
+            f.write(f"{word},{len(word)},{is_present},{total},{field}\n")
             n_words += 1
             n_covered += 1 if total else 0
             n_combos += len(combos)

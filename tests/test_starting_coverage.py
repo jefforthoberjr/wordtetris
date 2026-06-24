@@ -56,7 +56,8 @@ def test_csv_includes_zero_coverage_words(tmp_path):
     grams = {"C": 1, "A": 1, "T": 1}
     stats = write_coverage_csv(path, ["cat", "dog"], grams, ACCEPT, SEP)
     lines = path.read_text().splitlines()
-    assert lines[0] == "word,total_count,combos"
-    assert lines[1] == "cat,1,c/a/t:1"
-    assert lines[2] == "dog,0,"  # zero-coverage word still listed, empty combos
+    assert lines[0] == "word,word_length,is_present,total_count,combos"
+    assert lines[1] == "cat,3,true,1,c/a/t:1"
+    # Zero-coverage word still listed: length filled, is_present false, empty combos.
+    assert lines[2] == "dog,3,false,0,"
     assert stats == {"words": 2, "covered": 1, "combos": 1}
