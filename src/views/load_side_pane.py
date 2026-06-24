@@ -52,5 +52,15 @@ class LoadSidePane:
     def width(self):
         return self._width
 
+    def set_calculating(self):
+        """Swap the top-edge label to "CALCULATING..." while the blocking
+        starting-coverage pass runs (game_screen.starting_coverage_dictionary)."""
+        self._label.text = get_string("calculating")
+
+    def set_loading(self):
+        """Restore the default "LOADING..." label (after the coverage pass, so the
+        opening reveal shows the normal text)."""
+        self._label.text = get_string("loading")
+
     def draw(self):
         self._batch.draw()

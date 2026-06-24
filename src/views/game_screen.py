@@ -912,6 +912,12 @@ class GameScreen:
         path = session_log.coverage_path()
         if path is None:
             return
+        # Phase is LOADING here, so the LoadSidePane is what's on screen: swap its
+        # top label to "CALCULATING..." and force one frame so it's actually
+        # visible during the blocking compute (the event loop is paused until we
+        # return), then restore "LOADING..." for the reveal that follows.
+        self._load_side_pane.set_calculating()
+        self._force_paint()
         grams = self._starting_gram_multiset()
         # Grouping separator mirrors player_dictionary's grid-aware scheme.
         sep = "/" if CONFIG["rules"]["game_screen.grid"] == "rule_use_hex_grid" else "|"
@@ -922,6 +928,15 @@ class GameScreen:
         t0 = time.perf_counter()
         stats = write_coverage_csv(str(path), all_words(), grams, accept, sep)
         L.log_06004(time.perf_counter() - t0, stats)
+        self._load_side_pane.set_loading()
+
+    def _force_paint(self):
+        """Draw one frame and present it immediately, outside the normal event
+        loop -- used to show a status label before a synchronous, blocking pass
+        (the starting-coverage compute) that would otherwise leave the screen
+        frozen on the prior frame until it returns."""
+        self.draw()
+        self._window.flip()
 
     def _starting_gram_multiset(self):
         """The multiset {gram text -> cell count} of the INITIAL board: every

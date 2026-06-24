@@ -19,6 +19,8 @@ en:
   ingame_exit:           "Exit"
   # Side panes (right of the board)
   loading:               "LOADING..."
+  # Shown in place of "LOADING..." while the blocking starting-coverage pass runs.
+  calculating:           "CALCULATING..."
   dictionary_count:      "Dictionary: {count} words"
   pieces_count:          "Pieces: {count}"
   # MOVING_OMNISWAP countdown (seconds left in the moving phase)
@@ -56,6 +58,7 @@ es:
   ingame_exit:           "Salir"
   # Side panes (right of the board)
   loading:               "CARGANDO..."
+  calculating:           "CALCULANDO..."
   dictionary_count:      "Diccionario: {count} palabras"
   pieces_count:          "Piezas: {count}"
   time_count:            "Tiempo: {count}"
