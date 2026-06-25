@@ -87,23 +87,36 @@ def coverage_for_word(word, grams, max_len, accept, sep):
     return total, combos
 
 
+def rules_allow_spellable(word, accept):
+    """Whether the configured word rules PERMIT this word at all, ignoring the
+    board's grams: True if some cell count (1..len(word)) passes `accept`. This is
+    board-independent -- e.g. under rule_word_min3letters_min2cells a 2-letter word
+    is never spellable (too short) no matter what cells exist, whereas a 3-letter
+    word is allowed (it can be cut into >= 2 cells). It distinguishes a word that is
+    absent because the rules forbid it from one merely missing the right grams."""
+    return any(accept(word.upper(), n) for n in range(1, len(word) + 1))
+
+
 def write_coverage_csv(path, words, grams, accept, sep):
     """Write the starting-coverage CSV: one line per dictionary word (sorted,
     INCLUDING zero-coverage words), columns
-    `word,word_length,is_present,total_count,combos` where word_length is the
-    letter count, is_present is "true"/"false" (whether the board can form it at
-    all, i.e. total_count > 0), and combos is a ";"-separated list of
-    `grouping:count`. Returns summary stats for logging."""
+    `word,word_length,is_present,do_rules_allow_spellable,total_count,combos`
+    where word_length is the letter count, is_present is "true"/"false" (whether
+    the board can form it at all, i.e. total_count > 0), do_rules_allow_spellable
+    is "true"/"false" (whether the word-length rule permits the word regardless of
+    the board's grams; see rules_allow_spellable), and combos is a ";"-separated
+    list of `grouping:count`. Returns summary stats for logging."""
     grams = {g.upper(): c for g, c in grams.items()}
     max_len = max((len(g) for g in grams), default=0)
     n_words = n_covered = n_combos = 0
     with open(path, "w") as f:
-        f.write("word,word_length,is_present,total_count,combos\n")
+        f.write("word,word_length,is_present,do_rules_allow_spellable,total_count,combos\n")
         for word in sorted(set(w.lower() for w in words)):
             total, combos = coverage_for_word(word, grams, max_len, accept, sep)
             field = ";".join(f"{g}:{c}" for g, c in combos)
             is_present = "true" if total else "false"
-            f.write(f"{word},{len(word)},{is_present},{total},{field}\n")
+            allowed = "true" if rules_allow_spellable(word, accept) else "false"
+            f.write(f"{word},{len(word)},{is_present},{allowed},{total},{field}\n")
             n_words += 1
             n_covered += 1 if total else 0
             n_combos += len(combos)

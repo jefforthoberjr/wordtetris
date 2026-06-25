@@ -2,7 +2,7 @@ import csv
 import os
 import string
 
-from config import select_rule
+from config import CONFIG, select_rule
 from models.gram import Gram
 from models.wild_vowel import is_vowel
 # Every random draw routes through the swappable Source seam (see source.py) so a
@@ -32,6 +32,16 @@ _unigram_counts = {}
 # the 26 letters under a 3-each cap, so its draws skip the cap entirely.
 _in_formation = False
 
+# Length-quota bookkeeping for rule_grams_lengthcontrolled (see that rule and
+# _pick_grams_length_enforced below). _length_counts tallies how many KEPT grams
+# of each length category (1 / 2 / 3+) the formation has placed so far, so the
+# quota picker can steer the next draw toward whichever category is running
+# behind its configured share. _forced_length, when set, pins the picker to a
+# single length bucket for the current draw (so dedup re-rolls stay in-category).
+# Both reset per game alongside the dedup state.
+_length_counts = {1: 0, 2: 0, 3: 0}
+_forced_length = None
+
 
 def reset_gram_dedup():
     """Forget every multi-letter gram (and formation unigram count) used so far,
@@ -39,6 +49,8 @@ def reset_gram_dedup():
     pools."""
     _used_multigrams.clear()
     _unigram_counts.clear()
+    for category in _length_counts:
+        _length_counts[category] = 0
 
 
 def begin_formation_gram_run():
@@ -152,9 +164,19 @@ def pick_grams(rule, count):
     to the picker `rule`. Both SquarePiece and HexPiece call this, so the two
     toggles span the player queue, obstacles, missions and the initial board
     fill. The unigram rule wraps the multigram-deduped picker: each single draw
-    is first multigram-deduped, then checked against the unigram cap."""
+    is first multigram-deduped, then checked against the unigram cap.
+
+    One more layer sits on top, but only for the opening formation when the
+    length-controlled picker is active: rule_grams_lengthcontrolled's gram_length.*
+    percentages are then enforced as a QUOTA across the whole formation (so a board
+    can't come out trigram-heavy by luck), not just rolled per cell. See
+    _pick_grams_length_enforced. The piece pool and every other picker fall through
+    to the plain deduped draw."""
     multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
-    return _unigram_dedup_rule(multigram_deduped, count)
+    deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
+    if rule is rule_grams_lengthcontrolled and _in_formation:
+        return _pick_grams_length_enforced(deduped, count)
+    return deduped(count)
 
 
 _scrabble_letters = None
@@ -339,6 +361,138 @@ def rule_grams_greater_than_47(count):
     grams = []
     for text in picks:
         grams.append(Gram(text))
+    return grams
+
+
+# --- length-controlled corpus picker (rule_grams_lengthcontrolled) -----
+# Same JPO corpus as rule_grams_greater_than_47, but the per-cell length is
+# governed by configurable category percentages instead of the corpus's own
+# length mix. (The raw corpus skews toward multigrams -- see the _load_gram_corpus
+# note "getting a unigram is less likely than a multigram" -- so this rule exists
+# to steer that blend.) Within whichever length bucket (1 / 2 / 3+) is chosen, the
+# corpus's own frequency weights are respected.
+#
+# The length percentages mean two different things depending on context:
+#   * Opening formation -- enforced as a QUOTA (largest-remainder), so the board's
+#     actual unigram/digram/3+ counts land within ~1 of the configured shares and
+#     a board can't come out trigram-heavy / unigram-starved by luck. The choke
+#     point pick_grams routes formation draws through _pick_grams_length_enforced,
+#     which pins each draw to one bucket via _forced_length and tallies _length_counts.
+#   * Piece pool (and anywhere outside the formation) -- rolled per cell as relative
+#     probabilities. The 100+-piece pool self-averages, and a quota across it would
+#     fight the per-game dedup, so plain rolls are fine there.
+
+# Per-length corpus partition, lazily built: {1: (grams, weights), 2: (...),
+# 3: (...)} where the "3" bucket holds every gram of length 3 OR MORE (the corpus
+# tops out at quadgrams). Cached after the first build like the other _load_*.
+_corpus_by_length = None
+
+
+def _partition_corpus_by_length():
+    global _corpus_by_length
+    if _corpus_by_length is not None:
+        return
+    _load_gram_corpus()
+    # Three buckets; length>=3 all funnel into key 3 (the "3+" category).
+    buckets = {1: ([], []), 2: ([], []), 3: ([], [])}
+    for gram, weight in zip(_corpus_grams, _corpus_weights):
+        key = min(len(gram), 3)
+        buckets[key][0].append(gram)
+        buckets[key][1].append(weight)
+    _corpus_by_length = buckets
+
+
+# Length-mix percentages for rule_grams_lengthcontrolled, read from config
+# (gram_length.* in the rules block). rand().choices treats these as RELATIVE
+# weights, so they need not sum to 100 -- writing them as percentages just keeps
+# the YAML readable, and zeroing one category drops that length entirely.
+_LENGTH_CATEGORIES = [1, 2, 3]
+_LENGTH_PCT_WEIGHTS = [
+    CONFIG["rules"]["gram_length.unigram_percent"],
+    CONFIG["rules"]["gram_length.digram_percent"],
+    CONFIG["rules"]["gram_length.trigramplus_percent"],
+]
+
+
+def _draw_from_length_bucket(length, count):
+    """Draw `count` grams of the given length category (1 / 2 / 3+) from the
+    corpus, weighted by the corpus's own frequencies within that bucket."""
+    bucket_grams, bucket_weights = _corpus_by_length[length]
+    picks = rand().choices(bucket_grams, weights=bucket_weights, k=count)
+    return [Gram(text) for text in picks]
+
+
+def rule_grams_lengthcontrolled(count):
+    """
+    Pick grams from the JPO corpus (same file as rule_grams_greater_than_47) but
+    with the unigram / digram / 3+-gram mix dictated by the gram_length.* config
+    rather than the corpus's own length skew. A category set to 0 is never drawn.
+
+    Two paths (see the section comment above):
+      * _forced_length set -- the quota enforcer (formation) has pinned this draw
+        to one length bucket; every gram comes from it.
+      * otherwise -- each cell independently rolls a length category using the
+        configured percentages as relative weights (the piece-pool path).
+
+    Within whichever bucket, grams are drawn weighted by the corpus's frequencies.
+
+    Args:
+        count: Number of grams needed (one per cell)
+
+    Returns:
+        List of Grams whose length mix follows the configured percentages
+    """
+    _partition_corpus_by_length()
+    if _forced_length is not None:
+        return _draw_from_length_bucket(_forced_length, count)
+    lengths = rand().choices(_LENGTH_CATEGORIES, weights=_LENGTH_PCT_WEIGHTS, k=count)
+    grams = []
+    for length in lengths:
+        grams.extend(_draw_from_length_bucket(length, 1))
+    return grams
+
+
+def _next_quota_length():
+    """Pick the length category whose configured share is currently most under-
+    filled, using the largest-remainder method: the category maximizing
+    (share * (placed + 1) - placed_in_category). Categories configured to 0 are
+    skipped. Returns None only if every share is 0 (degenerate config)."""
+    placed = sum(_length_counts.values())
+    weight_sum = sum(_LENGTH_PCT_WEIGHTS)
+    best_category = None
+    best_deficit = None
+    for category, weight in zip(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS):
+        if weight <= 0:
+            continue
+        ideal = weight / weight_sum * (placed + 1)
+        deficit = ideal - _length_counts[category]
+        if best_deficit is None or deficit > best_deficit:
+            best_deficit = deficit
+            best_category = category
+    return best_category
+
+
+def _pick_grams_length_enforced(deduped, count):
+    """Hand out `count` formation grams whose length categories follow the
+    gram_length.* percentages as an enforced QUOTA. Per cell: pick the most under-
+    filled category (_next_quota_length), pin the picker to that bucket via
+    _forced_length so dedup re-rolls stay in-category, draw one KEPT gram through
+    the dedup pipeline `deduped`, and tally it. Counting only kept grams keeps the
+    quota honest even when the dedup rules discard and re-roll."""
+    global _forced_length
+    grams = []
+    for _ in range(count):
+        category = _next_quota_length()
+        if category is None:  # every share is 0 -- nothing to steer toward
+            grams.extend(deduped(1))
+            continue
+        _forced_length = category
+        try:
+            picked = deduped(1)
+        finally:
+            _forced_length = None
+        grams.extend(picked)
+        _length_counts[category] += len(picked)
     return grams
 
 

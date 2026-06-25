@@ -4,7 +4,7 @@ grams, counted combinatorially (C(m, k) for k slots of a gram the board has m of
 These exercise the pure algorithm only -- building the gram multiset from a live
 board, and the blocking game-start wiring, are left to in-app playtesting.
 """
-from starting_coverage import coverage_for_word, write_coverage_csv
+from starting_coverage import coverage_for_word, rules_allow_spellable, write_coverage_csv
 
 # The configured word-length rule (rule_word_min3letters_min2cells) reduced to the
 # only two things it reads: word length and cell count.
@@ -54,10 +54,21 @@ def test_insufficient_copies_gives_zero():
 def test_csv_includes_zero_coverage_words(tmp_path):
     path = tmp_path / "cov.csv"
     grams = {"C": 1, "A": 1, "T": 1}
-    stats = write_coverage_csv(path, ["cat", "dog"], grams, ACCEPT, SEP)
+    stats = write_coverage_csv(path, ["cat", "dog", "to"], grams, ACCEPT, SEP)
     lines = path.read_text().splitlines()
-    assert lines[0] == "word,word_length,is_present,total_count,combos"
-    assert lines[1] == "cat,3,true,1,c/a/t:1"
-    # Zero-coverage word still listed: length filled, is_present false, empty combos.
-    assert lines[2] == "dog,3,false,0,"
-    assert stats == {"words": 2, "covered": 1, "combos": 1}
+    assert lines[0] == "word,word_length,is_present,do_rules_allow_spellable,total_count,combos"
+    assert lines[1] == "cat,3,true,true,1,c/a/t:1"
+    # Zero-coverage word still listed: length filled, is_present false, but the
+    # rules still allow it (3 letters) -- it's just missing grams. Empty combos.
+    assert lines[2] == "dog,3,false,true,0,"
+    # Too short for rule_word_min3letters_min2cells: the rules forbid it outright,
+    # so do_rules_allow_spellable is false (and it's of course not present).
+    assert lines[3] == "to,2,false,false,0,"
+    assert stats == {"words": 3, "covered": 1, "combos": 1}
+
+
+def test_rules_allow_spellable_respects_length_rule():
+    # ACCEPT here is rule_word_min3letters_min2cells.
+    assert rules_allow_spellable("cat", ACCEPT) is True   # 3 letters, splittable
+    assert rules_allow_spellable("to", ACCEPT) is False   # too short, ever
+    assert rules_allow_spellable("a", ACCEPT) is False
