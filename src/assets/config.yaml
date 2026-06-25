@@ -382,9 +382,9 @@ rules:
   # rules (otherwise covering one strands that victory condition).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
 
-  # Length mix for rule_grams_lengthcontrolled: how often that picker yields a
+  # Length mix for rule_grams_greater_than_47_lengthcontrolled: how often that picker yields a
   # unigram vs digram vs 3+-letter gram. Used ONLY when a *.gram_pick slot below
-  # is set to rule_grams_lengthcontrolled (it draws from the same JPO corpus as
+  # is set to rule_grams_greater_than_47_lengthcontrolled (it draws from the same JPO corpus as
   # rule_grams_greater_than_47, but these percentages override the corpus's own
   # length skew). Treated as relative shares, so they need not sum to 100; setting
   # one to 0 drops that length entirely. Within each length the corpus's frequency
@@ -397,13 +397,24 @@ rules:
   gram_length.digram_percent:      30
   gram_length.trigramplus_percent: 20
 
+  # Within the OPENING BOARD's unigrams, a second quota splits single letters into
+  # two bins (relative shares, same largest-remainder enforcement as above):
+  #   common glue    -- E I A T R N O S L C U
+  #   uncommon flavor -- P M D G H Y B F V K W Z X J QU
+  # ("QU" is the one digram counted as a unigram here, and the only way Q reaches
+  # the board.) Within a bin the corpus's own letter frequencies still apply, so
+  # glue draws lean E/I/A and flavor draws lean P/M/D over Z/X/J. Applies to the
+  # opening formation only; the piece pool rolls unigrams from the whole letter set.
+  gram_length.unigram_common_percent:   60
+  gram_length.unigram_uncommon_percent: 40
+
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
   square_player.gram_pick: rule_scrabble_distribution
   # square_player.gram_pick: rule_random_letters
   # square_player.gram_pick: rule_englishcorpus_random_unigram
   # square_player.gram_pick: rule_englishcorpus_random_digram
   # square_player.gram_pick: rule_grams_greater_than_47
-  # square_player.gram_pick: rule_grams_lengthcontrolled
+  # square_player.gram_pick: rule_grams_greater_than_47_lengthcontrolled
   square_player.gram_pick: rule_mixed_scrabble_digram52
   # square_player.gram_pick: rule_digram52_distribution
   # square_player.gram_pick: rule_trigram_equalweight
@@ -421,7 +432,7 @@ rules:
   # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # square_obstacle.gram_pick: rule_englishcorpus_random_digram
   # square_obstacle.gram_pick: rule_grams_greater_than_47
-  # square_obstacle.gram_pick: rule_grams_lengthcontrolled
+  # square_obstacle.gram_pick: rule_grams_greater_than_47_lengthcontrolled
   # square_obstacle.gram_pick: rule_mixed_scrabble_digram52
   square_obstacle.gram_pick: rule_digram52_distribution
   # square_obstacle.gram_pick: rule_trigram_equalweight
@@ -437,7 +448,7 @@ rules:
   # square_mission.gram_pick: rule_englishcorpus_random_unigram
   # square_mission.gram_pick: rule_englishcorpus_random_digram
   # square_mission.gram_pick: rule_grams_greater_than_47
-  # square_mission.gram_pick: rule_grams_lengthcontrolled
+  # square_mission.gram_pick: rule_grams_greater_than_47_lengthcontrolled
   # square_mission.gram_pick: rule_mixed_scrabble_digram52
   square_mission.gram_pick: rule_digram52_distribution
   # square_mission.gram_pick: rule_trigram_equalweight
@@ -447,8 +458,8 @@ rules:
   # square_mission.piece_set: rule_use_unimos
 
   # Also governs the initial board formation cells
-  hex_player.gram_pick:      rule_grams_greater_than_47
-  # hex_player.gram_pick:      rule_grams_lengthcontrolled
+  # hex_player.gram_pick:    rule_grams_greater_than_47
+  hex_player.gram_pick:      rule_grams_greater_than_47_lengthcontrolled
   # hex_player.gram_pick:    rule_random_letters
   # hex_player.gram_pick:    rule_scrabble_with_allvowelswild
   # hex_player.gram_pick:    rule_scrabble_distribution
@@ -468,7 +479,7 @@ rules:
   # hex_obstacle.gram_pick: rule_englishcorpus_random_unigram
   # hex_obstacle.gram_pick: rule_englishcorpus_random_digram
   # hex_obstacle.gram_pick: rule_grams_greater_than_47
-  # hex_obstacle.gram_pick: rule_grams_lengthcontrolled
+  # hex_obstacle.gram_pick: rule_grams_greater_than_47_lengthcontrolled
   # hex_obstacle.gram_pick: rule_mixed_scrabble_digram52
   hex_obstacle.gram_pick: rule_digram52_distribution
   # hex_obstacle.gram_pick: rule_trigram_equalweight
@@ -483,7 +494,7 @@ rules:
   # hex_mission.gram_pick: rule_englishcorpus_random_unigram
   # hex_mission.gram_pick: rule_englishcorpus_random_digram
   # hex_mission.gram_pick: rule_grams_greater_than_47
-  # hex_mission.gram_pick: rule_grams_lengthcontrolled
+  # hex_mission.gram_pick: rule_grams_greater_than_47_lengthcontrolled
   # hex_mission.gram_pick: rule_mixed_scrabble_digram52
   # hex_mission.gram_pick: rule_digram52_distribution
   hex_mission.gram_pick: rule_trigram_equalweight

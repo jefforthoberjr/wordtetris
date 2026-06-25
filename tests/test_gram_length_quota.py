@@ -1,4 +1,4 @@
-"""rule_grams_lengthcontrolled: the gram_length.* shares are enforced as a quota
+"""rule_grams_greater_than_47_lengthcontrolled: the gram_length.* shares are enforced as a quota
 across the opening formation (counts land within ~1 of the configured split),
 while outside the formation each cell just rolls them."""
 from collections import Counter
@@ -28,7 +28,7 @@ def _run_formation(cells):
     gp.begin_formation_gram_run()
     grams = []
     while len(grams) < cells:
-        grams += gp.pick_grams(gp.rule_grams_lengthcontrolled, 2)
+        grams += gp.pick_grams(gp.rule_grams_greater_than_47_lengthcontrolled, 2)
     gp.end_formation_gram_run()
     return grams[:cells]
 
@@ -73,3 +73,65 @@ def test_zero_share_category_never_drawn_in_formation():
 def test_forced_length_is_cleared_after_formation():
     _run_formation(20)
     assert gp._forced_length is None
+    assert gp._forced_unigram_group is None
+
+
+# --- nested unigram sub-bin quota (common glue vs uncommon flavor) ------
+
+_COMMON = set(gp._COMMON_GLUE_LETTERS)
+_FLAVOR = set(gp._UNCOMMON_FLAVOR_LETTERS)
+
+
+def _unigram_groups(grams):
+    # Split the formation's unigram cells into the two configured bins. Every
+    # length-1 (or QU) cell belongs to exactly one bin.
+    counts = Counter()
+    for g in grams:
+        if g.text in _COMMON:
+            counts["common"] += 1
+        elif g.text in _FLAVOR:
+            counts["uncommon"] += 1
+    return counts
+
+
+def test_glue_letters_and_flavor_letters_partition_the_alphabet():
+    # 25 single letters (every letter but Q) + QU, no overlap.
+    assert _COMMON.isdisjoint(_FLAVOR)
+    singles = {x for x in _COMMON | _FLAVOR if len(x) == 1}
+    assert singles == set("ABCDEFGHIJKLMNOPRSTUVWXYZ")  # no lone Q
+    assert "QU" in _FLAVOR
+
+
+def test_unigram_group_split_enforced_within_one():
+    common_w = CONFIG["rules"]["gram_length.unigram_common_percent"]
+    uncommon_w = CONFIG["rules"]["gram_length.unigram_uncommon_percent"]
+    total = common_w + uncommon_w
+    for _ in range(30):
+        counts = _unigram_groups(_run_formation(96))
+        n = counts["common"] + counts["uncommon"]
+        assert abs(counts["common"] - n * common_w / total) <= 1.0
+        assert abs(counts["uncommon"] - n * uncommon_w / total) <= 1.0
+
+
+def test_zero_common_share_yields_only_flavor_unigrams():
+    saved = list(gp._UNIGRAM_GROUP_WEIGHTS)
+    gp._UNIGRAM_GROUP_WEIGHTS[:] = [0, 100]
+    try:
+        counts = _unigram_groups(_run_formation(80))
+        assert counts["common"] == 0
+        assert counts["uncommon"] > 0
+    finally:
+        gp._UNIGRAM_GROUP_WEIGHTS[:] = saved
+
+
+def test_qu_is_eligible_as_a_flavor_unigram():
+    # All-flavor config; over enough boards QU (the lone Q route) must appear.
+    saved = list(gp._UNIGRAM_GROUP_WEIGHTS)
+    gp._UNIGRAM_GROUP_WEIGHTS[:] = [0, 100]
+    try:
+        seen = set()
+        for _ in range(60):
+            seen.update(g.text for g in _run_formation(60))
+        assert "QU" in seen
+    finally:
+        gp._UNIGRAM_GROUP_WEIGHTS[:] = saved

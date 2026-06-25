@@ -32,7 +32,7 @@ _unigram_counts = {}
 # the 26 letters under a 3-each cap, so its draws skip the cap entirely.
 _in_formation = False
 
-# Length-quota bookkeeping for rule_grams_lengthcontrolled (see that rule and
+# Length-quota bookkeeping for rule_grams_greater_than_47_lengthcontrolled (see that rule and
 # _pick_grams_length_enforced below). _length_counts tallies how many KEPT grams
 # of each length category (1 / 2 / 3+) the formation has placed so far, so the
 # quota picker can steer the next draw toward whichever category is running
@@ -41,6 +41,15 @@ _in_formation = False
 # Both reset per game alongside the dedup state.
 _length_counts = {1: 0, 2: 0, 3: 0}
 _forced_length = None
+
+# A SECOND quota nested inside the unigram category: every formation unigram is
+# also a "common glue" or "uncommon flavor" letter (see _COMMON_GLUE_LETTERS /
+# _UNCOMMON_FLAVOR_LETTERS below), and gram_length.unigram_*_percent enforces that
+# split the same largest-remainder way the length quota does. _unigram_group_counts
+# tallies KEPT unigrams per group; _forced_unigram_group, when set, pins a forced
+# unigram draw to one group. Reset per game with the length counts.
+_unigram_group_counts = {"common": 0, "uncommon": 0}
+_forced_unigram_group = None
 
 
 def reset_gram_dedup():
@@ -51,6 +60,8 @@ def reset_gram_dedup():
     _unigram_counts.clear()
     for category in _length_counts:
         _length_counts[category] = 0
+    for group in _unigram_group_counts:
+        _unigram_group_counts[group] = 0
 
 
 def begin_formation_gram_run():
@@ -167,14 +178,14 @@ def pick_grams(rule, count):
     is first multigram-deduped, then checked against the unigram cap.
 
     One more layer sits on top, but only for the opening formation when the
-    length-controlled picker is active: rule_grams_lengthcontrolled's gram_length.*
+    length-controlled picker is active: rule_grams_greater_than_47_lengthcontrolled's gram_length.*
     percentages are then enforced as a QUOTA across the whole formation (so a board
     can't come out trigram-heavy by luck), not just rolled per cell. See
     _pick_grams_length_enforced. The piece pool and every other picker fall through
     to the plain deduped draw."""
     multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
     deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
-    if rule is rule_grams_lengthcontrolled and _in_formation:
+    if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
         return _pick_grams_length_enforced(deduped, count)
     return deduped(count)
 
@@ -364,7 +375,7 @@ def rule_grams_greater_than_47(count):
     return grams
 
 
-# --- length-controlled corpus picker (rule_grams_lengthcontrolled) -----
+# --- length-controlled corpus picker (rule_grams_greater_than_47_lengthcontrolled) -----
 # Same JPO corpus as rule_grams_greater_than_47, but the per-cell length is
 # governed by configurable category percentages instead of the corpus's own
 # length mix. (The raw corpus skews toward multigrams -- see the _load_gram_corpus
@@ -402,7 +413,7 @@ def _partition_corpus_by_length():
     _corpus_by_length = buckets
 
 
-# Length-mix percentages for rule_grams_lengthcontrolled, read from config
+# Length-mix percentages for rule_grams_greater_than_47_lengthcontrolled, read from config
 # (gram_length.* in the rules block). rand().choices treats these as RELATIVE
 # weights, so they need not sum to 100 -- writing them as percentages just keeps
 # the YAML readable, and zeroing one category drops that length entirely.
@@ -422,7 +433,62 @@ def _draw_from_length_bucket(length, count):
     return [Gram(text) for text in picks]
 
 
-def rule_grams_lengthcontrolled(count):
+# --- unigram sub-bins (common glue vs uncommon flavor) -----------------
+# A second quota nested inside the unigram category: each formation unigram is
+# steered to be a frequent "glue" letter or a rarer "flavor" letter, in the ratio
+# set by gram_length.unigram_common_percent / unigram_uncommon_percent. WITHIN a
+# group the corpus's own letter frequencies still apply (so glue draws lean E/I/A,
+# flavor draws lean P/M/D over Z/X/J). "QU" is the one digram counted as a unigram
+# here -- it is the only way Q reaches the board (the corpus has no lone Q), and it
+# sits in the flavor group. These bins govern the OPENING FORMATION only; the piece
+# pool keeps rolling unigrams from the whole length-1 bucket (no QU).
+_COMMON_GLUE_LETTERS = ["E", "I", "A", "T", "R", "N", "O", "S", "L", "C", "U"]
+_UNCOMMON_FLAVOR_LETTERS = [
+    "P", "M", "D", "G", "H", "Y", "B", "F", "V", "K", "W", "Z", "X", "J", "QU",
+]
+_UNIGRAM_GROUP_KEYS = ["common", "uncommon"]
+_UNIGRAM_GROUP_WEIGHTS = [
+    CONFIG["rules"]["gram_length.unigram_common_percent"],
+    CONFIG["rules"]["gram_length.unigram_uncommon_percent"],
+]
+
+# Lazily built: {"common": (letters, weights), "uncommon": (...)} where each
+# weight is that letter's corpus frequency (QU's own corpus freq for the digram).
+_unigram_groups = None
+
+
+def _partition_unigrams_into_groups():
+    global _unigram_groups
+    if _unigram_groups is not None:
+        return
+    _load_gram_corpus()
+    freq = {g.upper(): w for g, w in zip(_corpus_grams, _corpus_weights)}
+
+    def build(letters):
+        items, weights = [], []
+        for letter in letters:
+            items.append(letter)
+            # Default any letter the corpus somehow lacks to weight 1 so it can
+            # still appear rather than silently dropping out of its group.
+            weights.append(freq.get(letter) or 1)
+        return items, weights
+
+    _unigram_groups = {
+        "common": build(_COMMON_GLUE_LETTERS),
+        "uncommon": build(_UNCOMMON_FLAVOR_LETTERS),
+    }
+
+
+def _draw_from_unigram_group(group, count):
+    """Draw `count` unigrams from one sub-bin (common / uncommon), weighted by
+    each letter's corpus frequency within the group."""
+    _partition_unigrams_into_groups()
+    items, weights = _unigram_groups[group]
+    picks = rand().choices(items, weights=weights, k=count)
+    return [Gram(text) for text in picks]
+
+
+def rule_grams_greater_than_47_lengthcontrolled(count):
     """
     Pick grams from the JPO corpus (same file as rule_grams_greater_than_47) but
     with the unigram / digram / 3+-gram mix dictated by the gram_length.* config
@@ -430,7 +496,9 @@ def rule_grams_lengthcontrolled(count):
 
     Two paths (see the section comment above):
       * _forced_length set -- the quota enforcer (formation) has pinned this draw
-        to one length bucket; every gram comes from it.
+        to one length bucket; every gram comes from it. When that bucket is the
+        unigram one AND a sub-bin is pinned too (_forced_unigram_group), the gram
+        is drawn from that common/uncommon group instead of the whole bucket.
       * otherwise -- each cell independently rolls a length category using the
         configured percentages as relative weights (the piece-pool path).
 
@@ -444,6 +512,8 @@ def rule_grams_lengthcontrolled(count):
     """
     _partition_corpus_by_length()
     if _forced_length is not None:
+        if _forced_length == 1 and _forced_unigram_group is not None:
+            return _draw_from_unigram_group(_forced_unigram_group, count)
         return _draw_from_length_bucket(_forced_length, count)
     lengths = rand().choices(_LENGTH_CATEGORIES, weights=_LENGTH_PCT_WEIGHTS, k=count)
     grams = []
@@ -452,24 +522,39 @@ def rule_grams_lengthcontrolled(count):
     return grams
 
 
-def _next_quota_length():
-    """Pick the length category whose configured share is currently most under-
-    filled, using the largest-remainder method: the category maximizing
-    (share * (placed + 1) - placed_in_category). Categories configured to 0 are
-    skipped. Returns None only if every share is 0 (degenerate config)."""
-    placed = sum(_length_counts.values())
-    weight_sum = sum(_LENGTH_PCT_WEIGHTS)
-    best_category = None
+def _largest_remainder_pick(keys, weights, counts):
+    """Of `keys`, return the one whose configured share (its parallel entry in
+    `weights`) is currently most under-filled given `counts` so far, using the
+    largest-remainder method: maximize share * (placed + 1) - counts[key]. Keys
+    weighted 0 are skipped. Returns None if every weight is 0 (degenerate config)."""
+    placed = sum(counts.values())
+    weight_sum = sum(weights)
+    if weight_sum <= 0:
+        return None
+    best_key = None
     best_deficit = None
-    for category, weight in zip(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS):
+    for key, weight in zip(keys, weights):
         if weight <= 0:
             continue
         ideal = weight / weight_sum * (placed + 1)
-        deficit = ideal - _length_counts[category]
+        deficit = ideal - counts[key]
         if best_deficit is None or deficit > best_deficit:
             best_deficit = deficit
-            best_category = category
-    return best_category
+            best_key = key
+    return best_key
+
+
+def _next_quota_length():
+    """The length category (1 / 2 / 3+) most behind its gram_length.*_percent
+    share so far. None if every length share is 0."""
+    return _largest_remainder_pick(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS, _length_counts)
+
+
+def _next_quota_unigram_group():
+    """The unigram sub-bin ("common" / "uncommon") most behind its
+    gram_length.unigram_*_percent share so far. None if both shares are 0."""
+    return _largest_remainder_pick(
+        _UNIGRAM_GROUP_KEYS, _UNIGRAM_GROUP_WEIGHTS, _unigram_group_counts)
 
 
 def _pick_grams_length_enforced(deduped, count):
@@ -478,21 +563,30 @@ def _pick_grams_length_enforced(deduped, count):
     filled category (_next_quota_length), pin the picker to that bucket via
     _forced_length so dedup re-rolls stay in-category, draw one KEPT gram through
     the dedup pipeline `deduped`, and tally it. Counting only kept grams keeps the
-    quota honest even when the dedup rules discard and re-roll."""
-    global _forced_length
+    quota honest even when the dedup rules discard and re-roll.
+
+    Unigrams carry a second, nested quota: each is also steered to a common/
+    uncommon sub-bin (_next_quota_unigram_group) via _forced_unigram_group, so the
+    glue-vs-flavor split is enforced the same way."""
+    global _forced_length, _forced_unigram_group
     grams = []
     for _ in range(count):
         category = _next_quota_length()
         if category is None:  # every share is 0 -- nothing to steer toward
             grams.extend(deduped(1))
             continue
+        group = _next_quota_unigram_group() if category == 1 else None
         _forced_length = category
+        _forced_unigram_group = group
         try:
             picked = deduped(1)
         finally:
             _forced_length = None
+            _forced_unigram_group = None
         grams.extend(picked)
         _length_counts[category] += len(picked)
+        if group is not None:
+            _unigram_group_counts[group] += len(picked)
     return grams
 
 
