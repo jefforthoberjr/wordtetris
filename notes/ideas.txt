@@ -4,6 +4,49 @@ GAME NAMES
 * big dict energy
 * how big's your dictionary
 
+* catalyst cata LIST
+
+
+Bonus round, compound word off
+(as pulled from the player's word dictionary
+
+
+2 bins of unigrams
+
+
+Rotating weekly Themes (
+
+Some cells occassionally highlight as bonuses
+
+Right click to "shelve" a couple of words (and roll a new one)
+
+Another game mode
+Maybe during the game (only tri and di spwan on the board) then the single letters just start spawning in over time, slowly filling the board, and the game ends when the board fills up?
+
+I couldn't quite spell (on a given turn)
+ROMANCE
+INHANCE
+INVETIGATE
+A way for me (debugger) to track all the words I wish I could create that I didn't have the pieces for.
+
+Spell check button?
+
+
+better mouse only UI
+
+"cloaca" not in the dictioary
+
+The "RX" "LX" type of blend consonatns, need more of the 'rarer' single consonants to be present
+	Change the word weighing to include those single letters more when these digrams are present
+
+UI change "XXXXX" word isn't on board
+*then auto clear the text field (rather than manual clear?)
+
+A spell check (did you mean? ...)
+bagage -> baggage
+aligator -> alligator
+(double click a cell to add consonants)
+
 Should I allow S plurals or not?
 	Then you'd have to feel like you need to find every word in the dictionary multiple times
 

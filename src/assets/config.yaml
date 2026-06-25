@@ -166,6 +166,11 @@ rules:
   game_screen.word_trail_thickness: 8
   game_screen.word_trail_opacity:   0.5
 
+  # How many word rows the right pane's scrolling cleared-word list shows. Fewer
+  # rows than the pane fits pack from the top (blank space below); more rows than
+  # fit shrink the font so they all stay inside the pane.
+  moving_side_pane.wordlist_rows:   30
+
   # Player-piece spawn: where each single live piece appears, one at a time.
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center
@@ -315,8 +320,8 @@ rules:
   # controls.yaml leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
 
   # Unigram (1-letter cell): double the letter (O -> OO, B -> BB).
-  game_screen.rightclick_unigram: rule_unigram_double
-  # game_screen.rightclick_unigram: rule_rightclick_none
+  # game_screen.rightclick_unigram: rule_unigram_double
+  game_screen.rightclick_unigram: rule_rightclick_none
 
   # Digram (2-letter cell):
   #   rule_digram_dedup_or_flip -- a DOUBLED letter collapses to a single (EE -> E,

@@ -1,6 +1,5 @@
-import math
 import pyglet
-from config import get_color
+from config import CONFIG, get_color
 
 
 class ScrollingWordList:
@@ -29,6 +28,10 @@ class ScrollingWordList:
     TEXT_COLOR = get_color("moving_side_pane.wordlist_text")
     # A word the player has never collected before shows green instead.
     NEW_TEXT_COLOR = get_color("moving_side_pane.wordlist_new_text")
+    # How many word rows the list shows (config moving_side_pane.wordlist_rows).
+    # Fewer rows pack from the top at the width-based font (blank space below);
+    # more rows than naturally fit shrink the font so they all stay in the pane.
+    ROWS = max(1, CONFIG["rules"]["moving_side_pane.wordlist_rows"])
 
     def __init__(self, x, y, width, height):
         self._batch = pyglet.graphics.Batch()
@@ -37,11 +40,16 @@ class ScrollingWordList:
         text_x = x + margin
         self._top_y = y + height - margin
 
-        # Fit PAD_LEN chars across the pane; ~0.62 avg char-width/font-size for
-        # the default proportional font. Tune the factor if wide words clip.
-        font_size = (width - 2 * margin) / (self.PAD_LEN * 0.62)
+        # Row count is configured (ROWS), not derived from height. Size the font
+        # to fit PAD_LEN chars across the pane (~0.62 avg char-width/font-size for
+        # the default proportional font; tune if wide words clip), but cap it so
+        # all ROWS rows still fit the pane height -- so asking for more rows than
+        # would naturally fit shrinks the text rather than overflowing the pane.
+        self._rows = self.ROWS
+        width_font = (width - 2 * margin) / (self.PAD_LEN * 0.62)
+        height_font = (height - 2 * margin) / (self._rows * 1.3)
+        font_size = min(width_font, height_font)
         self._row_height = font_size * 1.3
-        self._rows = max(1, math.floor((height - 2 * margin) / self._row_height))
 
         # Ring of pre-spawned rows, blank-filled to warm the vertex buffer.
         self._labels = []
