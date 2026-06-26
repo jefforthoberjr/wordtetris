@@ -56,6 +56,9 @@ python src/main.py
 # RUN SESSION REPLAY
 For debbugging purposes
 
+python src/replay.py -0
+python src/replay.py -1 --speed 3.0
+
 python replay.py sessions/<id>.log [--speed 2.0] [--invisible]
 Example:
 python src/replay.py sessions/2026-06-21T14-28-44_46ae.log 
