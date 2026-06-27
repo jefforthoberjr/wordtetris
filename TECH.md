@@ -62,3 +62,10 @@ python src/replay.py -1 --speed 3.0
 python replay.py sessions/<id>.log [--speed 2.0] [--invisible]
 Example:
 python src/replay.py sessions/2026-06-21T14-28-44_46ae.log 
+
+
+# SCRIPTS FOR JUDGING WORD IDEATION
+
+Two offline scripts in gram_corpus/ (not game runtime):
+- ideation_analysis.py — for any gram, dumps the 20k-dict words by position ranked by real Google frequency (the grounding tool).
+- ideation_grader.py — generates cleaned3 end-to-end; rerun anytime, tweak thresholds at the top. The rubric is documented in its docstring.

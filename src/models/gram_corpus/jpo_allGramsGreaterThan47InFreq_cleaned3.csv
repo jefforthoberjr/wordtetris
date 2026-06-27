@@ -1,0 +1,614 @@
+gram,freq,strong_ideation,prefix_ideation,midfix_ideation,suffix_ideation,notes_ideation_inhibitors,words_we_ideated,words_that_ideated_that_are_spell_wrong_actually,ideation_boosters
+e,18805,y,y,y,y,,,,single letter
+i,14933,y,y,y,y,,,,single letter
+a,13957,y,y,y,y,,,,single letter
+t,12687,y,y,y,y,,,,single letter
+r,12190,y,y,y,y,,,,single letter
+n,11997,y,y,y,y,,,,single letter
+o,11063,y,y,y,y,,,,single letter
+s,9555,y,y,y,y,,,,single letter
+l,8925,y,y,y,y,,,,single letter
+c,7828,y,y,y,y,,,,single letter
+u,6316,y,y,y,y,,,,single letter
+p,5249,y,y,y,y,,,,single letter
+m,5246,y,y,y,y,,,,single letter
+d,5024,y,y,y,y,,,,single letter
+g,3783,y,y,y,y,,,,single letter
+h,3564,y,y,y,y,,,,single letter
+y,3275,y,y,y,y,,,,single letter
+b,3175,y,y,y,y,,,,single letter
+er,3006,n,y,n,y,rime diluted by morpheme,"her, per, era",,rime family (-er)
+ti,2858,y,y,n,n,overly productive prefix; its own word,"tip, tie, tit",,
+on,2830,m,y,n,y,rime diluted by morpheme; its own word,"one, son, con",,rime family (-on)
+in,2624,m,y,n,y,overly productive prefix; its own word,"inn, win, bin",,
+at,2488,m,y,n,y,overly productive prefix; its own word,"sat, fat, cat",,
+f,2370,y,y,y,y,,,,single letter
+en,2284,m,y,n,y,overly productive prefix,"end, men, ten",,
+re,2178,n,y,n,y,broad morpheme; its own word,"are, red, ref",,
+te,2162,n,y,n,y,broad morpheme,"ten, tea, tee",,
+v,2055,y,y,y,y,,,,single letter
+le,2030,n,y,n,y,broad morpheme,"let, led, lee",,
+an,1886,m,y,n,y,overly productive prefix; its own word,"and, can, any",,
+nt,1882,n,n,n,y,broad morpheme,"ant, into, want",,
+al,1839,n,y,n,y,overly productive prefix,"all, pal, gal",,
+st,1781,n,y,n,y,broad morpheme,"list, just, last",,
+ra,1781,y,y,n,y,overly productive prefix,"ray, raw, ram",,
+io,1767,n,m,n,y,vowel diphthong,"ion, lion, trio",,rime family (-io)
+is,1713,y,y,n,y,its own word,"his, dis, this",,rime family (-is)
+ar,1571,m,y,n,y,overly productive prefix,"are, car, art",,
+ic,1524,n,m,n,y,rime diluted by morpheme,"ice, sic, nice",,rime family (-ic)
+ri,1522,y,y,n,m,overly productive prefix,"rid, rip, rim",,
+li,1480,y,y,n,m,overly productive prefix,"lib, lie, lip",,
+ion,1451,n,n,n,y,broad morpheme; its own word,"lion, union, onion",,
+or,1449,m,y,n,y,overly productive prefix; its own word,"for, nor, more",,
+it,1434,m,m,n,y,rime diluted by morpheme; its own word,"its, bit, kit",,rime family (-it)
+co,1351,y,y,n,m,overly productive prefix,"con, cod, cow",,
+de,1339,n,y,n,y,broad morpheme,"den, dew, made",,
+tion,1202,n,n,n,y,broad morpheme,"action, option, nation",,
+es,1199,y,y,n,y,,"yes, best, does",,rime family (-es)
+k,1157,y,y,y,y,,,,single letter
+w,1148,y,y,y,y,,,,single letter
+ro,1146,y,y,n,y,overly productive prefix,"pro, row, rob",,
+ta,1117,y,y,n,y,overly productive prefix,"tax, tag, tab",,
+ve,1101,n,y,n,y,broad morpheme,"eve, vet, have",,
+la,1100,y,y,n,y,overly productive prefix; its own word,"law, lab, lay",,
+di,1033,y,y,n,n,overly productive prefix,"did, die, dig",,
+un,1027,m,y,n,y,overly productive prefix,"sun, run, fun",,
+ca,1021,y,y,n,m,overly productive prefix,"can, car, cat",,
+ce,1006,n,y,n,y,broad morpheme,"ice, ace, cell",,
+tr,1001,y,y,n,n,overly productive prefix,"try, true, tree",,
+ng,990,n,n,n,y,broad morpheme,"long, king, song",,
+se,968,n,y,n,y,broad morpheme,"use, see, sex",,
+me,968,n,y,n,y,broad morpheme; its own word,"men, met, home",,
+ma,964,y,y,n,y,overly productive prefix; its own word,"may, map, man",,
+ne,942,n,y,n,y,broad morpheme,"new, one, net",,
+us,910,m,y,n,y,rime diluted by morpheme; its own word,"use, bus, just",,rime family (-us)
+na,890,y,y,n,y,overly productive prefix,"name, anal, navy",,
+et,888,m,y,n,y,rime diluted by morpheme,"get, set, let",,rime family (-et)
+si,884,y,y,n,n,overly productive prefix,"six, sir, sit",,
+ou,879,n,y,n,m,vowel diphthong,"you, our, out",,
+pe,877,y,y,n,y,overly productive prefix,"per, pet, pen",,
+il,822,y,y,n,y,,"oil, ill, nil",,rime family (-il)
+el,804,m,y,n,y,overly productive prefix,"gel, elk, elf",,
+ed,801,m,y,n,y,rime diluted by morpheme,"red, wed, bed",,rime family (-ed)
+ni,800,y,y,n,m,,"nil, unit, nice",,distinct roots
+ch,793,n,y,n,y,broad morpheme,"such, each, much",,
+nd,787,n,n,n,y,broad morpheme,"and, end, find",,
+lo,783,y,y,n,y,overly productive prefix; its own word,"low, log, lot",,
+ur,782,y,y,n,y,,"our, fur, your",,rime family (-ur)
+mi,779,y,y,n,m,overly productive prefix; its own word,"mid, mix, mind",,
+pr,765,y,y,n,n,overly productive prefix,"pro, pray, prep",,
+ol,750,y,m,n,y,,"old, sol, gold",,rime family (-ol)
+ea,739,n,y,n,y,vowel diphthong,"sea, eat, tea",,rime family (-ea)
+ate,736,m,n,n,y,rime diluted by morpheme; its own word,"date, rate, late",,rime family (-ate)
+ss,735,n,n,n,y,double letter,"ass, less, loss",,
+ia,735,n,n,n,y,vowel diphthong,"via, dial, bias",,
+ge,725,n,y,n,y,broad morpheme,"get, age, gel",,
+bl,721,y,y,n,n,overly productive prefix,"blue, able, blow",,
+ab,720,m,y,n,y,overly productive prefix,"lab, tab, cab",,
+to,718,y,y,n,y,overly productive prefix; its own word,"top, too, tom",,
+he,713,y,y,n,y,overly productive prefix; its own word,"the, her, she",,
+as,701,m,y,n,y,overly productive prefix; its own word,"was, has, ask",,
+ul,698,m,m,n,y,,"full, rule, soul",,
+ing,696,n,m,n,y,broad morpheme,"king, ring, wing",,
+om,679,y,m,n,y,,"tom, mom, from",,rime family (-om)
+ll,673,n,n,n,y,double letter,"all, ill, will",,
+ty,671,n,m,n,y,broad morpheme,"city, type, duty",,
+ct,658,n,n,n,y,broad morpheme,"act, fact, exact",,
+th,651,n,y,n,y,broad morpheme,"the, thy, that",,
+pa,635,y,y,n,m,overly productive prefix; its own word,"pay, spa, pan",,
+em,633,m,y,n,y,overly productive prefix; its own word,"gem, them, item",,
+po,605,y,y,n,m,overly productive prefix,"pop, pot, pod",,
+z,597,y,y,y,y,,,,single letter
+sh,580,n,y,n,y,broad morpheme; its own word,"she, ash, shy",,
+mo,561,y,y,n,m,overly productive prefix,"mom, more, most",,
+im,558,m,y,n,y,overly productive prefix,"him, aim, rim",,
+ry,554,n,n,n,y,broad morpheme,"try, dry, cry",,
+x,537,y,y,y,y,,,,single letter
+am,537,y,y,n,y,its own word,"cam, ram, amp",,rime family (-am)
+no,530,y,y,n,y,overly productive prefix; its own word,"not, now, nor",,
+mp,530,m,n,n,y,,"amp, jump, camp",,
+ha,528,y,y,n,m,overly productive prefix; its own word,"has, had, hat",,
+rt,526,n,n,n,y,broad morpheme,"art, part, cart",,
+ist,516,n,n,n,y,broad morpheme,"list, fist, exist",,
+ho,515,y,y,n,m,overly productive prefix; its own word,"who, how, hot",,
+con,499,m,y,n,y,overly productive prefix; its own word,"icon, cone, condo",,
+tu,483,y,y,n,n,,"tub, turn, tube",,distinct roots
+hi,482,y,y,n,n,overly productive prefix; its own word,"his, him, hit",,
+sc,481,y,y,n,m,overly productive prefix,"disc, scan, scat",,
+ad,481,m,y,n,y,overly productive prefix; its own word,"had, add, bad",,
+ap,472,m,y,n,y,overly productive prefix,"map, cap, gap",,
+id,470,m,y,n,y,rime diluted by morpheme; its own word,"did, bid, aid",,rime family (-id)
+os,467,n,n,n,m,,"most, post, cost",,
+su,463,y,y,n,n,overly productive prefix,"sun, sub, sum",,
+ity,463,n,n,n,y,broad morpheme,"city, unity, equity",,
+ag,458,y,y,n,y,,"age, ago, bag",,rime family (-ag)
+sp,457,y,y,n,m,overly productive prefix,"spa, spy, asp",,
+um,443,m,m,n,y,rime diluted by morpheme,"sum, gum, jump",,rime family (-um)
+ut,442,y,m,n,y,,"but, out, put",,rime family (-ut)
+ous,442,n,n,n,y,broad morpheme,"house, mouse, famous",,
+op,433,m,y,n,y,overly productive prefix,"top, pop, hop",,
+ot,432,y,m,n,y,,"not, hot, got",,rime family (-ot)
+so,431,y,y,n,m,overly productive prefix; its own word,"son, sox, sol",,
+nce,430,n,n,n,y,broad morpheme,"once, since, dance",,
+sa,428,y,y,n,m,overly productive prefix,"say, sat, saw",,
+be,428,y,y,n,y,overly productive prefix; its own word,"bed, bet, bee",,
+cr,426,y,y,n,n,overly productive prefix,"cry, crew, crop",,
+vi,423,y,y,n,n,overly productive prefix,"via, view, vice",,
+ig,420,y,m,n,y,,"big, fig, dig",,rime family (-ig)
+ee,412,n,n,n,y,double letter,"see, fee, lee",,rime family (-ee)
+pi,405,y,y,n,n,overly productive prefix; its own word,"pin, pie, pit",,
+ant,405,m,y,n,y,rime diluted by morpheme; its own word,"want, cant, plant",,rime family (-ant)
+bi,404,y,y,n,n,overly productive prefix,"big, bit, bid",,
+pl,399,y,y,n,n,overly productive prefix,"plan, play, plus",,
+og,398,y,n,n,y,,"log, dog, fog",,rime family (-og)
+cu,396,y,y,n,n,overly productive prefix,"cut, cup, cue",,
+ess,395,m,m,n,y,rime diluted by morpheme,"less, mess, press",,rime family (-ess)
+ga,394,y,y,n,m,overly productive prefix,"gay, gas, gap",,
+ir,391,y,m,n,y,,"air, sir, girl",,rime family (-ir)
+able,386,n,n,n,y,broad morpheme; its own word,"table, cable, enable",,
+gr,385,y,y,n,n,overly productive prefix,"grow, gray, grid",,
+fi,382,y,y,n,n,overly productive prefix,"fit, fix, fig",,
+ba,380,y,y,n,m,overly productive prefix,"bad, bay, bar",,
+ru,375,y,y,n,m,,"run, rug, rue",,distinct roots
+ive,373,n,n,n,y,broad morpheme,"live, give, five",,
+ep,365,y,m,n,y,,"rep, keep, step",,rime family (-ep)
+ly,364,n,m,n,y,broad morpheme,"fly, only, holy",,
+lu,362,y,y,n,m,,"flu, club, blue",,distinct roots
+ph,359,m,y,n,y,overly productive prefix,"phone, photo, phase",,
+ai,357,n,m,n,m,vowel diphthong,"air, aid, aim",,
+qu,354,y,y,n,n,overly productive prefix,"quiz, quit, aqua",,
+per,351,m,y,n,y,overly productive prefix; its own word,"paper, super, upper",,
+ment,348,n,m,n,y,broad morpheme,"mental, moment, mentor",,
+ex,348,m,y,n,y,overly productive prefix; its own word,"sex, hex, next",,
+oo,346,n,m,n,y,double letter,"too, zoo, goo",,rime family (-oo)
+sm,327,y,y,n,y,,"small, smith, smart",,distinct roots
+tra,326,y,y,n,y,overly productive prefix,"tray, trap, track",,
+ck,323,n,n,n,y,broad morpheme,"back, rock, pack",,
+ke,317,n,y,n,y,broad morpheme,"key, ken, like",,
+rr,312,n,n,y,m,double letter,"err, error, sorry",,
+va,311,m,y,n,m,overly productive prefix,"van, vat, vary",,
+tt,311,n,n,n,m,double letter,"matt, butt, watt",,
+pro,311,m,y,n,n,overly productive prefix; its own word,"prof, prop, prom",,
+sti,305,y,y,n,n,,"stir, still, stick",,distinct roots
+lit,305,m,y,n,m,its own word,"lite, split, elite",,
+if,305,n,n,y,n,its own word,"life, gift, wife",,
+fe,304,y,y,n,y,overly productive prefix,"few, fee, fed",,
+bo,302,y,y,n,m,overly productive prefix,"box, boy, bob",,
+do,301,y,y,n,m,overly productive prefix; its own word,"dog, doc, dot",,
+cl,295,y,y,n,n,overly productive prefix,"club, clip, clay",,
+j,290,y,y,y,y,,,,single letter
+ov,289,y,y,n,n,,"over, love, move",,distinct roots
+str,288,m,y,n,n,overly productive prefix,"strip, strap, straw",,
+pre,288,m,y,n,n,overly productive prefix,"prep, press, pretty",,
+ip,287,y,n,n,y,rime diluted by morpheme,"zip, tip, hip",,rime family (-ip)
+ine,286,y,m,n,y,rime diluted by morpheme,"line, fine, wine",,rime family (-ine)
+rm,284,m,n,n,y,,"arm, form, term",,
+da,284,y,y,n,m,overly productive prefix,"day, dad, dam",,
+fu,283,m,y,n,n,overly productive prefix,"fun, fur, full",,
+tor,282,n,m,n,y,broad morpheme,"store, story, motor",,
+od,281,y,m,n,y,,"god, rod, odd",,rime family (-od)
+rd,279,n,n,n,y,broad morpheme,"card, hard, word",,
+int,272,m,y,n,y,overly productive prefix,"into, mint, hint",,
+au,272,n,y,n,m,vowel diphthong,"auto, aunt, audio",,
+ran,269,y,y,n,m,its own word,"rank, range, brand",,distinct roots
+cal,269,n,y,n,y,broad morpheme,"call, calm, local",,
+est,266,y,y,n,y,,"best, west, test",,rime family (-est)
+lat,263,m,y,n,m,,"late, flat, plate",,
+fo,263,y,y,n,m,overly productive prefix,"for, fox, fog",,
+br,262,y,y,n,n,overly productive prefix,"bra, brad, brand",,
+bu,257,y,y,n,n,overly productive prefix,"but, buy, bus",,
+tri,253,y,y,n,n,overly productive prefix,"trip, trim, trio",,
+pu,253,y,y,n,n,overly productive prefix,"put, pub, pure",,
+ste,248,y,y,n,m,,"step, stem, steel",,distinct roots
+com,247,m,y,n,n,overly productive prefix,"come, comic, combo",,
+ui,246,n,n,y,n,vowel diphthong,"suit, quiz, quit",,
+ev,243,m,y,n,m,,"eve, rev, even",,distinct roots
+pp,242,n,n,y,n,double letter,"apply, happy, apple",,
+fl,240,y,y,n,n,overly productive prefix,"fly, flu, flat",,
+ow,238,n,y,n,y,vowel diphthong; its own word,"now, how, own",,rime family (-ow)
+rn,234,m,n,n,y,,"porn, turn, born",,
+sta,230,y,y,n,m,overly productive prefix,"star, stay, state",,
+wa,229,y,y,n,n,overly productive prefix,"was, way, war",,
+ue,229,n,n,n,y,vowel diphthong,"due, sue, rue",,rime family (-ue)
+nat,228,m,y,n,n,,"nature, nation, native",,
+ove,226,y,y,n,y,,"over, love, move",,rime family (-ove)
+fa,226,y,y,n,m,overly productive prefix; its own word,"fax, far, fat",,
+mu,225,m,y,n,n,overly productive prefix,"mud, mug, must",,
+av,225,m,y,n,n,,"have, save, gave",,
+min,224,m,y,n,m,overly productive prefix,"mind, mini, mine",,
+ize,221,n,n,n,y,broad morpheme,"size, prize, citizen",,
+ub,220,y,n,n,y,,"sub, pub, hub",,rime family (-ub)
+ten,219,m,y,n,y,its own word,"tend, tent, often",,
+ff,218,n,n,n,y,double letter,"off, staff, offer",,
+pt,217,m,n,n,y,,"opt, apt, kept",,
+ob,217,m,y,n,y,,"job, bob, rob",,rime family (-ob)
+tin,216,m,m,n,m,its own word,"tiny, satin, rating",,
+the,215,m,y,n,m,overly productive prefix; its own word,"they, them, then",,
+du,215,m,y,n,n,overly productive prefix,"due, duo, dub",,
+gl,212,y,y,n,n,,"glad, glen, ugly",,distinct roots
+lt,209,m,n,n,y,,"felt, salt, belt",,
+ial,209,n,n,n,y,broad morpheme,"dial, trial, social",,
+up,208,m,y,n,y,its own word,"cup, sup, upon",,rime family (-up)
+lin,208,m,y,n,m,,"line, link, links",,distinct roots
+go,207,y,y,n,y,overly productive prefix; its own word,"got, god, ago",,
+gra,205,y,y,n,n,overly productive prefix,"gray, grab, grad",,
+les,204,m,y,n,n,,"less, flesh, bless",,
+ud,203,n,n,n,y,,"mud, bud, nude",,rime family (-ud)
+mm,202,n,n,y,n,double letter,"gamma, jimmy, common",,
+ism,201,n,n,n,y,broad morpheme; its own word,"racism, autism, tourism",,
+age,200,m,y,n,y,rime diluted by morpheme; its own word,"page, aged, wage",,rime family (-age)
+mat,197,m,y,n,m,its own word,"math, matt, mate",,distinct roots
+ast,197,y,y,n,y,,"last, east, past",,rime family (-ast)
+nal,196,m,n,n,y,broad morpheme,"anal, final, canal",,
+par,195,m,y,n,n,overly productive prefix; its own word,"part, park, party",,
+ish,194,y,n,n,y,,"wish, fish, dish",,rime family (-ish)
+gu,191,y,y,n,n,overly productive prefix,"guy, gun, gum",,
+lis,190,m,y,n,n,,"list, lisp, listen",,
+ill,190,y,y,n,y,its own word,"will, bill, hill",,rime family (-ill)
+rea,188,m,y,n,m,overly productive prefix,"read, real, area",,
+mis,188,m,y,n,n,,"miss, mission, missing",,
+dr,186,y,y,n,n,overly productive prefix,"dry, drug, drop",,
+oi,184,n,m,y,n,vowel diphthong,"oil, join, void",,
+nn,184,n,n,y,m,double letter,"inn, funny, inner",,
+rin,182,m,m,y,n,,"ring, print, bring",,
+fr,182,y,y,n,n,overly productive prefix,"fry, from, free",,
+imp,180,m,y,n,m,overly productive prefix; its own word,"imply, simple, simply",,
+ence,180,n,n,n,y,broad morpheme,"hence, fence, science",,
+nu,179,m,y,n,m,overly productive prefix,"gnu, nut, nude",,
+all,179,y,y,n,y,its own word,"call, fall, hall",,rime family (-all)
+den,178,m,y,n,y,its own word,"deny, laden, dense",,distinct roots
+tur,176,m,m,n,n,,"turn, return, future",,
+ure,173,m,n,n,y,rime diluted by morpheme,"sure, pure, cure",,rime family (-ure)
+vo,170,y,y,n,n,,"vote, void, volt",,distinct roots
+we,169,y,y,n,n,overly productive prefix; its own word,"web, wed, wet",,
+sion,169,n,n,n,y,broad morpheme,"vision, fusion, version",,
+act,168,m,y,n,y,its own word,"fact, exact, actor",,rime family (-act)
+for,167,m,y,n,n,overly productive prefix; its own word,"form, ford, fort",,
+tal,164,m,y,n,y,,"talk, tall, tale",,distinct roots
+and,163,y,n,n,y,its own word,"hand, land, band",,rime family (-and)
+nk,162,y,n,n,y,,"ink, link, bank",,
+gh,160,n,m,n,y,,"high, right, night",,
+ide,157,y,y,n,y,,"side, wide, idea",,rime family (-ide)
+wi,156,y,y,n,n,overly productive prefix,"win, wit, with",,
+ary,156,n,n,n,y,broad morpheme,"vary, diary, scary",,
+ful,155,n,m,n,y,broad morpheme,"full, fully, awful",,
+sl,153,y,y,n,n,overly productive prefix,"slow, slot, slip",,
+ass,153,y,y,n,y,overly productive prefix; its own word,"pass, mass, bass",,
+tro,151,m,y,n,m,,"troy, metro, intro",,
+gen,150,m,y,n,m,overly productive prefix,"gene, agent, genre",,
+gn,148,n,m,n,y,,"gnu, sign, gnome",,
+cha,148,y,y,n,n,overly productive prefix,"chat, char, chair",,
+hu,147,m,y,n,n,overly productive prefix,"hub, huh, huge",,
+one,144,m,n,n,y,its own word,"done, none, zone",,rime family (-one)
+ind,143,y,y,n,y,,"find, mind, kind",,rime family (-ind)
+mon,142,y,y,n,y,,"mono, money, month",,distinct roots
+ug,140,y,m,n,y,,"bug, rug, mug",,rime family (-ug)
+ret,139,m,y,n,m,,"return, retail, pretty",,
+art,138,y,y,n,y,its own word,"part, cart, mart",,rime family (-art)
+ang,138,y,y,n,y,,"bang, gang, hang",,distinct roots
+oun,137,m,n,y,m,,"noun, found, young",,
+ven,135,m,y,n,y,,"even, oven, vent",,
+ren,135,y,y,n,m,,"rent, trend, arena",,distinct roots
+ite,135,y,m,n,y,,"site, item, lite",,rime family (-ite)
+ain,135,y,n,n,y,rime diluted by morpheme,"main, pain, gain",,rime family (-ain)
+rou,134,y,y,n,n,,"group, round, route",,distinct roots
+nge,134,m,n,n,y,,"range, angel, anger",,
+ell,134,y,n,n,y,its own word,"well, sell, cell",,rime family (-ell)
+wo,133,m,y,n,m,overly productive prefix,"two, won, wow",,
+chi,133,y,y,n,n,,"chip, chin, china",,distinct roots
+che,132,y,y,n,m,,"chef, check, cheap",,distinct roots
+omp,131,n,n,y,n,,"comply, prompt, company",,
+oa,131,n,m,n,n,vowel diphthong,"oak, road, loan",,
+ust,128,y,n,n,y,,"just, must, dust",,rime family (-ust)
+rp,127,n,n,y,m,,"sharp, corps, purple",,
+lan,126,y,y,n,m,,"plan, land, lane",,distinct roots
+pos,125,m,y,n,n,,"post, pose, poster",,
+tar,124,m,m,n,m,its own word,"star, start, target",,
+spe,124,y,y,n,n,overly productive prefix,"speed, speak, spent",,
+rep,124,m,y,n,m,overly productive prefix; its own word,"prep, reply, report",,
+pen,123,y,y,n,m,its own word,"open, spent, spend",,
+af,123,m,y,n,m,,"safe, cafe, leaf",,
+ome,122,y,m,n,y,,"home, some, come",,rime family (-ome)
+app,121,m,y,n,n,overly productive prefix,"apply, happy, apple",,
+ew,118,n,n,n,y,vowel diphthong,"new, few, dew",,rime family (-ew)
+comp,118,m,y,n,n,overly productive prefix,"comply, company, compare",,
+ple,117,m,y,n,y,,"apple, maple, people",,
+unt,116,y,m,n,y,,"hunt, unto, cunt",,rime family (-unt)
+pla,116,y,y,n,n,overly productive prefix,"plan, play, place",,
+ld,115,m,n,n,y,,"old, gold, held",,
+cor,115,m,y,n,m,overly productive prefix,"core, cord, corn",,
+car,115,y,y,n,n,overly productive prefix; its own word,"care, card, cart",,
+ay,114,n,m,n,y,vowel diphthong,"may, day, way",,rime family (-ay)
+ice,113,y,n,n,y,its own word,"nice, vice, rice",,rime family (-ice)
+tre,110,y,y,n,m,,"tree, trek, treat",,distinct roots
+ear,109,y,y,n,y,its own word,"year, near, hear",,rime family (-ear)
+ath,109,y,m,n,y,,"path, bath, math",,rime family (-ath)
+gg,108,n,n,y,m,double letter,"egg, reggae, suggest",,
+cre,108,y,y,n,m,,"crew, acre, creek",,distinct roots
+ny,107,m,m,n,y,,"any, many, tiny",,
+ile,107,y,n,n,y,,"file, mile, tile",,rime family (-ile)
+pri,106,m,y,n,n,overly productive prefix,"price, print, prior",,
+mar,106,y,y,n,m,overly productive prefix; its own word,"mark, mart, march",,
+len,106,m,m,n,m,,"lens, glen, blend",,
+dd,105,n,n,n,m,double letter,"add, odd, odds",,
+eve,104,y,y,n,y,its own word,"even, ever, level",,distinct roots
+aw,104,n,y,n,y,vowel diphthong,"law, saw, raw",,rime family (-aw)
+tru,103,y,y,n,n,,"true, trust, truth",,distinct roots
+sen,103,y,y,n,m,,"send, sent, sense",,distinct roots
+ory,103,n,n,n,y,broad morpheme,"story, glory, ivory",,
+iss,103,m,m,n,m,,"miss, kiss, piss",,
+ore,102,y,n,n,y,its own word,"more, core, gore",,rime family (-ore)
+oll,102,y,n,n,y,,"roll, toll, poll",,rime family (-oll)
+ave,102,y,m,n,y,,"have, save, gave",,rime family (-ave)
+rop,101,m,m,n,m,,"drop, crop, rope",,
+ose,101,y,n,n,y,,"rose, lose, dose",,rime family (-ose)
+col,101,m,y,n,m,overly productive prefix,"cold, cola, color",,
+shi,100,y,y,n,n,,"ship, shit, shirt",,distinct roots
+cont,100,m,y,n,n,overly productive prefix,"contact, control, content",,
+can,99,y,y,n,m,its own word,"scan, cant, canon",,distinct roots
+ame,99,y,m,n,y,,"name, same, game",,rime family (-ame)
+fy,98,n,n,n,y,,"notify, modify, verify",,
+att,98,m,y,n,m,,"matt, watt, fatty",,
+inf,97,m,y,n,n,overly productive prefix,"info, infant, inform",,
+sur,96,m,y,n,n,overly productive prefix,"sure, surf, surge",,
+sto,96,y,y,n,n,,"stop, store, stock",,distinct roots
+our,96,y,m,n,y,its own word,"your, four, tour",,rime family (-our)
+cou,96,m,y,n,n,overly productive prefix,"could, court, count",,
+fer,95,m,m,n,y,,"offer, refer, ferry",,
+din,95,m,m,y,n,its own word,"ending, dinner, reading",,
+ade,95,y,m,n,y,,"made, jade, wade",,rime family (-ade)
+har,94,y,y,n,m,,"hard, char, harm",,distinct roots
+sco,93,y,y,n,m,,"score, scope, disco",,distinct roots
+ost,93,y,n,n,y,,"most, post, cost",,rime family (-ost)
+lea,93,y,y,n,n,overly productive prefix; its own word,"lead, leaf, lean",,
+des,93,m,y,n,m,overly productive prefix,"desk, design, desire",,
+sin,92,y,y,n,m,its own word,"sing, sink, since",,distinct roots
+arr,92,m,y,n,n,,"harry, carry, array",,
+rem,91,m,y,n,m,,"remote, remove, remain",,
+ole,91,y,n,n,y,,"role, hole, sole",,rime family (-ole)
+ick,91,y,n,n,y,,"pick, dick, nick",,rime family (-ick)
+spi,90,y,y,n,n,,"spin, spice, spine",,distinct roots
+pol,90,y,y,n,n,,"poll, pole, polo",,distinct roots
+bb,90,n,n,y,n,double letter,"bobby, hobby, lobby",,
+sce,89,m,y,n,n,,"scene, scenic, scenery",,
+nse,89,m,n,n,y,,"sense, dense, onset",,
+ey,89,n,m,n,y,vowel diphthong,"key, eye, hey",,rime family (-ey)
+rk,88,m,n,n,y,,"ark, work, park",,
+rab,88,m,m,n,m,,"grab, crab, rabbit",,
+hor,88,m,y,n,m,,"horn, short, horse",,distinct roots
+gat,88,m,m,n,n,,"gate, gather, negative",,
+exp,88,m,y,n,n,overly productive prefix,"expo, expert, expect",,
+cri,88,m,y,n,n,,"crib, crime, cried",,distinct roots
+cra,88,y,y,n,n,,"crap, crab, crazy",,distinct roots
+cle,87,m,y,n,y,,"clear, clean, cycle",,distinct roots
+sk,86,m,y,n,y,,"ask, ski, sky",,distinct roots
+scr,86,m,y,n,n,,"screw, screen, script",,
+rel,86,m,y,n,m,overly productive prefix,"rely, relay, relax",,
+arc,86,m,y,n,n,its own word,"arch, march, search",,
+ach,86,y,m,n,y,,"each, beach, reach",,rime family (-ach)
+ace,86,y,n,n,y,its own word,"face, race, pace",,rime family (-ace)
+ram,85,m,m,n,m,its own word,"gram, ramp, frame",,
+orm,85,m,n,n,y,,"form, worm, norm",,rime family (-orm)
+ther,83,m,y,n,y,,"other, there, either",,
+sol,83,m,y,n,n,its own word,"sold, solo, sole",,distinct roots
+of,83,m,y,n,m,its own word,"off, soft, roof",,distinct roots
+acc,83,m,y,n,n,overly productive prefix,"access, accept, accent",,
+wh,82,y,y,n,n,overly productive prefix,"who, why, what",,
+tch,82,m,n,n,y,,"watch, match, patch",,
+dg,82,m,n,y,n,,"edge, judge, lodge",,
+cur,82,y,y,n,m,its own word,"cure, occur, curve",,distinct roots
+til,81,m,m,n,m,,"till, tile, tilt",,
+sw,81,y,y,n,n,,"swim, swap, swan",,distinct roots
+pli,81,m,n,y,n,,"split, applied, replica",,
+ond,81,y,n,n,y,,"bond, pond, condo",,rime family (-ond)
+ale,81,y,m,n,y,its own word,"sale, male, tale",,rime family (-ale)
+ack,81,y,m,n,y,,"back, pack, jack",,rime family (-ack)
+sis,80,m,m,n,y,its own word,"basis, oasis, assist",,
+erv,80,n,n,y,n,,"serve, nerve, server",,
+cla,80,y,y,n,n,,"clay, clan, class",,distinct roots
+bra,80,y,y,n,m,its own word,"brad, brand, brain",,distinct roots
+spo,79,y,y,n,n,,"spot, sport, spoke",,distinct roots
+ref,79,m,y,n,n,overly productive prefix; its own word,"refer, reform, prefer",,
+emp,79,m,y,n,m,,"temp, empty, empire",,
+cho,79,m,y,n,m,,"echo, chose, choir",,
+ane,79,y,n,n,y,,"lane, panel, plane",,rime family (-ane)
+ire,78,y,n,n,y,its own word,"fire, hire, wire",,rime family (-ire)
+sca,77,y,y,n,n,,"scan, scat, scam",,distinct roots
+rse,77,m,n,n,y,,"horse, nurse, worse",,
+tho,76,y,y,n,n,its own word,"thou, those, thong",,distinct roots
+py,76,m,m,n,y,,"spy, copy, happy",,
+mit,76,m,m,n,y,,"smith, limit, admit",,
+eal,76,y,n,n,y,,"real, deal, seal",,rime family (-eal)
+sal,75,y,y,n,y,,"sale, salt, salon",,distinct roots
+ock,75,y,n,n,y,,"rock, cock, lock",,rime family (-ock)
+ime,75,y,n,n,y,,"time, mime, lime",,rime family (-ime)
+ign,75,y,m,n,y,,"sign, align, design",,rime family (-ign)
+ify,75,n,n,n,y,,"notify, modify, verify",,
+ict,75,m,n,n,y,,"victim, victor, strict",,
+cent,75,m,y,n,y,its own word,"center, recent, centre",,
+son,74,m,m,n,y,its own word,"song, mason, sonic",,
+gre,74,y,y,n,n,,"grey, grew, great",,distinct roots
+dem,74,m,y,n,m,,"demo, modem, demon",,
+cro,74,y,y,n,n,,"crop, crow, cross",,distinct roots
+comm,74,m,y,n,n,overly productive prefix,"common, commit, comment",,
+uct,73,n,n,n,m,,"product, auction, conduct",,
+ton,73,m,m,n,y,its own word,"tone, stone, baton",,
+rev,73,m,y,n,n,its own word,"review, reveal, prevent",,
+hin,73,m,m,n,m,,"thin, hint, chin",,
+ept,73,n,n,n,y,,"kept, depth, except",,
+bar,73,y,y,n,n,its own word,"bare, barn, barely",,
+val,72,y,y,n,y,,"oval, value, valid",,distinct roots
+sup,72,m,y,n,n,overly productive prefix; its own word,"super, supply, superb",,
+net,72,m,m,n,y,its own word,"planet, magnet, garnet",,
+ky,72,m,n,n,y,,"sky, lucky, rocky",,
+fla,72,y,y,n,n,,"flat, flag, flash",,distinct roots
+gle,71,m,m,n,y,,"glen, angle, eagle",,
+are,71,y,m,n,y,its own word,"area, care, rare",,rime family (-are)
+amp,71,y,m,n,y,its own word,"camp, lamp, ramp",,rime family (-amp)
+reg,70,m,y,n,n,overly productive prefix,"region, regard, regime",,
+bri,70,y,y,n,n,,"bring, brief, bride",,distinct roots
+ute,69,y,n,n,y,,"cute, route, outer",,rime family (-ute)
+sor,69,m,m,n,y,,"sort, sorry, resort",,
+she,69,y,y,n,n,its own word,"shed, sheet, shell",,distinct roots
+nci,69,n,n,y,n,,"pencil, council, ancient",,
+duc,69,m,m,y,n,,"duck, reduce, product",,
+ord,68,y,m,n,y,,"word, lord, ford",,rime family (-ord)
+las,68,m,m,n,m,,"last, class, flash",,
+sha,67,y,y,n,n,,"shall, share, shape",,distinct roots
+rge,67,m,n,n,y,,"urge, large, merge",,
+ote,67,y,n,n,y,,"note, vote, hotel",,rime family (-ote)
+ft,67,m,n,n,y,,"left, gift, soft",,
+conc,67,m,y,n,n,,"concept, concern, concert",,
+vel,66,m,m,n,y,,"level, novel, travel",,
+ude,66,m,n,n,y,,"nude, dude, crude",,
+rad,66,m,y,n,m,,"brad, grad, radio",,
+ext,66,m,y,n,m,,"next, text, extra",,
+ail,66,y,n,n,y,its own word,"mail, fail, rail",,rime family (-ail)
+oy,65,n,n,n,y,vowel diphthong,"boy, toy, joy",,rime family (-oy)
+lor,65,m,m,n,y,,"lord, color, glory",,
+ium,65,n,n,n,y,,"medium, sodium, premium",,
+ash,65,y,n,n,y,its own word,"cash, wash, dash",,rime family (-ash)
+ong,64,y,n,n,y,,"long, song, along",,rime family (-ong)
+nes,64,n,m,y,n,,"nest, honest, witness",,
+hol,64,y,y,n,m,,"hold, hole, holy",,distinct roots
+gin,64,m,m,n,y,its own word,"begin, engine, origin",,
+gar,64,y,y,n,m,,"sugar, cigar, garden",,
+dge,64,m,n,n,y,,"edge, judge, lodge",,
+dep,64,m,y,n,n,overly productive prefix,"depth, depot, deputy",,
+arm,64,y,y,n,y,its own word,"farm, army, arms",,rime family (-arm)
+san,63,y,y,n,n,,"sand, sans, sandy",,distinct roots
+oth,63,y,m,n,y,,"both, other, cloth",,rime family (-oth)
+aut,63,m,y,n,n,,"auto, author, beauty",,
+uit,62,m,n,n,y,,"suit, quit, quite",,
+thr,62,y,y,n,n,,"thru, three, throw",,distinct roots
+stu,62,y,y,n,n,,"stud, study, stuff",,distinct roots
+sn,62,y,y,n,n,,"snow, snap, snake",,distinct roots
+mil,62,y,y,n,n,,"mile, milk, mill",,distinct roots
+ye,61,y,y,n,y,its own word,"yes, yet, eye",,distinct roots
+uff,61,m,n,n,m,,"stuff, bluff, buffer",,
+sma,61,m,m,n,m,,"small, smart, plasma",,
+sem,61,m,y,n,n,,"semi, seminar, assembly",,
+out,61,y,y,n,y,its own word,"about, south, youth",,rime family (-out)
+gan,61,m,m,n,m,,"gang, began, organ",,
+spec,60,m,y,n,n,,"specs, aspect, special",,
+pul,60,y,y,n,n,,"pull, pulp, pulse",,distinct roots
+ode,60,m,n,n,y,its own word,"code, mode, node",,
+mul,60,m,m,n,n,,"formula, multiple, multimedia",,
+fin,60,y,y,n,m,its own word,"find, fine, final",,distinct roots
+def,60,m,y,n,n,,"define, defend, defeat",,
+stri,59,m,y,n,n,,"strip, string, strike",,
+rus,59,m,m,n,y,,"rush, trust, virus",,
+rom,59,m,m,n,m,,"from, prom, prompt",,
+nor,59,m,y,n,y,its own word,"norm, north, minor",,
+vit,58,m,m,n,n,,"vital, invite, vitamin",,
+try,58,m,m,n,y,its own word,"entry, trying, poetry",,
+tel,58,m,y,n,m,,"tell, hotel, motel",,
+sec,58,m,y,n,n,,"second, secure, sector",,
+esp,58,n,m,y,n,,"respect, despite, respond",,
+emb,58,m,m,n,n,,"member, embassy, embrace",,
+ase,57,y,n,n,y,,"case, base, ease",,rime family (-ase)
+alt,57,m,y,n,m,,"salt, alto, alter",,
+ake,57,y,n,n,y,,"make, take, lake",,rime family (-ake)
+rf,56,n,n,y,m,,"surf, perfect, surface",,
+phy,56,m,y,n,y,,"trophy, physics, physical",,
+ount,56,y,n,n,y,,"count, mount, county",,rime family (-ount)
+ink,56,y,n,n,y,its own word,"link, pink, sink",,rime family (-ink)
+fle,56,y,y,n,m,,"flex, fleet, flesh",,distinct roots
+ank,56,y,m,n,y,,"bank, rank, tank",,rime family (-ank)
+som,55,m,m,m,n,,"some, awesome, threesome",,
+ship,55,m,m,n,y,its own word,"worship, shipping, township",,
+rog,55,m,m,n,m,,"frog, roger, rogue",,
+rid,55,m,m,n,m,its own word,"ride, grid, ridge",,
+ood,55,y,n,n,y,,"good, food, wood",,rime family (-ood)
+oe,55,n,n,n,y,vowel diphthong,"toe, doe, does",,rime family (-oe)
+isp,55,m,n,n,m,,"lisp, crisp, display",,
+hon,55,m,m,n,m,,"phone, honor, honey",,
+fra,55,y,y,n,n,,"frame, frank, fraud",,distinct roots
+ctor,55,m,n,n,y,,"actor, sector, doctor",,
+wn,54,m,n,n,y,,"own, down, town",,
+vent,54,m,m,n,m,its own word,"event, advent, prevent",,
+thi,54,y,y,n,n,,"this, thin, think",,distinct roots
+sho,54,y,y,n,n,overly productive prefix,"show, shop, shot",,
+sat,54,m,y,n,n,its own word,"satin, satisfy, satellite",,
+lon,54,m,y,n,y,,"long, lone, along",,
+bel,54,y,y,n,m,,"bell, belt, below",,distinct roots
+bat,54,y,y,n,m,its own word,"bath, batch, baton",,distinct roots
+ban,54,y,y,n,m,its own word,"bank, band, bang",,distinct roots
+vat,53,n,n,y,n,its own word,"avatar, private, activate",,
+ung,53,m,n,n,m,,"lung, hung, young",,
+ump,53,y,n,n,y,its own word,"jump, pump, dump",,rime family (-ump)
+stru,53,m,y,n,n,,"struck, struggle, structure",,
+pic,53,m,m,n,m,,"pick, epic, topic",,
+oss,53,y,n,n,y,,"loss, boss, moss",,rime family (-oss)
+med,53,m,y,n,m,,"media, armed, medal",,
+lut,53,n,n,y,m,,"slut, flute, clutch",,
+lim,53,m,y,n,m,,"slim, lime, limit",,
+lc,53,n,n,y,n,,"falcon, welcome, alcohol",,
+gic,53,m,n,n,m,,"magic, logic, logical",,
+ead,53,y,n,n,y,,"read, head, lead",,rime family (-ead)
+del,53,y,y,n,m,,"dell, model, delta",,distinct roots
+cap,53,y,y,n,n,its own word,"cape, escape, capital",,
+bor,53,m,y,n,y,,"born, bore, labor",,
+ax,53,y,m,n,y,its own word,"tax, fax, wax",,rime family (-ax)
+arch,53,m,y,n,m,its own word,"march, search, archive",,
+ange,53,y,m,n,y,,"range, angel, anger",,rime family (-ange)
+amb,53,m,y,n,m,,"lamb, amber, bamboo",,
+ya,52,y,y,n,n,,"yard, yarn, yahoo",,distinct roots
+wr,52,y,y,n,n,,"wrap, write, wrote",,distinct roots
+rov,52,n,n,y,n,,"prove, grove, drove",,
+rip,52,m,m,n,m,its own word,"trip, ripe, grip",,
+lum,52,m,m,n,m,,"volume, column, alumni",,
+lm,52,m,n,n,y,,"film, palm, calm",,
+evi,52,m,m,n,n,,"evil, devil, review",,
+eth,52,m,y,n,m,,"teeth, method, ethics",,
+dra,52,y,y,n,n,,"draw, drag, draft",,distinct roots
+cru,52,m,y,n,n,,"crude, cruel, cruise",,
+bal,52,y,y,n,y,,"ball, bald, balls",,distinct roots
+ward,51,m,n,n,y,its own word,"award, toward, reward",,
+tant,51,m,n,n,y,,"mutant, instant, distant",,
+rum,51,m,n,n,y,its own word,"drum, forum, serum",,
+ras,51,n,n,y,n,,"crash, brass, grass",,
+pha,51,m,y,n,m,,"phase, alpha, phantom",,
+ox,51,y,m,n,y,its own word,"box, fox, sox",,
+orn,51,y,,,y,,"corn, porn, horn",,rime family (-orn)
+mag,51,y,y,m,,,"magazine, imagine",,
+inv,51,y,y,,,,"invent, invite, invoke",,
+erp,51,m,n,y,n,,"excerpt, interpret, enterprise",,
+win,50,y,y,n,m,its own word,"wine, wind, twin",,distinct roots
+une,50,m,m,n,y,,"tune, tuner, immune",,
+ule,50,m,n,n,y,,"rule, module, schedule",,
+tw,50,y,y,n,n,,"two, twin, twice",,distinct roots
+rav,50,y,y,m,,,"rave, ravinous, crave",,
+pon,50,m,m,n,m,,"upon, pond, pony",,
+ped,50,y,y,,,,"pedestrian, pedephile, peddle",,
+mou,50,y,y,n,n,,"mount, mouse, mouth",,distinct roots
+hes,50,n,n,y,m,,"these, chest, chess",,
+bur,50,m,y,n,n,its own word,"burn, burst, bureau",,
+bro,50,y,y,n,n,,"brown, broad, broke",,distinct roots
+vin,49,n,n,y,n,,,,
+ull,49,y,n,n,y,,"bull, full, mull",,rime family (-ull)
+tial,49,n,n,n,y,broad morpheme,,"special, racial, mutual",
+spa,49,y,y,n,n,,"spank, spam, spat",,distinct roots
+oke,49,y,n,n,y,,"spoke, toke, woke",,rime family (-oke)
+kn,49,y,y,n,n,,"knot, knew, knit",,distinct roots
+ient,49,n,n,n,y,broad morpheme,,,
+eed,49,y,n,n,y,,"need, weed, seed",,rime family (-eed)
+det,49,n,y,n,n,,determine,,
+van,48,n,y,y,n,"dark ending, its own word",vantage,,
+uck,48,y,n,n,y,,"luck, fuck, duck",,rime family (-uck)
+pas,48,m,y,n,n,"ends in s, almost its own word","past, passage",,distinct roots
+nct,48,n,n,m,y,,,,
+ith,48,n,n,n,y,,with,,
+gal,48,m,y,m,y,"dark ending, its own word",gallon,,
+eva,48,n,m,n,n,,,,
+bli,48,y,y,n,n,,"blink, blind, bling",,
+avi,48,n,n,m,n,,,,
+abo,48,m,y,n,n,,"about, above",,
+zz,47,n,n,n,y,double letter,,,
+ume,47,n,n,y,m,,fume,,
+rce,47,n,n,n,y,,,,
+ound,47,y,n,n,y,,"round, found, bound",,rime family (-ound)
+exc,47,m,y,n,n,,"excel, except",executive,
+dist,47,m,y,n,n,,"distance, distribution",destroy,
+conf,47,y,y,n,n,,"conference, confer, conform",,
