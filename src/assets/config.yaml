@@ -188,17 +188,22 @@ rules:
   #   rule_formation_fill_player -- fill every board cell with a single-cell
   #     player piece (no obstacles/missions). Board opens fully packed; pair with
   #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win.
-  #   rule_formation_fill_ideation_regions -- like fill_player, but laid out by gram
-  #     TYPE in space: trigram+ PREFIX grams on the LEFT, trigram+ MIDFIX/SUFFIX on
-  #     the RIGHT, all DIGRAMS clustered in a rough CENTER circle (random *fix mix),
-  #     and UNIGRAMS filling the gaps. How many of each length comes from the
-  #     gram_length.* percentages; the *fix split comes from the cleaned3 grades.
-  #     Forces the length-controlled picker regardless of *_player.gram_pick. Pair
-  #     with game_screen.victory: rule_victory_none. (Ignores formation_arrangement.)
+  #   rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle -- like
+  #     fill_player, but laid out by gram TYPE: trigram+ PREFIX grams packed into the
+  #     far-LEFT edge, trigram+ MIDFIX/SUFFIX into the far-RIGHT edge, all DIGRAMS in
+  #     a rough CENTER circle (random *fix mix), and UNIGRAMS filling the gaps.
+  #   rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid -- same
+  #     trigram+ side panes, but the DIGRAMS form a TRIANGLE at the screen bottom
+  #     pointing up (widest along the bottom, narrowing upward); UNIGRAMS fill in.
+  #   Both: how many of each length comes from gram_length.*; the left/right trigram
+  #   split from gram_ideation.trigramplus.* (prefix : midfix+suffix). Force the
+  #   length-controlled picker regardless of *_player.gram_pick; pair with
+  #   game_screen.victory: rule_victory_none. (Both ignore formation_arrangement.)
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
   # game_screen.setup_formation: rule_formation_fill_player
-  game_screen.setup_formation: rule_formation_fill_ideation_regions
+  # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
+  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -466,9 +471,9 @@ rules:
   gram_ideation.digram.suffix_percent:  30
 
   gram_ideation.trigramplus.strong_percent: 70
-  gram_ideation.trigramplus.prefix_percent: 60
+  gram_ideation.trigramplus.prefix_percent: 50
   gram_ideation.trigramplus.midfix_percent: 10
-  gram_ideation.trigramplus.suffix_percent: 30
+  gram_ideation.trigramplus.suffix_percent: 40
 
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
   square_player.gram_pick: rule_scrabble_distribution

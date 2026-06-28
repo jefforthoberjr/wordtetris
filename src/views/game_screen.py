@@ -458,7 +458,10 @@ class GameScreen:
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
             "rule_formation_fill_player": self._rule_formation_fill_player,
-            "rule_formation_fill_ideation_regions": self._rule_formation_fill_ideation_regions,
+            "rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle":
+                self._rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle,
+            "rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid":
+                self._rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -1123,39 +1126,46 @@ class GameScreen:
         return [(x, y, length) for (x, y), length in zip(shuffled, lengths)]
 
     # --- ideation-regions formation (rule_formation_fill_ideation_regions) ---
-    def _rule_formation_fill_ideation_regions(self):
-        """Opening board laid out by gram TYPE in space: trigram+ PREFIX grams on
-        the left, trigram+ MIDFIX/SUFFIX grams on the right, all DIGRAMS clustered
-        in a rough circle in the center (random *fix mix), and UNIGRAMS filling
-        every remaining cell. How many of each length comes from the gram_length.*
-        percentages; the prefix/midfix/suffix split comes from the cleaned3 grades.
-        Like rule_formation_fill_player it lays settled single-cell player pieces and
-        no obstacle/mission pieces (pair with game_screen.victory: rule_victory_none).
-        Draws are forced through the length-controlled picker regardless of the
-        configured *_player.gram_pick, and deduped like any other formation."""
+    def _rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle(self):
+        """Trigram+ side panes (prefix far-left / midsuf far-right); DIGRAMS in a
+        rough CIRCLE at board center (random *fix mix); UNIGRAMS fill the rest."""
+        self._fill_ideation_sidepanes(self._digram_region_centercircle)
+
+    def _rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid(self):
+        """Trigram+ side panes (prefix far-left / midsuf far-right); DIGRAMS in a
+        TRIANGLE at the screen BOTTOM pointing up; UNIGRAMS fill the rest."""
+        self._fill_ideation_sidepanes(self._digram_region_bottompyramid)
+
+    def _fill_ideation_sidepanes(self, digram_region_rule):
+        """Shared body for the ideation side-pane formations. Lays the opening board
+        by gram TYPE in space: trigram+ PREFIX grams packed into the far-LEFT edge,
+        trigram+ MIDFIX/SUFFIX into the far-RIGHT edge, DIGRAMS in whatever region
+        `digram_region_rule(cells, n_di)` returns, and UNIGRAMS filling every gap.
+        Counts of each length come from gram_length.*; the left/right trigram split
+        from gram_ideation.trigramplus.* (prefix : midfix+suffix). Lays settled
+        single-cell player pieces and no obstacle/mission pieces (pair with
+        game_screen.victory: rule_victory_none). Draws are forced through the
+        length-controlled picker regardless of the configured *_player.gram_pick,
+        and deduped like any other formation."""
         cells = [(x, y)
                  for y in range(self._board.height)
                  for x in range(self._board.width)
                  if self._board.is_valid(x, y)]
         n_uni, n_di, n_tri = self._region_length_counts(len(cells))
 
-        cx, cy = self._board.cell_center(*self._board.center_cell())
+        # Digrams claim their region first; the trigram panes + unigrams use the rest.
+        digrams = digram_region_rule(cells, n_di)
+        digram_set = set(digrams)
+        outer = [c for c in cells if c not in digram_set]
 
-        def dist2(c):
-            px, py = self._board.cell_center(c[0], c[1])
-            return (px - cx) ** 2 + (py - cy) ** 2
-
-        # Center circle = the n_di cells nearest board center (a rough disc).
-        by_center = sorted(cells, key=dist2)
-        circle = by_center[:n_di]
-        outer = by_center[n_di:]
+        cx = self._board.cell_center(*self._board.center_cell())[0]
         left = [c for c in outer if self._board.cell_center(c[0], c[1])[0] < cx]
         right = [c for c in outer if self._board.cell_center(c[0], c[1])[0] >= cx]
 
         # Split the trigram+ budget by the gram_ideation.trigramplus.* shares (NOT by
         # region size): prefix grams go left, midfix+suffix go right, so the left/right
         # counts honor prefix_percent : (midfix_percent + suffix_percent). midfix vs
-        # suffix are NOT separated -- this 2-region layout only splits prefix from
+        # suffix are NOT separated -- this 2-pane layout only splits prefix from
         # non-prefix; both share the right side, drawn from the combined midsuf pool by
         # corpus frequency. Each side is still capped by how many edge cells it has.
         pre = CONFIG["rules"]["gram_ideation.trigramplus.prefix_percent"]
@@ -1169,7 +1179,7 @@ class GameScreen:
         # Push the trigram+ grams to the OUTER edges: order each side by horizontal
         # extremity (leftmost / rightmost cell first) and take the most extreme ones,
         # so the multigrams pack into the edge columns and the unigrams fill inward
-        # toward the digram circle (rather than trigrams scattering through the half).
+        # toward the digram region (rather than trigrams scattering through the half).
         left.sort(key=lambda c: self._board.cell_center(c[0], c[1]))            # px asc, py asc
         right.sort(key=lambda c: (-self._board.cell_center(c[0], c[1])[0],
                                   self._board.cell_center(c[0], c[1])[1]))      # px desc, py asc
@@ -1177,10 +1187,36 @@ class GameScreen:
         tri_right = right[:n_tri_right]
         unigrams = left[n_tri_left:] + right[n_tri_right:]
 
-        self._place_region_cells(circle, 2, None)        # digrams, any *fix
+        self._place_region_cells(digrams, 2, None)       # digrams, any *fix
         self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
         self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
         self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
+
+    def _digram_region_centercircle(self, cells, n_di):
+        """The n_di cells nearest board center (a rough disc)."""
+        cx, cy = self._board.cell_center(*self._board.center_cell())
+
+        def dist2(c):
+            px, py = self._board.cell_center(c[0], c[1])
+            return (px - cx) ** 2 + (py - cy) ** 2
+
+        return sorted(cells, key=dist2)[:n_di]
+
+    def _digram_region_bottompyramid(self, cells, n_di):
+        """The n_di cells forming an upward-pointing TRIANGLE anchored at the screen
+        BOTTOM (min pixel-y, pyglet y-up): widest along the bottom row, narrowing
+        toward the top. Cells are ranked by height-above-bottom plus horizontal
+        distance from center, so taking the n_di lowest grows the pyramid up-and-out
+        from the bottom-center."""
+        centers = {c: self._board.cell_center(c[0], c[1]) for c in cells}
+        cx = self._board.cell_center(*self._board.center_cell())[0]
+        bottom_py = min(py for _px, py in centers.values())
+
+        def score(c):
+            px, py = centers[c]
+            return (py - bottom_py) + abs(px - cx)
+
+        return sorted(cells, key=score)[:n_di]
 
     def _region_length_counts(self, n):
         """Split `n` cells into (unigram, digram, trigram+) counts from the
