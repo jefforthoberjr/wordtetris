@@ -42,6 +42,15 @@ _in_formation = False
 _length_counts = {1: 0, 2: 0, 3: 0}
 _forced_length = None
 
+# Level-2 formation arrangement (see formation_length_sequence below and
+# game_screen._rule_formation_arrange_*). The arrangement decides every cell's
+# length UP FRONT, then pins each cell's draw to that length via this global, so
+# the diagonal length placement is independent of the order grams are drawn.
+# When set, pick_grams routes a formation draw through _draw_forced_formation
+# instead of the legacy per-draw quota _pick_grams_length_enforced (kept below,
+# now uncalled in this path). None outside an arranged formation draw.
+_forced_formation_length = None
+
 # A SECOND quota nested inside the unigram category: every formation unigram is
 # also a "common glue" or "uncommon flavor" letter (see _COMMON_GLUE_LETTERS /
 # _UNCOMMON_FLAVOR_LETTERS below), and gram_length.unigram_*_percent enforces that
@@ -186,6 +195,11 @@ def pick_grams(rule, count):
     multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
     deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
     if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
+        # Level-2 arrangement active: the formation has pinned this cell's length
+        # (set_forced_formation_length), so draw straight from that bucket. Else
+        # fall back to the legacy per-draw round-robin quota.
+        if _forced_formation_length is not None:
+            return _draw_forced_formation(deduped, count)
         return _pick_grams_length_enforced(deduped, count)
     return deduped(count)
 
@@ -585,6 +599,66 @@ def _pick_grams_length_enforced(deduped, count):
             _forced_unigram_group = None
         grams.extend(picked)
         _length_counts[category] += len(picked)
+        if group is not None:
+            _unigram_group_counts[group] += len(picked)
+    return grams
+
+
+# --- Level-2 formation arrangement (length placement detached from draw order) ---
+# The legacy path above (_pick_grams_length_enforced) decides each cell's length
+# AT DRAW TIME, in row-major fill order -- so the round-robin cadence aliases into
+# diagonal lines only as long as draw-order == fill-order. To keep that diagonal
+# reveal even if we later reorder draws (e.g. draw all trigrams first), the
+# formation now decides the length-per-cell sequence UP FRONT here, hands it to a
+# game_screen arrangement rule to map onto cells (row-major -> diagonal, shuffled
+# -> scattered), and pins each cell's draw via set_forced_formation_length. Same
+# percentages, same cadence -- just no longer coupled to when grams are drawn.
+
+def set_forced_formation_length(length):
+    """Pin the next length-controlled formation draw to `length` (1 / 2 / 3+), or
+    clear with None. game_screen sets this around each arranged formation cell's
+    piece build so pick_grams draws straight from that length bucket."""
+    global _forced_formation_length
+    _forced_formation_length = length
+
+
+def formation_length_sequence(count):
+    """Return a list of `count` length categories (1 / 2 / 3+) in the round-robin
+    largest-remainder cadence dictated by gram_length.*_percent -- the SAME
+    periodic cadence the legacy _pick_grams_length_enforced produced per draw, but
+    computed up front and detached from gram drawing. A re-roll never changes a
+    draw's length (dedup stays in-bucket), so the legacy kept-gram cadence equals
+    this pre-computed one; mapping it row-major reproduces today's diagonal."""
+    counts = {1: 0, 2: 0, 3: 0}
+    seq = []
+    for _ in range(count):
+        category = _largest_remainder_pick(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS, counts)
+        if category is None:  # degenerate config (all shares 0) -- default unigram
+            category = 1
+        seq.append(category)
+        counts[category] += 1
+    return seq
+
+
+def _draw_forced_formation(deduped, count):
+    """Draw `count` formation grams pinned to _forced_formation_length, through the
+    full dedup pipeline. Unigram cells still honor the common/uncommon sub-bin
+    quota. The Level-2 twin of _pick_grams_length_enforced's per-cell body, minus
+    the length round-robin (the arrangement already chose the length)."""
+    global _forced_length, _forced_unigram_group
+    length = _forced_formation_length
+    grams = []
+    for _ in range(count):
+        group = _next_quota_unigram_group() if length == 1 else None
+        _forced_length = length
+        _forced_unigram_group = group
+        try:
+            picked = deduped(1)
+        finally:
+            _forced_length = None
+            _forced_unigram_group = None
+        grams.extend(picked)
+        _length_counts[length] += len(picked)
         if group is not None:
             _unigram_group_counts[group] += len(picked)
     return grams

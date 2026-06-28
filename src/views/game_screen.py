@@ -30,6 +30,8 @@ from models.gram_picker import (
     reset_gram_dedup,
     begin_formation_gram_run,
     end_formation_gram_run,
+    formation_length_sequence,
+    set_forced_formation_length,
 )
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
@@ -456,6 +458,19 @@ class GameScreen:
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
+        )
+
+        # How rule_formation_fill_player arranges gram LENGTHS across the board
+        # when the length-controlled picker is active (game_screen.formation_arrangement).
+        # Diagonal = map the round-robin length cadence onto cells row-major, so it
+        # aliases into diagonal lines (the emergent reveal we want to keep); random =
+        # same length counts, scattered positions. See _rule_formation_arrange_*.
+        formation_arrangement_rules = {
+            "rule_formation_arrange_diagonal": self._rule_formation_arrange_diagonal,
+            "rule_formation_arrange_random": self._rule_formation_arrange_random,
+        }
+        self._formation_arrangement_rule = select_rule(
+            "game_screen.formation_arrangement", formation_arrangement_rules
         )
 
         # Spawn orientation rule (independent of position), chosen by the YAML
@@ -1020,30 +1035,85 @@ class GameScreen:
         so the full board isn't an instant win or an unwinnable state. The filled
         cells are ordinary player cells (not tracked in _obstacle_cells /
         _mission_cells), and a player-overlap-allowing rule lets live pieces still
-        be placed over them."""
-        for y in range(self._board.height):
-            for x in range(self._board.width):
-                if not self._board.is_valid(x, y):
-                    continue
-                # gram_pick_rule=None falls back to the configured player gram-pick
-                # (square_player.gram_pick / hex_player.gram_pick); the unimo shape
-                # makes each piece exactly one cell so the fill tiles the board.
-                # Tinted SETTLED (white board color), not the live piece's blue
-                # active fill: these open already settled, like long-placed cells,
-                # not freshly dropped (see _settle_placed_cells).
-                piece = self._piece_class(
-                    self._unimo_type, self._cell_size, self._piece_batch,
-                    visible=False, gram_pick_rule=None,
-                    cell_color=self.SETTLED_CELL_COLOR,
-                )
-                piece.set_position(x, y)
-                piece.place()
-                logged_cells = []
-                for gx, gy, cell, label, gram in piece.get_cell_data():
-                    self._board.place(gx, gy, cell, label, gram)
-                    logged_cells.append((gx, gy, gram))
-                L.log_06002("fill", logged_cells)
-                piece.set_visible(True)
+        be placed over them.
+
+        When the length-controlled picker is active, the gram LENGTHS across the
+        board are laid out by game_screen.formation_arrangement (diagonal aliasing
+        vs scattered) -- see _fill_player_arranged. Any other picker just fills
+        row-major (its lengths aren't ours to arrange)."""
+        cells = [(x, y)
+                 for y in range(self._board.height)
+                 for x in range(self._board.width)
+                 if self._board.is_valid(x, y)]
+        if self._formation_length_arrangement_active():
+            self._fill_player_arranged(cells)
+        else:
+            for x, y in cells:
+                self._fill_one_player_cell(x, y)
+
+    def _formation_length_arrangement_active(self):
+        """True when the active player gram-pick is the length-controlled corpus
+        picker -- the only picker whose draws carry the unigram/digram/3+ lengths
+        the arrangement steers. Other pickers fill plain row-major."""
+        key = ("hex_player.gram_pick"
+               if CONFIG["rules"]["game_screen.grid"] == "rule_use_hex_grid"
+               else "square_player.gram_pick")
+        return CONFIG["rules"][key] == "rule_grams_greater_than_47_lengthcontrolled"
+
+    def _fill_player_arranged(self, cells):
+        """Lay out each cell's gram LENGTH up front (formation_length_sequence),
+        let the configured arrangement rule map those lengths onto cells (diagonal
+        or scattered), then draw + place a gram of each cell's pinned length. The
+        length placement is thus fixed independently of the order grams are drawn,
+        so the diagonal reveal survives future draw-order refactors."""
+        lengths = formation_length_sequence(len(cells))
+        for x, y, length in self._formation_arrangement_rule(cells, lengths):
+            set_forced_formation_length(length)
+            try:
+                self._fill_one_player_cell(x, y)
+            finally:
+                set_forced_formation_length(None)
+
+    def _fill_one_player_cell(self, x, y):
+        """Build one settled single-cell player piece at (x, y), place its gram on
+        the board, and log it. Shared by the arranged and plain fills."""
+        # gram_pick_rule=None falls back to the configured player gram-pick
+        # (square_player.gram_pick / hex_player.gram_pick); the unimo shape makes
+        # each piece exactly one cell so the fill tiles the board. Tinted SETTLED
+        # (white board color), not the live piece's blue active fill: these open
+        # already settled, like long-placed cells (see _settle_placed_cells).
+        piece = self._piece_class(
+            self._unimo_type, self._cell_size, self._piece_batch,
+            visible=False, gram_pick_rule=None,
+            cell_color=self.SETTLED_CELL_COLOR,
+        )
+        piece.set_position(x, y)
+        piece.place()
+        logged_cells = []
+        for gx, gy, cell, label, gram in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram)
+            logged_cells.append((gx, gy, gram))
+        L.log_06002("fill", logged_cells)
+        piece.set_visible(True)
+
+    # --- formation arrangement rules (game_screen.formation_arrangement) ----
+    # Picked by select_rule above. Each takes the row-major `cells` list and the
+    # round-robin `lengths` sequence and returns a list of (x, y, length) telling
+    # _fill_player_arranged which length to pin at each cell.
+    def _rule_formation_arrange_diagonal(self, cells, lengths):
+        """Map the round-robin length sequence onto cells in ROW-MAJOR order, so
+        the periodic length cadence aliases against the grid's row width into
+        diagonal lines (preserving the emergent opening reveal). `cells` arrives
+        row-major; zip pairs cell i with length i."""
+        return [(x, y, length) for (x, y), length in zip(cells, lengths)]
+
+    def _rule_formation_arrange_random(self, cells, lengths):
+        """Same length multiset, scattered: shuffle which cell gets which length,
+        so the unigram/digram/3+ counts stay exactly as configured but their
+        positions are random (no diagonal). rand() keeps it replay-reproducible."""
+        shuffled = list(cells)
+        rand().shuffle(shuffled)
+        return [(x, y, length) for (x, y), length in zip(shuffled, lengths)]
 
     def _build_obstacle_pool(self, count):
         """(Re)build the obstacle pool with `count` pieces, using the obstacle

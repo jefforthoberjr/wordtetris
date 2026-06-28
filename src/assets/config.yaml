@@ -413,6 +413,24 @@ rules:
   gram_length.unigram_common_percent:   60
   gram_length.unigram_uncommon_percent: 40
 
+  # How the opening board (rule_formation_fill_player) ARRANGES gram lengths in
+  # space, when the length-controlled picker (rule_grams_greater_than_47_lengthcontrolled)
+  # is the active *_player.gram_pick. Both variants place the SAME unigram/digram/3+
+  # counts (the gram_length.* quota above) -- they differ only in WHERE each length
+  # lands, which the fade-by-length opening reveal then makes visible.
+  #   rule_formation_arrange_diagonal -- map the round-robin length cadence onto
+  #     cells row-major; the period aliases against the grid width into diagonal
+  #     lines that sweep in (eases the first-glance overwhelm). This reproduces the
+  #     emergent reveal we got for free once the length quota was added, but now it
+  #     no longer depends on draw order -- the length-per-cell map is fixed up front,
+  #     so it survives future changes to the order grams are drawn.
+  #   rule_formation_arrange_random -- same length counts, scattered to random cells
+  #     (the truly-random look from before the length quota existed).
+  # Only rule_formation_fill_player + the length-controlled picker use this; any
+  # other picker fills row-major with no length arrangement.
+  game_screen.formation_arrangement: rule_formation_arrange_diagonal
+  # game_screen.formation_arrangement: rule_formation_arrange_random
+
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
   square_player.gram_pick: rule_scrabble_distribution
   # square_player.gram_pick: rule_random_letters
