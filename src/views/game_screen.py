@@ -32,6 +32,9 @@ from models.gram_picker import (
     end_formation_gram_run,
     formation_length_sequence,
     set_forced_formation_length,
+    set_forced_formation_cell,
+    clear_forced_formation_cell,
+    rule_grams_greater_than_47_lengthcontrolled,
 )
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
@@ -455,6 +458,7 @@ class GameScreen:
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
             "rule_formation_fill_player": self._rule_formation_fill_player,
+            "rule_formation_fill_ideation_regions": self._rule_formation_fill_ideation_regions,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -1074,9 +1078,12 @@ class GameScreen:
             finally:
                 set_forced_formation_length(None)
 
-    def _fill_one_player_cell(self, x, y):
+    def _fill_one_player_cell(self, x, y, gram_pick_rule=None):
         """Build one settled single-cell player piece at (x, y), place its gram on
-        the board, and log it. Shared by the arranged and plain fills."""
+        the board, and log it. Shared by the arranged and plain fills. gram_pick_rule
+        defaults to None (the configured player gram-pick); the region formation
+        passes the length-controlled picker explicitly so its forced-cell draws
+        engage regardless of the configured *_player.gram_pick."""
         # gram_pick_rule=None falls back to the configured player gram-pick
         # (square_player.gram_pick / hex_player.gram_pick); the unimo shape makes
         # each piece exactly one cell so the fill tiles the board. Tinted SETTLED
@@ -1084,7 +1091,7 @@ class GameScreen:
         # already settled, like long-placed cells (see _settle_placed_cells).
         piece = self._piece_class(
             self._unimo_type, self._cell_size, self._piece_batch,
-            visible=False, gram_pick_rule=None,
+            visible=False, gram_pick_rule=gram_pick_rule,
             cell_color=self.SETTLED_CELL_COLOR,
         )
         piece.set_position(x, y)
@@ -1114,6 +1121,91 @@ class GameScreen:
         shuffled = list(cells)
         rand().shuffle(shuffled)
         return [(x, y, length) for (x, y), length in zip(shuffled, lengths)]
+
+    # --- ideation-regions formation (rule_formation_fill_ideation_regions) ---
+    def _rule_formation_fill_ideation_regions(self):
+        """Opening board laid out by gram TYPE in space: trigram+ PREFIX grams on
+        the left, trigram+ MIDFIX/SUFFIX grams on the right, all DIGRAMS clustered
+        in a rough circle in the center (random *fix mix), and UNIGRAMS filling
+        every remaining cell. How many of each length comes from the gram_length.*
+        percentages; the prefix/midfix/suffix split comes from the cleaned3 grades.
+        Like rule_formation_fill_player it lays settled single-cell player pieces and
+        no obstacle/mission pieces (pair with game_screen.victory: rule_victory_none).
+        Draws are forced through the length-controlled picker regardless of the
+        configured *_player.gram_pick, and deduped like any other formation."""
+        cells = [(x, y)
+                 for y in range(self._board.height)
+                 for x in range(self._board.width)
+                 if self._board.is_valid(x, y)]
+        n_uni, n_di, n_tri = self._region_length_counts(len(cells))
+
+        cx, cy = self._board.cell_center(*self._board.center_cell())
+
+        def dist2(c):
+            px, py = self._board.cell_center(c[0], c[1])
+            return (px - cx) ** 2 + (py - cy) ** 2
+
+        # Center circle = the n_di cells nearest board center (a rough disc).
+        by_center = sorted(cells, key=dist2)
+        circle = by_center[:n_di]
+        outer = by_center[n_di:]
+        left = [c for c in outer if self._board.cell_center(c[0], c[1])[0] < cx]
+        right = [c for c in outer if self._board.cell_center(c[0], c[1])[0] >= cx]
+
+        # Split the trigram+ budget by the gram_ideation.trigramplus.* shares (NOT by
+        # region size): prefix grams go left, midfix+suffix go right, so the left/right
+        # counts honor prefix_percent : (midfix_percent + suffix_percent). midfix vs
+        # suffix are NOT separated -- this 2-region layout only splits prefix from
+        # non-prefix; both share the right side, drawn from the combined midsuf pool by
+        # corpus frequency. Each side is still capped by how many edge cells it has.
+        pre = CONFIG["rules"]["gram_ideation.trigramplus.prefix_percent"]
+        mid = CONFIG["rules"]["gram_ideation.trigramplus.midfix_percent"]
+        suf = CONFIG["rules"]["gram_ideation.trigramplus.suffix_percent"]
+        denom = pre + mid + suf
+        left_share = (pre / denom) if denom else 0.5
+        n_tri_left = min(round(n_tri * left_share), len(left))
+        n_tri_right = min(n_tri - n_tri_left, len(right))
+
+        # Push the trigram+ grams to the OUTER edges: order each side by horizontal
+        # extremity (leftmost / rightmost cell first) and take the most extreme ones,
+        # so the multigrams pack into the edge columns and the unigrams fill inward
+        # toward the digram circle (rather than trigrams scattering through the half).
+        left.sort(key=lambda c: self._board.cell_center(c[0], c[1]))            # px asc, py asc
+        right.sort(key=lambda c: (-self._board.cell_center(c[0], c[1])[0],
+                                  self._board.cell_center(c[0], c[1])[1]))      # px desc, py asc
+        tri_left = left[:n_tri_left]
+        tri_right = right[:n_tri_right]
+        unigrams = left[n_tri_left:] + right[n_tri_right:]
+
+        self._place_region_cells(circle, 2, None)        # digrams, any *fix
+        self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
+        self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
+        self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
+
+    def _region_length_counts(self, n):
+        """Split `n` cells into (unigram, digram, trigram+) counts from the
+        gram_length.*_percent shares (the same knobs the length quota uses)."""
+        pcts = [CONFIG["rules"]["gram_length.unigram_percent"],
+                CONFIG["rules"]["gram_length.digram_percent"],
+                CONFIG["rules"]["gram_length.trigramplus_percent"]]
+        total = sum(pcts) or 1
+        n_uni = round(n * pcts[0] / total)
+        n_di = round(n * pcts[1] / total)
+        if n_uni + n_di > n:
+            n_di = max(0, n - n_uni)
+        return n_uni, n_di, n - n_uni - n_di
+
+    def _place_region_cells(self, cells, length, attr):
+        """Fill each of `cells` with a settled player piece whose gram is the given
+        `length` (and ideation pool `attr`, if any), forced per cell through the
+        length-controlled picker. Deduped like every other formation draw."""
+        for x, y in cells:
+            set_forced_formation_cell(length, attr)
+            try:
+                self._fill_one_player_cell(
+                    x, y, gram_pick_rule=rule_grams_greater_than_47_lengthcontrolled)
+            finally:
+                clear_forced_formation_cell()
 
     def _build_obstacle_pool(self, count):
         """(Re)build the obstacle pool with `count` pieces, using the obstacle

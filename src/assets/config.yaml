@@ -188,9 +188,17 @@ rules:
   #   rule_formation_fill_player -- fill every board cell with a single-cell
   #     player piece (no obstacles/missions). Board opens fully packed; pair with
   #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win.
+  #   rule_formation_fill_ideation_regions -- like fill_player, but laid out by gram
+  #     TYPE in space: trigram+ PREFIX grams on the LEFT, trigram+ MIDFIX/SUFFIX on
+  #     the RIGHT, all DIGRAMS clustered in a rough CENTER circle (random *fix mix),
+  #     and UNIGRAMS filling the gaps. How many of each length comes from the
+  #     gram_length.* percentages; the *fix split comes from the cleaned3 grades.
+  #     Forces the length-controlled picker regardless of *_player.gram_pick. Pair
+  #     with game_screen.victory: rule_victory_none. (Ignores formation_arrangement.)
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
-  game_screen.setup_formation: rule_formation_fill_player
+  # game_screen.setup_formation: rule_formation_fill_player
+  game_screen.setup_formation: rule_formation_fill_ideation_regions
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -399,7 +407,7 @@ rules:
   # can't come out trigram-heavy by luck. (The player piece pool just rolls them
   # per piece; it self-averages over 100+ pieces.)
   gram_length.unigram_percent:     50
-  gram_length.digram_percent:      30
+  gram_length.digram_percent:      20
   gram_length.trigramplus_percent: 20
 
   # Within the OPENING BOARD's unigrams, a second quota splits single letters into

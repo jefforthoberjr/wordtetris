@@ -73,6 +73,13 @@ _ideation_counts = {2: {a: 0 for a in _IDEATION_ATTRS}, 3: {a: 0 for a in _IDEAT
 _ideation_placed = {2: 0, 3: 0}
 _forced_ideation_attr = None
 
+# Region-placement formation (rule_formation_fill_ideation_regions) draws an EXACT
+# length (+ optional ideation attr/pool) per cell with NO quota -- the formation
+# itself decides what goes where. When True, pick_grams routes a formation draw
+# through _draw_explicit_formation. "midsuf" is an extra combined pool (midfix OR
+# suffix) used for that formation's right side; see _partition_corpus_ideation.
+_forced_explicit = False
+
 
 def reset_gram_dedup():
     """Forget every multi-letter gram (and formation unigram count) used so far,
@@ -212,6 +219,9 @@ def pick_grams(rule, count):
     multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
     deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
     if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
+        # Region formation pinned this cell's exact length+pool -> draw it straight.
+        if _forced_explicit:
+            return _draw_explicit_formation(deduped, count)
         # Level-2 arrangement active: the formation has pinned this cell's length
         # (set_forced_formation_length), so draw straight from that bucket. Else
         # fall back to the legacy per-draw round-robin quota.
@@ -568,8 +578,10 @@ def _partition_corpus_ideation():
         return
     _load_gram_corpus()
     grades = _load_ideation_grades()
-    buckets = {2: {a: ([], []) for a in _IDEATION_ATTRS},
-               3: {a: ([], []) for a in _IDEATION_ATTRS}}
+    # Per attribute, plus a combined "midsuf" pool (midfix OR suffix) the region
+    # formation uses for its right side.
+    buckets = {2: {a: ([], []) for a in _IDEATION_ATTRS + ["midsuf"]},
+               3: {a: ([], []) for a in _IDEATION_ATTRS + ["midsuf"]}}
     by_text = {}
     for gram, weight in zip(_corpus_grams, _corpus_weights):
         length = min(len(gram), 3)
@@ -585,6 +597,9 @@ def _partition_corpus_ideation():
             if grade[attr]:
                 buckets[length][attr][0].append(gram)
                 buckets[length][attr][1].append(weight)
+        if grade["midfix"] or grade["suffix"]:
+            buckets[length]["midsuf"][0].append(gram)
+            buckets[length]["midsuf"][1].append(weight)
     _ideation_by_length_attr = buckets
     _ideation_grades = by_text
 
@@ -594,6 +609,8 @@ def _draw_from_ideation(length, attr, count):
     y), weighted by corpus frequency within that sub-list."""
     _partition_corpus_ideation()
     grams_list, weights = _ideation_by_length_attr[length][attr]
+    if not grams_list:  # no gram of this length carries the attr -- fall back
+        return _draw_from_length_bucket(length, count)
     picks = rand().choices(grams_list, weights=weights, k=count)
     return [Gram(text) for text in picks]
 
@@ -756,6 +773,41 @@ def set_forced_formation_length(length):
     piece build so pick_grams draws straight from that length bucket."""
     global _forced_formation_length
     _forced_formation_length = length
+
+
+def set_forced_formation_cell(length, attr=None):
+    """Pin the next formation draw to an EXACT `length` (1 / 2 / 3+) and optional
+    ideation pool `attr` ('prefix' / 'midsuf' / 'strong' / ...), deduped, with NO
+    quota. For rule_formation_fill_ideation_regions, which decides what goes where.
+    Pair with clear_forced_formation_cell()."""
+    global _forced_formation_length, _forced_ideation_attr, _forced_explicit
+    _forced_formation_length = length
+    _forced_ideation_attr = attr
+    _forced_explicit = True
+
+
+def clear_forced_formation_cell():
+    """Undo set_forced_formation_cell so later draws resume normally."""
+    global _forced_formation_length, _forced_ideation_attr, _forced_explicit
+    _forced_formation_length = None
+    _forced_ideation_attr = None
+    _forced_explicit = False
+
+
+def _draw_explicit_formation(deduped, count):
+    """Draw `count` deduped grams pinned to the explicit length + pool set by
+    set_forced_formation_cell. length 2/3 with an attr pulls from that ideation
+    pool; otherwise from the plain length bucket. No quota tally."""
+    global _forced_length
+    grams = []
+    for _ in range(count):
+        _forced_length = _forced_formation_length
+        try:
+            picked = deduped(1)
+        finally:
+            _forced_length = None
+        grams.extend(picked)
+    return grams
 
 
 def formation_length_sequence(count):
