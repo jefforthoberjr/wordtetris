@@ -80,6 +80,18 @@ _forced_ideation_attr = None
 # suffix) used for that formation's right side; see _partition_corpus_ideation.
 _forced_explicit = False
 
+# Unigram vowel-coverage guarantee (game_screen.formation_vowel_coverage). A formation
+# arms this with the required vowels + how many unigram cells it will place; the picker
+# draws those unigrams normally and only FORCES a still-missing vowel into the final
+# slots (when remaining cells <= vowels still missing), so the weighted/quota picking is
+# perturbed by at most the missing-vowel count. A forced vowel is tallied toward its own
+# common/uncommon group (A E I O U -> common, Y -> uncommon) and the unigram-cap count,
+# so those quotas stay honest. Reset per game; armed per formation.
+_VOWEL_GUARANTEE_COMMON = {"A", "E", "I", "O", "U"}   # Y sits in the uncommon-flavor bin
+_vowel_guarantee_active = False
+_vowel_guarantee_remaining = 0
+_vowel_guarantee_needed = set()
+
 
 def reset_gram_dedup():
     """Forget every multi-letter gram (and formation unigram count) used so far,
@@ -95,6 +107,47 @@ def reset_gram_dedup():
         _ideation_placed[length] = 0
         for attr in _ideation_counts[length]:
             _ideation_counts[length][attr] = 0
+    set_unigram_vowel_guarantee([], 0)  # disarm any leftover vowel guarantee
+
+
+def set_unigram_vowel_guarantee(vowels, count):
+    """Arm the vowel-coverage guarantee for `count` upcoming formation unigram cells:
+    make sure each letter in `vowels` lands on at least one. The picker draws unigrams
+    normally and only forces a still-missing vowel into the last slots. count<=0 or an
+    empty `vowels` disarms it."""
+    global _vowel_guarantee_active, _vowel_guarantee_remaining, _vowel_guarantee_needed
+    _vowel_guarantee_needed = {v.upper() for v in vowels}
+    _vowel_guarantee_remaining = count
+    _vowel_guarantee_active = bool(_vowel_guarantee_needed) and count > 0
+
+
+def _vowel_guarantee_force_slot():
+    """Consume one formation unigram slot. Return a still-missing required vowel to
+    FORCE into it -- only when the remaining slots can no longer cover everything still
+    missing (remaining <= missing) -- else None. When it forces, it marks that vowel
+    satisfied and tallies it toward its common/uncommon group + unigram-cap count, so
+    those quotas stay honest (the user's 'force within the 2 categories')."""
+    global _vowel_guarantee_remaining
+    if not _vowel_guarantee_active:
+        return None
+    forced = None
+    if _vowel_guarantee_needed and _vowel_guarantee_remaining <= len(_vowel_guarantee_needed):
+        forced = sorted(_vowel_guarantee_needed)[0]
+        _vowel_guarantee_needed.discard(forced)
+        _unigram_counts[forced] = _unigram_counts.get(forced, 0) + 1
+        group = "common" if forced in _VOWEL_GUARANTEE_COMMON else "uncommon"
+        _unigram_group_counts[group] += 1
+    _vowel_guarantee_remaining -= 1
+    return forced
+
+
+def _vowel_guarantee_record(picked):
+    """After a NORMAL formation unigram draw, mark any required vowel it produced as
+    satisfied so the guarantee won't later force it."""
+    if not _vowel_guarantee_active:
+        return
+    for gram in picked:
+        _vowel_guarantee_needed.discard(gram.text)
 
 
 def begin_formation_gram_run():
@@ -808,13 +861,21 @@ def _draw_explicit_formation(deduped, count):
     set_forced_formation_cell. length 2/3 with an attr pulls from that ideation
     pool; otherwise from the plain length bucket. No quota tally."""
     global _forced_length
+    length = _forced_formation_length
     grams = []
     for _ in range(count):
-        _forced_length = _forced_formation_length
+        if length == 1:
+            forced_vowel = _vowel_guarantee_force_slot()
+            if forced_vowel is not None:
+                grams.append(Gram(forced_vowel))   # cap/group already tallied in force_slot
+                continue
+        _forced_length = length
         try:
             picked = deduped(1)
         finally:
             _forced_length = None
+        if length == 1:
+            _vowel_guarantee_record(picked)
         grams.extend(picked)
     return grams
 
@@ -850,6 +911,12 @@ def _draw_forced_formation(deduped, count):
     steer_ideation = _IDEATION_ENABLED and length in (2, 3)
     grams = []
     for _ in range(count):
+        if length == 1:
+            forced_vowel = _vowel_guarantee_force_slot()
+            if forced_vowel is not None:
+                grams.append(Gram(forced_vowel))   # cap/group already tallied in force_slot
+                _length_counts[1] += 1
+                continue
         group = _next_quota_unigram_group() if length == 1 else None
         attr = _next_ideation_attr(length) if steer_ideation else None
         _forced_length = length
@@ -861,6 +928,8 @@ def _draw_forced_formation(deduped, count):
             _forced_length = None
             _forced_unigram_group = None
             _forced_ideation_attr = None
+        if length == 1:
+            _vowel_guarantee_record(picked)
         grams.extend(picked)
         _length_counts[length] += len(picked)
         if group is not None:

@@ -206,9 +206,9 @@ rules:
   #   game_screen.victory: rule_victory_none.
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
-  game_screen.setup_formation: rule_formation_fill_player_diagonal
+  # game_screen.setup_formation: rule_formation_fill_player_diagonal
   # game_screen.setup_formation: rule_formation_fill_player_random
-  # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
+  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
@@ -431,6 +431,19 @@ rules:
   # opening formation only; the piece pool rolls unigrams from the whole letter set.
   gram_length.unigram_common_percent:   60
   gram_length.unigram_uncommon_percent: 40
+
+  # Guarantee coverage of certain letters among the opening formation's UNIGRAM cells.
+  # The picker draws unigrams normally (weighted, under the common/uncommon quota above)
+  # and only FORCES a still-missing required letter into the final unigram slots -- so a
+  # forced letter perturbs the distribution by at most the missing count (often zero, as
+  # A/E/I/O/U are common glue and usually appear on their own; Y is the typical force).
+  # A forced letter is tallied into its own common/uncommon bin so that quota stays honest.
+  # Needs the length-controlled picker + a fill formation (the same dependency as the
+  # length arrangements); a no-op otherwise.
+  #   rule_vowel_coverage_off -- no guarantee (the picker decides everything).
+  #   rule_vowel_coverage_each_unigram -- at least one of each vowel A E I O U Y.
+  # game_screen.formation_vowel_coverage: rule_vowel_coverage_off
+  game_screen.formation_vowel_coverage: rule_vowel_coverage_each_unigram
 
   # NOTE: the diagonal-vs-random length arrangement of the uniform fill is no longer
   # a separate key -- it is now picked via game_screen.setup_formation above

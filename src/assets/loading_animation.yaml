@@ -58,21 +58,25 @@ categories:
   # several to the same delay to fade them together, or compress the whole thing. (nofix =
   # graded n on all *fix, or ungraded.) Unused buckets get no cells and add no time.
   tri_strong_pre:   { delay: 0,  duration: 1 }
-  tri_strong_mid:   { delay: 0,  duration: 1 }
-  tri_strong_suf:   { delay: 0,  duration: 1 }
-  tri_strong_nofix: { delay: 0,  duration: 1 }
-  tri_weak_pre:     { delay: 2,  duration: 1 }
-  tri_weak_mid:     { delay: 2,  duration: 1 }
-  tri_weak_suf:     { delay: 2,  duration: 1 }
-  tri_weak_nofix:   { delay: 2,  duration: 1 }
-  di_strong_pre:    { delay: 4,  duration: 1 }
-  di_strong_mid:    { delay: 4,  duration: 1 }
-  di_strong_suf:    { delay: 4, duration: 1 }
-  di_strong_nofix:  { delay: 4, duration: 1 }
-  di_weak_pre:      { delay: 6, duration: 1 }
-  di_weak_mid:      { delay: 6, duration: 1 }
-  di_weak_suf:      { delay: 6, duration: 1 }
-  di_weak_nofix:    { delay: 6, duration: 1 }
-  uni:              { delay: 8, duration: 3 }   # all single letters
+  tri_weak_pre:     { delay: 0,  duration: 1 }
+  di_strong_pre:    { delay: 0,  duration: 1 }
+  di_weak_pre:      { delay: 0, duration: 1 }
 
-  grid_lines:    { delay: 8, duration: 1 }   # hex/square outline, fills the gaps last
+  tri_strong_mid:   { delay: 2,  duration: 1 }
+  tri_weak_mid:     { delay: 2,  duration: 1 }
+  di_strong_mid:    { delay: 2,  duration: 1 }
+  di_weak_mid:      { delay: 2, duration: 1 }
+  tri_strong_nofix: { delay: 2,  duration: 1 }
+  tri_weak_nofix:   { delay: 2,  duration: 1 }
+  di_strong_nofix:  { delay: 2, duration: 1 }
+  di_weak_nofix:    { delay: 2, duration: 1 }
+
+  tri_strong_suf:   { delay: 4,  duration: 1 }
+  tri_weak_suf:     { delay: 4,  duration: 1 }
+  di_strong_suf:    { delay: 4, duration: 1 }
+  di_weak_suf:      { delay: 4, duration: 1 }
+
+
+  uni:              { delay: 6, duration: 3 }   # all single letters
+
+  grid_lines:    { delay: 6, duration: 1 }   # hex/square outline, fills the gaps last

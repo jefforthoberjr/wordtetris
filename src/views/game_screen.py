@@ -36,6 +36,7 @@ from models.gram_picker import (
     clear_forced_formation_cell,
     rule_grams_greater_than_47_lengthcontrolled,
     ideation_grade,
+    set_unigram_vowel_guarantee,
 )
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
@@ -472,6 +473,20 @@ class GameScreen:
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
+        )
+
+        # Optional guarantee on the formation's UNIGRAM cells (game_screen.
+        # formation_vowel_coverage): returns the set of letters every fill must place
+        # at least once among its single-letter cells. The picker draws unigrams
+        # normally and only forces a still-missing one into the final slots, so it
+        # barely perturbs the weighted/quota picking. Needs the length-controlled
+        # picker (same as the length arrangements). See _rule_vowel_coverage_*.
+        vowel_coverage_rules = {
+            "rule_vowel_coverage_off": self._rule_vowel_coverage_off,
+            "rule_vowel_coverage_each_unigram": self._rule_vowel_coverage_each_unigram,
+        }
+        self._formation_vowel_coverage_rule = select_rule(
+            "game_screen.formation_vowel_coverage", vowel_coverage_rules
         )
 
         # How the opening reveal (LOADING) buckets SETTLED formation cells into fade
@@ -1142,7 +1157,9 @@ class GameScreen:
         thus fixed independently of the order grams are drawn, so the diagonal reveal
         survives future draw-order refactors."""
         lengths = formation_length_sequence(len(cells))
-        for x, y, length in arrange_rule(cells, lengths):
+        placement = arrange_rule(cells, lengths)
+        self._arm_vowel_guarantee(sum(1 for _x, _y, length in placement if length == 1))
+        for x, y, length in placement:
             set_forced_formation_length(length)
             try:
                 self._fill_one_player_cell(x, y)
@@ -1192,6 +1209,24 @@ class GameScreen:
         shuffled = list(cells)
         rand().shuffle(shuffled)
         return [(x, y, length) for (x, y), length in zip(shuffled, lengths)]
+
+    # --- unigram vowel coverage (game_screen.formation_vowel_coverage) -------
+    # Each returns the set of letters the fill must place on at least one unigram cell;
+    # the picker forces only the ones that don't appear naturally (see gram_picker).
+    def _rule_vowel_coverage_off(self):
+        """No guarantee (default): unigrams are drawn purely by the picker."""
+        return []
+
+    def _rule_vowel_coverage_each_unigram(self):
+        """Guarantee at least one of each vowel -- A E I O U Y -- among the formation's
+        unigram cells."""
+        return ["A", "E", "I", "O", "U", "Y"]
+
+    def _arm_vowel_guarantee(self, unigram_count):
+        """Arm the picker's unigram vowel-coverage guarantee for `unigram_count` cells
+        per the active rule (a no-op disarm when off). Call right before a fill places
+        its unigram cells."""
+        set_unigram_vowel_guarantee(self._formation_vowel_coverage_rule(), unigram_count)
 
     # --- ideation-regions formation (rule_formation_fill_ideation_regions) ---
     def _rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle(self):
@@ -1258,6 +1293,7 @@ class GameScreen:
         self._place_region_cells(digrams, 2, None)       # digrams, any *fix
         self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
         self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
+        self._arm_vowel_guarantee(len(unigrams))
         self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
 
     def _digram_region_centercircle(self, cells, n_di):
