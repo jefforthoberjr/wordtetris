@@ -431,6 +431,37 @@ rules:
   game_screen.formation_arrangement: rule_formation_arrange_diagonal
   # game_screen.formation_arrangement: rule_formation_arrange_random
 
+  # Ideation-strength formation steering. When ON, the opening board's DIGRAM and
+  # TRIGRAM+ cells (the lengths the arrangement already placed) are steered toward
+  # the gram ideation profile graded in jpo_allGramsGreaterThan47InFreq_cleaned3.csv
+  # (the strong/prefix/midfix/suffix columns). Each percentage below is an
+  # INDEPENDENT target: the share of that length's cells whose gram is graded 'y'
+  # for that attribute.
+  # Only 'y' counts toward a percentage -- 'm' and 'n' are both treated as NOT
+  # having the attribute (so strong_percent: 50 means ~50% graded y-strong, and
+  # the other ~50% are the m's and n's lumped together, not just the n's).
+  # Targets OVERLAP and need not sum to 100 -- one gram can be
+  # strong AND prefix AND suffix. Steering is greedy (largest-remainder toward the
+  # most under-filled attribute each draw), so it approaches the targets but may
+  # overshoot an attribute that's naturally common in the corpus. Within a steered
+  # draw the corpus frequency weights still apply. Two separate rule sets, digram
+  # and trigram+; UNIGRAM cells are never steered. OFF = draw each length's gram by
+  # plain corpus frequency (the pre-ideation behavior).
+  # Requires the length-controlled picker (rule_grams_greater_than_47_lengthcontrolled)
+  # + rule_formation_fill_player; otherwise it has no effect.
+  # game_screen.ideation_formation: rule_ideation_formation_off
+  game_screen.ideation_formation: rule_ideation_formation_on
+
+  gram_ideation.digram.strong_percent:  70
+  gram_ideation.digram.prefix_percent:  30
+  gram_ideation.digram.midfix_percent:  30
+  gram_ideation.digram.suffix_percent:  30
+
+  gram_ideation.trigramplus.strong_percent: 70
+  gram_ideation.trigramplus.prefix_percent: 60
+  gram_ideation.trigramplus.midfix_percent: 10
+  gram_ideation.trigramplus.suffix_percent: 30
+
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
   square_player.gram_pick: rule_scrabble_distribution
   # square_player.gram_pick: rule_random_letters

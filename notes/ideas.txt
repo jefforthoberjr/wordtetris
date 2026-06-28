@@ -7,6 +7,21 @@ GAME NAMES
 * catalyst cata LIST
 
 
+"dile" not in the dictionary?
+
+AI's terminology when developing my word ideation strength algorithm
+
+"launchless grams" (os/uct/erp/rov)
+"vowel-led glue morphemes" (er/al/ic) 
+"abstract morphemes" (-ify/-ize/-ism/-ial)
+"CV/cluster launches" (ba/ca/tr/cr/sho/cra) (the literal "3 vivid words leap" test)
+"rhyme families"
+"inverted-U" if a morpheme is too common or too rare, it won't ideate. There is a middle ground, for ideation.
+
+
+If you type in a long word with a subword should we give credit to the subword to (otherwise the player just spelled it in the wrong order)
+(or maybe the way we do scoring ????)
+
 Bonus round, compound word off
 (as pulled from the player's word dictionary
 

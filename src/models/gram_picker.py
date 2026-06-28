@@ -60,6 +60,19 @@ _forced_formation_length = None
 _unigram_group_counts = {"common": 0, "uncommon": 0}
 _forced_unigram_group = None
 
+# A THIRD quota, on the DIGRAM and TRIGRAM+ formation cells: steer each toward the
+# gram ideation profile (gram_ideation.* + game_screen.ideation_formation; see the
+# ideation section below). The four attributes (strong / prefix / midfix / suffix)
+# are INDEPENDENT, OVERLAPPING y-only targets per length, so unlike the length and
+# unigram-group quotas this is NOT a partition. _ideation_counts tallies KEPT grams'
+# attributes per length; _ideation_placed counts cells placed per length;
+# _forced_ideation_attr, when set, pins a draw to one length+attribute sub-list.
+# Reset per game with the other quota state.
+_IDEATION_ATTRS = ["strong", "prefix", "midfix", "suffix"]
+_ideation_counts = {2: {a: 0 for a in _IDEATION_ATTRS}, 3: {a: 0 for a in _IDEATION_ATTRS}}
+_ideation_placed = {2: 0, 3: 0}
+_forced_ideation_attr = None
+
 
 def reset_gram_dedup():
     """Forget every multi-letter gram (and formation unigram count) used so far,
@@ -71,6 +84,10 @@ def reset_gram_dedup():
         _length_counts[category] = 0
     for group in _unigram_group_counts:
         _unigram_group_counts[group] = 0
+    for length in _ideation_placed:
+        _ideation_placed[length] = 0
+        for attr in _ideation_counts[length]:
+            _ideation_counts[length][attr] = 0
 
 
 def begin_formation_gram_run():
@@ -502,6 +519,123 @@ def _draw_from_unigram_group(group, count):
     return [Gram(text) for text in picks]
 
 
+# --- ideation-strength sub-lists (gram_ideation.*) ---------------------
+# Built from the SAME corpus grams/weights as the length buckets, joined with the
+# y/m/n ideation grades in jpo_allGramsGreaterThan47InFreq_cleaned3.csv. Only 'y'
+# counts as "has the attribute" (m / n do not). For each length (2 / 3+) and each
+# attribute we keep a freq-weighted sub-list of the grams that HAVE it, so a steered
+# draw pulls a gram carrying the deficient attribute while still respecting the
+# corpus frequencies within that sub-list. Whether steering runs at all is the
+# game_screen.ideation_formation toggle; the per-length targets are gram_ideation.*.
+_IDEATION_CSV = "jpo_allGramsGreaterThan47InFreq_cleaned3.csv"
+_IDEATION_PCTS = {
+    2: {a: CONFIG["rules"]["gram_ideation.digram.%s_percent" % a] for a in _IDEATION_ATTRS},
+    3: {a: CONFIG["rules"]["gram_ideation.trigramplus.%s_percent" % a] for a in _IDEATION_ATTRS},
+}
+_IDEATION_ENABLED = (
+    CONFIG["rules"]["game_screen.ideation_formation"] == "rule_ideation_formation_on"
+)
+
+# Lazily built. _ideation_by_length_attr[length][attr] = (grams, weights);
+# _ideation_grades[gram_text] = {attr: bool} for tallying a drawn gram's attributes.
+_ideation_by_length_attr = None
+_ideation_grades = None
+
+
+def _load_ideation_grades():
+    """{gram_text: {strong/prefix/midfix/suffix: bool}} from the cleaned3 grades
+    (y -> True, m / n -> False). Keyed by the gram text exactly as the corpus CSV
+    spells it, so it joins to _corpus_grams without any case fixups."""
+    grades = {}
+    csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', _IDEATION_CSV)
+    with open(csv_path, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            grades[row['gram']] = {
+                'strong': row['strong_ideation'].strip().lower() == 'y',
+                'prefix': row['prefix_ideation'].strip().lower() == 'y',
+                'midfix': row['midfix_ideation'].strip().lower() == 'y',
+                'suffix': row['suffix_ideation'].strip().lower() == 'y',
+            }
+    return grades
+
+
+def _partition_corpus_ideation():
+    """Lazily bin the digram / trigram+ corpus grams by ideation attribute, joined
+    with the cleaned3 grades. Cached like the other _partition_*."""
+    global _ideation_by_length_attr, _ideation_grades
+    if _ideation_by_length_attr is not None:
+        return
+    _load_gram_corpus()
+    grades = _load_ideation_grades()
+    buckets = {2: {a: ([], []) for a in _IDEATION_ATTRS},
+               3: {a: ([], []) for a in _IDEATION_ATTRS}}
+    by_text = {}
+    for gram, weight in zip(_corpus_grams, _corpus_weights):
+        length = min(len(gram), 3)
+        if length not in (2, 3):
+            continue
+        grade = grades.get(gram)
+        if grade is None:  # corpus gram missing from cleaned3 (shouldn't happen)
+            continue
+        # Key the tally lookup by UPPER -- Gram() uppercases its text, so a drawn
+        # gram's .text is upper, while the corpus/cleaned3 spellings are lower.
+        by_text[gram.upper()] = grade
+        for attr in _IDEATION_ATTRS:
+            if grade[attr]:
+                buckets[length][attr][0].append(gram)
+                buckets[length][attr][1].append(weight)
+    _ideation_by_length_attr = buckets
+    _ideation_grades = by_text
+
+
+def _draw_from_ideation(length, attr, count):
+    """Draw `count` grams of `length` (2 / 3+) that carry ideation `attr` (graded
+    y), weighted by corpus frequency within that sub-list."""
+    _partition_corpus_ideation()
+    grams_list, weights = _ideation_by_length_attr[length][attr]
+    picks = rand().choices(grams_list, weights=weights, k=count)
+    return [Gram(text) for text in picks]
+
+
+def _next_ideation_attr(length):
+    """The ideation attribute (strong / prefix / midfix / suffix) for this length
+    most behind its gram_ideation.*_percent target, or None if every target is
+    met / over / 0 / has no grams (-> draw plain corpus-weighted). Targets are
+    INDEPENDENT, OVERLAPPING shares of this length's placed cells (y-only), so the
+    deficit is pct/100 * (placed + 1) - count -- NOT normalized across attributes
+    the way the length and unigram-group partitions are."""
+    _partition_corpus_ideation()
+    pcts = _IDEATION_PCTS[length]
+    avail = _ideation_by_length_attr[length]
+    counts = _ideation_counts[length]
+    placed = _ideation_placed[length]
+    best = None
+    best_deficit = None
+    for attr in _IDEATION_ATTRS:
+        if pcts[attr] <= 0 or not avail[attr][0]:
+            continue
+        deficit = pcts[attr] / 100.0 * (placed + 1) - counts[attr]
+        if best_deficit is None or deficit > best_deficit:
+            best_deficit = deficit
+            best = attr
+    if best is None or best_deficit <= 0:
+        return None
+    return best
+
+
+def _tally_ideation(length, picked):
+    """Record each KEPT gram's y attributes toward this length's ideation quota, and
+    count the cell. Counting kept grams keeps the quota honest across dedup re-rolls."""
+    for gram in picked:
+        grade = _ideation_grades.get(gram.text)
+        if grade is not None:
+            for attr in _IDEATION_ATTRS:
+                if grade[attr]:
+                    _ideation_counts[length][attr] += 1
+    _ideation_placed[length] += len(picked)
+
+
 def rule_grams_greater_than_47_lengthcontrolled(count):
     """
     Pick grams from the JPO corpus (same file as rule_grams_greater_than_47) but
@@ -528,6 +662,8 @@ def rule_grams_greater_than_47_lengthcontrolled(count):
     if _forced_length is not None:
         if _forced_length == 1 and _forced_unigram_group is not None:
             return _draw_from_unigram_group(_forced_unigram_group, count)
+        if _forced_length in (2, 3) and _forced_ideation_attr is not None:
+            return _draw_from_ideation(_forced_length, _forced_ideation_attr, count)
         return _draw_from_length_bucket(_forced_length, count)
     lengths = rand().choices(_LENGTH_CATEGORIES, weights=_LENGTH_PCT_WEIGHTS, k=count)
     grams = []
@@ -643,24 +779,33 @@ def formation_length_sequence(count):
 def _draw_forced_formation(deduped, count):
     """Draw `count` formation grams pinned to _forced_formation_length, through the
     full dedup pipeline. Unigram cells still honor the common/uncommon sub-bin
-    quota. The Level-2 twin of _pick_grams_length_enforced's per-cell body, minus
-    the length round-robin (the arrangement already chose the length)."""
-    global _forced_length, _forced_unigram_group
+    quota; digram / trigram+ cells additionally steer toward the gram_ideation.*
+    targets when game_screen.ideation_formation is on (_next_ideation_attr ->
+    _forced_ideation_attr -> _draw_from_ideation, tallied by _tally_ideation). The
+    Level-2 twin of _pick_grams_length_enforced's per-cell body, minus the length
+    round-robin (the arrangement already chose the length)."""
+    global _forced_length, _forced_unigram_group, _forced_ideation_attr
     length = _forced_formation_length
+    steer_ideation = _IDEATION_ENABLED and length in (2, 3)
     grams = []
     for _ in range(count):
         group = _next_quota_unigram_group() if length == 1 else None
+        attr = _next_ideation_attr(length) if steer_ideation else None
         _forced_length = length
         _forced_unigram_group = group
+        _forced_ideation_attr = attr
         try:
             picked = deduped(1)
         finally:
             _forced_length = None
             _forced_unigram_group = None
+            _forced_ideation_attr = None
         grams.extend(picked)
         _length_counts[length] += len(picked)
         if group is not None:
             _unigram_group_counts[group] += len(picked)
+        if steer_ideation:
+            _tally_ideation(length, picked)
     return grams
 
 
