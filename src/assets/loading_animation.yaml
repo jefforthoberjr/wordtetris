@@ -30,7 +30,49 @@ categories:
   mission:       { delay: 0,  duration: 0 }   # goal pieces
   fossilized:    { delay: 0,  duration: 0 }   # frozen cells (none in current modes; future-proofed)
   obstacle:      { delay: 0,  duration: 0 }   # obstacle pieces
+
+  # The SETTLED cells are bucketed by whichever scheme game_screen.loading_fade_category
+  # selects; only the active scheme's categories get cells (the rest stay empty and add
+  # no time, so switching schemes doesn't drag in the others). Tune each independently.
+
+  # ADJUST THE ANIMATION SECTION CORRESPONDING TO THE config.yaml game_screen.loading_fade_category
+
+  # rule_loading_fade_by_length (default) -- settled cells by gram length
   settled_3plus: { delay: 0,  duration: 1 }   # settled formation cells, 3+ letter grams
   settled_2:     { delay: 3,  duration: 2 }   # settled formation cells, 2-letter grams
-  settled_1:     { delay: 7, duration: 5 }   # settled formation cells, single letters
-  grid_lines:    { delay: 9, duration: 1 }   # hex/square 
+  settled_1:     { delay: 7,  duration: 5 }   # settled formation cells, single letters
+
+  # rule_loading_fade_by_ideation_strength -- settled cells by ideation strength (cleaned3)
+  strong:        { delay: 0,  duration: 2 }   # graded y-strong
+  not_strong:    { delay: 3,  duration: 5 }   # m / n / ungraded (e.g. scrabble letters)
+
+  # rule_loading_fade_by_ideation_fix -- settled cells by *fix (cleaned3); priority prefix>suffix>midfix
+  prefix:        { delay: 0,  duration: 2 }
+  suffix:        { delay: 3,  duration: 2 }
+  midfix:        { delay: 6,  duration: 2 }
+  no_fix:        { delay: 8,  duration: 3 }
+
+  # rule_loading_fade_by_ideation_length_strength_fix -- composite: length x strength x *fix.
+  # 16 multigram buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + a single uni bucket.
+  # The delays below give the nested sweep tri->di, strong->weak, pre->mid->suf->nofix; set
+  # several to the same delay to fade them together, or compress the whole thing. (nofix =
+  # graded n on all *fix, or ungraded.) Unused buckets get no cells and add no time.
+  tri_strong_pre:   { delay: 0,  duration: 1 }
+  tri_strong_mid:   { delay: 0,  duration: 1 }
+  tri_strong_suf:   { delay: 0,  duration: 1 }
+  tri_strong_nofix: { delay: 0,  duration: 1 }
+  tri_weak_pre:     { delay: 2,  duration: 1 }
+  tri_weak_mid:     { delay: 2,  duration: 1 }
+  tri_weak_suf:     { delay: 2,  duration: 1 }
+  tri_weak_nofix:   { delay: 2,  duration: 1 }
+  di_strong_pre:    { delay: 4,  duration: 1 }
+  di_strong_mid:    { delay: 4,  duration: 1 }
+  di_strong_suf:    { delay: 4, duration: 1 }
+  di_strong_nofix:  { delay: 4, duration: 1 }
+  di_weak_pre:      { delay: 6, duration: 1 }
+  di_weak_mid:      { delay: 6, duration: 1 }
+  di_weak_suf:      { delay: 6, duration: 1 }
+  di_weak_nofix:    { delay: 6, duration: 1 }
+  uni:              { delay: 8, duration: 3 }   # all single letters
+
+  grid_lines:    { delay: 8, duration: 1 }   # hex/square outline, fills the gaps last

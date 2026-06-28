@@ -95,26 +95,29 @@ class LoadingAnimation:
     timeline read from loading_animation.yaml.
 
     Construct with a {category_name: [handles]} map; each handle is an AlphaFade
-    or WhiteFade wrapping one render object. Categories absent from the map (no such cells this
-    game) simply never fade, but their configured slot still counts toward the
-    total length -- absolute timing, no fast-forward. Tick with update(dt);
-    `done` flips true once the last configured fade completes, the game screen's
-    cue to start play (spawn the live piece / start the mode timer)."""
+    or WhiteFade wrapping one render object. Every category name must have a
+    {delay, duration} slot in loading_animation.yaml. The map need only list the
+    categories the active fade scheme actually produced this game (see
+    game_screen.loading_fade_category) -- categories NOT in the map don't run and
+    don't count toward the timeline, so swapping schemes (by length / strength /
+    *fix) doesn't drag in the other schemes' slots as dead air. A listed category
+    with an empty handle list still reserves its slot. Tick with update(dt);
+    `done` flips true once the last present fade completes, the game screen's cue
+    to start play (spawn the live piece / start the mode timer)."""
 
     def __init__(self, handles_by_category):
         self._easing = _select_fade_easing()
         self._clock = 0.0
         self._groups = []
+        # Timeline length is the latest finish among the categories PRESENT this
+        # game (each category's delay+duration), so an unused scheme's slots in the
+        # yaml don't extend the reveal. A present-but-empty category still counts.
+        self._total = 0.0
         for name, handles in handles_by_category.items():
             timing = get_loading_anim("categories." + name)
             self._groups.append(
                 _FadeGroup(handles, timing["delay"], timing["duration"])
             )
-        # Timeline length is fixed by config (every configured category's
-        # delay+duration), not by which categories are present -- so an empty
-        # category leaves dead air rather than collapsing the schedule.
-        self._total = 0.0
-        for timing in get_loading_anim("categories").values():
             self._total = max(self._total, timing["delay"] + timing["duration"])
         # Start fully blank: the first drawn frame shows only the board
         # background and the loading pane.

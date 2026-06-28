@@ -149,7 +149,7 @@ class TypewriterMovingMode(MovingMode):
       - spacebar                       -> pass (no board change, still a turn)
     The game ends ('finished') when the cursor runs off the board.
 
-    Assumes a board pre-filled with single-cell grams (rule_formation_fill_player)
+    Assumes a board pre-filled with single-cell grams (rule_formation_fill_player_diagonal)
     and game_screen.victory: rule_victory_none. The cursor only ever rests on a
     non-fossilized, occupied cell; fossilized/empty cells are skipped silently."""
 
@@ -289,7 +289,7 @@ class OmniswapVsTimerMode(MovingMode):
       instant the clock hits zero the game ends ('finished', no win check). The
       timer never resets; add_time() is the seam for future word-time bonuses.
 
-    Pairs with the OMNISWAP preset: rule_formation_fill_player (so every cell is
+    Pairs with the OMNISWAP preset: rule_formation_fill_player_diagonal (so every cell is
     swappable), rule_clear_fossilize, rule_victory_none, rule_nucleate_anywhere
     (no placed piece to nucleate around), rule_never_skip_select and
     rule_select_every_placement. The timer length is game_screen.omniswap_timer_

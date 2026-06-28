@@ -118,7 +118,7 @@ rules:
   # rule_mode_typewriter and also flip these (so the board starts full, formed
   # words freeze instead of clearing, there's no instant win, a pass always opens
   # word entry, and every action is a select turn):
-  #   setup_formation     -> rule_formation_fill_player
+  #   setup_formation     -> rule_formation_fill_player_diagonal
   #   clear_action        -> rule_clear_fossilize
   #   victory             -> rule_victory_none
   #   skip_select_isolated -> rule_never_skip_select
@@ -132,7 +132,7 @@ rules:
   # piece, every commit is a select turn). Tune omniswap_timer_seconds for length
   # and omniswap_timer (above) for the per-phase vs race timer/endgame variant;
   # select_word_limit picks one-word-then-MOVING vs many-words-per-SELECT:
-  #   setup_formation      -> rule_formation_fill_player
+  #   setup_formation      -> rule_formation_fill_player_diagonal
   #   clear_action         -> rule_clear_fossilize
   #   victory              -> rule_victory_none
   #   skip_select_isolated -> rule_never_skip_select
@@ -185,25 +185,31 @@ rules:
   #     missions, each at a random non-overlapping spot (the original opening)
   #   rule_formation_mission_center_obstacle_ring -- 1 mission on the center cell,
   #     ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
-  #   rule_formation_fill_player -- fill every board cell with a single-cell
+  #   rule_formation_fill_player_diagonal -- fill every board cell with a single-cell
   #     player piece (no obstacles/missions). Board opens fully packed; pair with
-  #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win.
-  #   rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle -- like
-  #     fill_player, but laid out by gram TYPE: trigram+ PREFIX grams packed into the
+  #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win. The
+  #     gram lengths form DIAGONAL LINES (the round-robin length cadence aliases into
+  #     diagonals), unless the length-controlled picker is inactive -- then row-major.
+  #   rule_formation_fill_player_random -- same uniform fill, but the gram lengths are
+  #     SCATTERED to random cells (same uni/digram/3+ counts, no diagonal), unless the
+  #     length-controlled picker is inactive -- then row-major.
+  #   rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle -- like the
+  #     uniform fill, but laid out by gram TYPE: trigram+ PREFIX grams packed into the
   #     far-LEFT edge, trigram+ MIDFIX/SUFFIX into the far-RIGHT edge, all DIGRAMS in
   #     a rough CENTER circle (random *fix mix), and UNIGRAMS filling the gaps.
   #   rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid -- same
   #     trigram+ side panes, but the DIGRAMS form a TRIANGLE at the screen bottom
   #     pointing up (widest along the bottom, narrowing upward); UNIGRAMS fill in.
-  #   Both: how many of each length comes from gram_length.*; the left/right trigram
-  #   split from gram_ideation.trigramplus.* (prefix : midfix+suffix). Force the
-  #   length-controlled picker regardless of *_player.gram_pick; pair with
-  #   game_screen.victory: rule_victory_none. (Both ignore formation_arrangement.)
+  #   The two ideation layouts: how many of each length comes from gram_length.*; the
+  #   left/right trigram split from gram_ideation.trigramplus.* (prefix : midfix+suffix).
+  #   Force the length-controlled picker regardless of *_player.gram_pick; pair with
+  #   game_screen.victory: rule_victory_none.
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
-  # game_screen.setup_formation: rule_formation_fill_player
+  game_screen.setup_formation: rule_formation_fill_player_diagonal
+  # game_screen.setup_formation: rule_formation_fill_player_random
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
-  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
+  # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -367,7 +373,7 @@ rules:
   # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
   # rule_victory_none -- no win condition at all; the game runs until the player
-  # quits (use with rule_formation_fill_player, which has no missions/obstacles).
+  # quits (use with rule_formation_fill_player_diagonal, which has no missions/obstacles).
   game_screen.victory: rule_victory_none
 
   # Cell overlap: deciding whether a piece may be moved onto / placed over a type of occupied cell
@@ -426,23 +432,31 @@ rules:
   gram_length.unigram_common_percent:   60
   gram_length.unigram_uncommon_percent: 40
 
-  # How the opening board (rule_formation_fill_player) ARRANGES gram lengths in
-  # space, when the length-controlled picker (rule_grams_greater_than_47_lengthcontrolled)
-  # is the active *_player.gram_pick. Both variants place the SAME unigram/digram/3+
-  # counts (the gram_length.* quota above) -- they differ only in WHERE each length
-  # lands, which the fade-by-length opening reveal then makes visible.
-  #   rule_formation_arrange_diagonal -- map the round-robin length cadence onto
-  #     cells row-major; the period aliases against the grid width into diagonal
-  #     lines that sweep in (eases the first-glance overwhelm). This reproduces the
-  #     emergent reveal we got for free once the length quota was added, but now it
-  #     no longer depends on draw order -- the length-per-cell map is fixed up front,
-  #     so it survives future changes to the order grams are drawn.
-  #   rule_formation_arrange_random -- same length counts, scattered to random cells
-  #     (the truly-random look from before the length quota existed).
-  # Only rule_formation_fill_player + the length-controlled picker use this; any
-  # other picker fills row-major with no length arrangement.
-  game_screen.formation_arrangement: rule_formation_arrange_diagonal
-  # game_screen.formation_arrangement: rule_formation_arrange_random
+  # NOTE: the diagonal-vs-random length arrangement of the uniform fill is no longer
+  # a separate key -- it is now picked via game_screen.setup_formation above
+  # (rule_formation_fill_player_diagonal = diagonal, rule_formation_fill_player_random =
+  # scattered). Both place the SAME unigram/digram/3+ counts (the gram_length.* quota
+  # above) and only differ in WHERE each length lands (which the fade-by-length reveal
+  # makes visible); both require the length-controlled picker to have lengths to arrange.
+
+  # How the opening reveal (LOADING fade-in) groups SETTLED board cells into fade
+  # categories. Special cells (mission / obstacle / fossilized) always fade by kind
+  # first; this only governs ordinary settled cells. Each scheme's category names have
+  # their own delay/duration slots in assets/loading_animation.yaml (tune timing there).
+  #   rule_loading_fade_by_length -- by gram length: settled_3plus / settled_2 /
+  #     settled_1 (the original reveal; pairs with the diagonal length arrangement).
+  #   rule_loading_fade_by_ideation_strength -- by cleaned3 strength: strong vs
+  #     not_strong (m/n/ungraded). Reveals the strong-ideation grams first/separately.
+  #   rule_loading_fade_by_ideation_fix -- by cleaned3 *fix: prefix / suffix / midfix /
+  #     no_fix (priority prefix>suffix>midfix). Pairs with the side-pane formations.
+  #   rule_loading_fade_by_ideation_length_strength_fix -- COMPOSITE: all three axes
+  #     nested, e.g. tri_strong_pre, tri_strong_mid, ... di_weak_suf, then uni. 16
+  #     multigram buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + uni; order them
+  #     via their delay slots in loading_animation.yaml.
+  # game_screen.loading_fade_category: rule_loading_fade_by_length
+  # game_screen.loading_fade_category: rule_loading_fade_by_ideation_strength
+  # game_screen.loading_fade_category: rule_loading_fade_by_ideation_fix
+  game_screen.loading_fade_category: rule_loading_fade_by_ideation_length_strength_fix
 
   # Ideation-strength formation steering. When ON, the opening board's DIGRAM and
   # TRIGRAM+ cells (the lengths the arrangement already placed) are steered toward
@@ -461,7 +475,7 @@ rules:
   # and trigram+; UNIGRAM cells are never steered. OFF = draw each length's gram by
   # plain corpus frequency (the pre-ideation behavior).
   # Requires the length-controlled picker (rule_grams_greater_than_47_lengthcontrolled)
-  # + rule_formation_fill_player; otherwise it has no effect.
+  # + rule_formation_fill_player_diagonal / _random; otherwise it has no effect.
   # game_screen.ideation_formation: rule_ideation_formation_off
   game_screen.ideation_formation: rule_ideation_formation_on
 

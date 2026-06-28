@@ -1,6 +1,6 @@
 import math
 import time
-from collections import namedtuple, Counter
+from collections import namedtuple, Counter, defaultdict
 from enum import Enum
 import pyglet
 from views.ingame_menu import IngameMenu
@@ -35,6 +35,7 @@ from models.gram_picker import (
     set_forced_formation_cell,
     clear_forced_formation_cell,
     rule_grams_greater_than_47_lengthcontrolled,
+    ideation_grade,
 )
 from models.hex_domino import hex_neighbor
 from models.hex_domino import HEX_UP, HEX_DOWN
@@ -454,10 +455,16 @@ class GameScreen:
         # pools at the counts it needs and places every piece. Distinct from the
         # per-piece player spawn above (several pieces, fixed layout vs one live
         # piece). See the _rule_formation_* methods.
+        # Every full-board layout is one setup_formation rule -- the diagonal vs
+        # random length arrangement of the uniform fill are now sibling formations
+        # here (rule_formation_fill_player_diagonal/_random), alongside the ideation side-pane
+        # layouts, rather than a separate formation_arrangement key. One place to pick
+        # the opening layout.
         setup_formation_rules = {
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
-            "rule_formation_fill_player": self._rule_formation_fill_player,
+            "rule_formation_fill_player_diagonal": self._rule_formation_fill_player_diagonal,
+            "rule_formation_fill_player_random": self._rule_formation_fill_player_random,
             "rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle":
                 self._rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle,
             "rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid":
@@ -467,17 +474,20 @@ class GameScreen:
             "game_screen.setup_formation", setup_formation_rules
         )
 
-        # How rule_formation_fill_player arranges gram LENGTHS across the board
-        # when the length-controlled picker is active (game_screen.formation_arrangement).
-        # Diagonal = map the round-robin length cadence onto cells row-major, so it
-        # aliases into diagonal lines (the emergent reveal we want to keep); random =
-        # same length counts, scattered positions. See _rule_formation_arrange_*.
-        formation_arrangement_rules = {
-            "rule_formation_arrange_diagonal": self._rule_formation_arrange_diagonal,
-            "rule_formation_arrange_random": self._rule_formation_arrange_random,
+        # How the opening reveal (LOADING) buckets SETTLED formation cells into fade
+        # categories (game_screen.loading_fade_category). Special cells (mission /
+        # obstacle / fossilized) are always categorized by their kind first; this
+        # rule only governs the ordinary settled cells. Each scheme's category names
+        # must have a slot in loading_animation.yaml. See _rule_loading_fade_by_*.
+        loading_fade_category_rules = {
+            "rule_loading_fade_by_length": self._rule_loading_fade_by_length,
+            "rule_loading_fade_by_ideation_strength": self._rule_loading_fade_by_ideation_strength,
+            "rule_loading_fade_by_ideation_fix": self._rule_loading_fade_by_ideation_fix,
+            "rule_loading_fade_by_ideation_length_strength_fix":
+                self._rule_loading_fade_by_ideation_length_strength_fix,
         }
-        self._formation_arrangement_rule = select_rule(
-            "game_screen.formation_arrangement", formation_arrangement_rules
+        self._loading_fade_category_rule = select_rule(
+            "game_screen.loading_fade_category", loading_fade_category_rules
         )
 
         # Spawn orientation rule (independent of position), chosen by the YAML
@@ -862,23 +872,19 @@ class GameScreen:
         loading_animation.yaml timeline (its constructor blanks them). The active
         mode is NOT started yet -- _finish_loading does that when the reveal ends,
         so no piece spawns and no timer runs during it."""
-        handles = {
-            "mission": [],
-            "fossilized": [],
-            "obstacle": [],
-            "settled_3plus": [],
-            "settled_2": [],
-            "settled_1": [],
-            # Grid lines alpha-fade (background-agnostic), filling the gaps last.
-            "grid_lines": [AlphaFade(line) for line in self._board.line_shapes()],
-        }
+        # defaultdict so the active fade scheme's category names appear on demand;
+        # categories that get no cells never enter the map, so they add no dead air
+        # (only the categories actually used this game count toward the timeline).
+        handles = defaultdict(list)
+        # Grid lines alpha-fade (background-agnostic), filling the gaps last.
+        handles["grid_lines"] = [AlphaFade(line) for line in self._board.line_shapes()]
         for (x, y) in self._board.occupied_cells():
             cell = self._board.get_cell(x, y)
             if cell is None:
                 continue
             category = self._loading_category_for_cell((x, y), cell)
             self._add_cell_fade_handles(handles[category], cell)
-        self._loading_anim = LoadingAnimation(handles)
+        self._loading_anim = LoadingAnimation(dict(handles))
 
     def _add_cell_fade_handles(self, into, cell):
         """Append the fade handles for one placed cell to its category list. The
@@ -899,21 +905,77 @@ class GameScreen:
             into.append(AlphaFade(cell.label))
 
     def _loading_category_for_cell(self, pos, cell):
-        """Which fade category a placed cell belongs to: mission / obstacle /
-        fossilized by its tracking set, else a settled formation cell bucketed by
-        gram length (3+ / 2 / 1; wild vowels -- empty text -- fade with singles)."""
+        """Which fade category a placed cell belongs to. Special cells go by their
+        kind (mission / obstacle / fossilized) first; every other settled cell is
+        bucketed by the active game_screen.loading_fade_category scheme."""
         if pos in self._mission_cells:
             return "mission"
         if pos in self._obstacle_cells:
             return "obstacle"
         if pos in self._fossilized_cells:
             return "fossilized"
+        return self._loading_fade_category_rule(cell)
+
+    # --- loading-fade category schemes (game_screen.loading_fade_category) ---
+    # Each maps one SETTLED formation cell to a fade-category name (which must have
+    # a slot in loading_animation.yaml). Swap which axis the opening reveal groups by.
+    def _rule_loading_fade_by_length(self, cell):
+        """Bucket by gram length: settled_3plus / settled_2 / settled_1 (wild vowels
+        -- empty text -- fade with the singles). The original reveal grouping."""
         length = len(cell.gram) if cell.gram is not None else 1
         if length >= 3:
             return "settled_3plus"
         if length == 2:
             return "settled_2"
         return "settled_1"
+
+    def _rule_loading_fade_by_ideation_strength(self, cell):
+        """Bucket by ideation strength from the cleaned3 grades: 'strong' (graded
+        y-strong) vs 'not_strong' (m / n, or no grade, e.g. a scrabble letter)."""
+        grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
+        return "strong" if grade and grade["strong"] else "not_strong"
+
+    def _rule_loading_fade_by_ideation_fix(self, cell):
+        """Bucket by *fix from the cleaned3 grades: 'prefix' / 'midfix' / 'suffix',
+        else 'no_fix'. A gram graded y for several is assigned by priority
+        prefix > suffix > midfix (so a prefix+suffix gram reveals as prefix)."""
+        grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
+        if not grade:
+            return "no_fix"
+        if grade["prefix"]:
+            return "prefix"
+        if grade["suffix"]:
+            return "suffix"
+        if grade["midfix"]:
+            return "midfix"
+        return "no_fix"
+
+    def _rule_loading_fade_by_ideation_length_strength_fix(self, cell):
+        """Composite reveal order: bucket each SETTLED cell by gram LENGTH x ideation
+        STRENGTH x *fix, e.g. 'tri_strong_pre'. Lets the opening reveal sweep through
+        tri_strong_pre, tri_strong_mid, ... di_weak_suf, uni in whatever order their
+        slots in loading_animation.yaml give them.
+          length   -- tri (3+) / di (2); single letters are one 'uni' bucket (they
+                      grade uniformly strong + all-fix, so splitting them is moot)
+          strength -- strong (graded y) / weak (m / n / ungraded)
+          *fix     -- pre / mid / suf (priority prefix>suffix>midfix), else nofix
+                      (graded n on all three, or ungraded e.g. a scrabble letter)"""
+        gram = cell.gram
+        length = len(gram) if gram is not None else 1
+        if length == 1:
+            return "uni"
+        size = "tri" if length >= 3 else "di"
+        grade = ideation_grade(gram.text) if gram is not None else None
+        strength = "strong" if (grade and grade["strong"]) else "weak"
+        if grade and grade["prefix"]:
+            fix = "pre"
+        elif grade and grade["suffix"]:
+            fix = "suf"
+        elif grade and grade["midfix"]:
+            fix = "mid"
+        else:
+            fix = "nofix"
+        return "%s_%s_%s" % (size, strength, fix)
 
     def _finish_loading(self):
         """End LOADING: drop the animation, flip to MOVING, and start the active
@@ -1032,28 +1094,34 @@ class GameScreen:
                 self._obstacle_pool, cell, self._obstacle_cells, occupied, "obstacle"
             )
 
-    def _rule_formation_fill_player(self):
-        """Start with every board cell filled by a single-cell player piece
-        (player gram-pick + tint), so the board opens completely packed with
-        playable grams and no empty cells. Single-cell pieces tile any grid
-        exactly, so this fills the square and hex boards alike. Lays down no
-        obstacle or mission pieces, so the obstacle/mission victory rules have
-        nothing to trigger on -- pair with game_screen.victory: rule_victory_none
-        so the full board isn't an instant win or an unwinnable state. The filled
-        cells are ordinary player cells (not tracked in _obstacle_cells /
-        _mission_cells), and a player-overlap-allowing rule lets live pieces still
-        be placed over them.
+    def _rule_formation_fill_player_diagonal(self):
+        """Fill every board cell with a single-cell player piece; the gram lengths
+        form DIAGONAL LINES (the round-robin length cadence mapped row-major aliases
+        into diagonals), unless the length-controlled picker is inactive -- then it
+        just fills row-major. The default full fill. See _fill_player_with for the
+        shared body and the no-obstacle/mission caveats (pair with
+        game_screen.victory: rule_victory_none)."""
+        self._fill_player_with(self._rule_formation_arrange_diagonal)
 
-        When the length-controlled picker is active, the gram LENGTHS across the
-        board are laid out by game_screen.formation_arrangement (diagonal aliasing
-        vs scattered) -- see _fill_player_arranged. Any other picker just fills
-        row-major (its lengths aren't ours to arrange)."""
+    def _rule_formation_fill_player_random(self):
+        """Like rule_formation_fill_player_diagonal but the gram lengths are
+        SCATTERED to random cells (same unigram/digram/3+ counts, no diagonal),
+        unless the length-controlled picker is inactive -- then row-major."""
+        self._fill_player_with(self._rule_formation_arrange_random)
+
+    def _fill_player_with(self, arrange_rule):
+        """Shared body of the uniform fill formations: pack every board cell with a
+        settled single-cell player piece (no obstacles/missions, so pair with
+        game_screen.victory: rule_victory_none; filled cells are ordinary player
+        cells a live piece may overlap). When the length-controlled picker is active,
+        `arrange_rule` maps the gram lengths onto cells (diagonal vs random); any
+        other picker just fills row-major (its lengths aren't ours to arrange)."""
         cells = [(x, y)
                  for y in range(self._board.height)
                  for x in range(self._board.width)
                  if self._board.is_valid(x, y)]
         if self._formation_length_arrangement_active():
-            self._fill_player_arranged(cells)
+            self._fill_player_arranged(cells, arrange_rule)
         else:
             for x, y in cells:
                 self._fill_one_player_cell(x, y)
@@ -1067,14 +1135,14 @@ class GameScreen:
                else "square_player.gram_pick")
         return CONFIG["rules"][key] == "rule_grams_greater_than_47_lengthcontrolled"
 
-    def _fill_player_arranged(self, cells):
-        """Lay out each cell's gram LENGTH up front (formation_length_sequence),
-        let the configured arrangement rule map those lengths onto cells (diagonal
-        or scattered), then draw + place a gram of each cell's pinned length. The
-        length placement is thus fixed independently of the order grams are drawn,
-        so the diagonal reveal survives future draw-order refactors."""
+    def _fill_player_arranged(self, cells, arrange_rule):
+        """Lay out each cell's gram LENGTH up front (formation_length_sequence), let
+        `arrange_rule` map those lengths onto cells (diagonal or scattered), then
+        draw + place a gram of each cell's pinned length. The length placement is
+        thus fixed independently of the order grams are drawn, so the diagonal reveal
+        survives future draw-order refactors."""
         lengths = formation_length_sequence(len(cells))
-        for x, y, length in self._formation_arrangement_rule(cells, lengths):
+        for x, y, length in arrange_rule(cells, lengths):
             set_forced_formation_length(length)
             try:
                 self._fill_one_player_cell(x, y)
@@ -1106,10 +1174,10 @@ class GameScreen:
         L.log_06002("fill", logged_cells)
         piece.set_visible(True)
 
-    # --- formation arrangement rules (game_screen.formation_arrangement) ----
-    # Picked by select_rule above. Each takes the row-major `cells` list and the
-    # round-robin `lengths` sequence and returns a list of (x, y, length) telling
-    # _fill_player_arranged which length to pin at each cell.
+    # --- length arrangements for the uniform fill formations -----------------
+    # Helpers for rule_formation_fill_player_diagonal/_random. Each takes the row-major
+    # `cells` list and the round-robin `lengths` sequence and returns a list of
+    # (x, y, length) telling _fill_player_arranged which length to pin at each cell.
     def _rule_formation_arrange_diagonal(self, cells, lengths):
         """Map the round-robin length sequence onto cells in ROW-MAJOR order, so
         the periodic length cadence aliases against the grid's row width into
@@ -1386,7 +1454,7 @@ class GameScreen:
         # the same as every later spawn (_advance_piece). Without this the first
         # piece overlaps any settled cells already under it -- invisible on an
         # empty opening, but visible glyph overlap on a pre-filled board (see
-        # rule_formation_fill_player).
+        # rule_formation_fill_player_diagonal).
         self._update_hover_visibility()
     
     def _spawn_piece(self, piece):

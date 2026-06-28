@@ -604,6 +604,15 @@ def _partition_corpus_ideation():
     _ideation_grades = by_text
 
 
+def ideation_grade(gram_text):
+    """The cleaned3 ideation grade {strong/prefix/midfix/suffix: bool} for a gram,
+    looked up by its UPPER text, or None if the gram isn't in the corpus/cleaned3
+    (e.g. a scrabble letter or wild vowel). Used by the loading-fade categorizers
+    that group the opening reveal by ideation strength / *fix."""
+    _partition_corpus_ideation()
+    return _ideation_grades.get((gram_text or "").upper())
+
+
 def _draw_from_ideation(length, attr, count):
     """Draw `count` grams of `length` (2 / 3+) that carry ideation `attr` (graded
     y), weighted by corpus frequency within that sub-list."""
