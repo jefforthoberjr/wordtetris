@@ -45,6 +45,7 @@ from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.word_dictionary import is_word, is_prefix, select_maximal_paths, all_words
+from models.spelling_suggester import SUGGEST_RULES
 from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
@@ -678,6 +679,13 @@ class GameScreen:
         }
         self._select_word_limit_rule = select_rule(
             "game_screen.select_word_limit", select_word_limit_rules
+        )
+
+        # Spelling-suggestion rule (game_screen.spell_suggest): the "did you mean?"
+        # engine consulted when a submitted word isn't in the dictionary. Takes a
+        # typed word, returns up to a couple of close in-dictionary spellings.
+        self._spell_suggest_rule = select_rule(
+            "game_screen.spell_suggest", SUGGEST_RULES
         )
 
         # Interactive selectors build their UI in the right-pane region (same
@@ -2239,7 +2247,7 @@ class GameScreen:
         not. (Original interactive behavior.)"""
         found = self._candidate_words.get(word)
         if found is None or not self._repeat_rule(word):
-            self._selecting_side_pane.show_errors([self._submission_error(word)])
+            self._selecting_side_pane.show_errors(self._submission_messages(word))
             return
         # Capture newness before _clear_paths adds the word to the player's
         # dictionary, so the entry pane can list it green.
@@ -2273,7 +2281,7 @@ class GameScreen:
         phase ends (see _rule_endphase_clear_pending)."""
         options = self._candidate_word_options.get(word)
         if not options or not self._repeat_rule(word):
-            self._selecting_side_pane.show_errors([self._submission_error(word)])
+            self._selecting_side_pane.show_errors(self._submission_messages(word))
             return
         found = self._unused_pending_path(word, options)
         if found is None:
@@ -2365,6 +2373,18 @@ class GameScreen:
             reason = "already_cleared"
         L.log_30003(word, reason)
         return get_string(f"err_{reason}")
+
+    def _submission_messages(self, word):
+        """The error line for a rejected `word`, plus -- only when it's simply not
+        a dictionary word -- a 'did you mean?' line of close spellings underneath.
+        Shown together in the selecting pane's multiline error area."""
+        messages = [self._submission_error(word)]
+        if not is_word(word):
+            suggestions = self._spell_suggest_rule(word)
+            if suggestions:
+                joined = ", ".join(suggestions)
+                messages.append(get_string("did_you_mean", words=joined))
+        return messages
 
     # --- Player word-piece rules (game_screen.player_word_piece) -----------
     # Clicking a cleared word in the right pane (MOVING) swaps the live piece for

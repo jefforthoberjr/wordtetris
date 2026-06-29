@@ -44,6 +44,8 @@ en:
   err_already_cleared:   "Word already cleared"
   err_already_selected_one_way: "Already selected (only one way to spell it here)"
   err_every_way_selected:       "Every way to spell that here is already selected"
+  # Spelling suggestion shown under err_not_in_dictionary ({words} = comma list)
+  did_you_mean:          "Did you mean: {words}?"
 
 es:
   # Title screen
@@ -81,3 +83,4 @@ es:
   err_already_cleared:   "La palabra ya fue eliminada"
   err_already_selected_one_way: "Ya seleccionada (solo hay una forma de deletrearla aquí)"
   err_every_way_selected:       "Todas las formas de deletrearla aquí ya están seleccionadas"
+  did_you_mean:          "¿Quisiste decir: {words}?"

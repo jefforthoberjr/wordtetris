@@ -601,3 +601,48 @@ rules:
   # piece_pool.order:       rule_create_pure_random
   # piece_pool.order:       rule_create_fixed_roundrobin
   # piece_pool.order:       rule_create_random_even_distribution
+
+  # Spelling suggestions (game_screen.spell_suggest): which "did you mean?" engine
+  # runs when a submitted word is not in the dictionary. The constrained matcher
+  # (models/spell_check.py) only offers close, same-C/V-shape misspellings so the
+  # player can't farm it for unknown words; _off disables suggestions entirely.
+  # All tunables live in the top-level spell_check: block below.
+  game_screen.spell_suggest:   rule_spell_suggest_constrained
+  # game_screen.spell_suggest: rule_spell_suggest_off
+
+# Spelling-suggestion tunables for rule_spell_suggest_constrained. These are the
+# weights of the restricted edit-distance matcher (models/spell_check.py).
+#   exoticness = sum of the per-change weights below; used only to RANK results.
+#   edits      = the Damerau edit count; the only hard GATE, capped per word at
+#                max(base_distance, vowel_runs * distance_per_vowel_run).
+spell_check:
+  min_word_length:        4   # only suggest for typed words this long or longer
+  max_suggestions:        2   # most "did you mean?" words to show
+  base_distance:          2   # edit-distance floor of the per-word cap
+  distance_per_vowel_run: 1   # +this to the cap for each vowel run in the word
+  max_transpositions:     1   # consonant+vowel letter swaps allowed (e.g. RE<->ER)
+  max_length_delta:       3   # scan pre-filter: skip dict words this much longer/shorter
+  # Vowel-run change weights (a wrong vowel / diphthong).
+  vowel:
+    single_to_diphthong:  1   # A  -> AU
+    diphthong_to_single:  1   # AU -> A
+    diphthong_swap_one:   1   # EA -> EE
+    diphthong_reverse:    1   # IE -> EI
+    single_swap:          2   # A  -> E
+  # Consonant-run change weights.
+  consonant:
+    csk_class:            2   # C / S / K / CK / SC
+    gj_class:             3   # G / J
+    td_class:             3   # T / D
+    zs_class:             2   # Z / S
+    dup:                  1   # D  -> DD
+    dedup:                1   # DD -> D
+    suffix_swap:          1   # T/S/C/SH confusion in a -TION/-SION/-OUS ending
+  # Adjacent consonant+vowel transposition weights.
+  transposition:
+    end:                  1   # the final two letters (e.g. CENTRE -> CENTER)
+    elsewhere:            2   # anywhere else (e.g. PERscripsion -> PREscription)
+  # Morpheme tails (the part AFTER the confusable lead consonant) that license a
+  # cheap T/S/C/SH swap. Mined from the 20k dictionary; all end in the N or S
+  # families per the cV+n / cV+s design. Same tail covers TION/SION/CION etc.
+  suffix_tails: [ION, IOUS, IONAL, IAN, OUS, IENT, IONARY, IONIST, EOUS, IENCY, UOUS]

@@ -231,6 +231,9 @@ def _game(board, interactive=True, history=None):
     # Select word-limit at its original "unlimited": an accepted word leaves the
     # SELECT phase open, matching the flow these tests assert.
     g._select_word_limit_rule = g._rule_unlimited_words
+    # Spelling suggestions off: these tests assert exact error message lists, and
+    # the "did you mean?" engine is exercised in its own test modules.
+    g._spell_suggest_rule = lambda word: []
     # Clear-action at its original "remove": consumed cells leave the board
     # (partial-gram aware), the behavior the clear / partial-gram tests assert.
     g._clear_action_rule = g._rule_clear_remove
@@ -288,6 +291,29 @@ def test_non_dictionary_word_errors():
     g._begin_selection([(3, 0)])
     g._on_submit_word("zzz")
     assert g._selecting_side_pane.errors == ["Word is not in the dictionary"]
+
+
+def test_non_dictionary_word_shows_spelling_suggestions():
+    # When the spell-suggest engine offers fixes, they appear on a second line
+    # under the "not in dictionary" error.
+    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._spell_suggest_rule = lambda word: ["BUTTON", "BITTEN"]
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("buttin")
+    assert g._selecting_side_pane.errors == [
+        "Word is not in the dictionary",
+        "Did you mean: BUTTON, BITTEN?",
+    ]
+
+
+def test_real_word_off_board_shows_no_suggestions():
+    # A real (just-misplaced) word is a dictionary word, so no spelling fix is
+    # offered even if the engine would return something.
+    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._spell_suggest_rule = lambda word: ["SHOULD_NOT_APPEAR"]
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("hello")
+    assert g._selecting_side_pane.errors == ["Word isn't on the board"]
 
 
 def test_real_word_not_on_board_errors():
