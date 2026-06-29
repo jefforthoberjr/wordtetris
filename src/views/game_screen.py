@@ -851,6 +851,11 @@ class GameScreen:
         # the gram.dedup rule starts clean. Must run before any piece is built
         # (formation below + the player pool), since both pick through pick_grams.
         reset_gram_dedup()
+        # Per-cell *fix the formation BINNED a gram for (e.g. a region trigram drawn
+        # from the prefix vs midsuf pool), so the fade categorizers use that as the
+        # gram's primary *fix instead of re-deriving by priority. Filled by the
+        # ideation formations; empty for the others (-> priority fallback). Reset here.
+        self._formation_fix_tags = {}
         # The unigram cap (gram.unigram_dedup) applies to the opening formation
         # only -- bracket the formation build so the piece pool below draws
         # uncapped (100+ pieces can't fit under a few copies of each letter).
@@ -929,12 +934,32 @@ class GameScreen:
             return "obstacle"
         if pos in self._fossilized_cells:
             return "fossilized"
-        return self._loading_fade_category_rule(cell)
+        return self._loading_fade_category_rule(pos, cell)
+
+    def _cell_primary_fix(self, pos, cell):
+        """The gram's PRIMARY *fix for fade purposes: the *fix bin the formation
+        SELECTED it for (recorded in _formation_fix_tags), if any -- so a midsuf-pool
+        gram that also happens to be prefix=y still fades as suffix/midfix. Otherwise
+        derived by priority prefix>suffix>midfix from the cleaned3 grade, or None when
+        the gram has no *fix / no grade."""
+        tag = self._formation_fix_tags.get(pos)
+        if tag is not None:
+            return tag
+        grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
+        if not grade:
+            return None
+        if grade["prefix"]:
+            return "prefix"
+        if grade["suffix"]:
+            return "suffix"
+        if grade["midfix"]:
+            return "midfix"
+        return None
 
     # --- loading-fade category schemes (game_screen.loading_fade_category) ---
-    # Each maps one SETTLED formation cell to a fade-category name (which must have
-    # a slot in loading_animation.yaml). Swap which axis the opening reveal groups by.
-    def _rule_loading_fade_by_length(self, cell):
+    # Each maps one SETTLED formation cell (pos, cell) to a fade-category name (which
+    # must have a slot in loading_animation.yaml). Swap which axis the reveal groups by.
+    def _rule_loading_fade_by_length(self, pos, cell):
         """Bucket by gram length: settled_3plus / settled_2 / settled_1 (wild vowels
         -- empty text -- fade with the singles). The original reveal grouping."""
         length = len(cell.gram) if cell.gram is not None else 1
@@ -944,28 +969,19 @@ class GameScreen:
             return "settled_2"
         return "settled_1"
 
-    def _rule_loading_fade_by_ideation_strength(self, cell):
+    def _rule_loading_fade_by_ideation_strength(self, pos, cell):
         """Bucket by ideation strength from the cleaned3 grades: 'strong' (graded
         y-strong) vs 'not_strong' (m / n, or no grade, e.g. a scrabble letter)."""
         grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
         return "strong" if grade and grade["strong"] else "not_strong"
 
-    def _rule_loading_fade_by_ideation_fix(self, cell):
-        """Bucket by *fix from the cleaned3 grades: 'prefix' / 'midfix' / 'suffix',
-        else 'no_fix'. A gram graded y for several is assigned by priority
-        prefix > suffix > midfix (so a prefix+suffix gram reveals as prefix)."""
-        grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
-        if not grade:
-            return "no_fix"
-        if grade["prefix"]:
-            return "prefix"
-        if grade["suffix"]:
-            return "suffix"
-        if grade["midfix"]:
-            return "midfix"
-        return "no_fix"
+    def _rule_loading_fade_by_ideation_fix(self, pos, cell):
+        """Bucket by *fix: 'prefix' / 'suffix' / 'midfix', else 'no_fix'. Uses the
+        gram's PRIMARY *fix (the bin the formation selected it for, else priority
+        prefix>suffix>midfix) -- see _cell_primary_fix."""
+        return self._cell_primary_fix(pos, cell) or "no_fix"
 
-    def _rule_loading_fade_by_ideation_length_strength_fix(self, cell):
+    def _rule_loading_fade_by_ideation_length_strength_fix(self, pos, cell):
         """Composite reveal order: bucket each SETTLED cell by gram LENGTH x ideation
         STRENGTH x *fix, e.g. 'tri_strong_pre'. Lets the opening reveal sweep through
         tri_strong_pre, tri_strong_mid, ... di_weak_suf, uni in whatever order their
@@ -973,8 +989,8 @@ class GameScreen:
           length   -- tri (3+) / di (2); single letters are one 'uni' bucket (they
                       grade uniformly strong + all-fix, so splitting them is moot)
           strength -- strong (graded y) / weak (m / n / ungraded)
-          *fix     -- pre / mid / suf (priority prefix>suffix>midfix), else nofix
-                      (graded n on all three, or ungraded e.g. a scrabble letter)"""
+          *fix     -- pre / mid / suf from the gram's PRIMARY *fix (the bin it was
+                      selected for, else priority), else nofix (no *fix / ungraded)"""
         gram = cell.gram
         length = len(gram) if gram is not None else 1
         if length == 1:
@@ -982,15 +998,9 @@ class GameScreen:
         size = "tri" if length >= 3 else "di"
         grade = ideation_grade(gram.text) if gram is not None else None
         strength = "strong" if (grade and grade["strong"]) else "weak"
-        if grade and grade["prefix"]:
-            fix = "pre"
-        elif grade and grade["suffix"]:
-            fix = "suf"
-        elif grade and grade["midfix"]:
-            fix = "mid"
-        else:
-            fix = "nofix"
-        return "%s_%s_%s" % (size, strength, fix)
+        fix = self._cell_primary_fix(pos, cell)
+        fix_part = {"prefix": "pre", "suffix": "suf", "midfix": "mid"}.get(fix, "nofix")
+        return "%s_%s_%s" % (size, strength, fix_part)
 
     def _finish_loading(self):
         """End LOADING: drop the animation, flip to MOVING, and start the active
@@ -1338,7 +1348,10 @@ class GameScreen:
     def _place_region_cells(self, cells, length, attr):
         """Fill each of `cells` with a settled player piece whose gram is the given
         `length` (and ideation pool `attr`, if any), forced per cell through the
-        length-controlled picker. Deduped like every other formation draw."""
+        length-controlled picker. Deduped like every other formation draw. Records the
+        *fix the gram was BINNED for (prefix pool -> prefix; midsuf pool -> suffix or
+        midfix per the placed gram) so the fade categorizers honor that as its primary
+        *fix; digram/unigram pools (attr None) leave no tag (-> priority fallback)."""
         for x, y in cells:
             set_forced_formation_cell(length, attr)
             try:
@@ -1346,6 +1359,22 @@ class GameScreen:
                     x, y, gram_pick_rule=rule_grams_greater_than_47_lengthcontrolled)
             finally:
                 clear_forced_formation_cell()
+            if attr == "prefix":
+                self._formation_fix_tags[(x, y)] = "prefix"
+            elif attr == "midsuf":
+                self._formation_fix_tags[(x, y)] = self._resolve_midsuf_fix((x, y))
+
+    def _resolve_midsuf_fix(self, pos):
+        """Primary *fix for a gram drawn from the combined midfix/suffix (right-pane)
+        pool: 'suffix' if graded so, else 'midfix' (priority suffix>midfix); the pool
+        guarantees one of them, so default 'suffix'."""
+        gram = self._board.gram_at(*pos)
+        grade = ideation_grade(gram.text) if gram is not None else None
+        if grade and grade["suffix"]:
+            return "suffix"
+        if grade and grade["midfix"]:
+            return "midfix"
+        return "suffix"
 
     def _build_obstacle_pool(self, count):
         """(Re)build the obstacle pool with `count` pieces, using the obstacle
