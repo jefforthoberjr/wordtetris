@@ -43,6 +43,11 @@ We want it so when I swap out the rules later, I only have to update one place. 
 
 Try to keep functions with rule selection in them toward the top of the .py files.
 
+# SESSIONS AND REPLAY FEATURE
+We capture logs as sessions, which I can use later to replay a previous session.
+The session uses/shares the logic of the main game.
+Anytime you make a change or feature add to the main game, make sure there is sufficient logging etc. to see the new feature in the replay.
+
 ## WE BOTH EDIT THE CODE
 Sometimes, between your edits of code, I will manually make some small changes. For example, add a line of commenting. Since you may not see these edits in your context, please re-read files that have an updated timestamp newer than when you touched them last.
 

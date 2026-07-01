@@ -632,6 +632,8 @@ class GameScreen:
         self._omniswap_timer_race = variant == "race"
         self._omniswap_timer_sand = variant == "sand"
         # Sand-timer settings (rule_omniswap_timer_sand only); see SandTimerField.
+        # A cell's life is a silent delay then the filling animation.
+        self._sand_timer_delay_seconds = CONFIG["rules"]["game_screen.sand_timer_delay_seconds"]
         self._sand_timer_seconds = CONFIG["rules"]["game_screen.sand_timer_seconds"]
         self._sand_timer_count = CONFIG["rules"]["game_screen.sand_timer_count"]
         # Whether the word-piece feature is on, as a plain flag a mode can read

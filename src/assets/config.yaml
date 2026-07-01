@@ -85,10 +85,14 @@ rules:
   game_screen.omniswap_timer_seconds: 360
 
   # SAND-TIMER settings (only used by rule_omniswap_timer_sand below). Instead of one
-  # global countdown, up to sand_timer_count board cells are "sand timers" at a time,
-  # each filling over sand_timer_seconds; a sand timer follows its gram when swapped.
-  game_screen.sand_timer_seconds: 30
-  game_screen.sand_timer_count:   1
+  # global countdown, up to sand_timer_count board cells are "sand timers" at a time;
+  # a sand timer follows its gram when swapped. A cell's full life is a SILENT delay
+  # (sand_timer_delay_seconds -- no visible fill, but already the active/swappable sand
+  # cell) followed by the FILLING animation (sand_timer_seconds); it fossilizes when the
+  # fill completes, i.e. after delay + fill seconds total.
+  game_screen.sand_timer_delay_seconds: 15
+  game_screen.sand_timer_seconds:       30
+  game_screen.sand_timer_count:          1
 
   # MOVING_OMNISWAP timer + endgame variant (game_screen.omniswap_timer). All
   # share the OMNISWAP PRESET below; they differ only in WHEN the clock runs and

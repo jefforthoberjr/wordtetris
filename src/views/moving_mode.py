@@ -304,11 +304,12 @@ class SandTimerField:
 
     FILL_OPACITY = 150     # translucent so the gram reads through the rising sand
 
-    def __init__(self, game_screen, count, seconds):
+    def __init__(self, game_screen, count, seconds, delay=0.0):
         self._gs = game_screen
         self._count = max(1, int(count))
-        self._seconds = float(seconds)
-        self._timers = {}     # active sand cell (x, y) -> elapsed seconds
+        self._seconds = float(seconds)         # the visible FILLING duration
+        self._delay = float(delay)             # silent lead-in before the fill starts
+        self._timers = {}     # active sand cell (x, y) -> elapsed seconds (delay + fill)
         self._shapes = {}     # active sand cell (x, y) -> its fill Polygon
 
     # --- queries (renderer seam) -----------------------------------------
@@ -316,9 +317,12 @@ class SandTimerField:
         return list(self._timers)
 
     def elapsed_fraction(self, pos):
-        """0..1 fill of the sand timer at `pos`, or None if `pos` isn't one."""
+        """0..1 VISIBLE fill of the sand timer at `pos`, or None if `pos` isn't one.
+        Stays 0 through the silent delay, then ramps over the filling duration."""
         elapsed = self._timers.get(pos)
-        return None if elapsed is None else min(1.0, elapsed / self._seconds)
+        if elapsed is None:
+            return None
+        return min(1.0, max(0.0, (elapsed - self._delay) / self._seconds))
 
     # --- lifecycle -------------------------------------------------------
     def start(self):
@@ -333,7 +337,7 @@ class SandTimerField:
         filled = []
         for pos in list(self._timers):
             self._timers[pos] += dt
-            if self._timers[pos] >= self._seconds:
+            if self._timers[pos] >= self._delay + self._seconds:   # delay + fill = full life
                 filled.append(pos)
         for pos in filled:
             del self._timers[pos]
@@ -463,7 +467,8 @@ class OmniswapVsTimerMode(MovingMode):
         # Sand variant: per-cell sand timers instead of a global countdown.
         if self._gs._omniswap_timer_sand:
             self._sand = SandTimerField(
-                self._gs, self._gs._sand_timer_count, self._gs._sand_timer_seconds)
+                self._gs, self._gs._sand_timer_count, self._gs._sand_timer_seconds,
+                self._gs._sand_timer_delay_seconds)
             self._sand.start()
         else:
             self._reset_timer()
