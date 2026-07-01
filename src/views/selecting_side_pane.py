@@ -32,7 +32,12 @@ class SelectingSidePane:
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("selecting_side_pane.phase_label")
-    MAX_ERRORS = 3
+    # Vertical lines reserved between the error area and the controls below it.
+    # The error label can now stack two messages -- the rejection reason plus a
+    # "Did you mean: ...?" spelling-suggestion line -- and each can wrap to two
+    # lines in this narrow pane, so reserve enough that the blue controls never
+    # ride up under the suggestions.
+    MAX_ERRORS = 5
     # Prompt + top-edge header text come from the active language (see
     # config.get_string); the header is the SELECTING twin of the moving pane's
     # "Pieces: N" countdown label (both pinned to the very top of the right pane).

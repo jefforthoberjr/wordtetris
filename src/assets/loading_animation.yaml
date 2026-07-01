@@ -77,6 +77,6 @@ categories:
   di_weak_suf:      { delay: 4, duration: 1 }
 
 
-  uni:              { delay: 6, duration: 3 }   # all single letters
+  uni:              { delay: 60, duration: 3 }   # all single letters
 
   grid_lines:    { delay: 6, duration: 1 }   # hex/square outline, fills the gaps last

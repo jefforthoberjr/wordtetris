@@ -880,17 +880,20 @@ def _draw_explicit_formation(deduped, count):
     return grams
 
 
-def formation_length_sequence(count):
+def formation_length_sequence(count, weights=None):
     """Return a list of `count` length categories (1 / 2 / 3+) in the round-robin
-    largest-remainder cadence dictated by gram_length.*_percent -- the SAME
-    periodic cadence the legacy _pick_grams_length_enforced produced per draw, but
-    computed up front and detached from gram drawing. A re-roll never changes a
-    draw's length (dedup stays in-bucket), so the legacy kept-gram cadence equals
-    this pre-computed one; mapping it row-major reproduces today's diagonal."""
+    largest-remainder cadence dictated by `weights` (defaults to gram_length.*_percent)
+    -- the SAME periodic cadence the legacy _pick_grams_length_enforced produced per
+    draw, but computed up front and detached from gram drawing. A re-roll never changes
+    a draw's length (dedup stays in-bucket), so the legacy kept-gram cadence equals this
+    pre-computed one; mapping it row-major reproduces today's diagonal. wood_grain passes
+    its own fixed weights so the grain pattern is independent of the configured mix."""
+    if weights is None:
+        weights = _LENGTH_PCT_WEIGHTS
     counts = {1: 0, 2: 0, 3: 0}
     seq = []
     for _ in range(count):
-        category = _largest_remainder_pick(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS, counts)
+        category = _largest_remainder_pick(_LENGTH_CATEGORIES, weights, counts)
         if category is None:  # degenerate config (all shares 0) -- default unigram
             category = 1
         seq.append(category)

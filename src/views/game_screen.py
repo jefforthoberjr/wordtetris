@@ -466,6 +466,7 @@ class GameScreen:
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
             "rule_formation_fill_player_diagonal": self._rule_formation_fill_player_diagonal,
+            "rule_formation_fill_player_wood_grain": self._rule_formation_fill_player_wood_grain,
             "rule_formation_fill_player_random": self._rule_formation_fill_player_random,
             "rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle":
                 self._rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle,
@@ -1136,6 +1137,18 @@ class GameScreen:
         game_screen.victory: rule_victory_none)."""
         self._fill_player_with(self._rule_formation_arrange_diagonal)
 
+    def _rule_formation_fill_player_wood_grain(self):
+        """Like rule_formation_fill_player_diagonal, but the multi-letter (digram /
+        trigram+) cells are laid into HARD-CODED top-left -> bottom-right grain
+        lines instead of the old accidental aliasing stripes: a few parallel
+        down-right diagonals spaced >=1 unigram apart, each kinked by 2-3
+        straight-down jags for a wood-grain feel. Unigrams fill the gaps. Line
+        count FLOATS with the digram/trigram+ percentages. Same uni/digram/3+
+        counts as the diagonal fill -- only WHERE each length lands changes.
+        Hex grid only (the grain stepping uses hex directions). See
+        _rule_formation_arrange_wood_grain."""
+        self._fill_player_with(self._rule_formation_arrange_wood_grain)
+
     def _rule_formation_fill_player_random(self):
         """Like rule_formation_fill_player_diagonal but the gram lengths are
         SCATTERED to random cells (same unigram/digram/3+ counts, no diagonal),
@@ -1227,6 +1240,57 @@ class GameScreen:
         shuffled = list(cells)
         rand().shuffle(shuffled)
         return [(x, y, length) for (x, y), length in zip(shuffled, lengths)]
+
+    # --- wood_grain: the recovered round-robin diagonal as a reusable MOLD ----------
+    # The grain the user wanted was an accidental but pleasing artifact of the legacy
+    # round-robin length cadence (formation_length_sequence) mapped row-major into
+    # diagonals -- the SAME thing _arrange_diagonal does. It only ever "broke" because
+    # changing gram_length.*_percent changed the cadence. So we freeze the SHAPE here and
+    # let the configured percentages control only the DENSITY. WOOD_GRAIN_LENGTH_WEIGHTS
+    # was recovered from the session that produced the reference (sessions/
+    # 2026-06-25T13-34-45_29a6, embedded gram_length 50/30/20); run row-major it
+    # reproduces that board's grain cell-for-cell (verified). The mold's multigram cells
+    # are the "grain slots"; gram_length.*_percent (the configured `lengths`) then decides
+    # how many multigrams actually fill them and the digram/trigram split. The configured
+    # percentages still drive every other draw (piece pool, the other formations) too.
+    WOOD_GRAIN_LENGTH_WEIGHTS = [50, 30, 20]   # unigram / digram / trigram+ (relative)
+
+    def _rule_formation_arrange_wood_grain(self, cells, lengths):
+        """Lay multigrams along the fixed wood-grain mold, at the configured density.
+        The mold (WOOD_GRAIN_LENGTH_WEIGHTS run row-major) marks the diagonal 'grain
+        slots'; the configured `lengths` decide how many multigrams to place and the
+        digram-vs-trigram split. Multigrams fill grain slots first -- if the config asks
+        for FEWER than the mold has, the leftover slots fall back to unigrams (gaps in
+        the grain); if it asks for MORE, the surplus scatter randomly into the gap cells.
+        Exact uni/digram/3+ counts from `lengths` are preserved, so the vowel guarantee
+        and quotas stay honest. rand() (replay-reproducible) picks which slots gap out and
+        where overflow lands. `cells` arrives row-major."""
+        mold = formation_length_sequence(len(cells), self.WOOD_GRAIN_LENGTH_WEIGHTS)
+        grain_slots = [c for c, m in zip(cells, mold) if m >= 2]   # ideal multigram cells
+        gap_cells = [c for c, m in zip(cells, mold) if m < 2]
+        multi_lengths = [n for n in lengths if n >= 2]   # configured 2s + 3s: count + split
+        n_multi = len(multi_lengths)
+        if n_multi <= len(grain_slots):      # underflow: nibble the ends, keep grain contiguous
+            chosen = self._wood_grain_underfill(grain_slots, n_multi)
+        else:                                # overflow: surplus multigrams go in the gaps
+            rand().shuffle(gap_cells)
+            chosen = grain_slots + gap_cells[:n_multi - len(grain_slots)]
+        chosen = set(chosen)
+        rand().shuffle(multi_lengths)        # which chosen cell is a digram vs trigram+
+        take = iter(multi_lengths)
+        return [(x, y, next(take) if (x, y) in chosen else 1) for (x, y) in cells]
+
+    def _wood_grain_underfill(self, grain_slots, n_multi):
+        """Fill `n_multi` of the ordered grain slots, taking the deficit off the ENDS of
+        the grain (a random split between the front and back ends) so the filled grain
+        stays ONE contiguous run -- the gaps are at the ends, never stranding a single
+        grain cell between two gaps. The slots are row-major, so the trimmed ends read
+        as blank bands at the top/bottom of the grain. Returns the cells to fill."""
+        deficit = len(grain_slots) - n_multi
+        if deficit <= 0:
+            return list(grain_slots)
+        front = rand().randint(0, deficit)   # nibble this many off the front, the rest off the back
+        return grain_slots[front:len(grain_slots) - (deficit - front)]
 
     # --- unigram vowel coverage (game_screen.formation_vowel_coverage) -------
     # Each returns the set of letters the fill must place on at least one unigram cell;
