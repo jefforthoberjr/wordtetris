@@ -58,6 +58,7 @@ DEFAULT_COSTS = {
         "diphthong_swap_one": 1,    # EA -> EE (one vowel changed in a run)
         "diphthong_reverse": 1,     # IE -> EI (two vowels reordered)
         "single_swap": 2,           # A -> E (lone vowel changed)
+        "silent_e": 1,              # WORD -> WORDE (add a silent E at the end)
     },
     "consonant": {
         "csk_class": 2,             # C/S/K/CK/SC
@@ -272,6 +273,15 @@ def _match(a, b, costs, suffix_tails):
                     a[i:i + p], b[j:j + q], costs, b, j, suffix_tails)
                 if cost is not None:
                     best = _better(best, _add(cost, rec(i + p, j + q, t_used)))
+        # Silent-E ending rule: one word carries a trailing E the other lacks
+        # (WORD -> WORDE). Fires only at the very end, and the extra E must sit
+        # right after a consonant -- a real silent-E slot, not part of a vowel
+        # run like -EE / -IE, which the vowel-run rules already cover.
+        e_cost = costs["vowel"]["silent_e"]
+        if i == n - 1 and j == m and i >= 1 and a[i] == "E" and not is_vowel(a[i - 1]):
+            best = _better(best, _add((e_cost, 1), rec(i + 1, j, t_used)))
+        if j == m - 1 and i == n and j >= 1 and b[j] == "E" and not is_vowel(b[j - 1]):
+            best = _better(best, _add((e_cost, 1), rec(i, j + 1, t_used)))
         # One consonant+vowel transposition of two existing, otherwise-untouched
         # letters. Works whether or not it preserves the C/V skeleton.
         if (t_used < max_trans and i + 1 < n and j + 1 < m

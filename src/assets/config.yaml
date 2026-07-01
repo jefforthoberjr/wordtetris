@@ -660,6 +660,7 @@ spell_check:
     diphthong_swap_one:   1   # EA -> EE
     diphthong_reverse:    1   # IE -> EI
     single_swap:          2   # A  -> E
+    silent_e:             1   # WORD -> WORDE (add a silent E at the end)
   # Consonant-run change weights.
   consonant:
     csk_class:            2   # C / S / K / CK / SC
