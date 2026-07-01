@@ -478,6 +478,7 @@ class OmniswapVsTimerMode(MovingMode):
         # the global clock; the sand variant fills its per-cell timers.
         if self._sand is not None:
             self._sand.tick(dt)
+            self._drop_selection_if_dead()
         else:
             self._tick(dt)
 
@@ -486,8 +487,18 @@ class OmniswapVsTimerMode(MovingMode):
         # phases (continuous pressure); per-phase leaves SELECT untimed.
         if self._sand is not None:
             self._sand.tick(dt)
+            self._drop_selection_if_dead()
         elif self._gs._omniswap_timer_race:
             self._tick(dt)
+
+    def _drop_selection_if_dead(self):
+        """Force an un-select if the pick-cursor cell just fossilized (its sand
+        timer filled) or emptied -- a now-dead cell must not be able to complete a
+        swap that was mid-pick when it ran out."""
+        if (self._selected is not None
+                and (self._gs._is_fossilized(self._selected)
+                     or self._gs._board.gram_at(*self._selected) is None)):
+            self._clear_selection()
 
     def _tick(self, dt):
         # Decrement the shared countdown and act when it hits zero. What zero means
