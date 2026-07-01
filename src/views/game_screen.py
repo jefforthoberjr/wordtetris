@@ -619,13 +619,21 @@ class GameScreen:
         #   rule_omniswap_timer_race (True) -- one continuous clock counts down
         #     across BOTH phases; the player toggles MOVING/SELECT freely and the
         #     game ends the instant the clock hits zero (FINISHED, no win check).
+        #   rule_omniswap_timer_sand ("sand") -- no global clock; up to
+        #     sand_timer_count cells fill over sand_timer_seconds each, fossilizing
+        #     on fill; the game ends when the whole board is fossilized. See
+        #     SandTimerField. The timer follows its gram on a swap.
         omniswap_timer_variants = {
-            "rule_omniswap_timer_per_phase": False,
-            "rule_omniswap_timer_race": True,
+            "rule_omniswap_timer_per_phase": "per_phase",
+            "rule_omniswap_timer_race": "race",
+            "rule_omniswap_timer_sand": "sand",
         }
-        self._omniswap_timer_race = select_rule(
-            "game_screen.omniswap_timer", omniswap_timer_variants
-        )
+        variant = select_rule("game_screen.omniswap_timer", omniswap_timer_variants)
+        self._omniswap_timer_race = variant == "race"
+        self._omniswap_timer_sand = variant == "sand"
+        # Sand-timer settings (rule_omniswap_timer_sand only); see SandTimerField.
+        self._sand_timer_seconds = CONFIG["rules"]["game_screen.sand_timer_seconds"]
+        self._sand_timer_count = CONFIG["rules"]["game_screen.sand_timer_count"]
         # Whether the word-piece feature is on, as a plain flag a mode can read
         # before doing its own mode-specific replacement (jigsaw swaps the live
         # piece via _player_word_piece_rule; typewriter replaces the cursor gram).
@@ -811,6 +819,10 @@ class GameScreen:
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
+        # Sand-timer fills (rule_omniswap_timer_sand): the rising bottom-up cell
+        # fills, drawn on top of the piece cells/labels. Its own batch so draw()
+        # can layer it above the board without touching the piece rendering.
+        self._sand_batch = pyglet.graphics.Batch()
         # Drop last game's path trails (they accumulate within a game only).
         self._word_trail.clear()
         # Separate batch for the starting obstacle pieces. Their cells live on
@@ -2892,6 +2904,9 @@ class GameScreen:
         self._obstacle_batch.draw()
         self._mission_batch.draw()
         self._piece_batch.draw()
+        # Sand-timer fills sit above the cells/glyphs (translucent, so the gram
+        # stays readable underneath); empty in every non-sand mode.
+        self._sand_batch.draw()
         # Cleared-word path trails, on top of the board cells and glyphs.
         self._word_trail.draw()
         # The right pane swaps between the opening "LOADING..." pane, the

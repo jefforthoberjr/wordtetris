@@ -1,7 +1,27 @@
 import math
 import pyglet
 from config import select_rule
+from source import rand
+from models.hex_grid import flattop_vertices
+from views.shaders import get_shape_shader
 import log_codes as L
+
+
+def _clip_below(verts, y_line):
+    """Sutherland-Hodgman clip of a convex polygon (the hex outline) to the
+    half-plane y <= y_line -- the part of the cell filled by sand rising from the
+    bottom. Returns the clipped vertex list (< 3 points when nothing is filled)."""
+    out = []
+    n = len(verts)
+    for i in range(n):
+        cur, nxt = verts[i], verts[(i + 1) % n]
+        cur_in, nxt_in = cur[1] <= y_line, nxt[1] <= y_line
+        if cur_in:
+            out.append(cur)
+        if cur_in != nxt_in:   # edge crosses the fill line -> add the crossing point
+            t = (y_line - cur[1]) / (nxt[1] - cur[1])
+            out.append((cur[0] + t * (nxt[0] - cur[0]), y_line))
+    return out
 
 
 # --- cursor-path rules (game_screen.cursor_path) ---------------------------
@@ -267,6 +287,138 @@ class TypewriterMovingMode(MovingMode):
         board.relabel_cell(b[0], b[1], ta)
 
 
+class SandTimerField:
+    """The MOVING_OMNISWAP sand-timer clock (game_screen.omniswap_timer:
+    rule_omniswap_timer_sand). No global countdown -- instead up to `count` board
+    cells are 'sand timers' at once. Each fills over `seconds`; if it fills before
+    its gram is used in a word it FOSSILIZES in place and a fresh non-fossilized
+    cell takes the slot. Using a sand cell's gram in a word fossilizes it via the
+    normal clear-action, freeing the slot. A sand timer FOLLOWS ITS GRAM: a swap
+    moves it (with its fill) to wherever the gram went. The game ends when the whole
+    board is fossilized -- no cell left to time.
+
+    Each active cell shows a bottom-up fill in the fossil color, clipped to the hex
+    outline and drawn translucent (over the cell + gram) so the gram stays readable
+    as it fills. On fossilize the fill is removed and the cell's own square goes
+    solid fossil grey."""
+
+    FILL_OPACITY = 150     # translucent so the gram reads through the rising sand
+
+    def __init__(self, game_screen, count, seconds):
+        self._gs = game_screen
+        self._count = max(1, int(count))
+        self._seconds = float(seconds)
+        self._timers = {}     # active sand cell (x, y) -> elapsed seconds
+        self._shapes = {}     # active sand cell (x, y) -> its fill Polygon
+
+    # --- queries (renderer seam) -----------------------------------------
+    def active_positions(self):
+        return list(self._timers)
+
+    def elapsed_fraction(self, pos):
+        """0..1 fill of the sand timer at `pos`, or None if `pos` isn't one."""
+        elapsed = self._timers.get(pos)
+        return None if elapsed is None else min(1.0, elapsed / self._seconds)
+
+    # --- lifecycle -------------------------------------------------------
+    def start(self):
+        self._timers = {}
+        self._refill()
+        self._render()
+
+    def tick(self, dt):
+        """Advance every sand timer; any that fills fossilizes in place, then the
+        freed slots refill. Called each frame while MOVING and SELECTING, so the
+        pressure is continuous across both phases."""
+        filled = []
+        for pos in list(self._timers):
+            self._timers[pos] += dt
+            if self._timers[pos] >= self._seconds:
+                filled.append(pos)
+        for pos in filled:
+            del self._timers[pos]
+            self._gs._fossilize_cell(pos)      # ran out -> fossilize in place
+        if filled:
+            self._after_change()
+        self._render()                          # advance the fill height each frame
+
+    def on_swap(self, a, b):
+        """A swap exchanged the grams at a and b: move any sand timer to follow its
+        gram to the other cell (keeping its fill)."""
+        if a in self._timers or b in self._timers:
+            moved = {}
+            for pos, elapsed in self._timers.items():
+                moved[b if pos == a else a if pos == b else pos] = elapsed
+            self._timers = moved
+        self._render()
+
+    def on_word_committed(self):
+        """After a submitted word's clear-action ran: any sand cell fossilized by it
+        (its gram was used) frees its slot; then refill and maybe end the game."""
+        for pos in [p for p in self._timers if self._gs._is_fossilized(p)]:
+            del self._timers[pos]
+        self._after_change()
+
+    def repaint_all(self):
+        """Re-assert the fills (the mode restores a cell's square color after a pick;
+        the fill overlay is independent, so this just refreshes it)."""
+        self._render()
+
+    # --- internals -------------------------------------------------------
+    def _after_change(self):
+        self._refill()
+        if not self._timers and not self._eligible():
+            self._gs._enter_endgame()          # whole board fossilized -- nothing left to time
+        self._render()
+
+    def _refill(self):
+        while len(self._timers) < self._count:
+            pool = self._eligible()
+            if not pool:
+                break
+            pos = pool[rand().randrange(len(pool))]
+            self._timers[pos] = 0.0
+
+    def _eligible(self):
+        """Occupied, non-fossilized cells that aren't already a sand timer."""
+        gs, board, out = self._gs, self._gs._board, []
+        for y in range(board.height):
+            for x in range(board.width):
+                pos = (x, y)
+                if (board.is_valid(x, y) and board.gram_at(x, y) is not None
+                        and pos not in self._timers and not gs._is_fossilized(pos)):
+                    out.append(pos)
+        return out
+
+    # --- rendering: the bottom-up hex-clipped fill -----------------------
+    def _render(self):
+        """Rebuild each active cell's rising fill and drop overlays for cells that
+        stopped timing (expired / used / swapped away)."""
+        for pos in [p for p in self._shapes if p not in self._timers]:
+            self._shapes.pop(pos).delete()
+        for pos in self._timers:
+            self._draw_fill(pos, self.elapsed_fraction(pos))
+
+    def _draw_fill(self, pos, fraction):
+        old = self._shapes.pop(pos, None)
+        if old is not None:
+            old.delete()
+        if fraction <= 0.0:                     # just picked -- nothing filled yet
+            return
+        cx, cy = self._gs._board.cell_center(*pos)
+        verts = flattop_vertices(self._gs._cell_size, cx, cy)
+        ys = [v[1] for v in verts]
+        bottom, top = min(ys), max(ys)
+        clipped = _clip_below(verts, bottom + fraction * (top - bottom))
+        if len(clipped) < 3:                    # nothing filled yet -- no polygon
+            return
+        poly = pyglet.shapes.Polygon(
+            *clipped, color=self._gs.FOSSILIZED_CELL_COLOR,
+            batch=self._gs._sand_batch, program=get_shape_shader())
+        poly.opacity = self.FILL_OPACITY
+        self._shapes[pos] = poly
+
+
 class OmniswapVsTimerMode(MovingMode):
     """MOVING_OMNISWAP -- a board pre-filled by the starting formation, no cursor
     sweep and no piece queue. The player freely swaps any two cells (a two-click
@@ -304,19 +456,32 @@ class OmniswapVsTimerMode(MovingMode):
         self._remaining = 0.0       # seconds left this moving phase
         self._last_shown = None     # last whole-second value pushed to the pane
         self._selected = None       # (x, y) of the first-click cell, or None
+        self._sand = None           # SandTimerField when the sand variant is active
 
     def start(self):
         self._selected = None
-        self._reset_timer()
+        # Sand variant: per-cell sand timers instead of a global countdown.
+        if self._gs._omniswap_timer_sand:
+            self._sand = SandTimerField(
+                self._gs, self._gs._sand_timer_count, self._gs._sand_timer_seconds)
+            self._sand.start()
+        else:
+            self._reset_timer()
 
     def update(self, dt):
-        # Called while MOVING (see GameScreen.update). Both variants tick here.
-        self._tick(dt)
+        # Called while MOVING (see GameScreen.update). The countdown variants tick
+        # the global clock; the sand variant fills its per-cell timers.
+        if self._sand is not None:
+            self._sand.tick(dt)
+        else:
+            self._tick(dt)
 
     def update_during_select(self, dt):
-        # Called while SELECTING. Only the race variant keeps counting here -- its
-        # one clock spans both phases; per-phase leaves SELECT untimed.
-        if self._gs._omniswap_timer_race:
+        # Called while SELECTING. The race clock and the sand timers both span both
+        # phases (continuous pressure); per-phase leaves SELECT untimed.
+        if self._sand is not None:
+            self._sand.tick(dt)
+        elif self._gs._omniswap_timer_race:
             self._tick(dt)
 
     def _tick(self, dt):
@@ -351,6 +516,12 @@ class OmniswapVsTimerMode(MovingMode):
         # game if the player left SELECT without submitting any word.
         gs = self._gs
         self._clear_selection()
+        if self._sand is not None:
+            # Like race: free MOVING/SELECT toggling, no reset/surrender. A word may
+            # have fossilized a sand cell (its gram was used) -- free that slot; the
+            # field ends the game when the whole board is fossilized.
+            self._sand.on_word_committed()
+            return
         if gs._omniswap_timer_race:
             # Entering SELECT repainted the moving pane's top label with the
             # pieces count; restore the countdown there for the moving phase.
@@ -393,6 +564,8 @@ class OmniswapVsTimerMode(MovingMode):
             if word:
                 gs._board.relabel_cell(self._selected[0], self._selected[1], word)
                 self._clear_selection()
+                if self._sand is not None:
+                    self._sand.repaint_all()
                 return
         cell = gs._board.cell_at(x, y)
         if cell is None:
@@ -409,13 +582,19 @@ class OmniswapVsTimerMode(MovingMode):
         if cell == self._selected:
             # Re-click the cursor cell: cancel the pick.
             self._clear_selection()
+            if self._sand is not None:
+                self._sand.repaint_all()   # the cancel restored resting; re-tint sand cells
             return
         if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
             # Invalid swap target (fossilized or empty): keep the cursor, ignore.
             return
-        self._swap_grams(self._selected, cell)
+        source = self._selected
+        self._swap_grams(source, cell)
         self._restore(cell)
         self._clear_selection()
+        # Sand timers follow their gram: move any timer on either swapped cell.
+        if self._sand is not None:
+            self._sand.on_swap(source, cell)
 
     # --- phase / timer helpers -------------------------------------------
     def _enter_select(self):

@@ -84,9 +84,15 @@ rules:
   # rule_omniswap_timer_race it is the single whole-game clock (try ~360).
   game_screen.omniswap_timer_seconds: 360
 
-  # MOVING_OMNISWAP timer + endgame variant (game_screen.omniswap_timer). Both
-  # share the OMNISWAP PRESET below and omniswap_timer_seconds above; they differ
-  # only in WHEN the clock runs and HOW the game ends:
+  # SAND-TIMER settings (only used by rule_omniswap_timer_sand below). Instead of one
+  # global countdown, up to sand_timer_count board cells are "sand timers" at a time,
+  # each filling over sand_timer_seconds; a sand timer follows its gram when swapped.
+  game_screen.sand_timer_seconds: 30
+  game_screen.sand_timer_count:   1
+
+  # MOVING_OMNISWAP timer + endgame variant (game_screen.omniswap_timer). All
+  # share the OMNISWAP PRESET below; they differ only in WHEN the clock runs and
+  # HOW the game ends:
   #   rule_omniswap_timer_per_phase -- the countdown runs only while MOVING and
   #     resets to full each time a submitted word returns play to MOVING. Timer-
   #     zero forces a last-chance SELECT; leaving SELECT without submitting a word
@@ -97,8 +103,16 @@ rules:
   #     the game -- racing to form as many words as possible. The instant the
   #     clock hits zero the game ends (FINISHED, no win check). Pair with a
   #     shorter omniswap_timer_seconds (~360).
+  #   rule_omniswap_timer_sand -- no global clock. Up to game_screen.sand_timer_count
+  #     cells fill over game_screen.sand_timer_seconds each (see above). A sand cell
+  #     that fills before its gram is used in a word FOSSILIZES and a fresh non-
+  #     fossilized cell takes its place; using a sand cell's gram in a word fossilizes
+  #     it at once and frees the slot. The timer follows its gram on a swap. MOVING/
+  #     SELECT toggle freely (like race); the game ends when the WHOLE board is
+  #     fossilized (no cell left to time).
   # game_screen.omniswap_timer:  rule_omniswap_timer_per_phase
-  game_screen.omniswap_timer: rule_omniswap_timer_race
+  # game_screen.omniswap_timer: rule_omniswap_timer_race
+  game_screen.omniswap_timer: rule_omniswap_timer_sand
 
   # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
