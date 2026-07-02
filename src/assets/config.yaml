@@ -195,7 +195,10 @@ rules:
   #     word_cycle_prev / word_cycle_next, then confirm with word_submit
   game_screen.clear_disambiguation:   rule_disambig_cycle
   # game_screen.clear_disambiguation: rule_disambig_auto_pick
-  game_screen.disambig_line_thickness: 8
+  # Line thickness (pixels): the highlighted candidate can read thicker than the
+  # rest so it stands out alongside its darker color.
+  game_screen.disambig_line_thickness:          8
+  game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
   # Whether word_clear backs out of the chooser (returning to the typed word) or
   # the player must commit to one candidate once a valid word is submitted.

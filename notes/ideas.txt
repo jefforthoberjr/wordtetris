@@ -6,9 +6,21 @@ GAME NAMES
 
 * catalyst cata LIST
 
+grain chains or length 2,3,4,5?
+
+Right click uni => doubles, undouble
+right click a digram => (all digrams should be at least 1 consonant anyways => doubles one of the consonants
+
+right click a trigram => swaps the last 2 characters in it.
+
+Another game mode where the connection lines are actively shown on the board. And as you move cells it will make, break cells lines.
 
 
-I need a good UI way to resolve 
+Currently in the game, when a user submits a word (i.e. in the right pane) the game will automatically detect where on the board the word is and clear it. If the word can be spelled in multiple ways, the logic will automatically pick one. This was ok for early prototyping, but now we need a better way. It can be strategically frustrating for the player if the unexpectedly picks the wrong one (especially in game modes with fossilizing cell rules, it can ruin the next word they were planning to made.) (also frustrating with the rules active to prevent spelling the same word multiple times)
+
+Having the game auto picking the word has the UX advantage of speeding things up for the user (especially in game modes with timer).
+
+So let's brainstorm some ways to improve this.
 
 
 Update spell checker to include a silent E at the end adition

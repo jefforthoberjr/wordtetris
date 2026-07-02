@@ -21,7 +21,10 @@ class DisambiguationLines:
 
     COLOR = get_color("board.disambig_line")
     SELECTED_COLOR = get_color("board.disambig_line_selected")
+    # Selected vs unselected can be different weights (the highlighted path is
+    # usually thicker as well as darker), each from its own config key.
     THICKNESS = CONFIG["rules"]["game_screen.disambig_line_thickness"]
+    SELECTED_THICKNESS = CONFIG["rules"]["game_screen.disambig_line_thickness_selected"]
     # Config stores opacity as a 0-1 fraction (1.0 = opaque); pyglet wants 0-255.
     OPACITY = round(255 * CONFIG["rules"]["game_screen.disambig_line_opacity"])
 
@@ -44,15 +47,18 @@ class DisambiguationLines:
         if 0 <= selected < len(paths):
             order.append(selected)
         for i in order:
-            color = self.SELECTED_COLOR if i == selected else self.COLOR
-            self._add_path(paths[i], color)
+            if i == selected:
+                color, thickness = self.SELECTED_COLOR, self.SELECTED_THICKNESS
+            else:
+                color, thickness = self.COLOR, self.THICKNESS
+            self._add_path(paths[i], color, thickness)
 
-    def _add_path(self, points, color):
+    def _add_path(self, points, color, thickness):
         shader = get_shape_shader()
         for (x1, y1), (x2, y2) in zip(points, points[1:]):
             line = pyglet.shapes.Line(
                 x1, y1, x2, y2,
-                thickness=self.THICKNESS, color=color,
+                thickness=thickness, color=color,
                 batch=self._batch, program=shader,
             )
             line.opacity = self.OPACITY
