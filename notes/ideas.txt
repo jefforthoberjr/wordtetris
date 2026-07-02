@@ -11,7 +11,7 @@ grain chains or length 2,3,4,5?
 Right click uni => doubles, undouble
 right click a digram => (all digrams should be at least 1 consonant anyways => doubles one of the consonants
 
-right click a trigram => swaps the last 2 characters in it.
+right click a trigram => swaps the last 2 characters in it. (or maybe still some consonant doubling?
 
 Another game mode where the connection lines are actively shown on the board. And as you move cells it will make, break cells lines.
 

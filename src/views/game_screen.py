@@ -214,6 +214,17 @@ def rule_digram_dedup_or_flip(text):
         result = text[::-1]
     return result
 
+def rule_digram_dedup(text):
+    """Digram: a DOUBLED letter collapses to a single (EE -> E); any other digram
+    is left untouched. The dedup half of rule_digram_dedup_or_flip without the
+    flip, so a mixed pair (UL) is never reordered. Still pairs with
+    rule_unigram_double for an E -> EE -> E toggle. Returns None on a mixed digram
+    so the dispatcher relabels nothing."""
+    result = None
+    if text[0] == text[1]:
+        result = text[0]
+    return result
+
 def rule_gram_reverse(text):
     """Reverse a gram of any length (ING -> GNI). Offered for the trigram-or-
     larger slot; identical to rule_digram_flip on a 2-letter gram."""
@@ -229,6 +240,7 @@ _GRAM_MANIP_RULES = {
     "rule_unigram_double": rule_unigram_double,
     "rule_digram_flip": rule_digram_flip,
     "rule_digram_dedup_or_flip": rule_digram_dedup_or_flip,
+    "rule_digram_dedup": rule_digram_dedup,
     "rule_gram_reverse": rule_gram_reverse,
     "rule_rightclick_none": rule_rightclick_none,
 }

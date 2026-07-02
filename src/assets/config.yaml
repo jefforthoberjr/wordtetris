@@ -391,19 +391,22 @@ rules:
   # controls.yaml leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
 
   # Unigram (1-letter cell): double the letter (O -> OO, B -> BB).
-  # game_screen.rightclick_unigram: rule_unigram_double
-  game_screen.rightclick_unigram: rule_rightclick_none
+  game_screen.rightclick_unigram: rule_unigram_double
+  # game_screen.rightclick_unigram: rule_rightclick_none
 
   # Digram (2-letter cell):
   #   rule_digram_dedup_or_flip -- a DOUBLED letter collapses to a single (EE -> E,
   #     the dedup taking precedence); any other digram flips (UL -> LU). Pairs with
   #     rule_unigram_double for a right-click toggle E -> EE -> E, and lets the
   #     player single an initially-spawned double.
+  #   rule_digram_dedup -- a DOUBLED letter collapses to a single (EE -> E); any
+  #     other digram is left untouched (the dedup half, no flip).
   #   rule_digram_flip -- always flip the two letters' order (UL -> LU, GN -> NG)
   #   rule_rightclick_none -- right-click does nothing
   # game_screen.rightclick_digram: rule_digram_dedup_or_flip
+  game_screen.rightclick_digram: rule_digram_dedup
   # game_screen.rightclick_digram: rule_digram_flip
-  game_screen.rightclick_digram: rule_rightclick_none
+  # game_screen.rightclick_digram: rule_rightclick_none
 
   # Trigram or larger (3+ letter cell): no transform yet -- right-click does
   # nothing. rule_gram_reverse (ING -> GNI) is available if you want to turn one on.
