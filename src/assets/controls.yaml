@@ -123,6 +123,14 @@ game:
   # physical key as word_submit -- the field being empty is what splits them.
   selection_end: [ENTER, RETURN]
 
+  # === SELECTING phase: disambiguation chooser ===
+  # Live only while the blue-line "Select which one:" chooser is open (a submitted
+  # word that can clear several ways, under game_screen.clear_disambiguation:
+  # rule_disambig_cycle). Cycle the highlighted candidate path; word_submit
+  # confirms it, word_clear backs out (game_screen.disambig_cancel: on).
+  word_cycle_prev: LEFT
+  word_cycle_next: RIGHT
+
 # --- In-game: mouse ---------------------------------------------------------
 mouse:
   # MOVING phase, primary (left) button. Behavior depends on game_screen.mode:

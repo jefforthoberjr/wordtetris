@@ -215,10 +215,34 @@ class SelectingSidePane:
 
     def show_errors(self, messages):
         # One message at a time today; join defensively if several are passed.
+        self._error.color = self.ERROR_COLOR
         self._error.text = "\n".join(messages)
 
     def clear_errors(self):
+        self._error.color = self.ERROR_COLOR
         self._error.text = ""
+
+    def show_prompt(self, text):
+        """Show a neutral prompt in the message slot (not an error): the
+        "Select which one:" cue while the disambiguation chooser is open. Reuses
+        the error Label's reserved space, tinted the prompt color so it doesn't
+        read as a rejection."""
+        self._error.color = self.PROMPT_COLOR
+        self._error.text = text
+
+    def hide_prompt(self):
+        """Clear the chooser prompt and restore the slot to error styling."""
+        self.clear_errors()
+
+    def hit_submit(self, x, y):
+        """Whether (x, y) is on the Submit label -- lets GameScreen route a
+        Submit click to 'confirm the highlighted candidate' while the chooser is
+        open, instead of re-submitting the typed word."""
+        return self._hit(self._submit_btn, x, y)
+
+    def hit_clear(self, x, y):
+        """Whether (x, y) is on the Clear label (the chooser's back-out click)."""
+        return self._hit(self._clear_btn, x, y)
 
     # --- internals ---------------------------------------------------------
     def _render_input(self):

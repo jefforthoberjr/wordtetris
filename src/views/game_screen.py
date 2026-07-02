@@ -10,6 +10,7 @@ from views.selecting_side_pane import SelectingSidePane
 from views.load_side_pane import LoadSidePane
 from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from views.word_trail import WordTrail
+from views.disambiguation_lines import DisambiguationLines
 from views.victory_overlay import VictoryOverlay
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
@@ -284,6 +285,9 @@ class GameScreen:
             "select_open": control_keys("game.select_open"),
             "word_clear": control_keys("game.word_clear"),
             "selection_end": control_keys("game.selection_end"),
+            "word_submit": control_keys("game.word_submit"),
+            "word_cycle_prev": control_keys("game.word_cycle_prev"),
+            "word_cycle_next": control_keys("game.word_cycle_next"),
         }
         # Mouse buttons (single constants; see controls.yaml "mouse" + "ONLY WHEN"
         # rule-combo notes for what each does per game_screen.mode). place_piece
@@ -342,6 +346,12 @@ class GameScreen:
         # game; cleared on each new game. The game_screen.word_trail rule gates
         # whether _clear_paths records into it. See views/word_trail.py.
         self._word_trail = WordTrail()
+
+        # Transient candidate polylines for the "select which one" chooser
+        # (game_screen.clear_disambiguation = rule_disambig_cycle). Empty except
+        # while a submitted word with several clearable paths is being resolved.
+        # See views/disambiguation_lines.py and _begin_disambiguation.
+        self._disambig_lines = DisambiguationLines()
 
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.
@@ -680,6 +690,28 @@ class GameScreen:
             "game_screen.clear_timing", endphase_clear_rules
         )
 
+        # Disambiguation rule (game_screen.clear_disambiguation): how the one
+        # spelling to clear is chosen when a submitted word has several clearable
+        # paths. Both clear-timing seams route their candidate list through it
+        # (see _rule_submit_clears_now / _rule_submit_defers); auto-pick returns a
+        # FoundWord immediately, cycle opens the board chooser and returns None
+        # (the choice commits later via the on_confirm callback).
+        disambig_rules = {
+            "rule_disambig_auto_pick": self._rule_disambig_auto_pick,
+            "rule_disambig_cycle": self._rule_disambig_cycle,
+        }
+        self._disambiguation_rule = select_rule(
+            "game_screen.clear_disambiguation", disambig_rules
+        )
+        # Whether word_clear backs out of the open chooser or is ignored (commit).
+        disambig_cancel_rules = {
+            "rule_disambig_cancel_on": self._rule_disambig_cancel_on,
+            "rule_disambig_cancel_off": self._rule_disambig_cancel_off,
+        }
+        self._disambig_cancel_rule = select_rule(
+            "game_screen.disambig_cancel", disambig_cancel_rules
+        )
+
         # Select word-limit rule (game_screen.select_word_limit): whether the
         # interactive SELECT phase ends after the first accepted word or stays
         # open for more. Consulted after each accepted submit; composes with the
@@ -718,6 +750,14 @@ class GameScreen:
         # yet cleared. Their cells are tinted green; the whole list clears when
         # the phase ends. Empty in clear-on-submit mode.
         self._pending = []
+        # Open "select which one" chooser (rule_disambig_cycle only): the ordered
+        # candidate FoundWords, the highlighted index, the submitted word, and the
+        # callback that commits the chosen one (clear-now or defer, per timing).
+        # _disambig_options is empty except while a chooser is open.
+        self._disambig_options = []
+        self._disambig_index = 0
+        self._disambig_word = None
+        self._disambig_commit = None
         # Words accepted during the current interactive SELECT phase. Reset on
         # entering SELECT, bumped on each accepted submit; MOVING_OMNISWAP reads
         # it to decide whether leaving SELECT continues the game or ends it.
@@ -1932,6 +1972,11 @@ class GameScreen:
         self._phase = new_phase
         if old is not new_phase:
             L.log_10001(old, new_phase)
+            # Leaving SELECT with the "select which one" chooser still open (e.g.
+            # a timer forced the phase out from under it): drop its overlay +
+            # prompt so no candidate lines linger into MOVING.
+            if old == Phase.SELECTING and self._disambiguating():
+                self._end_disambiguation()
 
     def _check_victory(self):
         """If the active victory rule is satisfied, enter VICTORY and return
@@ -2320,13 +2365,24 @@ class GameScreen:
     # Paired per timing: a submit rule (what one submit does) and a phase-end
     # rule (what ending the phase does). See the registries in __init__.
     def _rule_submit_clears_now(self, word):
-        """Clear-on-submit: if the word is a clearable candidate, clear it from
-        the board now and recompute against the smaller board; else show why
-        not. (Original interactive behavior.)"""
-        found = self._candidate_words.get(word)
-        if found is None or not self._repeat_rule(word):
+        """Clear-on-submit: if the word is a clearable candidate, resolve WHICH
+        spelling (disambiguation rule) then clear it from the board and recompute
+        against the smaller board; else show why not. (Original interactive
+        behavior, now with the chooser seam.)"""
+        options = self._candidate_word_options.get(word)
+        if not options or not self._repeat_rule(word):
             self._selecting_side_pane.show_errors(self._submission_messages(word))
             return
+        # Auto-pick returns the FoundWord to clear now; cycle opens the board
+        # chooser and returns None, committing later via _commit_clear_now.
+        chosen = self._disambiguation_rule(word, options, self._commit_clear_now)
+        if chosen is not None:
+            self._commit_clear_now(word, chosen)
+
+    def _commit_clear_now(self, word, found):
+        """Apply one resolved spelling in clear-on-submit mode: clear it, list it,
+        recompute, and run the phase-end checks. Shared by the instant path (auto-
+        pick / single spelling) and the chooser's confirm."""
         # Capture newness before _clear_paths adds the word to the player's
         # dictionary, so the entry pane can list it green.
         is_new = not self._player_dict.contains(word)
@@ -2361,12 +2417,21 @@ class GameScreen:
         if not options or not self._repeat_rule(word):
             self._selecting_side_pane.show_errors(self._submission_messages(word))
             return
-        found = self._unused_pending_path(word, options)
-        if found is None:
+        # Only spellings not already held this phase are offerable -- the chooser
+        # (and auto-pick) resolve among these, so a re-submit takes a fresh path.
+        fresh = self._unused_pending_paths(word, options)
+        if not fresh:
             # A candidate, but every distinct way to spell it here is already
             # held -- a batch-mode-specific rejection.
             self._selecting_side_pane.show_errors([self._no_more_paths_error(word)])
             return
+        chosen = self._disambiguation_rule(word, fresh, self._commit_defer)
+        if chosen is not None:
+            self._commit_defer(word, chosen)
+
+    def _commit_defer(self, word, found):
+        """Hold one resolved spelling for the phase-end batch: append it, tint its
+        cells, list it. Shared by the instant path and the chooser's confirm."""
         is_new = not self._player_dict.contains(word)
         self._pending.append(found)
         self._words_submitted_this_select += 1
@@ -2376,6 +2441,93 @@ class GameScreen:
         # held word on the way out (game_screen.select_word_limit).
         if self._select_word_limit_rule():
             self._end_selection()
+
+    # --- disambiguation rules (game_screen.clear_disambiguation) -----------
+    # Resolve WHICH spelling a submitted word clears when several paths exist.
+    # Signature (word, options, on_confirm) -> FoundWord | None: return a chosen
+    # FoundWord to commit now, or None having deferred to the chooser, which will
+    # call on_confirm(word, found) once the player confirms.
+    def _rule_disambig_auto_pick(self, word, options, on_confirm):
+        """Original: silently keep the fewest-cell spelling (ties at random), no
+        player choice. on_confirm is unused -- the pick commits immediately."""
+        return self._fewest_cell_word(options)
+
+    def _rule_disambig_cycle(self, word, options, on_confirm):
+        """Open the board chooser when several spellings exist; a lone spelling
+        still clears instantly (no needless prompt). Returns None when the chooser
+        opens -- the choice commits later via on_confirm."""
+        if len(options) == 1:
+            return options[0]
+        self._begin_disambiguation(word, options, on_confirm)
+        return None
+
+    # --- disambiguation-cancel rules (game_screen.disambig_cancel) ---------
+    def _rule_disambig_cancel_on(self):
+        """word_clear backs out of the chooser, restoring the typed word."""
+        self._cancel_disambiguation()
+
+    def _rule_disambig_cancel_off(self):
+        """word_clear is inert while the chooser is open -- the player must commit
+        to one candidate once a valid word is submitted."""
+        pass
+
+    # --- disambiguation chooser (rule_disambig_cycle) ----------------------
+    def _disambiguating(self):
+        """Whether the 'select which one' chooser is currently open."""
+        return bool(self._disambig_options)
+
+    def _begin_disambiguation(self, word, options, on_confirm):
+        """Open the chooser: order the candidates deterministically (fewest-cell
+        first, then by path -- never shuffle, so the same cycle keys re-select the
+        same path on replay), draw them, and show the prompt. The typed word is
+        left in the field so a cancel returns to it."""
+        ordered = sorted(options, key=lambda fw: (len(fw.path), fw.path))
+        self._disambig_word = word
+        self._disambig_options = ordered
+        self._disambig_index = 0
+        self._disambig_commit = on_confirm
+        self._selecting_side_pane.clear_errors()
+        self._selecting_side_pane.show_prompt(get_string("disambig_prompt"))
+        self._render_disambiguation()
+
+    def _render_disambiguation(self):
+        """Redraw the candidate polylines with the current highlight."""
+        paths = [
+            [self._board.cell_center(x, y) for (x, y) in fw.path]
+            for fw in self._disambig_options
+        ]
+        self._disambig_lines.show(paths, self._disambig_index)
+
+    def _cycle_disambiguation(self, delta):
+        """Move the highlight to the next/previous candidate, wrapping around."""
+        n = len(self._disambig_options)
+        self._disambig_index = (self._disambig_index + delta) % n
+        self._render_disambiguation()
+
+    def _confirm_disambiguation(self):
+        """Commit the highlighted candidate: log the choice, close the chooser,
+        then run the timing-specific commit (clear-now or defer)."""
+        word = self._disambig_word
+        found = self._disambig_options[self._disambig_index]
+        index, total = self._disambig_index, len(self._disambig_options)
+        commit = self._disambig_commit
+        L.log_30004(word, found.path, index, total)
+        self._end_disambiguation()
+        commit(word, found)
+
+    def _cancel_disambiguation(self):
+        """Back out without clearing: close the chooser, leaving the typed word in
+        place for a re-submit or edit."""
+        self._end_disambiguation()
+
+    def _end_disambiguation(self):
+        """Tear down chooser state and its overlay + prompt."""
+        self._disambig_options = []
+        self._disambig_index = 0
+        self._disambig_word = None
+        self._disambig_commit = None
+        self._disambig_lines.clear()
+        self._selecting_side_pane.hide_prompt()
 
     def _rule_endphase_clear_none(self):
         """Clear-on-submit: phase end clears nothing extra (each word already
@@ -2402,16 +2554,24 @@ class GameScreen:
         """End the SELECT phase as soon as one word is accepted."""
         return True
 
-    def _unused_pending_path(self, word, options):
-        """A clearable FoundWord for `word` not already held this phase -- the
-        fewest-cell one still free, or None when every distinct spelling is taken.
+    def _unused_pending_paths(self, word, options):
+        """Every clearable FoundWord for `word` NOT already held this phase.
         Spellings are distinguished by path AND segments, so two different partial
         bites of the same cells (e.g. the same word taking a different prefix /
-        suffix) each count as their own selection."""
+        suffix) each count as their own selection. The disambiguation rule then
+        picks among these (auto-pick keeps the fewest-cell one; cycle offers them
+        all)."""
         def key(fw):
             return (tuple(fw.path), tuple(fw.segments))
         used = {key(fw) for fw in self._pending if fw.word == word}
-        fresh = [fw for fw in options if key(fw) not in used]
+        return [fw for fw in options if key(fw) not in used]
+
+    def _unused_pending_path(self, word, options):
+        """The single fewest-cell spelling of `word` not already held, or None
+        when every distinct spelling is taken. Retained for callers that want the
+        old auto-pick directly; the submit path now goes through
+        _unused_pending_paths + the disambiguation rule."""
+        fresh = self._unused_pending_paths(word, options)
         if not fresh:
             return None
         return self._fewest_cell_word(fresh)
@@ -2911,6 +3071,9 @@ class GameScreen:
         self._sand_batch.draw()
         # Cleared-word path trails, on top of the board cells and glyphs.
         self._word_trail.draw()
+        # Candidate polylines for the open "select which one" chooser, above the
+        # trails; empty (draws nothing) when no chooser is open.
+        self._disambig_lines.draw()
         # The right pane swaps between the opening "LOADING..." pane, the
         # game-long cleared-word list (MOVING) and the word-entry UI (SELECTING).
         if self._phase == Phase.LOADING:
@@ -2997,6 +3160,20 @@ class GameScreen:
         #       return True
         #   return self._selecting_side_pane.on_key_press(symbol, modifiers)
         if self._phase == Phase.SELECTING:
+            # The "select which one" chooser owns the keyboard while it's open:
+            # cycle the highlight, confirm the choice, or back out (word_clear,
+            # gated by game_screen.disambig_cancel). Everything else is swallowed
+            # so a stray letter can't edit the field mid-choice.
+            if self._disambiguating():
+                if symbol in self._keys["word_cycle_prev"]:
+                    self._cycle_disambiguation(-1)
+                elif symbol in self._keys["word_cycle_next"]:
+                    self._cycle_disambiguation(1)
+                elif symbol in self._keys["word_submit"]:
+                    self._confirm_disambiguation()
+                elif symbol in self._keys["word_clear"]:
+                    self._disambig_cancel_rule()
+                return True
             if symbol in self._keys["word_clear"]:       # spacebar -> clear field
                 self._selecting_side_pane.clear_word()
                 return True
@@ -3033,6 +3210,16 @@ class GameScreen:
             self._end_overlay_dismissed = True
             return
         if self._phase == Phase.SELECTING:
+            # While the "select which one" chooser is open, the Submit label
+            # confirms the highlighted candidate and Clear backs out (per
+            # disambig_cancel); board clicks and gram-typing are inert so a click
+            # can't edit the field mid-choice. Enter/arrows handle the keyboard.
+            if self._disambiguating():
+                if self._selecting_side_pane.hit_submit(x, y):
+                    self._confirm_disambiguation()
+                elif self._selecting_side_pane.hit_clear(x, y):
+                    self._disambig_cancel_rule()
+                return
             self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
             # A left-click on the board (left of the pane) types that cell's gram
             # into the entry field, per the select-click rule. The pane handles

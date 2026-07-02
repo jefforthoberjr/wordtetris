@@ -184,6 +184,24 @@ rules:
   game_screen.word_trail_thickness: 8
   game_screen.word_trail_opacity:   0.5
 
+  # Disambiguation (game_screen.clear_disambiguation): when a submitted word can
+  # clear several ways on the board (multiple paths, or wild-vowel expansions),
+  # how the one to clear is chosen. Only bites when 2+ ways exist; a single way
+  # always clears instantly.
+  #   rule_disambig_auto_pick -- silently keep the fewest-cell spelling, ties
+  #     broken at random (original; fastest, good for timer-pressured modes)
+  #   rule_disambig_cycle -- draw every candidate as a polyline on the board
+  #     (light blue, the highlighted one dark blue), let the player cycle with
+  #     word_cycle_prev / word_cycle_next, then confirm with word_submit
+  game_screen.clear_disambiguation:   rule_disambig_cycle
+  # game_screen.clear_disambiguation: rule_disambig_auto_pick
+  game_screen.disambig_line_thickness: 8
+  game_screen.disambig_line_opacity:   1.0
+  # Whether word_clear backs out of the chooser (returning to the typed word) or
+  # the player must commit to one candidate once a valid word is submitted.
+  game_screen.disambig_cancel:         rule_disambig_cancel_on
+  # game_screen.disambig_cancel:       rule_disambig_cancel_off
+
   # How many word rows the right pane's scrolling cleared-word list shows. Fewer
   # rows than the pane fits pack from the top (blank space below); more rows than
   # fit shrink the font so they all stay inside the pane.

@@ -79,6 +79,11 @@ class FakeBoard:
             cell = _FakeCell()
         return cell
 
+    def cell_center(self, x, y):
+        # Pixel center of a cell; the disambiguation chooser reads it to lay out
+        # the candidate polylines. Cell coords scaled to fake pixels is enough.
+        return (x * 10, y * 10)
+
     def cell_at(self, px, py):
         # The select-click rule maps a pixel to a cell; these tests pass cell
         # coordinates straight through, returning None off the populated board.
@@ -103,6 +108,7 @@ class FakePane:
         self.began = False
         self.word_count = None
         self.typed_grams = []
+        self.prompt = None
 
     def begin(self):
         self.began = True
@@ -118,6 +124,17 @@ class FakePane:
 
     def show_errors(self, messages):
         self.errors = list(messages)
+
+    def clear_errors(self):
+        self.errors = None
+
+    def show_prompt(self, text):
+        # The "Select which one:" chooser cue; recorded so tests can assert the
+        # chooser is on screen.
+        self.prompt = text
+
+    def hide_prompt(self):
+        self.prompt = None
 
     def set_word_count(self, count):
         self.word_count = count
@@ -188,6 +205,24 @@ class FakeMovingMode:
         self.advanced += 1
 
 
+class FakeDisambigLines:
+    """Stand-in for the board's disambiguation-line overlay
+    (game_screen._disambig_lines). Records the last show()/clear() so tests can
+    assert the chooser drew the expected candidates and highlight."""
+
+    def __init__(self):
+        self.paths = None
+        self.selected = None
+
+    def show(self, paths, selected):
+        self.paths = paths
+        self.selected = selected
+
+    def clear(self):
+        self.paths = None
+        self.selected = None
+
+
 class _InteractiveStub:
     interactive = True
 
@@ -215,6 +250,17 @@ def _game(board, interactive=True, history=None):
     g._endphase_clear_rule = g._rule_endphase_clear_none
     g._candidate_word_options = {}
     g._pending = []
+    # Disambiguation at its original "auto-pick": several ways to spell a word
+    # resolve silently to the fewest-cell one (ties at random), the behavior these
+    # tests assert. The interactive cycle chooser is exercised via the game loop,
+    # not these unit tests, so its state just needs to exist and read "closed".
+    g._disambiguation_rule = g._rule_disambig_auto_pick
+    g._disambig_cancel_rule = g._rule_disambig_cancel_on
+    g._disambig_options = []
+    g._disambig_index = 0
+    g._disambig_word = None
+    g._disambig_commit = None
+    g._disambig_lines = FakeDisambigLines()
     # Gram usage at its original: a word consumes a cell's whole gram. Partial
     # tests below flip this to rule_gram_use_partial.
     g._gram_usage_rule = g._rule_gram_use_whole
@@ -673,3 +719,99 @@ def test_batch_same_word_allowed_once_per_distinct_path():
     assert g._selecting_side_pane.errors == [
         "Every way to spell that here is already selected"
     ]
+
+
+# --- disambiguation chooser (game_screen.clear_disambiguation) --------------
+# ANT is spellable two ways (across the row, down the column) sharing only the A;
+# the cycle rule offers both instead of auto-picking one.
+def _ant_two_way_board():
+    return FakeBoard({(0, 0): "A", (1, 0): "N", (2, 0): "T", (0, 1): "N", (0, 2): "T"})
+
+
+def _ant_options():
+    fw_row = gs.FoundWord([(0, 0), (1, 0), (2, 0)], ["A", "N", "T"], "ANT")
+    fw_col = gs.FoundWord([(0, 0), (0, 1), (0, 2)], ["A", "N", "T"], "ANT")
+    return fw_row, fw_col
+
+
+def test_cycle_opens_chooser_without_clearing():
+    # Submitting a word with two spellings opens the board chooser and commits
+    # nothing until the player confirms.
+    fw_row, fw_col = _ant_options()
+    g = _batch_game(_ant_two_way_board())
+    g._disambiguation_rule = g._rule_disambig_cycle
+    g._candidate_word_options = {"ANT": [fw_row, fw_col]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    assert g._disambiguating()
+    assert g._selecting_side_pane.prompt == gs.get_string("disambig_prompt")
+    assert g._disambig_lines.selected == 0                 # first highlighted
+    assert len(g._disambig_lines.paths) == 2               # both candidates drawn
+    assert g._pending == []                                # nothing held yet
+    assert g._selecting_side_pane.accepted == []
+
+
+def test_cycle_and_confirm_holds_highlighted_path():
+    # Candidates order deterministically (fewest-cell, then by path): the column
+    # spelling sorts first, so cycling once highlights the row, and confirming
+    # holds exactly that path.
+    fw_row, fw_col = _ant_options()
+    g = _batch_game(_ant_two_way_board())
+    g._disambiguation_rule = g._rule_disambig_cycle
+    g._candidate_word_options = {"ANT": [fw_row, fw_col]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    g._cycle_disambiguation(1)
+    assert g._disambig_lines.selected == 1
+    g._confirm_disambiguation()
+    assert not g._disambiguating()
+    assert g._selecting_side_pane.prompt is None           # chooser torn down
+    assert g._selecting_side_pane.accepted == ["ANT"]
+    assert len(g._pending) == 1
+    assert g._pending[0].path == [(0, 0), (1, 0), (2, 0)]   # the row path chosen
+
+
+def test_cycle_single_option_commits_immediately():
+    # A lone spelling never opens the chooser -- it holds at once (speed kept).
+    fw_row, _ = _ant_options()
+    g = _batch_game(FakeBoard({(0, 0): "A", (1, 0): "N", (2, 0): "T"}))
+    g._disambiguation_rule = g._rule_disambig_cycle
+    g._candidate_word_options = {"ANT": [fw_row]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    assert not g._disambiguating()
+    assert g._selecting_side_pane.accepted == ["ANT"]
+    assert g._pending == [fw_row]
+    assert g._disambig_lines.paths is None                  # chooser never drew
+
+
+def test_cycle_cancel_closes_without_holding():
+    # word_clear (disambig_cancel: on) backs out: chooser closes, nothing held,
+    # and the submitted word can be re-tried.
+    fw_row, fw_col = _ant_options()
+    g = _batch_game(_ant_two_way_board())
+    g._disambiguation_rule = g._rule_disambig_cycle
+    g._candidate_word_options = {"ANT": [fw_row, fw_col]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    assert g._disambiguating()
+    g._disambig_cancel_rule()
+    assert not g._disambiguating()
+    assert g._selecting_side_pane.prompt is None
+    assert g._pending == []
+    assert g._selecting_side_pane.accepted == []
+    assert g._disambig_lines.paths is None
+
+
+def test_instant_mode_routes_through_chooser():
+    # Clear-on-submit also defers to the chooser: two spellings -> nothing clears
+    # off the board until the player confirms.
+    fw_row, fw_col = _ant_options()
+    g = _game(_ant_two_way_board())                         # instant (default)
+    g._disambiguation_rule = g._rule_disambig_cycle
+    g._candidate_word_options = {"ANT": [fw_row, fw_col]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    assert g._disambiguating()
+    assert g._board.cells != {}                             # nothing cleared yet
+    assert g._selecting_side_pane.accepted == []

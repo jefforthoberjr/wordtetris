@@ -17,6 +17,8 @@ board:
   # mission_fill:     [204, 153, 255]   # light purple: pre-placed mission cells (the goal to clear)
   grid_line:        [200, 200, 200]   # grid lines (square + hex)
   word_trail:       [0, 0, 0]         # cleared-word path trail (drawn at game_screen.word_trail_opacity)
+  disambig_line:          [135, 206, 250]   # light blue: unselected candidate paths in the "select which one" chooser
+  disambig_line_selected: [0, 0, 180]       # dark blue: the currently-highlighted candidate path
   background:       [255, 255, 255]   # game board window background
 
 window:

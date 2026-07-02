@@ -101,6 +101,18 @@ def log_30003(word, reason):
     session_log.emit(30003, f"rejected {word}", word=word, reason=reason)
 
 
+def log_30004(word, path, index, total):
+    """The player confirmed a spelling in the "select which one" chooser (game_
+    screen.clear_disambiguation = rule_disambig_cycle): the word had `total`
+    clearable paths and the highlighted one (`index`, 0-based) was chosen. `path`
+    is the chosen cells. Purely descriptive -- a replay reproduces the choice from
+    the logged cycle keys (log_20001), so this is for human/analysis reading; the
+    clear itself still logs as log_30002."""
+    cells = ";".join(f"{x},{y}" for (x, y) in path)
+    session_log.emit(30004, f"chose spelling {index + 1}/{total} for {word}",
+                     word=word, cells=cells, index=index, total=total)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.

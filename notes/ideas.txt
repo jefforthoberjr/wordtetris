@@ -7,6 +7,14 @@ GAME NAMES
 * catalyst cata LIST
 
 
+
+I need a good UI way to resolve 
+
+
+Update spell checker to include a silent E at the end adition
+
+
+
 "dile" not in the dictionary?
 
 AI's terminology when developing my word ideation strength algorithm

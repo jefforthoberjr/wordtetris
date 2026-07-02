@@ -30,6 +30,7 @@ en:
   clear_word:            "Clear word"
   submit_word:           "Submit word"
   next_piece:            "Next piece"
+  disambig_prompt:       "Select which one:"
   # Victory overlay
   victory:               "VICTORY"
   # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
