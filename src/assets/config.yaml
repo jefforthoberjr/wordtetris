@@ -54,6 +54,21 @@ rules:
   gram.unigram_dedup:     rule_max_3_duplicate_unigrams
   # gram.unigram_dedup:   rule_nolimit_duplicate_unigrams
 
+  # Skippable digrams: two MORE toggles for EVERY gram picker, alongside the dedup
+  # rules above. The skip rules re-roll digrams the player likely can't spell with:
+  #   double_consonant -- a DOUBLED consonant (GG, MM, LL, SS); an unequal pair
+  #     (RN, CK) and a doubled vowel (EE, that's the next rule) still pass.
+  #   only_vowel -- an ALL-VOWEL digram (EE, EA, IO ...). Two skip variants: the
+  #     plain one counts Y as a vowel (AY, YY also skipped); the _no_y one does not
+  #     (AY, YE, YY pass).
+  # Unigrams, trigram+, and wild vowels always pass. Best-effort: falls back to
+  # allowing a skipped digram if the picker can't produce a fresh one in budget.
+  gram.double_consonant_digram: rule_skip_double_consonant_digrams
+  # gram.double_consonant_digram: rule_allow_double_consonant_digrams
+  gram.only_vowel_digram:       rule_skip_only_vowel_digrams
+  # gram.only_vowel_digram:     rule_skip_only_vowel_digrams_no_y
+  # gram.only_vowel_digram:     rule_allow_only_vowel_digrams
+
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 

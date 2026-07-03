@@ -255,13 +255,124 @@ _UNIGRAM_DEDUP_RULES = {
 _unigram_dedup_rule = select_rule("gram.unigram_dedup", _UNIGRAM_DEDUP_RULES)
 
 
+# --- digram-skip rules (gram.double_consonant_digram / gram.only_vowel_digram) -
+# Two MORE composable toggles alongside the dedup rules above. Both run on every
+# draw (composed in pick_grams, innermost so the dedup layers see the already-
+# filtered stream) and each re-rolls a digram the player probably can't spell with:
+#   * a DOUBLED consonant (GG, MM, LL, SS) -- an unequal pair (RN, CK) is fine, and
+#     a doubled vowel (EE) is the OTHER rule's business, not this one's.
+#   * an ALL-VOWEL digram (EE, EA, IO, AY) -- Y counts as a vowel to match the
+#     wild-vowel set (see wild_vowel.is_vowel).
+# They filter fixed 2-letter grams only: unigrams, trigram+, and wild vowels always
+# pass. Like the dedup rules, they are best-effort -- if the picker keeps handing
+# back skippable digrams past the re-roll budget, they let one through so every cell
+# still gets a gram (never returns fewer than `count`).
+
+def _is_double_consonant_digram(gram):
+    """True for a 2-letter gram of the SAME consonant (GG, MM, LL, SS). A doubled
+    vowel (EE) is NOT one -- that's the only-vowel rule's job; an unequal pair
+    (RN, CK) is fine. Wild vowels and non-digrams never qualify."""
+    if gram.is_wild or len(gram) != 2:
+        return False
+    first, second = gram.text[0], gram.text[1]
+    return first == second and not is_vowel(first)
+
+
+# The strict AEIOU set for the no-Y only-vowel variant. is_vowel() (used by the
+# with-Y variant) treats Y as a vowel to match the wild-vowel set; this set does
+# not, so AY / YE / YY stay when the no-Y rule is active.
+_STRICT_VOWELS = set("AEIOU")
+
+
+def _is_only_vowel_digram_with_y(gram):
+    """True for a 2-letter gram made entirely of vowels (EE, EA, IO, AY, YY); Y
+    COUNTS as a vowel, matching the wild-vowel set (see wild_vowel.is_vowel). Wild
+    vowels and non-digrams never qualify."""
+    if gram.is_wild or len(gram) != 2:
+        return False
+    return is_vowel(gram.text[0]) and is_vowel(gram.text[1])
+
+
+def _is_only_vowel_digram_no_y(gram):
+    """True for a 2-letter gram made entirely of AEIOU vowels (EE, EA, IO); Y is
+    NOT counted, so AY / YE / YY pass. Wild vowels and non-digrams never qualify."""
+    if gram.is_wild or len(gram) != 2:
+        return False
+    return gram.text[0] in _STRICT_VOWELS and gram.text[1] in _STRICT_VOWELS
+
+
+def _reroll_skipping(rule, count, skip):
+    """Best-effort filter shared by the digram-skip rules: draw `count` grams from
+    `rule`, re-rolling any gram for which `skip(gram)` is True, then top up allowing
+    skipped grams if the re-roll budget runs out (so every cell still gets a gram)."""
+    chosen = []
+    cap = max(50, count * 50)  # re-roll budget before giving up on the filter
+    attempts = 0
+    while len(chosen) < count and attempts < cap:
+        gram = rule(1)[0]
+        attempts += 1
+        if skip(gram):
+            continue  # skippable digram -- re-roll
+        chosen.append(gram)
+    while len(chosen) < count:  # budget exhausted -- top up allowing skipped grams
+        chosen.append(rule(1)[0])
+    return chosen
+
+
+def rule_allow_double_consonant_digrams(rule, count):
+    """No filter: hand back exactly what the picker chose, doubled consonants and
+    all (the original behavior; opposite rule_skip_double_consonant_digrams)."""
+    return rule(count)
+
+
+def rule_skip_double_consonant_digrams(rule, count):
+    """Re-roll any doubled-consonant digram (GG, MM, LL, SS ...) the picker draws;
+    everything else passes. Best-effort (see _reroll_skipping)."""
+    return _reroll_skipping(rule, count, _is_double_consonant_digram)
+
+
+def rule_allow_only_vowel_digrams(rule, count):
+    """No filter: hand back exactly what the picker chose, all-vowel digrams and
+    all (the original behavior; opposite the two rule_skip_only_vowel_digrams*)."""
+    return rule(count)
+
+
+def rule_skip_only_vowel_digrams(rule, count):
+    """Re-roll any all-vowel digram, WITH Y counted as a vowel (EE, EA, IO, AY, YY
+    all skipped); everything else passes. Best-effort (see _reroll_skipping)."""
+    return _reroll_skipping(rule, count, _is_only_vowel_digram_with_y)
+
+
+def rule_skip_only_vowel_digrams_no_y(rule, count):
+    """Re-roll any all-AEIOU digram, with Y NOT counted (EE, EA, IO skipped; AY, YE,
+    YY pass); everything else passes. Best-effort (see _reroll_skipping)."""
+    return _reroll_skipping(rule, count, _is_only_vowel_digram_no_y)
+
+
+_DOUBLE_CONSONANT_DIGRAM_RULES = {
+    "rule_allow_double_consonant_digrams": rule_allow_double_consonant_digrams,
+    "rule_skip_double_consonant_digrams": rule_skip_double_consonant_digrams,
+}
+_double_consonant_digram_rule = select_rule(
+    "gram.double_consonant_digram", _DOUBLE_CONSONANT_DIGRAM_RULES)
+
+_ONLY_VOWEL_DIGRAM_RULES = {
+    "rule_allow_only_vowel_digrams": rule_allow_only_vowel_digrams,
+    "rule_skip_only_vowel_digrams": rule_skip_only_vowel_digrams,
+    "rule_skip_only_vowel_digrams_no_y": rule_skip_only_vowel_digrams_no_y,
+}
+_only_vowel_digram_rule = select_rule(
+    "gram.only_vowel_digram", _ONLY_VOWEL_DIGRAM_RULES)
+
+
 def pick_grams(rule, count):
-    """The single choke point every piece's grams pass through: apply BOTH the
-    active gram.dedup (multigram) rule and the gram.unigram_dedup (unigram) rule
-    to the picker `rule`. Both SquarePiece and HexPiece call this, so the two
-    toggles span the player queue, obstacles, missions and the initial board
-    fill. The unigram rule wraps the multigram-deduped picker: each single draw
-    is first multigram-deduped, then checked against the unigram cap.
+    """The single choke point every piece's grams pass through: apply the active
+    gram.dedup (multigram) rule, the gram.unigram_dedup (unigram) rule, and the two
+    digram-skip filters (gram.double_consonant_digram / gram.only_vowel_digram) to
+    the picker `rule`. Both SquarePiece and HexPiece call this, so the toggles span
+    the player queue, obstacles, missions and the initial board fill. The layers
+    compose innermost-out: each raw draw is first digram-filtered, then multigram-
+    deduped, then checked against the unigram cap.
 
     One more layer sits on top, but only for the opening formation when the
     length-controlled picker is active: rule_grams_greater_than_47_lengthcontrolled's gram_length.*
@@ -269,7 +380,11 @@ def pick_grams(rule, count):
     can't come out trigram-heavy by luck), not just rolled per cell. See
     _pick_grams_length_enforced. The piece pool and every other picker fall through
     to the plain deduped draw."""
-    multigram_deduped = lambda n: _gram_dedup_rule(rule, n)
+    # Innermost: filter skippable digrams first, so the dedup layers on top only
+    # ever see (and count) grams that survived the filters.
+    vowel_filtered = lambda n: _only_vowel_digram_rule(rule, n)
+    digram_filtered = lambda n: _double_consonant_digram_rule(vowel_filtered, n)
+    multigram_deduped = lambda n: _gram_dedup_rule(digram_filtered, n)
     deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
     if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
         # Region formation pinned this cell's exact length+pool -> draw it straight.

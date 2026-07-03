@@ -6,6 +6,8 @@ GAME NAMES
 
 * catalyst cata LIST
 
+QU spawned in 
+
 grain chains or length 2,3,4,5?
 
 Right click uni => doubles, undouble
