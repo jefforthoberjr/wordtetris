@@ -163,6 +163,16 @@ class FakeSidepane:
         # The "Pieces: N" countdown; recorded but unused by these logic tests.
         self.phase_label = count
 
+    def clear_hunt(self):
+        # The MOVING word-hunt field is emptied whenever MOVING is left; a no-op
+        # for these logic tests (no hunt text is typed).
+        self.hunt_cleared = getattr(self, "hunt_cleared", 0) + 1
+
+    def hunt_text(self):
+        # No hunt word is typed in these logic tests, so swaps/spawns skip the
+        # highlight refresh (guarded on a non-empty hunt).
+        return ""
+
 
 class FakePlayerDict:
     """Stand-in for the persistent PlayerDictionary: tracks lifetime words so

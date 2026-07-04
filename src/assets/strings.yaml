@@ -26,6 +26,7 @@ en:
   # MOVING_OMNISWAP countdown (seconds left in the moving phase)
   time_count:            "Time: {count}"
   type_a_word:           "Type a word:"
+  hunt_a_word:           "Hunt a word:"
   pick_words:            "pick words:"
   clear_word:            "Clear word"
   submit_word:           "Submit word"
@@ -66,6 +67,7 @@ es:
   pieces_count:          "Piezas: {count}"
   time_count:            "Tiempo: {count}"
   type_a_word:           "Escribe una palabra:"
+  hunt_a_word:           "Busca una palabra:"
   pick_words:            "elige palabras:"
   clear_word:            "Borrar palabra"
   submit_word:           "Enviar palabra"

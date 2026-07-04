@@ -212,13 +212,13 @@ class HexGrid:
                         best = (col, row)
         return best
 
-    def place(self, x, y, square, label, gram=None):
+    def place(self, x, y, square, label, gram=None, overlay=None):
         cell = self.get_cell(x, y)
         result = False
         if cell is not None:
             if cell.is_occupied():
                 cell.clear()
-            cell.set_contents(square, label, gram)
+            cell.set_contents(square, label, gram, overlay)
             result = True
         return result
 
@@ -237,9 +237,14 @@ class HexGrid:
             return
         gram = Gram(text)
         cell.gram = gram
+        font_size = gram_font_size(int(self._hex_size * SQRT3 * 0.5), gram)
         if cell.label is not None:
             cell.label.text = text
-            cell.label.font_size = gram_font_size(int(self._hex_size * SQRT3 * 0.5), gram)
+            cell.label.font_size = font_size
+        # Keep the hunt overlay's baked text in sync with the relabeled gram, else
+        # a highlight would paint the OLD letters. GameScreen re-lights after.
+        if cell.overlay is not None:
+            cell.overlay.set_text(text, font_size)
 
     def gram_at(self, x, y):
         """The Gram a cell holds (its letters, or a wild vowel), or None if the

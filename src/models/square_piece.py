@@ -17,6 +17,7 @@ from models.square_domino import SquareDominoType, SQUARE_DOMINO_ROTATIONS
 from models.square_unimo import SquareUnimoType, SQUARE_UNIMO_ROTATIONS
 from views.shaders import get_shape_shader, get_text_shader
 from views.textures import wild_vowel_image
+from views.hunt_highlight import make_hunt_overlay
 from config import select_rule, get_color
 
 def _rule_use_tetriminos():
@@ -109,6 +110,9 @@ class SquarePiece:
         
         self._cells = []
         self._labels = []
+        # Optional hunt-highlight overlay per cell (None for wild cells); parallel
+        # to _labels. See views/hunt_highlight.py.
+        self._overlays = []
         # Base font for a single letter; multi-letter grams shrink to fit.
         base_font_size = int(cell_size * 0.6)
         
@@ -132,6 +136,7 @@ class SquarePiece:
                 image = wild_vowel_image(math.floor(cell_size * 0.9))
                 label = pyglet.sprite.Sprite(image, batch=batch)
                 label.scale = (cell_size * 0.9) / image.height
+                overlay = None      # wild renders as a sprite; hunts ignore it
             else:
                 label = pyglet.text.Label(
                     gram.text,
@@ -142,8 +147,11 @@ class SquarePiece:
                     anchor_y="center",
                     batch=batch
                 )
+                # Pre-built hunt-highlight overlay drawn on top of this label.
+                overlay = make_hunt_overlay(gram.text, gram_font_size(base_font_size, gram))
             label.visible = visible
             self._labels.append(label)
+            self._overlays.append(overlay)
         
         self._update_positions()
     
@@ -155,10 +163,20 @@ class SquarePiece:
             self._cells[i].y = py
             self._labels[i].x = px + math.floor(self._cell_size / 2)
             self._labels[i].y = py + math.floor(self._cell_size / 2)
+            # Overlay tracks the base label's resolved position exactly.
+            if self._overlays[i] is not None:
+                self._overlays[i].set_position(self._labels[i].x, self._labels[i].y)
     
     @property
     def piece_type(self):
         return self._piece_type
+
+    @property
+    def visible(self):
+        """Whether this piece is currently shown. The hunt highlight uses it to
+        skip a current piece that isn't floating on the board (e.g. omniswap,
+        which swaps cells and never deals a visible piece)."""
+        return self._visible
 
     @property
     def rotation_count(self):
@@ -189,6 +207,12 @@ class SquarePiece:
             cell.visible = visible
         for label in self._labels:
             label.visible = visible
+        # A hidden (queued) piece shows no highlight; a shown piece leaves its
+        # overlays to the hunt logic (they light only on a matching search).
+        if not visible:
+            for overlay in self._overlays:
+                if overlay is not None:
+                    overlay.clear()
     
     def rotate_cw(self):
         self._rotation_state = (self._rotation_state + 1) % len(self._rotations)
@@ -215,12 +239,14 @@ class SquarePiece:
         return positions
     
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, cell, label, gram) for each cell.
-        The gram travels with the render objects so the board can record what a
-        placed cell holds (its letters, or that it is a wild vowel)."""
+        """Returns list of (grid_x, grid_y, cell, label, gram, overlay) for each
+        cell. The gram travels with the render objects so the board can record what
+        a placed cell holds (its letters, or that it is a wild vowel); the hunt
+        overlay travels too so a settled cell stays highlightable (None if wild)."""
         data = []
         for i, (dx, dy) in enumerate(self._shapes_data):
             gx = self._grid_x + dx
             gy = self._grid_y + dy
-            data.append((gx, gy, self._cells[i], self._labels[i], self._grams[i]))
+            data.append((gx, gy, self._cells[i], self._labels[i],
+                         self._grams[i], self._overlays[i]))
         return data

@@ -82,10 +82,14 @@ game:
   # reach the up-left/up-right neighbors, holding hex_down_modifier (below) with
   # them reaches down-left/down-right, and move_up/move_down go straight up/down.
   # ONLY WHEN game_screen.mode: rule_mode_jigsaw.
-  move_left: A
-  move_right: D
-  move_up: W
-  move_down: S
+  # ARROW KEYS (were WASD): freed the letter keys so the MOVING-phase word-hunt
+  # field can capture typed letters without moving the piece (the hunt takes
+  # letters via on_text; movement now uses non-letter arrows). Rotation moved off
+  # the arrows to , / . as a consequence (see rotate_* below).
+  move_left: LEFT
+  move_right: RIGHT
+  move_up: UP
+  move_down: DOWN
   # Held with move_left/move_right to reach the DOWNWARD hex neighbors.
   # ONLY WHEN game_screen.grid: rule_use_hex_grid (with the hold-shift hex
   # movement rule active -- see _rule_hex_movement_holdshift in game_screen.py).
@@ -94,13 +98,17 @@ game:
   # instead of hex_down_modifier, hold an arrow with move_left/move_right to pick
   # the up/down diagonal. Only live if you switch _movement_rule to
   # _rule_hex_movement_arrows in game_screen.py. (Held as a chord, so only the
-  # FIRST key bound to each is used.)
+  # FIRST key bound to each is used.) NOTE: now that move_* live on the arrows,
+  # these UP/DOWN bindings overlap move_up/move_down -- inert while the holdshift
+  # rule is active (the default); rebind them if you re-enable the arrows variant.
   hex_arrow_up: UP
   hex_arrow_down: DOWN
 
   # Rotate the live piece. ONLY WHEN game_screen.mode: rule_mode_jigsaw.
-  rotate_clockwise: LEFT
-  rotate_counterclockwise: RIGHT
+  # COMMA / PERIOD (the < / > keys; were LEFT / RIGHT): moved off the arrows so
+  # movement could take them. Non-letter, so the word-hunt field ignores them.
+  rotate_clockwise: PERIOD
+  rotate_counterclockwise: COMMA
 
   # Commit the active element:
   #   jigsaw     -> DROP / place the live piece

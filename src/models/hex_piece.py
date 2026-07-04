@@ -17,6 +17,7 @@ from models.hex_unimo import HexUnimoType, HEX_UNIMO_DIRECTIONS
 from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
 from views.textures import wild_vowel_image
+from views.hunt_highlight import make_hunt_overlay
 from config import select_rule, get_color
 
 
@@ -184,6 +185,9 @@ class HexPiece:
         self._inners = []
         self._cell_shapes = []
         self._labels = []
+        # Optional hunt-highlight overlay per cell (None for wild); parallel to
+        # _labels. See views/hunt_highlight.py.
+        self._overlays = []
         self._label_dys = []
         for i in range(cell_count):
             outer = pyglet.shapes.Polygon(
@@ -215,6 +219,7 @@ class HexPiece:
                 label = pyglet.sprite.Sprite(image, batch=batch)
                 label.scale = self._hex_size / image.height
                 self._labels.append(label)
+                self._overlays.append(None)  # wild: sprite, hunts ignore it
                 self._label_dys.append(0)
             else:
                 gram_font = gram_font_size(base_font_size, gram)
@@ -228,6 +233,10 @@ class HexPiece:
                     batch=batch
                 )
                 self._labels.append(label)
+                # Pre-built hunt-highlight overlay drawn on top of this label; it
+                # inherits the recenter nudge below via set_position (copies the
+                # base label's final y).
+                self._overlays.append(make_hunt_overlay(gram.text, gram_font))
                 # pyglet's anchor_y="center" centers the line box, not the glyph,
                 # so capitals sit high (white space at the bottom). Nudge down to
                 # recenter, scaled to this gram's own font size.
@@ -251,10 +260,19 @@ class HexPiece:
             self._inners[i].position = (cx + self._inner_size, cy)
             self._labels[i].x = cx
             self._labels[i].y = cy + self._label_dys[i]
+            # Overlay tracks the base label's resolved position (incl. the nudge).
+            if self._overlays[i] is not None:
+                self._overlays[i].set_position(self._labels[i].x, self._labels[i].y)
 
     @property
     def piece_type(self):
         return self._piece_type
+
+    @property
+    def visible(self):
+        """Whether this piece is currently shown (see SquarePiece.visible -- the
+        hunt highlight uses it to skip a non-floating current piece)."""
+        return self._visible
 
     @property
     def rotation_count(self):
@@ -287,6 +305,12 @@ class HexPiece:
             inner.visible = visible
         for label in self._labels:
             label.visible = visible
+        # A hidden (queued) piece shows no highlight; a shown piece leaves its
+        # overlays to the hunt logic.
+        if not visible:
+            for overlay in self._overlays:
+                if overlay is not None:
+                    overlay.clear()
 
     def rotate_cw(self):
         self._rotation_state = (self._rotation_state + 1) % 6
@@ -316,15 +340,17 @@ class HexPiece:
         return self._cell_grid_positions()
 
     def get_cell_data(self):
-        """Returns list of (grid_x, grid_y, cell_shape, label, gram) for each
-        cell.
+        """Returns list of (grid_x, grid_y, cell_shape, label, gram, overlay) for
+        each cell.
 
         The cell_shape is the HexCellShape wrapper so the grid can toggle both
         the border and fill via one .visible (hover hide / clear). The gram
-        travels along so the board can record what the placed cell holds.
+        travels along so the board can record what the placed cell holds; the hunt
+        overlay travels too so a settled cell stays highlightable (None if wild).
         """
         data = []
         positions = self._cell_grid_positions()
         for i, (gx, gy) in enumerate(positions):
-            data.append((gx, gy, self._cell_shapes[i], self._labels[i], self._grams[i]))
+            data.append((gx, gy, self._cell_shapes[i], self._labels[i],
+                         self._grams[i], self._overlays[i]))
         return data

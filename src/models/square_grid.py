@@ -95,13 +95,13 @@ class SquareGrid:
             result = (gx, gy)
         return result
     
-    def place(self, x, y, square, label, gram=None):
+    def place(self, x, y, square, label, gram=None, overlay=None):
         cell = self.get_cell(x, y)
         if cell is None:
             return False
         if cell.is_occupied():
             cell.clear()
-        cell.set_contents(square, label, gram)
+        cell.set_contents(square, label, gram, overlay)
         return True
     
     def clear_cell(self, x, y):
@@ -119,9 +119,14 @@ class SquareGrid:
             return
         gram = Gram(text)
         cell.gram = gram
+        font_size = gram_font_size(int(self._cell_size * 0.6), gram)
         if cell.label is not None:
             cell.label.text = text
-            cell.label.font_size = gram_font_size(int(self._cell_size * 0.6), gram)
+            cell.label.font_size = font_size
+        # Keep the hunt overlay's baked text in sync with the relabeled gram, else
+        # a highlight would paint the OLD letters. GameScreen re-lights after.
+        if cell.overlay is not None:
+            cell.overlay.set_text(text, font_size)
 
     def forward_neighbors(self, x, y, prev_direction=None):
         """Cardinal neighbors of (x, y) for snaking words in any direction, with

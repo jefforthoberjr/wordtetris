@@ -423,6 +423,22 @@ rules:
   # game_screen.rightclick_digram: rule_digram_flip
   # game_screen.rightclick_digram: rule_rightclick_none
 
+  # Word hunt (MOVING phase): the player types a word in the moving side pane and
+  # the grams on the board involved in it light up (see views/hunt_highlight.py).
+  # Two independent toggles:
+  #   hunt_highlight -- WHICH grams/letters match the typed word:
+  #     rule_hunt_full_gram -- only a cell whose whole gram is a contiguous chunk
+  #       of the word (INDICATIVE lights "IVE", not "CU"/"EN"/"ING"); all its
+  #       letters color.
+  #     rule_hunt_single_letters -- every single letter that appears anywhere in
+  #       the word colors, even a partial / out-of-order cell (INDICATIVE lights
+  #       C of "CU", both of "EN", I+N of "ING").
+  #   hunt_highlight_style -- HOW a matched gram looks (the visual). Only the
+  #     text-recolor style exists today; rect-tint / outline would be siblings.
+  game_screen.hunt_highlight: rule_hunt_full_gram
+  # game_screen.hunt_highlight: rule_hunt_single_letters
+  game_screen.hunt_highlight_style: rule_hunt_style_text_recolor
+
   # Trigram or larger (3+ letter cell): no transform yet -- right-click does
   # nothing. rule_gram_reverse (ING -> GNI) is available if you want to turn one on.
   game_screen.rightclick_trigram_plus: rule_rightclick_none

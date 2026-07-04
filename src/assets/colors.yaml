@@ -12,6 +12,7 @@ board:
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
+  hunt_highlight:   [220, 20, 20, 255]  # MOVING-phase word-hunt: letters of the typed search word, recolored on top of cell_text
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
   mission_fill:     [255, 153, 153]   # light red: pre-placed mission cells (the goal to clear)
   # mission_fill:     [204, 153, 255]   # light purple: pre-placed mission cells (the goal to clear)
@@ -31,6 +32,9 @@ moving_side_pane:
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
+  hunt_prompt:      [120, 120, 120, 255] # "Hunt a word:" prompt above the hunt field
+  hunt_input:       [30, 30, 30, 255]    # the word being typed to hunt grams on the board
+  hunt_placeholder: [180, 180, 180, 255] # faint caret when the hunt field is empty
 
 # Right pane shown during the SELECTING phase: type a word to clear.
 selecting_side_pane:

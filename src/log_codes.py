@@ -189,7 +189,7 @@ def log_06003(piece):
     """A live piece dealt into play (jigsaw spawn / word-piece swap): its type
     and the cells + grams it carries at spawn. The player-pool twin of the
     formation deal in log_06002 -- this is where the upcoming letters are recorded."""
-    cells = [(gx, gy, gram) for (gx, gy, _cell, _label, gram) in piece.get_cell_data()]
+    cells = [(gx, gy, gram) for (gx, gy, _cell, _label, gram, _overlay) in piece.get_cell_data()]
     spec = ";".join(f"{x},{y}:{_gram_text(g)}" for (x, y, g) in cells)
     session_log.emit(6003, f"{_piece_type_name(piece.piece_type)} piece spawned",
                      type=_piece_type_name(piece.piece_type), cells=spec)

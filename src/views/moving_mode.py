@@ -285,6 +285,10 @@ class TypewriterMovingMode(MovingMode):
         tb = board.gram_at(*b).text
         board.relabel_cell(a[0], a[1], tb)
         board.relabel_cell(b[0], b[1], ta)
+        # A swap under an active hunt: re-light so highlights follow the moved
+        # grams (relabel_cell re-synced each overlay's text).
+        if self._gs._moving_side_pane.hunt_text():
+            self._gs._refresh_hunt_highlight()
 
 
 class SandTimerField:
@@ -661,4 +665,8 @@ class OmniswapVsTimerMode(MovingMode):
         tb = board.gram_at(*b).text
         board.relabel_cell(a[0], a[1], tb)
         board.relabel_cell(b[0], b[1], ta)
+        # A swap under an active hunt: re-light so highlights follow the moved
+        # grams (relabel_cell re-synced each overlay's text).
+        if self._gs._moving_side_pane.hunt_text():
+            self._gs._refresh_hunt_highlight()
 

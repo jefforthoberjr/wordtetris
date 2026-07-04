@@ -12,6 +12,9 @@ from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from views.word_trail import WordTrail
 from views.disambiguation_lines import DisambiguationLines
 from views.victory_overlay import VictoryOverlay
+from views.hunt_highlight import (
+    get_hunt_highlight_batch, reset_hunt_highlight, get_hunt_match_rule,
+)
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
 from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES as SQUARE_PLAYER_PIECE_TYPES
@@ -334,8 +337,12 @@ class GameScreen:
         side_pane_x = self._grid_area_size
         side_pane_width = window.width - self._grid_area_size
         self._moving_side_pane = MovingSidePane(
-            side_pane_x, 0, side_pane_width, window.height
+            side_pane_x, 0, side_pane_width, window.height,
+            on_change=self._on_hunt_change,
         )
+        # Which letters of a board gram light up for the typed hunt word (full-gram
+        # vs single-letter); see hunt_highlight and game_screen.hunt_highlight.
+        self._hunt_match_rule = get_hunt_match_rule()
         # Shown only during the LOADING phase (the opening reveal); its own class
         # so its UI can diverge later (progress bar, spinner) without touching the
         # play panes.
@@ -873,6 +880,9 @@ class GameScreen:
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._board_batch = pyglet.graphics.Batch()
         self._piece_batch = pyglet.graphics.Batch()
+        # Drop last game's hunt-highlight overlays before the new board's pieces
+        # build fresh ones (they share one batch across games; see hunt_highlight).
+        reset_hunt_highlight()
         # Sand-timer fills (rule_omniswap_timer_sand): the rising bottom-up cell
         # fills, drawn on top of the piece cells/labels. Its own batch so draw()
         # can layer it above the board without touching the piece rendering.
@@ -1282,8 +1292,8 @@ class GameScreen:
         piece.set_position(x, y)
         piece.place()
         logged_cells = []
-        for gx, gy, cell, label, gram in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label, gram)
+        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram, overlay)
             logged_cells.append((gx, gy, gram))
         L.log_06002("fill", logged_cells)
         piece.set_visible(True)
@@ -1563,8 +1573,8 @@ class GameScreen:
         `track_cells` (its victory/encoding set), and reveal it."""
         piece.place()
         logged_cells = []
-        for gx, gy, cell, label, gram in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label, gram)
+        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram, overlay)
             occupied.add((gx, gy))
             track_cells.add((gx, gy))
             logged_cells.append((gx, gy, gram))
@@ -1666,6 +1676,10 @@ class GameScreen:
         self._spawn_rule(piece)
         # Record the deal: this live piece's type, grams, and resting cells.
         L.log_06003(piece)
+        # A fresh piece under an active hunt lights up immediately (else it would
+        # stay dark until the next keystroke). Only work when a hunt is typed.
+        if self._moving_side_pane.hunt_text():
+            self._refresh_hunt_highlight()
 
     def _rule_orient_default(self, piece):
         """Spawn in the piece's default orientation (rotation state 0)."""
@@ -1796,6 +1810,10 @@ class GameScreen:
         new_text = rule(gram.text)
         if new_text is not None:
             self._board.relabel_cell(cell[0], cell[1], new_text)
+            # The gram changed under an active hunt: re-light so the new letters
+            # reflect the typed word (relabel_cell already re-synced the overlay).
+            if self._moving_side_pane.hunt_text():
+                self._refresh_hunt_highlight()
 
     def _rule_repeat_allow(self, word):
         """Allow a word to clear even if it cleared before (original behavior)."""
@@ -1989,6 +2007,10 @@ class GameScreen:
             # prompt so no candidate lines linger into MOVING.
             if old == Phase.SELECTING and self._disambiguating():
                 self._end_disambiguation()
+            # Leaving MOVING clears the word-hunt field (and its highlight), so no
+            # hunt lingers into SELECTING or the next MOVING phase.
+            if old == Phase.MOVING and getattr(self, "_moving_side_pane", None):
+                self._moving_side_pane.clear_hunt()
 
     def _check_victory(self):
         """If the active victory rule is satisfied, enter VICTORY and return
@@ -2898,6 +2920,40 @@ class GameScreen:
         if self._override_piece is not None:
             return self._override_piece
         return self._piece_pool.current_piece()
+
+    def _on_hunt_change(self, text):
+        """The MOVING-phase hunt field changed (typed / backspaced / cleared):
+        re-light every board + active-piece gram involved in the typed word."""
+        self._refresh_hunt_highlight(text)
+
+    def _apply_hunt_to_overlay(self, overlay, gram, text):
+        """Light `overlay`'s letters per the active match rule, or clear it. Wilds
+        (no letters) and empty grams never light."""
+        if overlay is None:
+            return
+        if not text or gram is None or gram.is_wild or not gram.text:
+            overlay.clear()
+            return
+        overlay.set_matched(self._hunt_match_rule(gram.text, text))
+
+    def _refresh_hunt_highlight(self, text=None):
+        """Re-apply the word-hunt highlight for `text` (default: the current hunt
+        field) across every settled board cell and the visible active piece. Wilds
+        are skipped (they render as a sprite, not a label). Empty text clears all.
+        Called on each keystroke, on a fresh piece spawn, and after a gram is
+        relabeled -- each a cheap per-glyph color pass, no allocation."""
+        if text is None:
+            text = self._moving_side_pane.hunt_text()
+        for (x, y) in self._board.occupied_cells():
+            cell = self._board.get_cell(x, y)
+            if cell is not None:
+                self._apply_hunt_to_overlay(cell.overlay, cell.gram, text)
+        # The live piece too (only when it's actually floating on the board -- e.g.
+        # omniswap never deals a visible piece, so its current piece is skipped).
+        piece = self._current_piece()
+        if piece is not None and not piece.placed and piece.visible:
+            for _gx, _gy, _c, _l, gram, overlay in piece.get_cell_data():
+                self._apply_hunt_to_overlay(overlay, gram, text)
     
     def _update_hover_visibility(self):
         piece = self._current_piece()
@@ -3025,8 +3081,8 @@ class GameScreen:
         piece.place()
 
         placed_positions = []
-        for gx, gy, cell, label, gram in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label, gram)
+        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
+            self._board.place(gx, gy, cell, label, gram, overlay)
             placed_positions.append((gx, gy))
         # _begin_selection recolors these cells from the live piece's darker
         # active tint to the lighter placed tint and keeps them lit -- through
@@ -3078,6 +3134,10 @@ class GameScreen:
         self._obstacle_batch.draw()
         self._mission_batch.draw()
         self._piece_batch.draw()
+        # Word-hunt highlight overlays: a transparent per-letter paint layer drawn
+        # directly on top of the gram glyphs (board + active piece). Empty (draws
+        # nothing) unless the player is hunting a word in the MOVING side pane.
+        get_hunt_highlight_batch().draw()
         # Sand-timer fills sit above the cells/glyphs (translucent, so the gram
         # stays readable underneath); empty in every non-sand mode.
         self._sand_batch.draw()
@@ -3195,6 +3255,12 @@ class GameScreen:
                 return True
             return self._selecting_side_pane.on_key_press(symbol, modifiers)
 
+        # Word-hunt field: Backspace edits the typed hunt word (letters arrive via
+        # on_text). Consumed only when the field handles it, so other keys fall
+        # through to the moving mode.
+        if self._moving_side_pane.on_key_press(symbol, modifiers):
+            return True
+
         # MOVING phase: the active mode owns piece/cursor input.
         return self._moving_mode.on_key_press(symbol, modifiers)
     
@@ -3206,6 +3272,10 @@ class GameScreen:
             return
         if self._phase == Phase.SELECTING:
             self._selecting_side_pane.on_text(text)
+        elif self._phase == Phase.MOVING:
+            # Typed letters feed the word-hunt field (movement/rotate keys are all
+            # non-letters now, so they never leak in); highlighting updates live.
+            self._moving_side_pane.on_text(text)
 
     def on_mouse_press(self, x, y, button, modifiers):
         L.log_20003(x, y, pyglet.window.mouse.buttons_string(button),
