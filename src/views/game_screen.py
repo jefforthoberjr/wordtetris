@@ -501,6 +501,8 @@ class GameScreen:
                 self._rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle,
             "rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid":
                 self._rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid,
+            "rule_formation_fill_ideation_trigram_sidepanes":
+                self._rule_formation_fill_ideation_trigram_sidepanes,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -1397,6 +1399,31 @@ class GameScreen:
         TRIANGLE at the screen BOTTOM pointing up; UNIGRAMS fill the rest."""
         self._fill_ideation_sidepanes(self._digram_region_bottompyramid)
 
+    def _rule_formation_fill_ideation_trigram_sidepanes(self):
+        """Trigram+ side panes (prefix far-left / midsuf far-right), but with NO
+        dedicated digram region: DIGRAMS and UNIGRAMS are mixed RANDOMLY together
+        across every non-pane cell. Same trigram panes, counts, forced picker and
+        no obstacle/mission pieces as the *_digram_centercircle/bottompyramid
+        siblings -- see _fill_ideation_sidepanes."""
+        cells = [(x, y)
+                 for y in range(self._board.height)
+                 for x in range(self._board.width)
+                 if self._board.is_valid(x, y)]
+        n_uni, n_di, n_tri = self._region_length_counts(len(cells))
+
+        # No digram region: the trigram panes carve off the edges, then the inner
+        # (non-pane) cells are shuffled and split into a random digram/unigram mix.
+        tri_left, tri_right, inner = self._split_sidepane_trigrams(cells, n_tri)
+        rand().shuffle(inner)
+        n_di = min(n_di, len(inner))
+        digrams, unigrams = inner[:n_di], inner[n_di:]
+
+        self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
+        self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
+        self._place_region_cells(digrams, 2, None)       # digrams, any *fix
+        self._arm_vowel_guarantee(len(unigrams))
+        self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
+
     def _fill_ideation_sidepanes(self, digram_region_rule):
         """Shared body for the ideation side-pane formations. Lays the opening board
         by gram TYPE in space: trigram+ PREFIX grams packed into the far-LEFT edge,
@@ -1419,16 +1446,29 @@ class GameScreen:
         digram_set = set(digrams)
         outer = [c for c in cells if c not in digram_set]
 
-        cx = self._board.cell_center(*self._board.center_cell())[0]
-        left = [c for c in outer if self._board.cell_center(c[0], c[1])[0] < cx]
-        right = [c for c in outer if self._board.cell_center(c[0], c[1])[0] >= cx]
+        tri_left, tri_right, unigrams = self._split_sidepane_trigrams(outer, n_tri)
 
-        # Split the trigram+ budget by the gram_ideation.trigramplus.* shares (NOT by
-        # region size): prefix grams go left, midfix+suffix go right, so the left/right
-        # counts honor prefix_percent : (midfix_percent + suffix_percent). midfix vs
-        # suffix are NOT separated -- this 2-pane layout only splits prefix from
-        # non-prefix; both share the right side, drawn from the combined midsuf pool by
-        # corpus frequency. Each side is still capped by how many edge cells it has.
+        self._place_region_cells(digrams, 2, None)       # digrams, any *fix
+        self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
+        self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
+        self._arm_vowel_guarantee(len(unigrams))
+        self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
+
+    def _split_sidepane_trigrams(self, cells, n_tri):
+        """Split `cells` into (tri_left, tri_right, inner): trigram+ PREFIX grams
+        packed into the far-LEFT edge, trigram+ MIDFIX/SUFFIX into the far-RIGHT
+        edge, and `inner` = every leftover cell (running inward from the panes).
+
+        The trigram+ budget is split by the gram_ideation.trigramplus.* shares (NOT
+        by region size): prefix grams go left, midfix+suffix go right, so the
+        left/right counts honor prefix_percent : (midfix_percent + suffix_percent).
+        midfix vs suffix are NOT separated -- this 2-pane layout only splits prefix
+        from non-prefix; both share the right side, drawn from the combined midsuf
+        pool by corpus frequency. Each side is capped by how many edge cells it has."""
+        cx = self._board.cell_center(*self._board.center_cell())[0]
+        left = [c for c in cells if self._board.cell_center(c[0], c[1])[0] < cx]
+        right = [c for c in cells if self._board.cell_center(c[0], c[1])[0] >= cx]
+
         pre = CONFIG["rules"]["gram_ideation.trigramplus.prefix_percent"]
         mid = CONFIG["rules"]["gram_ideation.trigramplus.midfix_percent"]
         suf = CONFIG["rules"]["gram_ideation.trigramplus.suffix_percent"]
@@ -1439,20 +1479,15 @@ class GameScreen:
 
         # Push the trigram+ grams to the OUTER edges: order each side by horizontal
         # extremity (leftmost / rightmost cell first) and take the most extreme ones,
-        # so the multigrams pack into the edge columns and the unigrams fill inward
-        # toward the digram region (rather than trigrams scattering through the half).
+        # so the multigrams pack into the edge columns and the inner cells fill inward
+        # (rather than trigrams scattering through the half).
         left.sort(key=lambda c: self._board.cell_center(c[0], c[1]))            # px asc, py asc
         right.sort(key=lambda c: (-self._board.cell_center(c[0], c[1])[0],
                                   self._board.cell_center(c[0], c[1])[1]))      # px desc, py asc
         tri_left = left[:n_tri_left]
         tri_right = right[:n_tri_right]
-        unigrams = left[n_tri_left:] + right[n_tri_right:]
-
-        self._place_region_cells(digrams, 2, None)       # digrams, any *fix
-        self._place_region_cells(tri_left, 3, "prefix")  # trigram+ prefix -> left
-        self._place_region_cells(tri_right, 3, "midsuf") # trigram+ mid/suffix -> right
-        self._arm_vowel_guarantee(len(unigrams))
-        self._place_region_cells(unigrams, 1, None)      # unigrams fill the gaps
+        inner = left[n_tri_left:] + right[n_tri_right:]
+        return tri_left, tri_right, inner
 
     def _digram_region_centercircle(self, cells, n_di):
         """The n_di cells nearest board center (a rough disc)."""

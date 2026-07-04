@@ -130,8 +130,8 @@ rules:
   #     SELECT toggle freely (like race); the game ends when the WHOLE board is
   #     fossilized (no cell left to time).
   # game_screen.omniswap_timer:  rule_omniswap_timer_per_phase
-  # game_screen.omniswap_timer: rule_omniswap_timer_race
-  game_screen.omniswap_timer: rule_omniswap_timer_sand
+  game_screen.omniswap_timer: rule_omniswap_timer_race
+  # game_screen.omniswap_timer: rule_omniswap_timer_sand
 
   # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
   #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
@@ -266,17 +266,21 @@ rules:
   #   rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid -- same
   #     trigram+ side panes, but the DIGRAMS form a TRIANGLE at the screen bottom
   #     pointing up (widest along the bottom, narrowing upward); UNIGRAMS fill in.
-  #   The two ideation layouts: how many of each length comes from gram_length.*; the
+  #   rule_formation_fill_ideation_trigram_sidepanes -- same trigram+ side panes,
+  #     but with NO dedicated digram region: DIGRAMS and UNIGRAMS are mixed
+  #     RANDOMLY together across every non-pane cell.
+  #   The ideation layouts: how many of each length comes from gram_length.*; the
   #   left/right trigram split from gram_ideation.trigramplus.* (prefix : midfix+suffix).
   #   Force the length-controlled picker regardless of *_player.gram_pick; pair with
   #   game_screen.victory: rule_victory_none.
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
   # game_screen.setup_formation: rule_formation_fill_player_diagonal
-  game_screen.setup_formation: rule_formation_fill_player_wood_grain
+  # game_screen.setup_formation: rule_formation_fill_player_wood_grain
   # game_screen.setup_formation: rule_formation_fill_player_random
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
+  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
 
   # How many obstacle / mission pieces rule_formation_scattered lays down. The
   # ring formation derives its own counts from board geometry and ignores these.
@@ -505,7 +509,7 @@ rules:
   # per piece; it self-averages over 100+ pieces.)
   gram_length.unigram_percent:     50
   gram_length.digram_percent:      20
-  gram_length.trigramplus_percent: 20
+  gram_length.trigramplus_percent: 15
 
   # Within the OPENING BOARD's unigrams, a second quota splits single letters into
   # two bins (relative shares, same largest-remainder enforcement as above):
