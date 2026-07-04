@@ -1,21 +1,33 @@
 import os
 
+from config import CONFIG
+
 
 # Valid-word corpus for the word-clearing rule. One word per line; we hold the
 # whole list as an uppercase set, matching how letters are stored on the board.
-_DICT_PATH = os.path.join(
-    os.path.dirname(__file__), 'dictionaries',
-    'spellingDictionary20k-nocompound.txt'
-)
+# The file is chosen by config.yaml dictionary.word_source (headword list vs the
+# inflection-expanded list); see build_expanded_dictionary.py for the latter.
+_DICTS_DIR = os.path.join(os.path.dirname(__file__), 'dictionaries')
+_WORD_SOURCE_FILES = {
+    'headwords_20k': 'spellingDictionary20k-nocompound.txt',
+    'expanded': 'expandedAllowedWords.txt',
+}
+_DEFAULT_WORD_SOURCE = 'headwords_20k'
 _words = None
 _prefixes = None
+
+
+def _dict_path():
+    source = CONFIG.get('dictionary', {}).get('word_source', _DEFAULT_WORD_SOURCE)
+    filename = _WORD_SOURCE_FILES.get(source, _WORD_SOURCE_FILES[_DEFAULT_WORD_SOURCE])
+    return os.path.join(_DICTS_DIR, filename)
 
 
 def _word_set():
     global _words
     if _words is None:
         words = set()
-        with open(_DICT_PATH, 'r') as f:
+        with open(_dict_path(), 'r') as f:
             for line in f:
                 word = line.strip().upper()
                 if word:

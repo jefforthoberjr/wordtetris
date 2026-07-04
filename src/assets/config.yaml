@@ -20,6 +20,17 @@ logging:
   enabled: true
 
 dictionary:
+  # Validation word list -- the "is this a valid word?" corpus the word-clearing
+  # rule checks against (models/word_dictionary.py). Swap between the curated
+  # headword list and the inflection-expanded list:
+  #   headwords_20k -- the 21.9k curated headwords, no inflections or compounds
+  #     (spellingDictionary20k-nocompound.txt). READ is valid, READING is not.
+  #   expanded      -- headwords + every inflected & British form (~55k;
+  #     expandedAllowedWords.txt). READ and READING both valid. Regenerate with
+  #     dictionaries/build_expanded_dictionary.py (see TECH.md).
+  # word_source: headwords_20k
+  word_source: expanded
+
   # TEMP (playtest): page the large mock word list so the A-Z tabs and sub-pages
   # can be exercised before the player has collected thousands of words. Set
   # use_mock_data to false to read the player's real player_dictionary.txt.
