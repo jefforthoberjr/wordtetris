@@ -46,8 +46,15 @@ class PlayerDictionary:
     so it stays a readable alphabetical list and survives a crash mid-write via
     an atomic temp-file replace."""
 
-    def __init__(self, path=_DEFAULT_PATH):
+    def __init__(self, path=_DEFAULT_PATH, persist=True):
         self._path = Path(path)
+        # When False, add()/_record() still update the in-memory collection (so
+        # "new word" green + the collected count stay correct for the duration of
+        # the run) but nothing is ever written to disk. Replay uses this so a
+        # playback can't mutate the session's .dict snapshot -- which would make
+        # every word already-known and kill green highlighting on the next
+        # replay -- nor touch the live player_dictionary.txt.
+        self._persist = persist
         # word -> list of unique variation strings, in the order first seen.
         self._variations = {}
         if self._path.exists():
@@ -114,14 +121,16 @@ class PlayerDictionary:
         # the real one in a single rename, so an interrupted save can't truncate
         # or corrupt the player's collection. One line per word: its variations
         # joined by ";" (a word recorded without any grouping writes as the bare
-        # word, so the line still round-trips on load).
-        tmp = self._path.with_name(self._path.name + ".tmp")
-        with open(tmp, "w") as f:
-            for word in sorted(self._variations.keys()):
-                variations = self._variations[word]
-                if variations:
-                    line = ";".join(variations)
-                else:
-                    line = word
-                f.write(line + "\n")
-        os.replace(tmp, self._path)
+        # word, so the line still round-trips on load). Suppressed entirely in a
+        # non-persisting (replay) dictionary -- see __init__'s `persist`.
+        if self._persist:
+            tmp = self._path.with_name(self._path.name + ".tmp")
+            with open(tmp, "w") as f:
+                for word in sorted(self._variations.keys()):
+                    variations = self._variations[word]
+                    if variations:
+                        line = ";".join(variations)
+                    else:
+                        line = word
+                    f.write(line + "\n")
+            os.replace(tmp, self._path)

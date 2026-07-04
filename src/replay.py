@@ -69,8 +69,12 @@ def build_game(log, visible=True, player_dict_path=None, coverage_sim_seconds=No
     `player_dict_path`, when given, points the player dictionary at the snapshot
     stashed beside the log at record time -- so first-time/"new word" green
     highlighting matches the original run rather than the player's current
-    collection (which has since grown). Replay then reads/writes that stash, not
-    the live player_dictionary.txt."""
+    collection (which has since grown). The replay dictionary is always
+    non-persisting: it tracks cleared words in memory (so green + the count stay
+    right) but never writes to disk, so a playback can't corrupt the .dict
+    snapshot (writing the run's own new words back into it would kill green on
+    the next replay) nor mutate the live player_dictionary.txt when no stash
+    exists."""
     import pyglet
     import source
     from controllers.screen_manager import ScreenManager
@@ -88,8 +92,13 @@ def build_game(log, visible=True, player_dict_path=None, coverage_sim_seconds=No
     # exactly as at record time before on_enter re-seeded. So seed AFTER __init__
     # and BEFORE on_enter -- the same point start_session seeded during recording.
     gs = GameScreen(win, sm)
+    # Always a non-persisting dict (persist=False): from the record-time stash if
+    # we have one (green matches the original run), else the live file -- but in
+    # neither case may replay write to disk. See build_game's docstring.
     if player_dict_path is not None:
-        gs._player_dict = PlayerDictionary(path=player_dict_path)
+        gs._player_dict = PlayerDictionary(path=player_dict_path, persist=False)
+    else:
+        gs._player_dict = PlayerDictionary(persist=False)
     # If the recorded session ran the (blocking) starting-coverage pass, replay
     # SIMULATES it: on_enter's coverage rule pauses for this scaled duration
     # showing CALCULATING, but never recomputes or rewrites the file.

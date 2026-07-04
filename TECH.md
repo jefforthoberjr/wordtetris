@@ -56,14 +56,12 @@ python src/main.py
 # RUN SESSION REPLAY
 For debbugging purposes
 
-python src/replay.py -0
+python src/replay.py -0 --speed 3.0
 python src/replay.py -1 --speed 3.0
 
 python src/replay.py -0 --export progress.mp4
 python src/replay.py -0 --export progress.mp4 --fps 10 --speed 3.0 --scale 0.5
 #NOTE: playback during export mode whips through much faster
-
-python src/replay.py -0 --speed 3.0
 
 python replay.py sessions/<id>.log [--speed 2.0] [--invisible]
 Example:
