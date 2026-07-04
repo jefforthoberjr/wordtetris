@@ -6,6 +6,12 @@ GAME NAMES
 
 * catalyst cata LIST
 
+
+Idea, reverse sand timer. A piece that could give you double points for a limited time.
+
+A mode where, you type in a word, and it highlights all the letters of the board that can form it, like a quick sanity check that all the letters are there, without having to scan the space too much.
+
+
 QU spawned in 
 
 grain chains or length 2,3,4,5?

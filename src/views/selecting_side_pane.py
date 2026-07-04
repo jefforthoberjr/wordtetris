@@ -145,6 +145,16 @@ class SelectingSidePane:
         self._word_list.reset()
         self._render_input()
 
+    def prefill(self, word):
+        """Pre-load the typed-word field with `word` (upper-cased) instead of
+        starting empty. Used to carry the MOVING word-hunt entry into SELECT so
+        the player can confirm it with a second ENTER, or edit it first -- it does
+        NOT submit. Identical to having typed the word by hand; call after begin().
+        An empty/blank `word` leaves the field empty."""
+        self._typed = word.upper()
+        self.clear_errors()
+        self._render_input()
+
     # --- input -------------------------------------------------------------
     def on_text(self, text):
         # Words are letters only; ignore digits/space/punctuation. Any edit

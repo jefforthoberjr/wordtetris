@@ -2201,11 +2201,19 @@ class GameScreen:
             if not self._check_victory():
                 self._moving_mode.advance()
         else:
+            # UX shortcut: carry any word already typed in the MOVING word-hunt
+            # field into the SELECT typed-word field, so opening SELECT (ENTER)
+            # with a hunted word pre-loads it -- the player confirms with a second
+            # ENTER or edits it first (never auto-submitted). Grab it before
+            # _set_phase clears the hunt field (see clear_hunt in _set_phase).
+            hunted = self._moving_side_pane.hunt_text()
             self._set_phase(Phase.SELECTING)
             # Fresh batch for this selection phase (no-op in clear-on-submit mode).
             self._pending = []
             self._words_submitted_this_select = 0
             self._selecting_side_pane.begin()
+            if hunted:
+                self._selecting_side_pane.prefill(hunted)
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
 
     def _recompute_candidates(self):
