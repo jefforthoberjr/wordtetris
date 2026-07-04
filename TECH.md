@@ -101,3 +101,22 @@ outcome codes above over re-playing to reproduce an exact click.
 Two offline scripts in gram_corpus/ (not game runtime):
 - ideation_analysis.py — for any gram, dumps the 20k-dict words by position ranked by real Google frequency (the grounding tool).
 - ideation_grader.py — generates cleaned3 end-to-end; rerun anytime, tweak thresholds at the top. The rubric is documented in its docstring.
+
+
+# REGENERATE THE INFLECTION-EXPANDED DICTIONARY
+
+Offline build (not game runtime). Expands the 21.9k headword list
+(spellingDictionary20k-nocompound.txt) into inflected + British forms.
+
+cd src/models/dictionaries
+python3 build_expanded_dictionary.py
+
+Inputs are vendored in src/models/dictionaries/sources/ (12dicts-2+2+3lem.txt is
+the authority; British spellings are already inline in it). Outputs, written
+alongside the current dictionary:
+- expandedAllowedWords.txt   flat "all words" set (~55k)
+- headwordInflections.json   map headword -> [extra forms] (keys ∪ values == flat)
+- headwordInflections.txt    same map, human-readable
+
+Invariant: every allowed word derives from a kept headword (families are built
+only for the 21.9k headwords). Rerun anytime; it is deterministic.
