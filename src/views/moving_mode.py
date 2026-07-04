@@ -582,10 +582,12 @@ class OmniswapVsTimerMode(MovingMode):
         if gs._word_piece_enabled and self._selected is not None:
             word = gs._moving_side_pane.word_at(x, y)
             if word:
+                held = self._selected
                 gs._board.relabel_cell(self._selected[0], self._selected[1], word)
                 self._clear_selection()
                 if self._sand is not None:
                     self._sand.repaint_all()
+                L.log_20005("word_piece", held)
                 return
         cell = gs._board.cell_at(x, y)
         if cell is None:
@@ -594,9 +596,11 @@ class OmniswapVsTimerMode(MovingMode):
             # First click: drop the pick cursor on an eligible (occupied, non-
             # fossilized) cell. Empty / fossilized clicks are ignored.
             if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
+                L.log_20005("ignored", cell)
                 return
             self._selected = cell
             self._tint(cell, gs.CURSOR_CELL_COLOR)
+            L.log_20005("picked", cell)
             return
         # Second click.
         if cell == self._selected:
@@ -604,9 +608,11 @@ class OmniswapVsTimerMode(MovingMode):
             self._clear_selection()
             if self._sand is not None:
                 self._sand.repaint_all()   # the cancel restored resting; re-tint sand cells
+            L.log_20005("canceled", cell)
             return
         if gs._is_fossilized(cell) or gs._board.gram_at(*cell) is None:
             # Invalid swap target (fossilized or empty): keep the cursor, ignore.
+            L.log_20005("invalid_target", cell, self._selected)
             return
         source = self._selected
         self._swap_grams(source, cell)
@@ -615,6 +621,7 @@ class OmniswapVsTimerMode(MovingMode):
         # Sand timers follow their gram: move any timer on either swapped cell.
         if self._sand is not None:
             self._sand.on_swap(source, cell)
+        L.log_20005("swapped", cell, source)
 
     # --- phase / timer helpers -------------------------------------------
     def _enter_select(self):

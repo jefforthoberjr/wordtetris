@@ -36,6 +36,27 @@ def log_00002(reason):
     session_log.emit(2, "session ended", reason=reason)
 
 
+# Window/environment events. Logged because a macOS focus or Space change can
+# desync the Retina coordinate scale (window.width is physical here), which
+# misplaces clicks -- a click landing on the wrong cell shows up as a scale/size
+# change logged right before it. Pair with log_20003's `cell` field.
+def log_00010(active, width, height, scale):
+    """Window focus changed: `active` True on gaining focus (on_activate), False
+    on losing it (on_deactivate). Records the physical size and pixel/point ratio
+    at that instant, so a focus-triggered coordinate desync is visible here."""
+    state = "focus_gained" if active else "focus_lost"
+    session_log.emit(10, f"window {state} ({width}x{height} @{scale}x)",
+                     active=active, width=width, height=height, scale=scale)
+
+
+def log_00011(width, height, scale):
+    """The window resized (on_resize): new physical size + pixel ratio. On a
+    non-resizable window a scale change here is the fingerprint of the Retina
+    point/pixel desync that misplaces clicks; see log_00010."""
+    session_log.emit(11, f"window resized ({width}x{height} @{scale}x)",
+                     width=width, height=height, scale=scale)
+
+
 # --- 1xxxx  phase transitions ------------------------------------------------
 def _phase_name(phase):
     return getattr(phase, "name", "NONE")
@@ -68,11 +89,41 @@ def log_20002(text, phase):
     session_log.emit(20002, f"text '{shown}'", text=shown, phase=phase)
 
 
-def log_20003(x, y, button, phase):
+def log_20003(x, y, button, phase, cell):
     """A mouse button was pressed at window pixel (x, y). `button` is the pyglet
-    button name (LEFT / RIGHT / MIDDLE)."""
-    session_log.emit(20003, f"{button} click ({x},{y})",
-                     x=x, y=y, button=button, phase=phase)
+    button name (LEFT / RIGHT / MIDDLE). `cell` is the board cell that pixel
+    resolves to ((cx,cy) tuple, or None off-board / no board yet), logged beside
+    the raw pixel so a coordinate-scale desync -- a click no longer landing on
+    the cell under the cursor -- is visible directly in the log."""
+    cell_s = "-" if cell is None else f"{cell[0]},{cell[1]}"
+    session_log.emit(20003, f"{button} click ({x},{y}) -> cell {cell_s}",
+                     x=x, y=y, button=button, phase=phase, cell=cell_s)
+
+
+def log_20004(cell, old, new, reason):
+    """Outcome of a right-click gram-manipulate (game_screen._handle_gram_
+    manipulate). `cell` is the board cell the MOUSE resolved to (None off-board),
+    `old`/`new` the gram before/after, `reason` one of applied / off_board /
+    fossilized / empty / rule_noop. log_20003 is the raw click; this says what the
+    game DID with it, so a no-op (wrong cell under the mouse, fossilized, empty)
+    is diagnosable from the log instead of by re-simulating."""
+    cell_s = "-" if cell is None else f"{cell[0]},{cell[1]}"
+    detail = f": {old}->{new}" if new is not None else ""
+    session_log.emit(20004, f"gram-manip {reason} at {cell_s}{detail}",
+                     cell=cell_s, old=old or "-", new=new or "-", reason=reason)
+
+
+def log_20005(action, cell, other=None):
+    """Outcome of an omniswap board click (game_screen.mode =
+    rule_mode_omniswap_vs_timer). `action` is picked / canceled / swapped /
+    word_piece / invalid_target / ignored; `cell` the click's board cell; `other`
+    the pick-cursor's held cell on a swap (the source), else '-'. Makes the two-
+    click swap's target model -- which cell the game thinks you're acting on --
+    visible, the gap that hid the right-click doubling confusion."""
+    cell_s = "-" if cell is None else f"{cell[0]},{cell[1]}"
+    other_s = "-" if other is None else f"{other[0]},{other[1]}"
+    session_log.emit(20005, f"omniswap {action} at {cell_s}",
+                     action=action, cell=cell_s, other=other_s)
 
 
 # --- 3xxxx  word pipeline ----------------------------------------------------

@@ -68,6 +68,34 @@ Example:
 python src/replay.py sessions/2026-06-21T14-28-44_46ae.log 
 
 
+# DIAGNOSING CLICK / COORDINATE BUGS FROM THE LOG
+
+The session .log records not just raw input but what the game DID with it, so a
+misbehaving click is usually readable straight from the log (grep by code) with
+no need to re-run/replay. Codes are defined in src/log_codes.py.
+
+grep '\[20003\]' sessions/<id>.log   raw mouse click: pixel (x,y) AND the board
+                                      cell it resolved to (cell=). If clicks stop
+                                      landing on the cell under the cursor, that's
+                                      a coordinate-scale desync.
+grep '\[20004\]' sessions/<id>.log   right-click gram-manipulate OUTCOME: cell,
+                                      old->new gram, reason (applied / off_board /
+                                      fossilized / empty / rule_noop). A no-op
+                                      double shows its reason here.
+grep '\[20005\]' sessions/<id>.log   omniswap OUTCOME: picked / swapped / canceled
+                                      / invalid_target / word_piece / ignored,
+                                      with the cell and swap source.
+grep -E '\[0001[01]\]' sessions/<id>.log   window focus (00010) + resize (00011),
+                                      each with physical size + pixel ratio. A
+                                      scale change here (e.g. after alt-tab / Space
+                                      switch on Retina) right before bad clicks is
+                                      the fingerprint of the focus coordinate desync.
+
+Known limit: timed modes (omniswap_vs_timer) drift slightly on replay because we
+log wall-clock timestamps, not the per-frame dt sequence -- so prefer reading the
+outcome codes above over re-playing to reproduce an exact click.
+
+
 # SCRIPTS FOR JUDGING WORD IDEATION
 
 Two offline scripts in gram_corpus/ (not game runtime):

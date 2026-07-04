@@ -1830,10 +1830,15 @@ class GameScreen:
         this button. A rule returning None (e.g. rule_rightclick_none) is a no-op."""
         cell = self._board.cell_at(x, y)
         if cell is None:
+            L.log_20004(None, None, None, "off_board")
             return
-        if self._is_fossilized(cell) or self._board.gram_at(*cell) is None:
+        if self._is_fossilized(cell):
+            L.log_20004(cell, None, None, "fossilized")
             return
         gram = self._board.gram_at(*cell)
+        if gram is None:
+            L.log_20004(cell, None, None, "empty")
+            return
         if gram.is_wild:
             rule = self._rightclick_rules["vowelwild"]
         elif len(gram) == 1:
@@ -1843,12 +1848,17 @@ class GameScreen:
         else:
             rule = self._rightclick_rules["trigram_plus"]
         new_text = rule(gram.text)
-        if new_text is not None:
-            self._board.relabel_cell(cell[0], cell[1], new_text)
-            # The gram changed under an active hunt: re-light so the new letters
-            # reflect the typed word (relabel_cell already re-synced the overlay).
-            if self._moving_side_pane.hunt_text():
-                self._refresh_hunt_highlight()
+        if new_text is None:
+            # A rule that declines (e.g. rule_rightclick_none, or dedup on a mixed
+            # digram) -- relabel nothing, but record that the click was seen.
+            L.log_20004(cell, gram.text, None, "rule_noop")
+            return
+        self._board.relabel_cell(cell[0], cell[1], new_text)
+        L.log_20004(cell, gram.text, new_text, "applied")
+        # The gram changed under an active hunt: re-light so the new letters
+        # reflect the typed word (relabel_cell already re-synced the overlay).
+        if self._moving_side_pane.hunt_text():
+            self._refresh_hunt_highlight()
 
     def _rule_repeat_allow(self, word):
         """Allow a word to clear even if it cleared before (original behavior)."""
@@ -3321,8 +3331,12 @@ class GameScreen:
             self._moving_side_pane.on_text(text)
 
     def on_mouse_press(self, x, y, button, modifiers):
+        # Log the board cell the pixel resolves to alongside the raw coord, so a
+        # coordinate-scale desync shows up as clicks that stop matching cells.
+        board = getattr(self, "_board", None)
+        cell = board.cell_at(x, y) if board is not None else None
         L.log_20003(x, y, pyglet.window.mouse.buttons_string(button),
-                    self._phase.name)
+                    self._phase.name, cell)
         if self._menu_open:
             action = self._ingame_menu.on_mouse_press(x, y, button, modifiers)
             if action:
