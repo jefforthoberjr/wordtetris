@@ -193,6 +193,115 @@ def run(path, speed=1.0, visible=True):
     return 0
 
 
+# --- video export ------------------------------------------------------------
+# pyglet's native framebuffer format -> ffmpeg raw input pixel format. We feed
+# ffmpeg whatever format the color buffer already is (usually RGBA) so capture
+# stays a cheap memcpy: asking pyglet to convert to RGB instead runs a
+# pure-Python per-pixel loop that caps throughput at ~4 fps -- ffmpeg does the
+# channel work far faster.
+_PIXFMT = {"RGBA": "rgba", "RGB": "rgb24", "BGRA": "bgra", "BGR": "bgr24"}
+
+
+def _spawn_ffmpeg(out_path, width, height, fps, pix_fmt, scale=1.0):
+    """Start an ffmpeg subprocess reading raw `pix_fmt` frames on stdin and
+    writing an H.264 .mp4. We shell out to the system ffmpeg (no Python encoding
+    lib). Notes: pyglet's framebuffer rows are bottom-up, so `vflip` turns them
+    top-first; `scale` downsizes by that factor (1.0 = full Retina size) for
+    smaller/faster Discord clips; `trunc(...)*2` forces even dimensions, which
+    yuv420p (needed for broad players like Discord) requires."""
+    import subprocess
+    vf = f"vflip,scale=trunc(iw*{scale}/2)*2:trunc(ih*{scale}/2)*2"
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "rawvideo", "-pix_fmt", pix_fmt,
+        "-s", f"{width}x{height}", "-r", str(fps),
+        "-i", "-",
+        "-an",
+        "-vf", vf,
+        "-pix_fmt", "yuv420p", "-crf", "18",
+        "-movflags", "+faststart",
+        out_path,
+    ]
+    return subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+
+def export_run(path, out_path, speed=1.0, fps=30, scale=1.0):
+    """Render a recorded session to an .mp4 by driving the game on a FIXED
+    timestep (speed/fps sim-seconds per output frame) and piping each rendered
+    frame to ffmpeg. Unlike run(), this is decoupled from the wall clock, so the
+    output is smooth regardless of how fast frames actually render. The window is
+    shown during capture -- macOS needs it visible for reliable framebuffer
+    readback (see the design decision recorded with this feature)."""
+    import pyglet
+
+    log = replay_log.load(path)
+    if log.rng_seed is None:
+        print("error: log has no rng_seed; cannot reproduce randomness.", file=sys.stderr)
+        return 1
+    _warn_on_commit_mismatch(log)
+    load_embedded_config(log)
+    stash = Path(path).with_suffix(".dict")
+    cov_seconds = coverage_recorded_seconds(log)
+    win, gs = build_game(
+        log, visible=True,
+        player_dict_path=str(stash) if stash.exists() else None,
+        coverage_sim_seconds=(cov_seconds / speed if cov_seconds else None))
+
+    inputs = log.events_for(20001, 20002, 20003)
+    last_t = log.events[-1].t if log.events else 0.0
+    dt = speed / fps
+    win.set_vsync(False)  # don't throttle capture to the monitor refresh
+
+    # ffmpeg is spawned lazily on the first frame, once we know the (physical,
+    # possibly Retina-2x) framebuffer size and native format from the buffer.
+    proc = {"p": None}
+
+    def write_frame():
+        win.switch_to()
+        win.dispatch_events()
+        win.clear()
+        gs.draw()
+        img = pyglet.image.get_buffer_manager().get_color_buffer().get_image_data()
+        # Feed ffmpeg the buffer's native format (cheap memcpy); fall back to
+        # RGBA only if it's something exotic we haven't mapped.
+        fmt = img.format if img.format in _PIXFMT else "RGBA"
+        raw = img.get_data(fmt, img.width * len(fmt))
+        if proc["p"] is None:
+            proc["p"] = _spawn_ffmpeg(out_path, img.width, img.height, fps, _PIXFMT[fmt], scale)
+        proc["p"].stdin.write(raw)
+        win.flip()
+
+    # Play the recorded timeline on a fixed timestep -- one output frame per
+    # step. Mirrors run()'s tick ordering (advance clock, dispatch due inputs,
+    # update) so the rendered state matches a normal replay at each instant.
+    i = 0
+    t = cov_seconds
+    frames = 0
+    while t <= last_t:
+        t += dt
+        while i < len(inputs) and inputs[i].t <= t:
+            dispatch(gs, inputs[i])
+            i += 1
+        gs.update(dt)
+        write_frame()
+        frames += 1
+
+    # Hold on the final frame for a couple of seconds, with the end-state overlay
+    # dismissed (same freeze as run()), so the clip doesn't cut off abruptly.
+    gs._end_overlay_dismissed = True
+    for _ in range(int(fps * 2)):
+        write_frame()
+        frames += 1
+
+    p = proc["p"]
+    if p is not None:
+        p.stdin.close()
+        p.wait()
+    win.close()
+    print(f"exported {frames} frames -> {out_path}")
+    return 0
+
+
 def _warn_on_commit_mismatch(log):
     """Warn (don't fail) if the working tree isn't the commit the log was made on
     -- replay reproduces randomness from the seed, but only against matching code."""
@@ -257,6 +366,14 @@ def main(argv=None):
                         help="playback speed multiplier (default 1.0)")
     parser.add_argument("--invisible", action="store_true",
                         help="run without showing the window (for testing)")
+    parser.add_argument("--export", metavar="OUT.mp4",
+                        help="render the replay to an .mp4 (via ffmpeg) instead "
+                             "of playing it live; window is shown during capture")
+    parser.add_argument("--fps", type=int, default=30,
+                        help="frames per second for --export (default 30)")
+    parser.add_argument("--scale", type=float, default=1.0,
+                        help="--export downscale factor (e.g. 0.5 = half size, "
+                             "smaller file & faster encode; default 1.0)")
     args = parser.parse_args(argv)
 
     if recent_n is not None:
@@ -268,6 +385,9 @@ def main(argv=None):
     else:
         parser.error("a logfile or a -N selector (e.g. -0) is required")
 
+    if args.export:
+        return export_run(logfile, args.export, speed=args.speed, fps=args.fps,
+                          scale=args.scale)
     return run(logfile, speed=args.speed, visible=not args.invisible)
 
 
