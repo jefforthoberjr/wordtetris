@@ -133,9 +133,9 @@ game:
 
   # === SELECTING phase: disambiguation chooser ===
   # Live only while the blue-line "Select which one:" chooser is open (a submitted
-  # word that can clear several ways, under game_screen.clear_disambiguation:
-  # rule_disambig_cycle). Cycle the highlighted candidate path; word_submit
-  # confirms it, word_clear backs out (game_screen.disambig_cancel: on).
+  # word that can clear several ways, under a game_screen.clear_disambiguation
+  # cycle rule). Cycle the highlighted candidate path; word_submit confirms it,
+  # word_clear backs out (game_screen.disambig_cancel: on).
   word_cycle_prev: LEFT
   word_cycle_next: RIGHT
 
@@ -164,7 +164,7 @@ mouse:
   # off the primary button.
   gram_manipulate: RIGHT
   # SELECTING phase, primary (left) button: clicks the side-pane buttons (Clear
-  # word / Submit / Next piece -- always active), and clicks a BOARD cell to type
-  # that cell's gram into the field ONLY WHEN game_screen.select_click:
-  # rule_select_click_type_gram.
+  # word / Submit / Next piece -- always active), and clicks a BOARD cell to move
+  # a piece (routed to the active MOVING mode) ONLY WHEN game_screen.select_click:
+  # rule_select_click_move_piece.
   select_primary: LEFT

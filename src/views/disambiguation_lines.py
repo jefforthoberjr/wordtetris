@@ -16,8 +16,9 @@ class DisambiguationLines:
     game_screen.disambig_line_thickness / _opacity and the colors.yaml
     board.disambig_line[_selected] colors.
 
-    Only ever populated under game_screen.clear_disambiguation = rule_disambig_
-    cycle; the auto-pick rule never opens a chooser, so this stays empty there."""
+    Only ever populated under a game_screen.clear_disambiguation cycle rule
+    (rule_disambig_cycle_two_or_more_choices / _one_or_more_choices); the auto-
+    pick rule never opens a chooser, so this stays empty there."""
 
     COLOR = get_color("board.disambig_line")
     SELECTED_COLOR = get_color("board.disambig_line_selected")

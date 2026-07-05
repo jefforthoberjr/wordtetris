@@ -212,22 +212,31 @@ rules:
 
   # Disambiguation (game_screen.clear_disambiguation): when a submitted word can
   # clear several ways on the board (multiple paths, or wild-vowel expansions),
-  # how the one to clear is chosen. Only bites when 2+ ways exist; a single way
-  # always clears instantly.
+  # how the one to clear is chosen -- and whether a lone path still asks to
+  # confirm.
   #   rule_disambig_auto_pick -- silently keep the fewest-cell spelling, ties
-  #     broken at random (original; fastest, good for timer-pressured modes)
-  #   rule_disambig_cycle -- draw every candidate as a polyline on the board
-  #     (light blue, the highlighted one dark blue), let the player cycle with
-  #     word_cycle_prev / word_cycle_next, then confirm with word_submit
-  game_screen.clear_disambiguation:   rule_disambig_cycle
+  #     broken at random (original; fastest, good for timer-pressured modes); no
+  #     confirm step ever.
+  #   rule_disambig_cycle_two_or_more_choices -- draw every candidate as a
+  #     polyline on the board (light blue, the highlighted one dark blue), let the
+  #     player cycle with word_cycle_prev / word_cycle_next, then confirm with
+  #     word_submit. Only opens when 2+ ways exist; a lone path clears instantly.
+  #   rule_disambig_cycle_one_or_more_choices -- the same chooser, but it opens
+  #     for EVERY clearable word, a lone path included, so every valid submit gets
+  #     the blue-path preview + an explicit confirm (a second word_submit). Back
+  #     out (per disambig_cancel below) with Backspace / Escape / any letter to
+  #     hunt a different word instead.
+  # game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
+  game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
   # game_screen.clear_disambiguation: rule_disambig_auto_pick
   # Line thickness (pixels): the highlighted candidate can read thicker than the
   # rest so it stands out alongside its darker color.
   game_screen.disambig_line_thickness:          8
   game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
-  # Whether word_clear backs out of the chooser (returning to the typed word) or
-  # the player must commit to one candidate once a valid word is submitted.
+  # Whether a back-out gesture (word_clear / Backspace / Escape / any letter)
+  # exits the chooser -- returning to the typed word -- or the player must commit
+  # to one candidate once a valid word is submitted.
   game_screen.disambig_cancel:         rule_disambig_cancel_on
   # game_screen.disambig_cancel:       rule_disambig_cancel_off
 
@@ -379,6 +388,17 @@ rules:
   # game_screen.select_word_limit: rule_unlimited_words
   game_screen.select_word_limit: rule_one_word_per_select
 
+  # Auto-submit the carried word when ENTER opens the interactive SELECT phase
+  # with a word still sitting in the MOVING word-hunt field. On, opening SELECT
+  # goes straight to the blue-path confirm -- one ENTER to open, one to confirm --
+  # instead of a dead middle ENTER to submit the word already in the field. A
+  # junk / too-short hunt just rejects (ghost + reason) and the field clears for a
+  # fresh type. Off keeps the word pre-loaded but unsubmitted, so the player
+  # confirms or edits it first (the original anti-fat-finger behavior). Only bites
+  # under word_select: rule_select_by_text_input.
+  game_screen.select_autosubmit_hunt: rule_select_autosubmit_on
+  # game_screen.select_autosubmit_hunt: rule_select_autosubmit_off
+
   game_screen.select_trigger: rule_select_every_placement
   # game_screen.select_trigger: rule_select_after_n_placements
   # Placements between selection turns for rule_select_after_n_placements
@@ -392,13 +412,25 @@ rules:
   game_screen.skip_select_isolated: rule_never_skip_select
 
   # What a left-click on a board cell does during the SELECTING phase.
-  #   rule_select_click_type_gram -- type the clicked cell's gram into the entry
-  #     field as a shortcut (no validation: repeats / non-adjacent cells are
-  #     fine; the word rules still apply only on submit)
-  #   rule_select_click_none -- board clicks do nothing while selecting
+  #   rule_select_click_move_piece -- route the click to the active MOVING mode's
+  #     board handler, so the player can rearrange cells (omniswap swap, etc.)
+  #     without leaving word entry; the clearable words re-find after the edit.
+  #     Blurs the SELECTING/MOVING line for the free-choice modes.
+  #   rule_select_click_none -- board clicks do nothing while selecting (keep the
+  #     hard phase separation, e.g. for the timed transition modes)
   # (The "Clear word" control is always shown, independent of this rule.)
-  game_screen.select_click: rule_select_click_type_gram
+  game_screen.select_click: rule_select_click_move_piece
   # game_screen.select_click: rule_select_click_none
+
+  # After a REJECTED word submission during SELECTING (misspelled / not on the
+  # board), whether to echo the rejected word as a dim "You typed: ..." line above
+  # a CLEARED entry field -- so the player compares it to the spelling suggestion
+  # and retypes fresh, instead of unknowingly appending to the failed attempt.
+  # The echo persists while retyping and clears on the next accept / Clear word.
+  #   rule_reject_ghost_on  -- clear the field, show the ghost echo
+  #   rule_reject_ghost_off -- leave the failed word in the field (original)
+  game_screen.reject_ghost: rule_reject_ghost_on
+  # game_screen.reject_ghost: rule_reject_ghost_off
 
   # Player word-piece: clicking a cleared word in the right pane during the
   # MOVING phase swaps the live piece for a single-cell piece carrying that whole

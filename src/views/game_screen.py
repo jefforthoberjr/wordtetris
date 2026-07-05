@@ -301,6 +301,7 @@ class GameScreen:
             "word_clear": control_keys("game.word_clear"),
             "selection_end": control_keys("game.selection_end"),
             "word_submit": control_keys("game.word_submit"),
+            "word_backspace": control_keys("game.word_backspace"),
             "word_cycle_prev": control_keys("game.word_cycle_prev"),
             "word_cycle_next": control_keys("game.word_cycle_next"),
         }
@@ -367,8 +368,8 @@ class GameScreen:
         self._word_trail = WordTrail()
 
         # Transient candidate polylines for the "select which one" chooser
-        # (game_screen.clear_disambiguation = rule_disambig_cycle). Empty except
-        # while a submitted word with several clearable paths is being resolved.
+        # (a game_screen.clear_disambiguation cycle rule). Empty except while a
+        # submitted word with several clearable paths is being resolved.
         # See views/disambiguation_lines.py and _begin_disambiguation.
         self._disambig_lines = DisambiguationLines()
 
@@ -604,12 +605,13 @@ class GameScreen:
         )
 
         # Select-phase board-click rule (game_screen.select_click): what a click
-        # on a board cell does while SELECTING. The type-gram rule appends the
-        # clicked cell's gram to the entry field as a typing shortcut -- no
-        # validation, so repeats and non-adjacent cells are all fine; the word
-        # rules still run only on submit. The none rule disables board clicks.
+        # on a board cell does while SELECTING. The move-piece rule routes the
+        # click to the active MOVING mode's board handler, so cells can be
+        # rearranged (omniswap swap, etc.) without leaving word entry -- blurring
+        # the SELECTING/MOVING line for the free-choice modes. The none rule
+        # disables board clicks (the hard phase separation of the timed modes).
         select_click_rules = {
-            "rule_select_click_type_gram": self._rule_select_click_type_gram,
+            "rule_select_click_move_piece": self._rule_select_click_move_piece,
             "rule_select_click_none": self._rule_select_click_none,
         }
         self._select_click_rule = select_rule(
@@ -713,13 +715,19 @@ class GameScreen:
 
         # Disambiguation rule (game_screen.clear_disambiguation): how the one
         # spelling to clear is chosen when a submitted word has several clearable
-        # paths. Both clear-timing seams route their candidate list through it
-        # (see _rule_submit_clears_now / _rule_submit_defers); auto-pick returns a
-        # FoundWord immediately, cycle opens the board chooser and returns None
-        # (the choice commits later via the on_confirm callback).
+        # paths -- and whether a lone path still asks to confirm. Both clear-timing
+        # seams route their candidate list through it (see _rule_submit_clears_now
+        # / _rule_submit_defers); auto-pick returns a FoundWord immediately, the
+        # cycle rules open the board chooser and return None (the choice commits
+        # later via the on_confirm callback). The two cycle rules differ only in
+        # the candidate count at which the chooser opens: 2+ (a lone path clears
+        # instantly) vs 1+ (every valid submit previews + confirms).
         disambig_rules = {
             "rule_disambig_auto_pick": self._rule_disambig_auto_pick,
-            "rule_disambig_cycle": self._rule_disambig_cycle,
+            "rule_disambig_cycle_two_or_more_choices":
+                self._rule_disambig_cycle_two_or_more_choices,
+            "rule_disambig_cycle_one_or_more_choices":
+                self._rule_disambig_cycle_one_or_more_choices,
         }
         self._disambiguation_rule = select_rule(
             "game_screen.clear_disambiguation", disambig_rules
@@ -731,6 +739,29 @@ class GameScreen:
         }
         self._disambig_cancel_rule = select_rule(
             "game_screen.disambig_cancel", disambig_cancel_rules
+        )
+        # Whether a back-out gesture actually closes the chooser (mirrors the
+        # cancel rule above); lets the typing/edit/escape back-outs know if the
+        # gesture may then edit the field (see _backout_disambiguation).
+        self._disambig_cancel_enabled = select_rule(
+            "game_screen.disambig_cancel",
+            {"rule_disambig_cancel_on": True, "rule_disambig_cancel_off": False},
+        )
+        # Whether a rejected submit echoes the typed word as a ghost above a
+        # cleared field (game_screen.reject_ghost); see _reject_submission.
+        self._reject_ghost = select_rule(
+            "game_screen.reject_ghost",
+            {"rule_reject_ghost_on": True, "rule_reject_ghost_off": False},
+        )
+        # Whether ENTER-into-SELECT auto-submits the carried word-hunt word
+        # (game_screen.select_autosubmit_hunt), skipping the dead middle ENTER;
+        # see the interactive branch of _begin_selection.
+        self._select_autosubmit_hunt = select_rule(
+            "game_screen.select_autosubmit_hunt",
+            {
+                "rule_select_autosubmit_on": True,
+                "rule_select_autosubmit_off": False,
+            },
         )
 
         # Select word-limit rule (game_screen.select_word_limit): whether the
@@ -771,7 +802,7 @@ class GameScreen:
         # yet cleared. Their cells are tinted green; the whole list clears when
         # the phase ends. Empty in clear-on-submit mode.
         self._pending = []
-        # Open "select which one" chooser (rule_disambig_cycle only): the ordered
+        # Open "select which one" chooser (the cycle rules only): the ordered
         # candidate FoundWords, the highlighted index, the submitted word, and the
         # callback that commits the chosen one (clear-now or defer, per timing).
         # _disambig_options is empty except while a chooser is open.
@@ -2151,23 +2182,19 @@ class GameScreen:
 
     # --- select-phase board-click rules (game_screen.select_click) ----------
     # While SELECTING, decide what a left-click on a board cell does.
-    def _rule_select_click_type_gram(self, x, y):
-        """Type the clicked cell's gram into the entry field -- a typing
-        shortcut, nothing more. No path/nucleation/word checks: any occupied
-        cell counts, including repeats and non-adjacent cells. The word rules
-        still apply only when the player submits. Clicks off the board or on an
-        empty cell (no gram) do nothing; a wild cell has no fixed letters, so it
-        contributes nothing to type."""
-        cell = self._board.cell_at(x, y)
-        if cell is None:
-            return
-        gram = self._board.gram_at(*cell)
-        if gram is None:
-            return
-        self._selecting_side_pane.type_gram(gram.text)
+    def _rule_select_click_move_piece(self, x, y):
+        """Route a SELECTING-phase board click to the active MOVING mode's board
+        handler, so the player can rearrange cells (the omniswap swap, a jigsaw
+        move, ...) without first leaving word entry -- the SELECTING/MOVING blur.
+        The mode may change the board (a completed swap), so re-find the
+        clearable words afterward; otherwise a word the player just made by
+        swapping would still read as 'not on the board'. The pane's own button
+        clicks are handled before this rule runs."""
+        self._moving_mode.on_mouse_press(x, y, self._buttons["move_primary"])
+        self._recompute_candidates()
 
     def _rule_select_click_none(self, x, y):
-        """Board clicks do nothing while selecting (click-to-type disabled)."""
+        """Board clicks do nothing while selecting (piece-moving disabled)."""
         pass
 
     def _begin_selection(self, placed_positions):
@@ -2213,9 +2240,8 @@ class GameScreen:
         else:
             # UX shortcut: carry any word already typed in the MOVING word-hunt
             # field into the SELECT typed-word field, so opening SELECT (ENTER)
-            # with a hunted word pre-loads it -- the player confirms with a second
-            # ENTER or edits it first (never auto-submitted). Grab it before
-            # _set_phase clears the hunt field (see clear_hunt in _set_phase).
+            # with a hunted word pre-loads it. Grab it before _set_phase clears the
+            # hunt field (see clear_hunt in _set_phase).
             hunted = self._moving_side_pane.hunt_text()
             self._set_phase(Phase.SELECTING)
             # Fresh batch for this selection phase (no-op in clear-on-submit mode).
@@ -2225,6 +2251,13 @@ class GameScreen:
             if hunted:
                 self._selecting_side_pane.prefill(hunted)
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
+            # Auto-submit the carried word (game_screen.select_autosubmit_hunt) so
+            # the SAME ENTER that opened SELECT lands on the blue-path confirm --
+            # no dead middle ENTER to submit a word already in the field. A junk /
+            # too-short hunt just rejects (ghost + reason, field cleared). Off:
+            # leave it pre-loaded for a manual confirm/edit (original behavior).
+            if hunted and self._select_autosubmit_hunt:
+                self._on_submit_word(hunted)
 
     def _recompute_candidates(self):
         """Re-run stages 1-2 against the current board and refresh the word sets
@@ -2448,6 +2481,17 @@ class GameScreen:
         L.log_30001(word)
         self._submit_clear_rule(word)
 
+    def _reject_submission(self, word, messages):
+        """Show why a submitted word was rejected. Under game_screen.reject_ghost
+        = rule_reject_ghost_on, echo the word as a dim ghost above a CLEARED field
+        (so corrective typing starts fresh, not appended to the failed attempt);
+        under _off, leave the failed word in the field and just show the reason
+        (original behavior)."""
+        if self._reject_ghost:
+            self._selecting_side_pane.reject(word, messages)
+        else:
+            self._selecting_side_pane.show_errors(messages)
+
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
     # Paired per timing: a submit rule (what one submit does) and a phase-end
     # rule (what ending the phase does). See the registries in __init__.
@@ -2458,7 +2502,7 @@ class GameScreen:
         behavior, now with the chooser seam.)"""
         options = self._candidate_word_options.get(word)
         if not options or not self._repeat_rule(word):
-            self._selecting_side_pane.show_errors(self._submission_messages(word))
+            self._reject_submission(word, self._submission_messages(word))
             return
         # Auto-pick returns the FoundWord to clear now; cycle opens the board
         # chooser and returns None, committing later via _commit_clear_now.
@@ -2502,7 +2546,7 @@ class GameScreen:
         phase ends (see _rule_endphase_clear_pending)."""
         options = self._candidate_word_options.get(word)
         if not options or not self._repeat_rule(word):
-            self._selecting_side_pane.show_errors(self._submission_messages(word))
+            self._reject_submission(word, self._submission_messages(word))
             return
         # Only spellings not already held this phase are offerable -- the chooser
         # (and auto-pick) resolve among these, so a re-submit takes a fresh path.
@@ -2510,7 +2554,7 @@ class GameScreen:
         if not fresh:
             # A candidate, but every distinct way to spell it here is already
             # held -- a batch-mode-specific rejection.
-            self._selecting_side_pane.show_errors([self._no_more_paths_error(word)])
+            self._reject_submission(word, [self._no_more_paths_error(word)])
             return
         chosen = self._disambiguation_rule(word, fresh, self._commit_defer)
         if chosen is not None:
@@ -2539,11 +2583,26 @@ class GameScreen:
         player choice. on_confirm is unused -- the pick commits immediately."""
         return self._fewest_cell_word(options)
 
-    def _rule_disambig_cycle(self, word, options, on_confirm):
-        """Open the board chooser when several spellings exist; a lone spelling
-        still clears instantly (no needless prompt). Returns None when the chooser
-        opens -- the choice commits later via on_confirm."""
-        if len(options) == 1:
+    def _rule_disambig_cycle_two_or_more_choices(self, word, options, on_confirm):
+        """Open the board chooser only when 2+ spellings exist; a lone spelling
+        clears instantly (no needless prompt) -- the original ambiguity chooser.
+        Returns None when the chooser opens (commit later via on_confirm), else
+        the FoundWord to clear now."""
+        return self._open_cycle_chooser(word, options, on_confirm, min_choices=2)
+
+    def _rule_disambig_cycle_one_or_more_choices(self, word, options, on_confirm):
+        """Open the board chooser for EVERY clearable word, a lone spelling
+        included -- so every valid submit gets the blue-path preview + an explicit
+        confirm (a second word_submit). Returns None (the choice commits later via
+        on_confirm)."""
+        return self._open_cycle_chooser(word, options, on_confirm, min_choices=1)
+
+    def _open_cycle_chooser(self, word, options, on_confirm, min_choices):
+        """Shared entry for the rule_disambig_cycle_* rules: open the board
+        chooser once the candidate count reaches min_choices, else clear the lone
+        spelling instantly. min_choices=1 always opens (options is never empty
+        here); min_choices=2 opens only for genuine ambiguity."""
+        if len(options) < min_choices:
             return options[0]
         self._begin_disambiguation(word, options, on_confirm)
         return None
@@ -2558,7 +2617,7 @@ class GameScreen:
         to one candidate once a valid word is submitted."""
         pass
 
-    # --- disambiguation chooser (rule_disambig_cycle) ----------------------
+    # --- disambiguation chooser (the cycle rules) --------------------------
     def _disambiguating(self):
         """Whether the 'select which one' chooser is currently open."""
         return bool(self._disambig_options)
@@ -2574,7 +2633,14 @@ class GameScreen:
         self._disambig_index = 0
         self._disambig_commit = on_confirm
         self._selecting_side_pane.clear_errors()
-        self._selecting_side_pane.show_prompt(get_string("disambig_prompt"))
+        # The submit was valid, so any prior rejection ghost has served its
+        # purpose -- drop it before the chooser prompt takes the slot.
+        self._selecting_side_pane.clear_ghost()
+        # A lone path is a confirm, not a choice -- word it accordingly.
+        prompt = (
+            "disambig_confirm_prompt" if len(ordered) == 1 else "disambig_prompt"
+        )
+        self._selecting_side_pane.show_prompt(get_string(prompt))
         self._render_disambiguation()
 
     def _render_disambiguation(self):
@@ -2606,6 +2672,17 @@ class GameScreen:
         """Back out without clearing: close the chooser, leaving the typed word in
         place for a re-submit or edit."""
         self._end_disambiguation()
+
+    def _backout_disambiguation(self):
+        """A typing / edit / Escape gesture while the chooser is open backs out of
+        it, per game_screen.disambig_cancel. Returns True if the chooser actually
+        closed (cancel enabled), so the caller may then let that same gesture edit
+        the field (a letter appends, Backspace deletes) -- the player flows
+        straight from 'confirm this word?' into hunting a different one."""
+        if not self._disambig_cancel_enabled:
+            return False
+        self._cancel_disambiguation()
+        return True
 
     def _end_disambiguation(self):
         """Tear down chooser state and its overlay + prompt."""
@@ -3258,6 +3335,14 @@ class GameScreen:
                 self._handle_menu_action(action)
             return True
         
+        # Escape backs out of the open disambiguation chooser instead of opening
+        # the pause menu (one of the chooser back-out gestures alongside Backspace
+        # / any letter). If cancel is disabled the back-out is inert and Escape
+        # falls through to the menu as usual.
+        if (symbol in self._keys["pause"] and self._phase == Phase.SELECTING
+                and self._disambiguating() and self._backout_disambiguation()):
+            return True
+
         if symbol in self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
@@ -3285,10 +3370,11 @@ class GameScreen:
         #       return True
         #   return self._selecting_side_pane.on_key_press(symbol, modifiers)
         if self._phase == Phase.SELECTING:
-            # The "select which one" chooser owns the keyboard while it's open:
-            # cycle the highlight, confirm the choice, or back out (word_clear,
-            # gated by game_screen.disambig_cancel). Everything else is swallowed
-            # so a stray letter can't edit the field mid-choice.
+            # The chooser owns the keyboard while it's open: cycle the highlight,
+            # confirm the choice, or back out (word_clear / Backspace / Escape /
+            # any letter, gated by game_screen.disambig_cancel). Backspace and a
+            # letter also EDIT after backing out so the player flows straight into
+            # hunting a different word; a swallowed stray key can't edit mid-choice.
             if self._disambiguating():
                 if symbol in self._keys["word_cycle_prev"]:
                     self._cycle_disambiguation(-1)
@@ -3296,8 +3382,13 @@ class GameScreen:
                     self._cycle_disambiguation(1)
                 elif symbol in self._keys["word_submit"]:
                     self._confirm_disambiguation()
+                elif symbol in self._keys["word_backspace"]:
+                    # Back out and drop the last letter, so Backspace fixes a typo
+                    # in the word that was up for confirmation.
+                    if self._backout_disambiguation():
+                        self._selecting_side_pane.on_key_press(symbol, modifiers)
                 elif symbol in self._keys["word_clear"]:
-                    self._disambig_cancel_rule()
+                    self._backout_disambiguation()
                 return True
             if symbol in self._keys["word_clear"]:       # spacebar -> clear field
                 self._selecting_side_pane.clear_word()
@@ -3324,6 +3415,16 @@ class GameScreen:
         if self._menu_open:
             return
         if self._phase == Phase.SELECTING:
+            # Typing a LETTER while the chooser is open backs out of it, then the
+            # letter appends -- the player abandons the confirmation and keeps
+            # hunting. If cancel is disabled the letter is swallowed (the chooser
+            # keeps the keyboard until confirm). Gate on isalpha: Enter's '\r' (and
+            # other control chars) are NOT edit gestures and must fall through so
+            # on_key_press can CONFIRM the chooser -- this on_text fires before
+            # on_key_press here, so a blind back-out would cancel every Enter.
+            if (text.isalpha() and self._disambiguating()
+                    and not self._backout_disambiguation()):
+                return
             self._selecting_side_pane.on_text(text)
         elif self._phase == Phase.MOVING:
             # Typed letters feed the word-hunt field (movement/rotate keys are all

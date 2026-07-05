@@ -16,8 +16,11 @@ class SelectingSidePane:
     plain clickable Labels (bounds-checked in on_mouse_press) -- no hover/click
     styling. Validation lives in GameScreen; this pane only captures input and
     shows results via the on_submit / on_next callbacks plus accept_word /
-    show_errors. The field can also be filled by board clicks (GameScreen's
-    select-click rule calls type_gram); Clear word empties it.
+    reject / show_errors. On a rejected submit, reject() echoes the typed word
+    as a dim "You typed: ..." ghost in the prompt slot above a cleared field, so
+    the player compares it to the spelling suggestion and retypes fresh. Board
+    clicks during SELECTING move pieces rather than fill the field (GameScreen's
+    select-click rule); Clear word empties it.
 
     Layout, top to bottom: header, prompt + typed-word field, error messages,
     the Clear word / Submit word / Next piece controls, then the accepted-word
@@ -47,6 +50,9 @@ class SelectingSidePane:
         self._on_submit = on_submit
         self._on_next = on_next
         self._typed = ""
+        # Echo of the last rejected word, shown dim in the prompt slot until the
+        # player accepts a word or clears the field (see reject / clear_ghost).
+        self._ghost = ""
         self._batch = pyglet.graphics.Batch()
 
         # Sizes derived from the pane width, not fixed pixels, so they scale on
@@ -138,11 +144,13 @@ class SelectingSidePane:
 
     # --- lifecycle ---------------------------------------------------------
     def begin(self):
-        """Reset for a fresh selecting phase: empty input, no errors, empty
-        this-phase word list."""
+        """Reset for a fresh selecting phase: empty input, no errors, no ghost,
+        empty this-phase word list."""
         self._typed = ""
+        self._ghost = ""
         self.clear_errors()
         self._word_list.reset()
+        self._render_prompt()
         self._render_input()
 
     def prefill(self, word):
@@ -152,7 +160,9 @@ class SelectingSidePane:
         NOT submit. Identical to having typed the word by hand; call after begin().
         An empty/blank `word` leaves the field empty."""
         self._typed = word.upper()
+        self._ghost = ""
         self.clear_errors()
+        self._render_prompt()
         self._render_input()
 
     # --- input -------------------------------------------------------------
@@ -174,21 +184,34 @@ class SelectingSidePane:
         # Swallow every key while selecting (there is no active piece to drive).
         return True
 
-    def type_gram(self, text):
-        """Append a clicked board cell's gram to the typed word (the board
-        click-to-type rule). No validation here -- like on_text, it only edits
-        the field; the word rules run on submit. A wild cell's gram is empty, so
-        it adds nothing."""
-        if text:
-            self._typed += text.upper()
-            self.clear_errors()
-            self._render_input()
+    def reject(self, word, messages):
+        """A submitted word was rejected (misspelled / not on the board): echo it
+        as a dim "You typed: WORD" ghost in the prompt slot, CLEAR the input, and
+        show the reason(s). The empty field means the player's corrective typing
+        starts fresh instead of appending to the failed attempt, while the ghost
+        stays up (through retyping) for a side-by-side compare with any spelling
+        suggestion. Cleared on the next accept_word / clear_word / begin, or
+        replaced by the next rejection."""
+        self._ghost = word.upper()
+        self._typed = ""
+        self._render_prompt()
+        self._render_input()
+        self.show_errors(messages)
+
+    def clear_ghost(self):
+        """Drop the rejected-word echo and restore the plain prompt (e.g. once a
+        valid word opens the chooser, or the field is cleared)."""
+        if self._ghost:
+            self._ghost = ""
+            self._render_prompt()
 
     def clear_word(self):
-        """Reset the typed-word field to empty (the Clear word control, and the
-        SELECT-phase spacebar)."""
+        """Reset the typed-word field to empty, dropping any ghost echo (the Clear
+        word control, and the SELECT-phase spacebar)."""
         self._typed = ""
+        self._ghost = ""
         self.clear_errors()
+        self._render_prompt()
         self._render_input()
 
     def is_empty(self):
@@ -210,7 +233,9 @@ class SelectingSidePane:
         `is_new` shows it green when the word is new to the player's dictionary."""
         self._word_list.add_word(word, is_new)
         self._typed = ""
+        self._ghost = ""
         self.clear_errors()
+        self._render_prompt()
         self._render_input()
 
     def set_time_label(self, seconds):
@@ -255,6 +280,17 @@ class SelectingSidePane:
         return self._hit(self._clear_btn, x, y)
 
     # --- internals ---------------------------------------------------------
+    def _render_prompt(self):
+        # The prompt slot doubles as the rejected-word echo: while a ghost is set
+        # it reads "You typed: WORD" dim (placeholder color); otherwise the plain
+        # "Type a word:" cue in the normal prompt color.
+        if self._ghost:
+            self._prompt.text = get_string("you_typed", word=self._ghost)
+            self._prompt.color = self.PLACEHOLDER_COLOR
+        else:
+            self._prompt.text = get_string("type_a_word")
+            self._prompt.color = self.PROMPT_COLOR
+
     def _render_input(self):
         # Faux caret: a trailing underscore. Faint when nothing's typed yet.
         if self._typed:

@@ -107,13 +107,17 @@ class FakePane:
         self.errors = None
         self.began = False
         self.word_count = None
-        self.typed_grams = []
+        self.rejected = None
         self.prompt = None
 
     def begin(self):
         self.began = True
         self.accepted = []
         self.errors = None
+
+    def prefill(self, word):
+        # The carried hunt word pre-loaded into the field before an auto-submit.
+        self.prefilled = word
 
     def accept_word(self, word, is_new=False):
         # is_new (word never collected before -> listed green) is recorded by
@@ -139,11 +143,15 @@ class FakePane:
     def set_word_count(self, count):
         self.word_count = count
 
-    def type_gram(self, text):
-        # Records grams the board click-to-type rule sends; empty (wild) grams
-        # add nothing, mirroring the real pane.
-        if text:
-            self.typed_grams.append(text)
+    def reject(self, word, messages):
+        # The rejected-word echo path (reject_ghost on): records the ghost word
+        # and, like the real pane, still surfaces the reason(s) via errors so the
+        # existing error-message assertions hold.
+        self.rejected = word
+        self.errors = list(messages)
+
+    def clear_ghost(self):
+        self.rejected = None
 
 
 class FakeSidepane:
@@ -210,9 +218,14 @@ class FakeMovingMode:
 
     def __init__(self):
         self.advanced = 0
+        # Board clicks routed here by the SELECTING move-piece rule.
+        self.clicks = []
 
     def advance(self):
         self.advanced += 1
+
+    def on_mouse_press(self, x, y, button):
+        self.clicks.append((x, y, button))
 
 
 class FakeDisambigLines:
@@ -266,6 +279,7 @@ def _game(board, interactive=True, history=None):
     # not these unit tests, so its state just needs to exist and read "closed".
     g._disambiguation_rule = g._rule_disambig_auto_pick
     g._disambig_cancel_rule = g._rule_disambig_cancel_on
+    g._disambig_cancel_enabled = True
     g._disambig_options = []
     g._disambig_index = 0
     g._disambig_word = None
@@ -299,6 +313,14 @@ def _game(board, interactive=True, history=None):
     # Fake moving mode: the pipeline advances the turn through it once a phase
     # ends; these tests don't assert on the moving phase.
     g._moving_mode = FakeMovingMode()
+    # Rejected-submit ghost on (production default): the echo path records both
+    # the ghost word and the reason(s), so error-message assertions still hold.
+    g._reject_ghost = True
+    # Auto-submit-on-open off by default here (the logic tests drive submits
+    # explicitly and use an empty hunt); the dedicated test flips it on.
+    g._select_autosubmit_hunt = False
+    # Mouse buttons the SELECTING move-piece rule passes to the moving mode.
+    g._buttons = {"move_primary": "LEFT", "select_primary": "LEFT"}
     g._moving_side_pane = FakeSidepane()
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
@@ -507,26 +529,59 @@ def test_all_pieces_placed_this_phase_are_nucleation_sites():
     assert {"TEAR", "BEAR"} <= set(g._candidate_words)
 
 
-# --- select-phase board clicks (type-gram shortcut) -------------------------
+# --- select-phase board clicks (move-piece routing) -------------------------
 
-def test_select_click_types_gram_no_validation():
-    # Clicking board cells types their grams into the field with no rules: any
-    # occupied cell counts, repeats and non-adjacent cells included. Off-board /
-    # empty clicks add nothing.
-    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T", (5, 5): "S"}))
-    g._select_click_rule = g._rule_select_click_type_gram
-    g._rule_select_click_type_gram(2, 0)     # T
-    g._rule_select_click_type_gram(0, 0)     # C
-    g._rule_select_click_type_gram(0, 0)     # C again (repeat allowed)
-    g._rule_select_click_type_gram(5, 5)     # S (non-adjacent allowed)
-    g._rule_select_click_type_gram(9, 9)     # off-board: ignored
-    assert g._selecting_side_pane.typed_grams == ["T", "C", "C", "S"]
+def test_select_click_move_piece_routes_to_moving_mode():
+    # A SELECTING board click is handed to the active MOVING mode (so cells can be
+    # rearranged without leaving word entry), passing the move_primary button;
+    # then the clearable words are re-found against the (possibly changed) board.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._move_placed = {(2, 0)}
+    g._rule_select_click_move_piece(2, 0)
+    assert g._moving_mode.clicks == [(2, 0, g._buttons["move_primary"])]
+    # Recompute ran: CAT is on the board and nucleates around the placed cell.
+    assert "CAT" in g._candidate_words
 
 
 def test_select_click_none_does_nothing():
     g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
     g._rule_select_click_none(1, 0)
-    assert g._selecting_side_pane.typed_grams == []
+    assert g._moving_mode.clicks == []
+
+
+# --- auto-submit the carried hunt word on SELECT open -----------------------
+
+def test_autosubmit_hunt_word_on_open():
+    # ENTER into SELECT with a word in the MOVING hunt field auto-submits it, so
+    # the SAME ENTER lands on the blue-path confirm (chooser open, nothing
+    # committed yet) instead of needing a dead middle ENTER to submit it.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    g._skip_select_rule = g._rule_never_skip_select
+    g._select_autosubmit_hunt = True
+    # Production flow: the one-or-more cycle rule opens the preview for a lone path
+    # too, so a valid auto-submit shows the blue path rather than clearing outright.
+    g._disambiguation_rule = g._rule_disambig_cycle_one_or_more_choices
+    g._moving_side_pane.hunt_text = lambda: "cat"
+    g._begin_selection([])
+    assert g._phase is gs.Phase.SELECTING
+    assert g._disambiguating()                    # blue-path preview is up on CAT
+    assert g._selecting_side_pane.accepted == []  # not committed until confirm
+
+
+def test_no_autosubmit_when_disabled():
+    # With auto-submit off the hunt word is only pre-loaded, never submitted: no
+    # chooser opens and nothing is accepted until the player submits manually.
+    g = _game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    g._skip_select_rule = g._rule_never_skip_select
+    g._select_autosubmit_hunt = False
+    g._disambiguation_rule = g._rule_disambig_cycle_one_or_more_choices
+    g._moving_side_pane.hunt_text = lambda: "cat"
+    g._begin_selection([])
+    assert g._phase is gs.Phase.SELECTING
+    assert not g._disambiguating()
+    assert g._selecting_side_pane.accepted == []
 
 
 def test_wild_mission_encodes_brackets_outside_question_marks():
@@ -749,7 +804,7 @@ def test_cycle_opens_chooser_without_clearing():
     # nothing until the player confirms.
     fw_row, fw_col = _ant_options()
     g = _batch_game(_ant_two_way_board())
-    g._disambiguation_rule = g._rule_disambig_cycle
+    g._disambiguation_rule = g._rule_disambig_cycle_two_or_more_choices
     g._candidate_word_options = {"ANT": [fw_row, fw_col]}
     g._phase = gs.Phase.SELECTING
     g._on_submit_word("ant")
@@ -767,7 +822,7 @@ def test_cycle_and_confirm_holds_highlighted_path():
     # holds exactly that path.
     fw_row, fw_col = _ant_options()
     g = _batch_game(_ant_two_way_board())
-    g._disambiguation_rule = g._rule_disambig_cycle
+    g._disambiguation_rule = g._rule_disambig_cycle_two_or_more_choices
     g._candidate_word_options = {"ANT": [fw_row, fw_col]}
     g._phase = gs.Phase.SELECTING
     g._on_submit_word("ant")
@@ -781,11 +836,12 @@ def test_cycle_and_confirm_holds_highlighted_path():
     assert g._pending[0].path == [(0, 0), (1, 0), (2, 0)]   # the row path chosen
 
 
-def test_cycle_single_option_commits_immediately():
-    # A lone spelling never opens the chooser -- it holds at once (speed kept).
+def test_cycle_two_or_more_single_option_commits_immediately():
+    # rule_disambig_cycle_two_or_more_choices: a lone spelling never opens the
+    # chooser -- it holds at once (speed kept).
     fw_row, _ = _ant_options()
     g = _batch_game(FakeBoard({(0, 0): "A", (1, 0): "N", (2, 0): "T"}))
-    g._disambiguation_rule = g._rule_disambig_cycle
+    g._disambiguation_rule = g._rule_disambig_cycle_two_or_more_choices
     g._candidate_word_options = {"ANT": [fw_row]}
     g._phase = gs.Phase.SELECTING
     g._on_submit_word("ant")
@@ -795,12 +851,33 @@ def test_cycle_single_option_commits_immediately():
     assert g._disambig_lines.paths is None                  # chooser never drew
 
 
+def test_cycle_one_or_more_single_option_opens_chooser():
+    # rule_disambig_cycle_one_or_more_choices: a lone spelling STILL opens the
+    # chooser (blue-path preview + explicit confirm), holding nothing until the
+    # player confirms. The single-path prompt reads "confirm", not "select which".
+    fw_row, _ = _ant_options()
+    g = _batch_game(FakeBoard({(0, 0): "A", (1, 0): "N", (2, 0): "T"}))
+    g._disambiguation_rule = g._rule_disambig_cycle_one_or_more_choices
+    g._candidate_word_options = {"ANT": [fw_row]}
+    g._phase = gs.Phase.SELECTING
+    g._on_submit_word("ant")
+    assert g._disambiguating()
+    assert g._selecting_side_pane.prompt == gs.get_string("disambig_confirm_prompt")
+    assert len(g._disambig_lines.paths) == 1               # the lone candidate drawn
+    assert g._pending == []                                # nothing held yet
+    assert g._selecting_side_pane.accepted == []
+    # Confirming holds exactly that path.
+    g._confirm_disambiguation()
+    assert not g._disambiguating()
+    assert g._pending == [fw_row]
+
+
 def test_cycle_cancel_closes_without_holding():
     # word_clear (disambig_cancel: on) backs out: chooser closes, nothing held,
     # and the submitted word can be re-tried.
     fw_row, fw_col = _ant_options()
     g = _batch_game(_ant_two_way_board())
-    g._disambiguation_rule = g._rule_disambig_cycle
+    g._disambiguation_rule = g._rule_disambig_cycle_two_or_more_choices
     g._candidate_word_options = {"ANT": [fw_row, fw_col]}
     g._phase = gs.Phase.SELECTING
     g._on_submit_word("ant")
@@ -818,7 +895,7 @@ def test_instant_mode_routes_through_chooser():
     # off the board until the player confirms.
     fw_row, fw_col = _ant_options()
     g = _game(_ant_two_way_board())                         # instant (default)
-    g._disambiguation_rule = g._rule_disambig_cycle
+    g._disambiguation_rule = g._rule_disambig_cycle_two_or_more_choices
     g._candidate_word_options = {"ANT": [fw_row, fw_col]}
     g._phase = gs.Phase.SELECTING
     g._on_submit_word("ant")

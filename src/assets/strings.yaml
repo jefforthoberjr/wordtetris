@@ -32,6 +32,12 @@ en:
   submit_word:           "Submit word"
   next_piece:            "Next piece"
   disambig_prompt:       "Select which one:"
+  # Shown in the chooser when a submitted word has a SINGLE clear path (the
+  # always-confirm variant): Enter commits, or edit to hunt a different word.
+  disambig_confirm_prompt: "Enter to confirm, or edit to change"
+  # Echo of a just-rejected typed word, shown dim above the cleared entry field
+  # so the player compares it to the spelling suggestion below.
+  you_typed:             "You typed: {word}"
   # Victory overlay
   victory:               "VICTORY"
   # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
@@ -72,6 +78,9 @@ es:
   clear_word:            "Borrar palabra"
   submit_word:           "Enviar palabra"
   next_piece:            "Siguiente pieza"
+  disambig_prompt:       "Elige cuál:"
+  disambig_confirm_prompt: "Enter para confirmar, o edita para cambiar"
+  you_typed:             "Escribiste: {word}"
   # Victory overlay
   victory:               "¡VICTORIA!"
   # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
