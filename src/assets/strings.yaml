@@ -25,6 +25,8 @@ en:
   pieces_count:          "Pieces: {count}"
   # MOVING_OMNISWAP countdown (seconds left in the moving phase)
   time_count:            "Time: {count}"
+  # Running point total, shown near the timer in the right pane (see scoring.py)
+  score_count:           "Score: {count}"
   type_a_word:           "Type a word:"
   hunt_a_word:           "Hunt a word:"
   pick_words:            "pick words:"
@@ -72,6 +74,7 @@ es:
   dictionary_count:      "Diccionario: {count} palabras"
   pieces_count:          "Piezas: {count}"
   time_count:            "Tiempo: {count}"
+  score_count:           "Puntos: {count}"
   type_a_word:           "Escribe una palabra:"
   hunt_a_word:           "Busca una palabra:"
   pick_words:            "elige palabras:"

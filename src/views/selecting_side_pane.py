@@ -35,6 +35,7 @@ class SelectingSidePane:
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("selecting_side_pane.phase_label")
+    SCORE_LABEL_COLOR = get_color("selecting_side_pane.score_label")
     # Vertical lines reserved between the error area and the controls below it.
     # The error label can now stack two messages -- the rejection reason plus a
     # "Did you mean: ...?" spelling-suggestion line -- and each can wrap to two
@@ -75,6 +76,15 @@ class SelectingSidePane:
             get_string("pick_words"), font_size=base * 0.7, x=left, y=top,
             anchor_x="left", anchor_y="top",
             color=self.PHASE_LABEL_COLOR, batch=self._batch,
+        )
+        top = top - line_h
+
+        # Running point total, one line under the header so it reads beside the
+        # race-clock timer that shares the header (see set_score_label).
+        self._score = pyglet.text.Label(
+            "", font_size=base * 0.7, x=left, y=top,
+            anchor_x="left", anchor_y="top",
+            color=self.SCORE_LABEL_COLOR, batch=self._batch,
         )
         top = top - line_h
 
@@ -248,6 +258,10 @@ class SelectingSidePane:
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""
         self._count.text = get_string("dictionary_count", count=count)
+
+    def set_score_label(self, points):
+        """Show the running point total, one line under the header/timer."""
+        self._score.text = get_string("score_count", count=points)
 
     def show_errors(self, messages):
         # One message at a time today; join defensively if several are passed.

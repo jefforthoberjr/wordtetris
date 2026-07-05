@@ -33,6 +33,7 @@ moving_side_pane:
   wordlist_obscure_text: [235, 140, 20, 255] # orange: a NEW word from the obscure tier only
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
+  score_label:      [40, 90, 60, 255]  # running point total, shown under the timer/pieces label
   hunt_prompt:      [120, 120, 120, 255] # "Hunt a word:" prompt above the hunt field
   hunt_input:       [30, 30, 30, 255]    # the word being typed to hunt grams on the board
   hunt_placeholder: [180, 180, 180, 255] # faint caret when the hunt field is empty
@@ -47,6 +48,7 @@ selecting_side_pane:
   error_text:       [200, 40, 40, 255]   # error messages
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]    # "pick words:" header, pinned top (matches moving pane)
+  score_label:      [40, 90, 60, 255]    # running point total, shown under the header/timer
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
   #  styled by moving_side_pane.wordlist_text)
 

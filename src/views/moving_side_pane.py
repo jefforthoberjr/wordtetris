@@ -21,6 +21,7 @@ class MovingSidePane:
     DIVIDER_COLOR = get_color("moving_side_pane.divider")
     COUNT_COLOR = get_color("moving_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("moving_side_pane.phase_label")
+    SCORE_LABEL_COLOR = get_color("moving_side_pane.score_label")
     HUNT_PROMPT_COLOR = get_color("moving_side_pane.hunt_prompt")
     HUNT_INPUT_COLOR = get_color("moving_side_pane.hunt_input")
     HUNT_PLACEHOLDER_COLOR = get_color("moving_side_pane.hunt_placeholder")
@@ -73,6 +74,15 @@ class MovingSidePane:
             color=self.PHASE_LABEL_COLOR, batch=self._batch,
         )
 
+        # Running point total, one line under the pieces/time label so it reads
+        # right beside the timer (see set_score_label / models/scoring.py).
+        score_label_y = phase_label_y - line_h
+        self._score = pyglet.text.Label(
+            "", font_size=base * 0.7, x=x + margin, y=score_label_y,
+            anchor_x="left", anchor_y="top",
+            color=self.SCORE_LABEL_COLOR, batch=self._batch,
+        )
+
         # Player's lifetime dictionary size, pinned to the very bottom edge.
         count_y = y + margin
         self._count = pyglet.text.Label(
@@ -82,8 +92,8 @@ class MovingSidePane:
         )
 
         # The cleared-word list fills the pane between the count label (bottom)
-        # and the "Pieces: N" label (top), reserving one line for each.
-        list_top = phase_label_y - line_h
+        # and the score label (top), reserving one line for each.
+        list_top = score_label_y - line_h
         list_bottom = count_y + line_h
         list_height = max(line_h, list_top - list_bottom)
         self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
@@ -124,6 +134,10 @@ class MovingSidePane:
         """Show the seconds left in the moving phase, top edge -- the
         MOVING_OMNISWAP countdown, in place of the pieces-until-select count."""
         self._phase_label.text = get_string("time_count", count=seconds)
+
+    def set_score_label(self, points):
+        """Show the running point total, one line under the timer/pieces label."""
+        self._score.text = get_string("score_count", count=points)
 
     def set_finished_label(self):
         """Replace the top-edge countdown / pieces label with the game-over text,

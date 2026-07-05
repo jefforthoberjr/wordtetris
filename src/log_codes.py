@@ -147,19 +147,20 @@ def log_30001(word):
     session_log.emit(30001, f"submitted {word}", word=word)
 
 
-def log_30002(word, path, variation, is_new, is_obscure=False):
+def log_30002(word, path, variation, is_new, is_obscure=False, points=0):
     """A word was cleared from the board (the single sink for every clear:
     interactive submit, phase-end batch, and auto-select). `path` is its cells,
     `variation` the gram grouping recorded, `is_new` whether it was new to the
     player's lifetime dictionary, `is_obscure` whether it was valid only via the
-    obscure tier (a new obscure word lists orange)."""
+    obscure tier (a new obscure word lists orange), `points` the score the word
+    earned (see models/scoring.py)."""
     cells = ";".join(f"{x},{y}" for (x, y) in path)
     tag = " (new)" if is_new else ""
     if is_obscure:
         tag += " (obscure)"
-    session_log.emit(30002, f"cleared {word}" + tag,
+    session_log.emit(30002, f"cleared {word} (+{points})" + tag,
                      word=word, cells=cells, variation=variation,
-                     new=is_new, obscure=is_obscure)
+                     new=is_new, obscure=is_obscure, points=points)
 
 
 def log_30003(word, reason):
@@ -198,13 +199,14 @@ def log_40002(variant, action):
 
 
 # --- 5xxxx  end state / results ----------------------------------------------
-def log_50001(result, words, obstacles_left, missions_left):
+def log_50001(result, words, obstacles_left, missions_left, score=0):
     """The game's final tally, emitted just before the session-end line. `result`
-    is the end label (VICTORY / FINISHED); the rest are the closing board state
-    for cross-session analysis."""
-    session_log.emit(50001, f"result {result}: {words} words cleared",
+    is the end label (VICTORY / FINISHED); `score` is the final point total; the
+    rest are the closing board state for cross-session analysis."""
+    session_log.emit(50001, f"result {result}: {words} words cleared, {score} points",
                      result=result, words=words,
-                     obstacles_left=obstacles_left, missions_left=missions_left)
+                     obstacles_left=obstacles_left, missions_left=missions_left,
+                     score=score)
 
 
 # --- 6xxxx  setup / random-source outcomes -----------------------------------

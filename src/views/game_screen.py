@@ -51,6 +51,7 @@ from models.hex_grid import HexGrid
 from models.word_dictionary import (
     is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from models.spelling_suggester import SUGGEST_RULES
+from models.scoring import Scorer
 from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
@@ -491,6 +492,11 @@ class GameScreen:
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.
         self._player_dict = PlayerDictionary()
+
+        # Running point total for the current game (the config-driven scoring:
+        # block). Reset each new game in _start_new_game; per-word points
+        # accumulate through _clear_paths. See models/scoring.py.
+        self._scorer = Scorer()
 
         # Minimum word to clear (letters + cells); see _WORD_LENGTH_RULES.
         self._word_length_rule = select_rule("game_screen.word_length", _WORD_LENGTH_RULES)
@@ -1078,8 +1084,11 @@ class GameScreen:
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
+        # Fresh per game: zero the point total, then show it on the panes.
+        self._scorer.reset()
         self._moving_side_pane.reset()
         self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
+        self._refresh_score()
         # Fresh per game: restart the selection-trigger countdown and show it.
         # Uses the rule-specific initial value so the label is right before the
         # first placement (every-placement shows 1, not the after-N count).
@@ -2304,7 +2313,8 @@ class GameScreen:
         # Close out the session: the final tally, then the session-end line, then
         # flush + close. on_exit finds nothing open afterward.
         L.log_50001(label_text, len(self._cleared_word_history),
-                    len(self._obstacle_cells), len(self._mission_cells))
+                    len(self._obstacle_cells), len(self._mission_cells),
+                    self._scorer.total)
         L.log_00002(label_text)
         session_log.close(reason=label_text)
 
@@ -2432,6 +2442,8 @@ class GameScreen:
             if hunted:
                 self._selecting_side_pane.prefill(hunted)
             self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
+            # Show the current running total on the freshly-begun selecting pane.
+            self._selecting_side_pane.set_score_label(self._scorer.total)
             # Auto-submit the carried word (game_screen.select_autosubmit_hunt) so
             # the SAME ENTER that opened SELECT lands on the blue-path confirm --
             # no dead middle ENTER to submit a word already in the field. A junk /
@@ -2511,6 +2523,42 @@ class GameScreen:
             parts.append(text)
         return self._gram_separator.join(parts)
 
+    def _sand_positions(self):
+        """The board cells currently timed as sand cells (the
+        rule_omniswap_timer_sand variant), or an empty set for every other
+        mode/timer variant. Used to score sand-timer ("double points") cells."""
+        sand = getattr(self._moving_mode, "_sand", None)
+        if sand is None:
+            return frozenset()
+        return set(sand.active_positions())
+
+    def _word_score_facts(self, fw):
+        """The board-derived scoring facts for one cleared word: its cell/gram
+        lengths and how many of its cells are obstacle / mission / sand-timer /
+        already-fossilized. Captured BEFORE the clear-action mutates the cell-kind
+        sets (see _clear_paths); combined with is_new and passed to the scorer.
+        Returns a kwargs dict for Scorer.score_word_rule (minus is_new)."""
+        path = fw.path
+        sand = self._sand_positions()
+        return {
+            "word_length": len(fw.word),
+            "gram_lengths": [len(seg) for seg in fw.segments],
+            "obstacle_cells": sum(1 for c in path if c in self._obstacle_cells),
+            "mission_cells": sum(1 for c in path if c in self._mission_cells),
+            "sand_cells": sum(1 for c in path if c in sand),
+            # Reusing an ALREADY-fossilized cell in a new word (fossil_word_use
+            # allow); the word's own cells fossilize only after this is captured.
+            "fossil_reuse_cells": sum(1 for c in path if c in self._fossilized_cells),
+        }
+
+    def _refresh_score(self):
+        """Push the running point total to the score readout in whichever play
+        panes exist (the moving pane always; the selecting pane once created)."""
+        total = self._scorer.total
+        self._moving_side_pane.set_score_label(total)
+        if self._selecting_side_pane is not None:
+            self._selecting_side_pane.set_score_label(total)
+
     def _clear_paths(self, found_words):
         """Stage 4: apply the chosen FoundWords to the board. Gates each word
         through the repeat rule, captures its gram grouping (before any cell
@@ -2527,6 +2575,11 @@ class GameScreen:
         # The gram grouping each word was made of, captured BEFORE any cell change
         # so an obstacle / mission / partial gram still reads true.
         cleared_variations = [self._encode_variation(fw) for fw in accepted]
+        # Board-derived scoring facts, captured BEFORE the clear-action mutates the
+        # cell-kind sets -- same reason as cleared_variations (a fossilize action
+        # would otherwise fossilize a word's own cells and read them as reuse, and
+        # a remove action would drop cleared obstacle/mission cells from the sets).
+        score_facts = [self._word_score_facts(fw) for fw in accepted]
         fully_cleared = self._clear_action_rule(accepted)
         # A starting obstacle or mission cell counts as gone only once FULLY
         # cleared; a partially-used (or fossilized) one stays tracked.
@@ -2542,16 +2595,21 @@ class GameScreen:
             # didn't grow).
             new_flags = []
             obscure_flags = []
-            for fw, variation in zip(accepted, cleared_variations):
+            for fw, variation, facts in zip(accepted, cleared_variations, score_facts):
                 is_new = self._player_dict.add(fw.word, variation)
                 word_obscure = is_obscure(fw.word)
                 new_flags.append(is_new)
                 obscure_flags.append(word_obscure)
+                # Score the word into the running total (facts were captured above,
+                # pre-clear). Chunk 2 will show each word's own points beside it in
+                # the list; for now only the running total displays.
+                points = self._scorer.score_word_rule(is_new=is_new, **facts)
                 # Single sink for every clear (interactive / batch / auto).
-                L.log_30002(fw.word, fw.path, variation, is_new, word_obscure)
+                L.log_30002(fw.word, fw.path, variation, is_new, word_obscure, points)
             self._moving_side_pane.add_cleared_words(
                 cleared_words, new_flags, obscure_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
+            self._refresh_score()
         return cleared_words
 
     # --- clear-action rules (game_screen.clear_action) ---------------------
