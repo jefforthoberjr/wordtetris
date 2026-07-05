@@ -25,11 +25,17 @@ class ScrollingWordList:
     """
 
     PAD_LEN = 12
+    # Each row also carries a right-anchored score ("+NN"); padded to a fixed
+    # width so its glyph (vertex) count stays constant across scrolls, the same
+    # buffer-warming trick PAD_LEN does for the word (covers up to "+9999").
+    SCORE_PAD = 5
     TEXT_COLOR = get_color("moving_side_pane.wordlist_text")
     # A word the player has never collected before shows green instead.
     NEW_TEXT_COLOR = get_color("moving_side_pane.wordlist_new_text")
     # A NEW word valid only via the obscure tier shows orange (wins over green).
     OBSCURE_TEXT_COLOR = get_color("moving_side_pane.wordlist_obscure_text")
+    # Each word's points, shown right of the word (see add_word `score`).
+    SCORE_COLOR = get_color("moving_side_pane.wordlist_score")
     # How many word rows the list shows (config moving_side_pane.wordlist_rows).
     # Fewer rows pack from the top at the width-based font (blank space below);
     # more rows than naturally fit shrink the font so they all stay in the pane.
@@ -54,16 +60,30 @@ class ScrollingWordList:
         self._row_height = font_size * 1.3
 
         # Ring of pre-spawned rows, blank-filled to warm the vertex buffer.
+        # Each rank has a word label (left) and a score label (right); the two
+        # arrays are parallel and share the ring index, so a scroll recycles and
+        # repositions both together.
         self._labels = []
+        self._score_labels = []
+        score_x = x + width - margin
         for r in range(self._rows):
+            row_y = self._top_y - r * self._row_height
             label = pyglet.text.Label(
                 " " * self.PAD_LEN,
                 font_size=font_size,
-                x=text_x, y=self._top_y - r * self._row_height,
+                x=text_x, y=row_y,
                 anchor_x="left", anchor_y="top",
                 color=self.TEXT_COLOR, batch=self._batch,
             )
             self._labels.append(label)
+            score_label = pyglet.text.Label(
+                " " * self.SCORE_PAD,
+                font_size=font_size,
+                x=score_x, y=row_y,
+                anchor_x="right", anchor_y="top",
+                color=self.SCORE_COLOR, batch=self._batch,
+            )
+            self._score_labels.append(score_label)
 
         # Index of the label currently shown at rank 0 (the top row).
         self._head = 0
@@ -78,11 +98,20 @@ class ScrollingWordList:
             return self.NEW_TEXT_COLOR
         return self.TEXT_COLOR
 
-    def add_word(self, word, is_new=False, is_obscure=False):
+    def _score_text(self, score):
+        """The right-column text for a word's points: "+NN" right-justified to
+        SCORE_PAD (constant glyph count), or all blanks when there's no score
+        (None, or 0 / disabled scoring -- nothing worth showing)."""
+        if not score:
+            return " " * self.SCORE_PAD
+        return ("+" + str(score)).rjust(self.SCORE_PAD)
+
+    def add_word(self, word, is_new=False, is_obscure=False, score=None):
         """Push one word onto the top; everything below slides down one row and
-        the old bottom row falls off. Costs one .text rewrite + N label moves.
+        the old bottom row falls off. Costs two .text rewrites + N label moves.
         `is_new` colors the entry green; a new word that is `is_obscure` (valid
-        only via the obscure tier) shows orange instead."""
+        only via the obscure tier) shows orange instead. `score`, if given, shows
+        as "+NN" right of the word (its points; see models/scoring.py)."""
         # The label one step behind head is currently the bottom (oldest) row;
         # recycle it as the new top by overwriting only its text.
         self._head = (self._head - 1) % self._rows
@@ -91,21 +120,27 @@ class ScrollingWordList:
         # Recycled labels carry the previous occupant's color, so set it every
         # time, not just for new words.
         label.color = self._entry_color(is_new, is_obscure)
+        self._score_labels[self._head].text = self._score_text(score)
         # Reposition: rank r (0 = top) is the label r steps forward of head.
         for r in range(self._rows):
             idx = (self._head + r) % self._rows
-            self._labels[idx].y = self._top_y - r * self._row_height
+            row_y = self._top_y - r * self._row_height
+            self._labels[idx].y = row_y
+            self._score_labels[idx].y = row_y
 
-    def add_words(self, words, new_flags=None, obscure_flags=None):
-        """Add several words, oldest first. `new_flags` / `obscure_flags`, if
-        given, are parallel boolean lists marking which words are new to the
-        player's dictionary and which are obscure-tier only (shown orange)."""
+    def add_words(self, words, new_flags=None, obscure_flags=None, scores=None):
+        """Add several words, oldest first. `new_flags` / `obscure_flags` /
+        `scores`, if given, are parallel lists: which words are new to the
+        player's dictionary, which are obscure-tier only (shown orange), and each
+        word's points (shown "+NN" right of the word)."""
         if new_flags is None:
             new_flags = [False] * len(words)
         if obscure_flags is None:
             obscure_flags = [False] * len(words)
-        for word, is_new, is_obscure in zip(words, new_flags, obscure_flags):
-            self.add_word(word, is_new, is_obscure)
+        if scores is None:
+            scores = [None] * len(words)
+        for word, is_new, is_obscure, score in zip(words, new_flags, obscure_flags, scores):
+            self.add_word(word, is_new, is_obscure, score)
 
     def word_at(self, x, y):
         """The word shown at pixel y, or None if y is above the top row, below
@@ -126,9 +161,12 @@ class ScrollingWordList:
         """Blank every row and restore the top-anchored order, for a new game."""
         self._head = 0
         for r, label in enumerate(self._labels):
+            row_y = self._top_y - r * self._row_height
             label.text = " " * self.PAD_LEN
             label.color = self.TEXT_COLOR
-            label.y = self._top_y - r * self._row_height
+            label.y = row_y
+            self._score_labels[r].text = " " * self.SCORE_PAD
+            self._score_labels[r].y = row_y
 
     def draw(self):
         self._batch.draw()

@@ -31,6 +31,7 @@ moving_side_pane:
   wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
   wordlist_obscure_text: [235, 140, 20, 255] # orange: a NEW word from the obscure tier only
+  wordlist_score:   [110, 130, 115, 255] # muted green-grey: each word's points, right of the word
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
   score_label:      [40, 90, 60, 255]  # running point total, shown under the timer/pieces label

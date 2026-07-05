@@ -36,9 +36,9 @@ logging:
 #   fossil_reuse_bonus   -- per already-FOSSILIZED cell the word reused
 #                           (only the fossilize modes have these; fossil_word_use allow)
 #   new_word_bonus       -- word is NEW to the player's lifetime dictionary
-#   fill_board_bonus     -- whole board filled (board-state event; wired in Chunk 2)
+#   fill_board_bonus     -- whole board filled ONCE (what "filled" means is
+#                           mode-dependent; see the game_screen.fill_board rule)
 #   time_remaining_per_second -- per whole second left on the clock at game end
-#                                (game-end bonus; wired in Chunk 2)
 scoring:
   enabled:                   true
   word_base:                 5
@@ -614,6 +614,19 @@ rules:
   # rule_victory_none -- no win condition at all; the game runs until the player
   # quits (use with rule_formation_fill_player_diagonal, which has no missions/obstacles).
   game_screen.victory: rule_victory_none
+
+  # Whole-board fill bonus (game_screen.fill_board): awards scoring.fill_board_bonus
+  # ONCE per game the first time the board is entirely filled. What "filled" means
+  # is MODE-DEPENDENT, so pick the variant matching game_screen.mode / clear_action:
+  #   rule_fill_board_all_fossilized -- every board cell is FOSSILIZED (the fossilize
+  #     modes: omniswap / typewriter, clear_action: rule_clear_fossilize, where a
+  #     completed-word cell freezes in place until the whole board is frozen).
+  #   rule_fill_board_all_occupied -- every board cell is OCCUPIED by a settled piece
+  #     (the place/remove modes: jigsaw fills empty cells until none remain).
+  #   rule_fill_board_off -- no whole-board fill bonus.
+  game_screen.fill_board: rule_fill_board_all_fossilized
+  # game_screen.fill_board: rule_fill_board_all_occupied
+  # game_screen.fill_board: rule_fill_board_off
 
   # Cell overlap: deciding whether a piece may be moved onto / placed over a type of occupied cell
   

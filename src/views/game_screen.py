@@ -532,6 +532,15 @@ class GameScreen:
             "rule_victory_none": self._rule_victory_none,
         }
         self._victory_rule = select_rule("game_screen.victory", victory_rules)
+        # Whole-board fill bonus (game_screen.fill_board): a mode-dependent test
+        # for "the board is entirely filled" (all fossilized vs all occupied).
+        # Bound methods so the rule reads live board / fossil state; see the
+        # _rule_fill_board_* methods and _check_board_fill.
+        self._fill_board_rule = select_rule("game_screen.fill_board", {
+            "rule_fill_board_all_fossilized": self._rule_fill_board_all_fossilized,
+            "rule_fill_board_all_occupied": self._rule_fill_board_all_occupied,
+            "rule_fill_board_off": self._rule_fill_board_off,
+        })
         # Coordinates of the starting obstacle cells not yet cleared; emptied as
         # they clear, so rule_victory_obstacles_cleared wins when it hits empty.
         self._obstacle_cells = set()
@@ -1084,6 +1093,9 @@ class GameScreen:
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
+        # Fresh per game: the whole-board fill bonus fires at most once (see
+        # _check_board_fill / game_screen.fill_board).
+        self._fill_board_awarded = False
         # Fresh per game: zero the point total, then show it on the panes.
         self._scorer.reset()
         self._moving_side_pane.reset()
@@ -2157,6 +2169,9 @@ class GameScreen:
                 # this turn keeps its stone tint instead of reverting to white.
                 cell.square.color = self._cell_resting_color((x, y))
         self._move_placed = set()
+        # A placement that just settled may have filled the board (jigsaw fills
+        # empty cells until none remain); award the fill bonus if so.
+        self._check_board_fill()
 
     # --- victory rules (game_screen.victory) -----------------------------
     # Each returns True when its win condition is met against the current board.
@@ -2192,6 +2207,47 @@ class GameScreen:
         # No victory condition: the game runs until the player quits (the
         # original endless behavior, preserved as a selectable option).
         return False
+
+    # --- fill-board rules (game_screen.fill_board) -------------------------
+    # Each returns True when the board counts as entirely "filled" -- the meaning
+    # differs by mode. Consulted by _check_board_fill after every clear / settle;
+    # the bonus fires once per game (see _fill_board_awarded).
+    def _all_board_cells(self):
+        """Every valid board cell coordinate (the whole rectangle; both grids'
+        is_valid is a plain bounds check, so no cell is masked out). The same walk
+        the uniform-fill formation uses."""
+        return [(x, y)
+                for y in range(self._board.height)
+                for x in range(self._board.width)
+                if self._board.is_valid(x, y)]
+
+    def _rule_fill_board_all_fossilized(self):
+        """Full when every board cell is fossilized (the fossilize modes: omniswap
+        / typewriter, where a completed-word cell freezes until the whole board is
+        frozen). Guards against an empty board reading as trivially full."""
+        cells = self._all_board_cells()
+        return bool(cells) and all(c in self._fossilized_cells for c in cells)
+
+    def _rule_fill_board_all_occupied(self):
+        """Full when every board cell holds a settled piece (the place/remove
+        modes: jigsaw fills empty cells until none remain)."""
+        cells = self._all_board_cells()
+        return bool(cells) and len(self._board.occupied_cells()) >= len(cells)
+
+    def _rule_fill_board_off(self):
+        """No whole-board fill bonus."""
+        return False
+
+    def _check_board_fill(self):
+        """Award the whole-board fill bonus the first time the active fill rule
+        reports the board full (once per game). Idempotent after the award and
+        rule-gated, so it is safe to call from every clear / settle site."""
+        if self._fill_board_awarded or not self._fill_board_rule():
+            return
+        self._fill_board_awarded = True
+        bonus = self._scorer.fill_board_bonus_rule()
+        L.log_50002(bonus, len(self._all_board_cells()))
+        self._refresh_score()
 
     # --- cell-overlap rules (game_screen.cell_overlap_player / _obstacle / _mission)
     # One independent allow/block pair per piece track. Each receives the full set
@@ -2310,6 +2366,14 @@ class GameScreen:
         self._end_overlay_dismissed = False
         self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
+        # End-of-game bonus for time left on the clock (per whole second). Read
+        # the countdown mode's remaining seconds (0 in modes with no clock, and
+        # ~0 for the race variant that ends AT zero -- so this rewards finishing a
+        # victory early, not the clock running out). Refresh the readout so the
+        # bonus shows before the end panel freezes.
+        remaining = getattr(self._moving_mode, "_remaining", 0) or 0
+        self._scorer.time_bonus_rule(remaining)
+        self._refresh_score()
         # Close out the session: the final tally, then the session-end line, then
         # flush + close. on_exit finds nothing open afterward.
         L.log_50001(label_text, len(self._cleared_word_history),
@@ -2595,21 +2659,25 @@ class GameScreen:
             # didn't grow).
             new_flags = []
             obscure_flags = []
+            word_scores = []
             for fw, variation, facts in zip(accepted, cleared_variations, score_facts):
                 is_new = self._player_dict.add(fw.word, variation)
                 word_obscure = is_obscure(fw.word)
                 new_flags.append(is_new)
                 obscure_flags.append(word_obscure)
                 # Score the word into the running total (facts were captured above,
-                # pre-clear). Chunk 2 will show each word's own points beside it in
-                # the list; for now only the running total displays.
+                # pre-clear); its points also list beside the word.
                 points = self._scorer.score_word_rule(is_new=is_new, **facts)
+                word_scores.append(points)
                 # Single sink for every clear (interactive / batch / auto).
                 L.log_30002(fw.word, fw.path, variation, is_new, word_obscure, points)
             self._moving_side_pane.add_cleared_words(
-                cleared_words, new_flags, obscure_flags)
+                cleared_words, new_flags, obscure_flags, word_scores)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
             self._refresh_score()
+        # This clear may have filled the board (the last cell fossilized, or --
+        # under remove -- an overlap-placement completed it); award the fill bonus.
+        self._check_board_fill()
         return cleared_words
 
     # --- clear-action rules (game_screen.clear_action) ---------------------
@@ -2760,9 +2828,13 @@ class GameScreen:
         # Capture newness before _clear_paths adds the word to the player's
         # dictionary, so the entry pane can list it green.
         is_new = not self._player_dict.contains(word)
+        # Preview the word's points for the entry list BEFORE _clear_paths runs
+        # (which is where they're really scored into the total) -- the facts must
+        # be read pre-clear, and the same pure rule guarantees the same number.
+        points = self._scorer.word_points_rule(is_new=is_new, **self._word_score_facts(found))
         self._clear_paths([found])
         self._words_submitted_this_select += 1
-        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word))
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), points)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._recompute_candidates()
         # This clear may have won the game immediately (e.g. it removed the last
@@ -2807,10 +2879,14 @@ class GameScreen:
         """Hold one resolved spelling for the phase-end batch: append it, tint its
         cells, list it. Shared by the instant path and the chooser's confirm."""
         is_new = not self._player_dict.contains(word)
+        # Preview the word's points for the entry list. Deferred words score in
+        # the phase-end batch (_clear_paths); the board is unchanged until then,
+        # so these facts and the same pure rule yield the batch's number.
+        points = self._scorer.word_points_rule(is_new=is_new, **self._word_score_facts(found))
         self._pending.append(found)
         self._words_submitted_this_select += 1
         self._highlight_pending_cells(found.path)
-        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word))
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), points)
         # One-word-per-select ends the phase now; _end_selection clears the single
         # held word on the way out (game_screen.select_word_limit).
         if self._select_word_limit_rule():

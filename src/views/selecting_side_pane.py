@@ -238,11 +238,12 @@ class SelectingSidePane:
             self._on_next()
 
     # --- feedback from GameScreen -----------------------------------------
-    def accept_word(self, word, is_new=False, is_obscure=False):
+    def accept_word(self, word, is_new=False, is_obscure=False, points=None):
         """A submitted word was valid and cleared: list it and reset the field.
         `is_new` shows it green when the word is new to the player's dictionary;
-        a new word that is `is_obscure` (obscure tier only) shows orange."""
-        self._word_list.add_word(word, is_new, is_obscure)
+        a new word that is `is_obscure` (obscure tier only) shows orange.
+        `points`, if given, shows the word's score ("+NN") right of the word."""
+        self._word_list.add_word(word, is_new, is_obscure, points)
         self._typed = ""
         self._ghost = ""
         self.clear_errors()

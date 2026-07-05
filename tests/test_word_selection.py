@@ -119,12 +119,16 @@ class FakePane:
         # The carried hunt word pre-loaded into the field before an auto-submit.
         self.prefilled = word
 
-    def accept_word(self, word, is_new=False, is_obscure=False):
-        # is_new (green) / is_obscure (orange when also new) are recorded by
-        # production; the selection-logic tests only assert which words were
-        # accepted, so the flags are accepted but unused here.
+    def accept_word(self, word, is_new=False, is_obscure=False, points=None):
+        # is_new (green) / is_obscure (orange when also new) / points (the word's
+        # score, shown "+NN") are recorded by production; the selection-logic
+        # tests only assert which words were accepted, so they're unused here.
         self.accepted.append(word)
         self.errors = None
+
+    def set_score_label(self, points):
+        # The running point total shown near the timer; recorded but unused here.
+        self.score = points
 
     def show_errors(self, messages):
         self.errors = list(messages)
@@ -161,11 +165,15 @@ class FakeSidepane:
         self.cleared = []
         self.word_count = None
 
-    def add_cleared_words(self, words, new_flags=None, obscure_flags=None):
+    def add_cleared_words(self, words, new_flags=None, obscure_flags=None, scores=None):
         self.cleared += list(words)
 
     def set_word_count(self, count):
         self.word_count = count
+
+    def set_score_label(self, points):
+        # The running point total shown near the timer; recorded but unused here.
+        self.score = points
 
     def set_phase_label(self, count):
         # The "Pieces: N" countdown; recorded but unused by these logic tests.
@@ -325,6 +333,15 @@ def _game(board, interactive=True, history=None):
     g._piece_pool = FakePool()
     g._selecting_side_pane = FakePane()
     g._player_dict = FakePlayerDict()
+    # Real scorer: _clear_paths and the submit-commit handlers score each cleared
+    # word into it (a pure, config-driven computation with no side effects), so
+    # the pipeline needs it wired like the other collaborators above.
+    g._scorer = gs.Scorer()
+    # Whole-board fill bonus off: _clear_paths / _settle_placed_cells call
+    # _check_board_fill, which the "off" rule short-circuits without touching the
+    # (fake) board. These selection-logic tests don't exercise the fill bonus.
+    g._fill_board_rule = g._rule_fill_board_off
+    g._fill_board_awarded = False
     # Square separator so _clear_paths can encode the cleared word's grouping for
     # the player dictionary (these tests run square-geometry boards).
     g._gram_separator = "|"

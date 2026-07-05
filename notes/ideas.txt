@@ -7,6 +7,14 @@ GAME NAMES
 * catalyst cata LIST
 
 
+A UI for the admnin config
+With little pictures or animations, showing the effect of each option
+
+The lines of a trigrams is getting a little boring
+
+Read game screen, and suggest refactors to split it out, back down to 2000 lines
+
+
 Maybe there is a goal (background shape) to make
 
 Since positioning can be arbitary, help guide or ideate places on the baord to exicit certain placements.

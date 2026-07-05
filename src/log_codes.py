@@ -198,7 +198,15 @@ def log_40002(variant, action):
     session_log.emit(40002, f"timer expired ({action})", variant=variant, action=action)
 
 
-# --- 5xxxx  end state / results ----------------------------------------------
+# --- 5xxxx  end state / results & scoring milestones -------------------------
+def log_50002(bonus, cells):
+    """The whole board became filled (game_screen.fill_board), awarding the
+    one-time fill bonus. `bonus` is the points added; `cells` the board-cell
+    count that were filled. A mid-game scoring milestone, not an end state."""
+    session_log.emit(50002, f"board filled: +{bonus} ({cells} cells)",
+                     bonus=bonus, cells=cells)
+
+
 def log_50001(result, words, obstacles_left, missions_left, score=0):
     """The game's final tally, emitted just before the session-end line. `result`
     is the end label (VICTORY / FINISHED); `score` is the final point total; the
