@@ -25,11 +25,20 @@ dictionary:
   # headword list and the inflection-expanded list:
   #   headwords_20k -- the 21.9k curated headwords, no inflections or compounds
   #     (spellingDictionary20k-nocompound.txt). READ is valid, READING is not.
-  #   expanded      -- headwords + every inflected & British form (~55k;
-  #     expandedAllowedWords.txt). READ and READING both valid. Regenerate with
-  #     dictionaries/build_expanded_dictionary.py (see TECH.md).
+  #   expanded      -- headwords + every inflected & British form + re-admitted
+  #     closed compounds (~60k; expandedAllowedWords.txt). READ and READING both
+  #     valid. Regenerate with dictionaries/build_expanded_dictionary.py (TECH.md).
   # word_source: headwords_20k
   word_source: expanded
+
+  # Obscure tier: also accept the ~16k exclusively-rare 2of12-sourced words
+  # (expandedAllowedWords_obscure.txt, built disjoint from word_source above by
+  # dictionaries/build_obscure_dictionary.py). When on, is_word accepts both
+  # tiers; a word matched ONLY via this tier is "obscure" -- it earns the +2
+  # hint surcharge (spell_check.obscurity_extra_score) and shows orange in the
+  # collected-words pane the first time the player clears it.
+  # include_obscure: false
+  include_obscure: true
 
   # TEMP (playtest): page the large mock word list so the A-Z tabs and sub-pages
   # can be exercised before the player has collected thousands of words. Set
@@ -491,6 +500,17 @@ rules:
   game_screen.rightclick_ck: rule_ck_double
   # game_screen.rightclick_ck: rule_rightclick_none
 
+  # Whether the gram-manipulate button (right-click) also works during the
+  # SELECTING phase, not just MOVING. The omniswap modes spend most of their play
+  # in SELECT, so MOVING-only leaves right-click feeling dead there.
+  #   rule_gram_manip_in_selecting_enabled  -- right-click doubles/collapses grams
+  #     in SELECTING too (the board cell is relabeled; the typed word field is
+  #     independent, so nothing desyncs)
+  #   rule_gram_manip_in_selecting_disabled -- right-click is inert in SELECTING
+  #     (gram-manip is MOVING-only; the original behavior)
+  game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
+  # game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_disabled
+
   # Word hunt (MOVING phase): the player types a word in the moving side pane and
   # the grams on the board involved in it light up (see views/hunt_highlight.py).
   # Two independent toggles:
@@ -509,9 +529,10 @@ rules:
   #       C of "CU", both of "EN", I+N of "ING").
   #   hunt_highlight_style -- HOW a matched gram looks (the visual). Only the
   #     text-recolor style exists today; rect-tint / outline would be siblings.
-  game_screen.hunt_highlight: rule_hunt_full_gram
-  # game_screen.hunt_highlight: rule_hunt_full_gram_or_dedup
+  # game_screen.hunt_highlight: rule_hunt_full_gram
+  game_screen.hunt_highlight: rule_hunt_full_gram_or_dedup
   # game_screen.hunt_highlight: rule_hunt_single_letters
+  
   game_screen.hunt_highlight_style: rule_hunt_style_text_recolor
 
   # Trigram right-click is routed by the gram's VOWEL/CONSONANT SHAPE, not just
@@ -809,6 +830,11 @@ spell_check:
   distance_per_vowel_run: 1   # +this to the cap for each vowel run in the word
   max_transpositions:     1   # consonant+vowel letter swaps allowed (e.g. RE<->ER)
   max_length_delta:       3   # scan pre-filter: skip dict words this much longer/shorter
+  # Exoticness added to a suggestion valid ONLY via the obscure tier
+  # (dictionary.include_obscure), so a rare "did you mean?" ranks below an
+  # equally-close common word. Applied to both the letter- and morpheme-level
+  # scans; 0 (or obscure tier off) means no surcharge. See obscurity_surcharge().
+  obscurity_extra_score:  2
   # Vowel-run change weights (a wrong vowel / diphthong).
   vowel:
     single_to_diphthong:  1   # A  -> AU

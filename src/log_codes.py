@@ -147,14 +147,19 @@ def log_30001(word):
     session_log.emit(30001, f"submitted {word}", word=word)
 
 
-def log_30002(word, path, variation, is_new):
+def log_30002(word, path, variation, is_new, is_obscure=False):
     """A word was cleared from the board (the single sink for every clear:
     interactive submit, phase-end batch, and auto-select). `path` is its cells,
     `variation` the gram grouping recorded, `is_new` whether it was new to the
-    player's lifetime dictionary."""
+    player's lifetime dictionary, `is_obscure` whether it was valid only via the
+    obscure tier (a new obscure word lists orange)."""
     cells = ";".join(f"{x},{y}" for (x, y) in path)
-    session_log.emit(30002, f"cleared {word}" + (" (new)" if is_new else ""),
-                     word=word, cells=cells, variation=variation, new=is_new)
+    tag = " (new)" if is_new else ""
+    if is_obscure:
+        tag += " (obscure)"
+    session_log.emit(30002, f"cleared {word}" + tag,
+                     word=word, cells=cells, variation=variation,
+                     new=is_new, obscure=is_obscure)
 
 
 def log_30003(word, reason):

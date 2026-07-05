@@ -17,6 +17,12 @@ Inputs (in ./sources/):
         Americanization lands in one of our headword families, so the "every
         allowed word derives from a kept headword" invariant holds. In practice
         2+2+3lem already covers these, so this step adds ~0 net words.
+  - sources/12dicts-6of12.txt : the main tier's own 6of12 lineage, mined for
+        CLOSED COMPOUNDS the headword thinning stripped ("-nocompound"). A word
+        is re-admitted only if it splits into two already-allowed words (see
+        compound.py), then inflected through the same 2+2+3lem families as a
+        headword (airport -> airports, airman -> airmen). See obscure tier build
+        in build_obscure_dictionary.py.
 
 Outputs (alongside the current dictionary):
   - expandedAllowedWords.txt   : flat, sorted, one word per line. Every inflected
@@ -31,7 +37,9 @@ Run:  python3 build_expanded_dictionary.py
 
 import json
 import os
-import re
+
+import compound
+from lemmas import Lemmatizer, is_word, load_wordlist
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "sources")
@@ -39,27 +47,14 @@ SRC = os.path.join(HERE, "sources")
 HEADWORDS_FILE = os.path.join(HERE, "spellingDictionary20k-nocompound.txt")
 LEM_FILE = os.path.join(SRC, "12dicts-2+2+3lem.txt")
 BRITISH_POOL_FILE = os.path.join(SRC, "legacy-20kwords-with-conjugations.txt")
+# The 6of12 list (the main tier's own lineage) is the pool we mine CLOSED
+# COMPOUNDS from -- single-token words like "airport" the headword thinning
+# dropped (the "-nocompound" in the headwords filename). See compound.py.
+COMPOUND_SOURCE_FILE = os.path.join(SRC, "12dicts-6of12.txt")
 
 OUT_FLAT = os.path.join(HERE, "expandedAllowedWords.txt")
 OUT_JSON = os.path.join(HERE, "headwordInflections.json")
 OUT_TXT = os.path.join(HERE, "headwordInflections.txt")
-
-WORD_RE = re.compile(r"^[a-z]+$")
-
-
-def is_word(w):
-    """Keep pure lowercase alphabetic forms only (matches the headword list:
-    no hyphens, spaces, apostrophes, or compounds)."""
-    return bool(WORD_RE.match(w))
-
-
-def clean_token(tok):
-    """Strip a 12dicts token down to a bare lowercase word.
-    Removes cross-ref annotations ' -> [lemma]' and trailing markers '!','%'."""
-    tok = re.sub(r"\s*->\s*\[[^\]]*\]", "", tok)
-    tok = tok.strip().strip("!%*~ ").strip()
-    return tok.lower()
-
 
 # ---------------------------------------------------------------------------
 # 1. Load headwords
@@ -71,78 +66,16 @@ print(f"headwords: {len(headwords)} ({len(headword_set)} unique)")
 
 
 # ---------------------------------------------------------------------------
-# 2. Parse the lemmatized list into per-lemma families + cross-references
+# 2. Parse the lemmatized list into per-lemma families (shared -- see lemmas.py)
 # ---------------------------------------------------------------------------
-# families[lemma] = set(forms)  (always includes the lemma itself)
-# member_of[form] = set(lemmas whose family contains this form)
-# xref[form] = lemma  (from "form -> [lemma]" pointer lines)
-families = {}
-member_of = {}
-xref = {}
-
-
-def add_member(lemma, form):
-    if not is_word(form):
-        return
-    families.setdefault(lemma, set()).add(form)
-    member_of.setdefault(form, set()).add(lemma)
-
-
-current_lemma = None
-with open(LEM_FILE, encoding="utf-8") as f:
-    for raw in f:
-        line = raw.rstrip("\n")
-        if not line.strip():
-            continue
-        if line.startswith("    "):
-            # inflection line for the current lemma
-            if current_lemma is None:
-                continue
-            for item in line.split(","):
-                form = clean_token(item)
-                if form:
-                    add_member(current_lemma, form)
-        else:
-            # a lemma line, possibly a "word -> [target]" pointer
-            m = re.match(r"^(\S+)\s*->\s*\[([^\]]+)\]", line.strip())
-            if m:
-                form = clean_token(m.group(1))
-                target = clean_token(m.group(2))
-                if form and target:
-                    xref[form] = target
-                # pointer lines do not open a normal family block
-                current_lemma = None
-            else:
-                lemma = clean_token(line.split()[0])
-                current_lemma = lemma if lemma else None
-                if current_lemma:
-                    add_member(current_lemma, current_lemma)
-
-# resolve cross-references: a "form -> [target]" means form belongs to target's family
-for form, target in xref.items():
-    add_member(target, form)
-
-print(f"lemma families parsed: {len(families)}")
+LEM = Lemmatizer(LEM_FILE)
+family_for_headword = LEM.family_for_headword
+print(f"lemma families parsed: {len(LEM.families)}")
 
 
 # ---------------------------------------------------------------------------
 # 3. Build headword -> family forms, using the headword set as the keys
 # ---------------------------------------------------------------------------
-def family_for_headword(h):
-    """All forms related to headword h: h's own family (if h is a lemma), the
-    families of any lemma that lists h as an inflection, and any xref target."""
-    lemmas = set()
-    if h in families:
-        lemmas.add(h)
-    lemmas |= member_of.get(h, set())
-    if h in xref:
-        lemmas.add(xref[h])
-    forms = {h}
-    for L in lemmas:
-        forms |= families.get(L, set())
-    return {w for w in forms if is_word(w)}
-
-
 # headword -> set of forms (including the headword itself, for now)
 hw_forms = {h: family_for_headword(h) for h in headword_set}
 
@@ -227,6 +160,32 @@ print(f"total allowed forms: {len(allowed)}")
 
 
 # ---------------------------------------------------------------------------
+# 4.5 Re-introduce closed compounds from 6of12 (the "-nocompound" headword
+#     thinning had stripped these; mine them back from the main tier's own
+#     lineage). A compound seed is admitted only if it splits into two
+#     already-allowed words, so every seed is a real 6of12 word (see
+#     compound.py). Each seed is then inflected through the SAME lemmatized
+#     families as a headword, so "airport" pulls in "airports" etc. -- no
+#     rule-based over-generation.
+# ---------------------------------------------------------------------------
+source_6of12 = load_wordlist(COMPOUND_SOURCE_FILE)
+compound_seeds = set(compound.find_compounds(source_6of12, allowed, exclude=allowed))
+comp_families = {c: family_for_headword(c) for c in compound_seeds}
+compound_forms = set()
+for fam in comp_families.values():
+    compound_forms |= fam
+# Each seed is its own compound headword, keyed to its family's other forms.
+# (6of12 lists only bare compounds, so a seed is never another seed's inflection
+# -- no cross-keying to dedupe.)
+compound_map = {c: sorted(f for f in fam if f != c)
+                for c, fam in comp_families.items()}
+allowed |= compound_forms
+print(f"compounds re-introduced from 6of12: {len(compound_forms)} "
+      f"(under {len(compound_map)} base headwords)")
+print(f"total allowed forms (with compounds): {len(allowed)}")
+
+
+# ---------------------------------------------------------------------------
 # 5. Write outputs
 # ---------------------------------------------------------------------------
 # map: headword -> sorted extra forms (family minus the headword itself)
@@ -234,6 +193,9 @@ headword_map = {}
 for h in sorted(headword_set):
     extras = sorted(f for f in hw_forms[h] if f != h)
     headword_map[h] = extras
+# fold in the compound headwords (their keys are disjoint from the headword set)
+for h, extras in compound_map.items():
+    headword_map[h] = sorted(set(headword_map.get(h, [])) | set(extras))
 
 with open(OUT_FLAT, "w", encoding="utf-8") as f:
     for w in sorted(allowed):

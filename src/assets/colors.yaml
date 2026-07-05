@@ -30,6 +30,7 @@ moving_side_pane:
   divider:          [200, 200, 200]   # vertical rule between board and side pane
   wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
   wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
+  wordlist_obscure_text: [235, 140, 20, 255] # orange: a NEW word from the obscure tier only
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
   hunt_prompt:      [120, 120, 120, 255] # "Hunt a word:" prompt above the hunt field

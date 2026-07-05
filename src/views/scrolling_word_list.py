@@ -28,6 +28,8 @@ class ScrollingWordList:
     TEXT_COLOR = get_color("moving_side_pane.wordlist_text")
     # A word the player has never collected before shows green instead.
     NEW_TEXT_COLOR = get_color("moving_side_pane.wordlist_new_text")
+    # A NEW word valid only via the obscure tier shows orange (wins over green).
+    OBSCURE_TEXT_COLOR = get_color("moving_side_pane.wordlist_obscure_text")
     # How many word rows the list shows (config moving_side_pane.wordlist_rows).
     # Fewer rows pack from the top at the width-based font (blank space below);
     # more rows than naturally fit shrink the font so they all stay in the pane.
@@ -66,10 +68,21 @@ class ScrollingWordList:
         # Index of the label currently shown at rank 0 (the top row).
         self._head = 0
 
-    def add_word(self, word, is_new=False):
+    def _entry_color(self, is_new, is_obscure):
+        """Row color, orange (new + obscure-tier) winning over green (new) over
+        the normal text color -- so a rare word the player just discovered stands
+        out from an ordinary new word."""
+        if is_new and is_obscure:
+            return self.OBSCURE_TEXT_COLOR
+        if is_new:
+            return self.NEW_TEXT_COLOR
+        return self.TEXT_COLOR
+
+    def add_word(self, word, is_new=False, is_obscure=False):
         """Push one word onto the top; everything below slides down one row and
         the old bottom row falls off. Costs one .text rewrite + N label moves.
-        `is_new` colors the entry green (a word new to the player's dictionary)."""
+        `is_new` colors the entry green; a new word that is `is_obscure` (valid
+        only via the obscure tier) shows orange instead."""
         # The label one step behind head is currently the bottom (oldest) row;
         # recycle it as the new top by overwriting only its text.
         self._head = (self._head - 1) % self._rows
@@ -77,19 +90,22 @@ class ScrollingWordList:
         label.text = word.ljust(self.PAD_LEN)
         # Recycled labels carry the previous occupant's color, so set it every
         # time, not just for new words.
-        label.color = self.NEW_TEXT_COLOR if is_new else self.TEXT_COLOR
+        label.color = self._entry_color(is_new, is_obscure)
         # Reposition: rank r (0 = top) is the label r steps forward of head.
         for r in range(self._rows):
             idx = (self._head + r) % self._rows
             self._labels[idx].y = self._top_y - r * self._row_height
 
-    def add_words(self, words, new_flags=None):
-        """Add several words, oldest first. `new_flags`, if given, is a parallel
-        list of booleans marking which words are new to the player's dictionary."""
+    def add_words(self, words, new_flags=None, obscure_flags=None):
+        """Add several words, oldest first. `new_flags` / `obscure_flags`, if
+        given, are parallel boolean lists marking which words are new to the
+        player's dictionary and which are obscure-tier only (shown orange)."""
         if new_flags is None:
             new_flags = [False] * len(words)
-        for word, is_new in zip(words, new_flags):
-            self.add_word(word, is_new)
+        if obscure_flags is None:
+            obscure_flags = [False] * len(words)
+        for word, is_new, is_obscure in zip(words, new_flags, obscure_flags):
+            self.add_word(word, is_new, is_obscure)
 
     def word_at(self, x, y):
         """The word shown at pixel y, or None if y is above the top row, below

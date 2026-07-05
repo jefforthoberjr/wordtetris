@@ -34,10 +34,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import CONFIG
 from models import spell_check
 from models import morpheme_check
-from models.spelling_suggester import _config, _freq_table, SUGGEST_RULES
-from models.word_dictionary import all_words, is_word
+from models.spelling_suggester import (
+    _config, _freq_table, SUGGEST_RULES, obscurity_surcharge)
+from models.word_dictionary import all_words, is_word, is_obscure
 
 _RELAXED_TRANSPOSITIONS = 9  # "unlimited" for a short word: probe 3a vs 3b.
+
+
+def _mark(cand):
+    """Tag an obscure-tier candidate with a trailing '*' for the printed tables
+    (legend printed once by main). Non-obscure words are returned unchanged."""
+    return cand + "*" if is_obscure(cand) else cand
 
 
 def _classify(word, costs, tails):
@@ -63,21 +70,24 @@ def _classify(word, costs, tails):
             continue
         cap = spell_check.distance_cap(cand, costs)
         f = freq.get(cand, 0)
+        surcharge = obscurity_surcharge(cand)   # +exoticness for obscure-tier words
+        disp = _mark(cand)
         scored = spell_check._match(word, cand, costs, tails)
         if scored is not None:
             exo, edits = scored
+            exo += surcharge
             if edits <= cap:
-                tier1.append((exo, edits, -f, cand, cap, f))
+                tier1.append((exo, edits, -f, disp, cap, f))
             else:
-                tier2.append((edits, exo, -f, cand, cap, f))
+                tier2.append((edits, exo, -f, disp, cap, f))
             continue
         scored_r = spell_check._match(word, cand, relaxed, tails)
         if scored_r is not None and scored_r[1] <= cap:
             exo_r, edits_r = scored_r
-            tier3a.append((edits_r, exo_r, -f, cand, cap, f))
+            tier3a.append((edits_r, exo_r + surcharge, -f, disp, cap, f))
         else:
             raw = spell_check._levenshtein(word, cand)
-            tier3b.append((raw, -f, cand, f))
+            tier3b.append((raw, -f, disp, f))
 
     tier1.sort()
     tier2.sort()
@@ -100,7 +110,8 @@ def _classify_morphemes(word):
         cand_up = cand.upper()
         f = freq.get(cand_up, 0)
         desc = " + ".join(op["desc"] for op in info["ops"])
-        row = (info["exoticness"], info["distance"], -f, cand_up, desc, f)
+        exo = info["exoticness"] + obscurity_surcharge(cand_up)
+        row = (exo, info["distance"], -f, _mark(cand_up), desc, f)
         if info["distance"] <= max_d:
             within.append(row)
         else:
@@ -209,6 +220,9 @@ def main(argv=None):
           % (settings["min_word_length"], settings["max_suggestions"],
              costs["base_distance"], costs["distance_per_vowel_run"],
              costs["max_transpositions"], settings["max_length_delta"]))
+    print("A '*' after a word = obscure tier: exoticness includes "
+          "+%d (spell_check.obscurity_extra_score)."
+          % settings["obscurity_extra_score"])
     if len(word) < settings["min_word_length"]:
         print("NOTE: typed word is shorter than min_word_length -- the game "
               "would offer NO suggestions; showing analysis anyway.")

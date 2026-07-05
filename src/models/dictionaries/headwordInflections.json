@@ -210,6 +210,7 @@
 ],
 "about": [],
 "above": [],
+"aboveboard": [],
 "abracadabra": [],
 "abrade": [
 "abraded",
@@ -1574,6 +1575,30 @@
 "after": [
 "afters"
 ],
+"afterbirth": [
+"afterbirths"
+],
+"afterburner": [
+"afterburners"
+],
+"aftereffect": [
+"aftereffects"
+],
+"afterglow": [
+"afterglows"
+],
+"afterlife": [
+"afterlives"
+],
+"aftermath": [
+"aftermaths"
+],
+"afternoon": [
+"afternoons"
+],
+"afterthought": [
+"afterthoughts"
+],
 "afterward": [
 "afterwards"
 ],
@@ -1796,12 +1821,65 @@
 "airlessness",
 "airs"
 ],
+"airborne": [],
+"airbrush": [
+"airbrushed",
+"airbrushes",
+"airbrushing"
+],
+"aircraft": [],
+"airfield": [
+"airfields"
+],
+"airhead": [
+"airheads"
+],
 "airless": [
 "air",
 "aired",
 "airing",
 "airlessness",
 "airs"
+],
+"airlift": [
+"airlifted",
+"airlifting",
+"airlifts"
+],
+"airline": [
+"airlines"
+],
+"airliner": [
+"airliners"
+],
+"airmail": [
+"airmailed",
+"airmailing",
+"airmails"
+],
+"airman": [
+"airmen"
+],
+"airport": [
+"airports"
+],
+"airship": [
+"airships"
+],
+"airsick": [
+"airsickness"
+],
+"airsickness": [
+"airsick"
+],
+"airspace": [],
+"airstrip": [
+"airstrips"
+],
+"airtight": [],
+"airwaves": [],
+"airway": [
+"airways"
 ],
 "airy": [
 "airier",
@@ -2070,6 +2148,7 @@
 "alloying",
 "alloys"
 ],
+"allspice": [],
 "allude": [
 "alluded",
 "alludes",
@@ -2120,6 +2199,7 @@
 ],
 "alone": [],
 "along": [],
+"alongside": [],
 "aloof": [
 "aloofly",
 "aloofness"
@@ -2788,6 +2868,9 @@
 "angels"
 ],
 "angelic": [],
+"angelically": [
+"angelical"
+],
 "anger": [
 "angered",
 "angering",
@@ -2804,6 +2887,9 @@
 "angled",
 "angles",
 "angling"
+],
+"angleworm": [
+"angleworms"
 ],
 "angling": [
 "angle",
@@ -3036,6 +3122,9 @@
 "anther": [
 "anthers"
 ],
+"anthill": [
+"anthills"
+],
 "anthologist": [
 "anthologists"
 ],
@@ -3186,6 +3275,17 @@
 "anxiousness"
 ],
 "any": [],
+"anybody": [
+"anybodies"
+],
+"anyhow": [],
+"anymore": [],
+"anyone": [],
+"anyplace": [],
+"anything": [],
+"anytime": [],
+"anyway": [],
+"anywhere": [],
 "aorta": [
 "aortae",
 "aortas"
@@ -3407,6 +3507,8 @@
 "apple": [
 "apples"
 ],
+"applejack": [],
+"applesauce": [],
 "appliance": [
 "appliances"
 ],
@@ -3582,6 +3684,14 @@
 "aquae",
 "aquas"
 ],
+"aquamarine": [
+"aquamarines"
+],
+"aquaplane": [
+"aquaplaned",
+"aquaplanes",
+"aquaplaning"
+],
 "aquaria": [
 "aquarium",
 "aquariums"
@@ -3741,6 +3851,9 @@
 "archivist": [
 "archivists"
 ],
+"archway": [
+"archways"
+],
 "arctic": [
 "arctics"
 ],
@@ -3850,6 +3963,12 @@
 "armature": [
 "armatures"
 ],
+"armband": [
+"armbands"
+],
+"armchair": [
+"armchairs"
+],
 "armed": [
 "arm",
 "armful",
@@ -3865,6 +3984,9 @@
 "arming",
 "arms",
 "armsful"
+],
+"armhole": [
+"armholes"
 ],
 "armistice": [
 "armistices"
@@ -3887,6 +4009,12 @@
 "armories",
 "armouries",
 "armoury"
+],
+"armpit": [
+"armpits"
+],
+"armrest": [
+"armrests"
 ],
 "arms": [
 "arm",
@@ -3975,6 +4103,10 @@
 "arrow": [
 "arrows"
 ],
+"arrowhead": [
+"arrowheads"
+],
+"arrowroot": [],
 "arroyo": [
 "arroyos"
 ],
@@ -4003,6 +4135,8 @@
 "arteries"
 ],
 "artful": [],
+"artfully": [],
+"artfulness": [],
 "arthritic": [
 "arthritics"
 ],
@@ -4051,6 +4185,9 @@
 ],
 "artistry": [],
 "artless": [],
+"artwork": [
+"artworks"
+],
 "arty": [
 "artier",
 "artiest",
@@ -4124,6 +4261,9 @@
 "ashore": [],
 "ashram": [
 "ashrams"
+],
+"ashtray": [
+"ashtrays"
 ],
 "ashy": [
 "ashier",
@@ -4664,6 +4804,9 @@
 "audiophile": [
 "audiophiles"
 ],
+"audiovisual": [
+"audiovisuals"
+],
 "audit": [
 "audited",
 "auditing",
@@ -4767,6 +4910,7 @@
 "authoritarian": [
 "authoritarians"
 ],
+"authoritarianism": [],
 "authoritative": [
 "authoritatively",
 "authoritativeness"
@@ -4793,6 +4937,9 @@
 "autistic": [],
 "auto": [
 "autos"
+],
+"autobiographical": [
+"autobiographically"
 ],
 "autobiography": [
 "autobiographies"
@@ -4989,6 +5136,7 @@
 "awesomely",
 "awesomeness"
 ],
+"awestruck": [],
 "awful": [
 "awfuller",
 "awfullest",
@@ -5119,6 +5267,9 @@
 "baby",
 "babying"
 ],
+"babysitter": [
+"babysitters"
+],
 "baccalaureate": [
 "baccalaureates"
 ],
@@ -5140,14 +5291,139 @@
 "backless",
 "backs"
 ],
+"backache": [
+"backaches"
+],
+"backbit": [
+"backbite",
+"backbites",
+"backbiting",
+"backbitten"
+],
+"backbite": [
+"backbit",
+"backbites",
+"backbiting",
+"backbitten"
+],
+"backbitten": [
+"backbit",
+"backbite",
+"backbites",
+"backbiting"
+],
+"backboard": [
+"backboards"
+],
+"backbone": [
+"backbones"
+],
+"backbreaking": [],
+"backdrop": [
+"backdrops"
+],
 "backer": [
 "backers"
 ],
+"backfield": [
+"backfields"
+],
+"backfire": [
+"backfired",
+"backfires",
+"backfiring"
+],
 "backgammon": [],
+"background": [
+"backgrounds"
+],
+"backhand": [
+"backhanded",
+"backhanding",
+"backhands"
+],
+"backhanded": [
+"backhand",
+"backhanding",
+"backhands"
+],
+"backlash": [
+"backlashes"
+],
+"backlog": [
+"backlogged",
+"backlogging",
+"backlogs"
+],
+"backpack": [
+"backpacked",
+"backpacking",
+"backpacks"
+],
+"backpacker": [
+"backpackers"
+],
+"backpedal": [
+"backpedaled",
+"backpedaling",
+"backpedalled",
+"backpedalling",
+"backpedals"
+],
+"backrest": [
+"backrests"
+],
+"backside": [
+"backsides"
+],
+"backslid": [
+"backslidden",
+"backslide",
+"backslides",
+"backsliding"
+],
+"backslide": [
+"backslid",
+"backslidden",
+"backslides",
+"backsliding"
+],
+"backslider": [
+"backsliders"
+],
+"backspace": [
+"backspaced",
+"backspaces",
+"backspacing"
+],
+"backstage": [],
+"backstop": [
+"backstopped",
+"backstopping",
+"backstops"
+],
+"backstroke": [
+"backstroked",
+"backstrokes",
+"backstroking"
+],
+"backtalk": [],
+"backtrack": [
+"backtracked",
+"backtracking",
+"backtracks"
+],
 "backwards": [
 "backward",
 "backwardly",
 "backwardness"
+],
+"backwater": [
+"backwaters"
+],
+"backwoods": [],
+"backyard": [
+"backyards"
 ],
 "bacon": [],
 "bacteria": [
@@ -5348,6 +5624,15 @@
 "balloting",
 "ballots"
 ],
+"ballpark": [
+"ballparks"
+],
+"ballpoint": [
+"ballpoints"
+],
+"ballroom": [
+"ballrooms"
+],
 "balls": [
 "ball",
 "balled",
@@ -5443,6 +5728,12 @@
 "bandoleers",
 "bandoliers"
 ],
+"bandstand": [
+"bandstands"
+],
+"bandwagon": [
+"bandwagons"
+],
 "bandy": [
 "bandied",
 "bandier",
@@ -5487,6 +5778,9 @@
 "banking",
 "banks"
 ],
+"bankbook": [
+"bankbooks"
+],
 "banker": [
 "bankers"
 ],
@@ -5494,6 +5788,14 @@
 "bank",
 "banked",
 "banks"
+],
+"banknote": [
+"banknotes"
+],
+"bankroll": [
+"bankrolled",
+"bankrolling",
+"bankrolls"
 ],
 "bankrupt": [
 "bankrupted",
@@ -5519,6 +5821,9 @@
 ],
 "bantam": [
 "bantams"
+],
+"bantamweight": [
+"bantamweights"
 ],
 "banter": [
 "bantered",
@@ -5579,6 +5884,9 @@
 "barbeques",
 "barbequing"
 ],
+"barbell": [
+"barbells"
+],
 "barber": [
 "barbered",
 "barbering",
@@ -5599,6 +5907,20 @@
 "baring",
 "barre"
 ],
+"bareback": [
+"barebacked"
+],
+"barefaced": [
+"barefacedly"
+],
+"barefoot": [
+"barefooted"
+],
+"barefooted": [
+"barefoot"
+],
+"barehanded": [],
+"bareheaded": [],
 "barely": [],
 "barf": [
 "barfed",
@@ -5628,12 +5950,23 @@
 "barkers"
 ],
 "barley": [],
+"barmaid": [
+"barmaids"
+],
 "barn": [
 "barns"
 ],
 "barnacle": [
 "barnacled",
 "barnacles"
+],
+"barnstorm": [
+"barnstormed",
+"barnstorming",
+"barnstorms"
+],
+"barnyard": [
+"barnyards"
 ],
 "barometer": [
 "barometers"
@@ -5700,8 +6033,14 @@
 "barrister": [
 "barristers"
 ],
+"barroom": [
+"barrooms"
+],
 "barrow": [
 "barrows"
+],
+"bartender": [
+"bartenders"
 ],
 "barter": [
 "bartered",
@@ -5721,6 +6060,15 @@
 "bases",
 "basest",
 "basing"
+],
+"baseball": [
+"baseballs"
+],
+"baseboard": [
+"baseboards"
+],
+"baseline": [
+"baselines"
 ],
 "baseman": [
 "basemen"
@@ -5771,6 +6119,9 @@
 ],
 "basket": [
 "baskets"
+],
+"basketball": [
+"basketballs"
 ],
 "bass": [
 "basses"
@@ -5829,7 +6180,19 @@
 "bathes",
 "bathing"
 ],
+"bather": [
+"bathers"
+],
 "bathos": [],
+"bathrobe": [
+"bathrobes"
+],
+"bathroom": [
+"bathrooms"
+],
+"bathtub": [
+"bathtubs"
+],
 "batik": [
 "batiks"
 ],
@@ -5857,8 +6220,17 @@
 "battles",
 "battling"
 ],
+"battlefield": [
+"battlefields"
+],
+"battleground": [
+"battlegrounds"
+],
 "battlement": [
 "battlements"
+],
+"battleship": [
+"battleships"
 ],
 "batty": [
 "battier",
@@ -5886,6 +6258,9 @@
 "bayed",
 "baying",
 "bays"
+],
+"bayberry": [
+"bayberries"
 ],
 "bayonet": [
 "bayoneted",
@@ -5922,6 +6297,9 @@
 ],
 "beachcomber": [
 "beachcombers"
+],
+"beachhead": [
+"beachheads"
 ],
 "beacon": [
 "beacons"
@@ -6112,6 +6490,10 @@
 "bedding",
 "beds"
 ],
+"bedbug": [
+"bedbugs"
+],
+"bedclothes": [],
 "bedding": [
 "bed",
 "bedded",
@@ -6130,13 +6512,44 @@
 "bedevils"
 ],
 "bedevilment": [],
+"bedfellow": [
+"bedfellows"
+],
 "bedlam": [
 "bedlams"
+],
+"bedpan": [
+"bedpans"
 ],
 "bedraggled": [
 "bedraggle",
 "bedraggles",
 "bedraggling"
+],
+"bedridden": [],
+"bedrock": [
+"bedrocks"
+],
+"bedroll": [
+"bedrolls"
+],
+"bedroom": [
+"bedrooms"
+],
+"bedside": [
+"bedsides"
+],
+"bedsore": [
+"bedsores"
+],
+"bedspread": [
+"bedspreads"
+],
+"bedstead": [
+"bedsteads"
+],
+"bedtime": [
+"bedtimes"
 ],
 "bee": [
 "bees"
@@ -6150,10 +6563,22 @@
 "beefs",
 "beeves"
 ],
+"beefsteak": [
+"beefsteaks"
+],
 "beefy": [
 "beefier",
 "beefiest",
 "beefiness"
+],
+"beehive": [
+"beehives"
+],
+"beekeeper": [
+"beekeepers"
+],
+"beeline": [
+"beelines"
 ],
 "been": [
 "am",
@@ -6218,6 +6643,7 @@
 "befittingly"
 ],
 "before": [],
+"beforehand": [],
 "befoul": [
 "befouled",
 "befouling",
@@ -6447,8 +6873,14 @@
 "bells"
 ],
 "belladonna": [],
+"bellboy": [
+"bellboys"
+],
 "belle": [
 "belles"
+],
+"bellhop": [
+"bellhops"
 ],
 "bellicose": [],
 "bellicosity": [],
@@ -6482,6 +6914,14 @@
 "bellyfuls",
 "bellying"
 ],
+"bellyache": [
+"bellyached",
+"bellyaches",
+"bellyaching"
+],
+"bellybutton": [
+"bellybuttons"
+],
 "bellyful": [
 "bellied",
 "bellies",
@@ -6504,6 +6944,9 @@
 "belting",
 "belts"
 ],
+"beltway": [
+"beltways"
+],
 "bemoan": [
 "bemoaned",
 "bemoaning",
@@ -6513,6 +6956,11 @@
 "benched",
 "benches",
 "benching"
+],
+"benchmark": [
+"benchmarked",
+"benchmarking",
+"benchmarks"
 ],
 "bend": [
 "bending",
@@ -6939,8 +7387,14 @@
 ],
 "bigamous": [],
 "bigamy": [],
+"bighorn": [
+"bighorns"
+],
 "bight": [
 "bights"
+],
+"bigmouth": [
+"bigmouths"
 ],
 "bigot": [
 "bigoted",
@@ -6948,6 +7402,9 @@
 ],
 "bigotry": [
 "bigotries"
+],
+"bigwig": [
+"bigwigs"
 ],
 "bike": [
 "biked",
@@ -6984,10 +7441,16 @@
 "billing",
 "bills"
 ],
+"billboard": [
+"billboards"
+],
 "billet": [
 "billeted",
 "billeting",
 "billets"
+],
+"billfold": [
+"billfolds"
 ],
 "billiards": [
 "billiard"
@@ -7126,16 +7589,42 @@
 "birdlike",
 "birds"
 ],
+"birdbath": [
+"birdbaths"
+],
+"birdbrained": [
+"birdbrain",
+"birdbrains"
+],
 "birdie": [
 "birdied",
 "birdieing",
 "birdies",
 "birdying"
 ],
+"birdseed": [],
 "birth": [
 "birthed",
 "birthing",
 "births"
+],
+"birthday": [
+"birthdays"
+],
+"birthmark": [
+"birthmarks"
+],
+"birthplace": [
+"birthplaces"
+],
+"birthrate": [
+"birthrates"
+],
+"birthright": [
+"birthrights"
+],
+"birthstone": [
+"birthstones"
 ],
 "biscuit": [
 "biscuits"
@@ -7218,6 +7707,9 @@
 "bittern": [
 "bitterns"
 ],
+"bittersweet": [
+"bittersweets"
+],
 "bitumen": [],
 "bivalve": [
 "bivalves"
@@ -7249,10 +7741,31 @@
 "blackness",
 "blacks"
 ],
+"blackball": [
+"blackballed",
+"blackballing",
+"blackballs"
+],
+"blackberry": [
+"blackberries",
+"blackberrying"
+],
+"blackbird": [
+"blackbirds"
+],
+"blackboard": [
+"blackboards"
+],
 "blacken": [
 "blackened",
 "blackening",
 "blackens"
+],
+"blackguard": [
+"blackguards"
+],
+"blackhead": [
+"blackheads"
 ],
 "blackish": [
 "black",
@@ -7263,6 +7776,35 @@
 "blackly",
 "blackness",
 "blacks"
+],
+"blackjack": [
+"blackjacked",
+"blackjacking",
+"blackjacks"
+],
+"blacklist": [
+"blacklisted",
+"blacklisting",
+"blacklists"
+],
+"blackmail": [
+"blackmailed",
+"blackmailing",
+"blackmails"
+],
+"blackmailer": [
+"blackmailers"
+],
+"blackout": [
+"blackouts"
+],
+"blacksmith": [
+"blacksmiths"
+],
+"blacktop": [
+"blacktopped",
+"blacktopping",
+"blacktops"
 ],
 "bladder": [
 "bladders"
@@ -7289,6 +7831,9 @@
 "blamelessness",
 "blames",
 "blaming"
+],
+"blameworthy": [
+"blameworthiness"
 ],
 "blanch": [
 "blanched",
@@ -7348,6 +7893,9 @@
 "blasted",
 "blasting",
 "blasts"
+],
+"blastoff": [
+"blastoffs"
 ],
 "blatant": [
 "blatantly"
@@ -7479,6 +8027,11 @@
 "blindness",
 "blinds"
 ],
+"blindfold": [
+"blindfolded",
+"blindfolding",
+"blindfolds"
+],
 "blink": [
 "blinked",
 "blinking",
@@ -7563,6 +8116,15 @@
 "blockage": [
 "blockages"
 ],
+"blockbuster": [
+"blockbusters"
+],
+"blockhead": [
+"blockheads"
+],
+"blockhouse": [
+"blockhouses"
+],
 "blond": [
 "blonde",
 "blonder",
@@ -7589,6 +8151,13 @@
 "bloodlessness",
 "bloods"
 ],
+"bloodbath": [
+"bloodbaths"
+],
+"bloodcurdling": [],
+"bloodhound": [
+"bloodhounds"
+],
 "bloodless": [
 "blood",
 "blooded",
@@ -7596,6 +8165,33 @@
 "bloodlessly",
 "bloodlessness",
 "bloods"
+],
+"bloodmobile": [
+"bloodmobiles"
+],
+"bloodshed": [],
+"bloodshot": [],
+"bloodstained": [
+"bloodstain",
+"bloodstains"
+],
+"bloodstream": [
+"bloodstreams"
+],
+"bloodsucker": [
+"bloodsuckers"
+],
+"bloodthirstiness": [
+"bloodthirstier",
+"bloodthirstiest",
+"bloodthirstily",
+"bloodthirsty"
+],
+"bloodthirsty": [
+"bloodthirstier",
+"bloodthirstiest",
+"bloodthirstily",
+"bloodthirstiness"
 ],
 "bloody": [
 "bloodied",
@@ -7655,11 +8251,17 @@
 "blown",
 "blows"
 ],
+"blowgun": [
+"blowguns"
+],
 "blown": [
 "blew",
 "blow",
 "blowing",
 "blows"
+],
+"blowout": [
+"blowouts"
 ],
 "blowsy": [
 "blowsier",
@@ -7667,6 +8269,11 @@
 "blowzier",
 "blowziest",
 "blowzy"
+],
+"blowtorch": [
+"blowtorched",
+"blowtorches",
+"blowtorching"
 ],
 "blowzy": [
 "blowsier",
@@ -7695,6 +8302,24 @@
 "bluest",
 "bluing",
 "bluish"
+],
+"bluebell": [
+"bluebells"
+],
+"blueberry": [
+"blueberries"
+],
+"bluebird": [
+"bluebirds"
+],
+"bluefish": [
+"bluefishes"
+],
+"bluegrass": [],
+"blueprint": [
+"blueprinted",
+"blueprinting",
+"blueprints"
 ],
 "blues": [
 "blue",
@@ -7804,6 +8429,12 @@
 "boarder": [
 "boarders"
 ],
+"boardinghouse": [
+"boardinghouses"
+],
+"boardwalk": [
+"boardwalks"
+],
 "boast": [
 "boasted",
 "boastful",
@@ -7828,6 +8459,9 @@
 "boater": [
 "boaters"
 ],
+"boatman": [
+"boatmen"
+],
 "bob": [
 "bobbed",
 "bobbing",
@@ -7843,6 +8477,17 @@
 ],
 "bobby": [
 "bobbies"
+],
+"bobcat": [
+"bobcats"
+],
+"bobsled": [
+"bobsledded",
+"bobsledding",
+"bobsleds"
+],
+"bobwhite": [
+"bobwhites"
 ],
 "bode": [
 "boded",
@@ -7864,6 +8509,10 @@
 "bodied",
 "bodies",
 "bodily"
+],
+"bodybuilding": [],
+"bodyguard": [
+"bodyguards"
 ],
 "bog": [
 "bogged",
@@ -7940,6 +8589,12 @@
 "boldly",
 "boldness"
 ],
+"boldface": [
+"boldfaced"
+],
+"boldfaced": [
+"boldface"
+],
 "bole": [
 "boles"
 ],
@@ -7986,6 +8641,9 @@
 "bomber": [
 "bombers"
 ],
+"bombshell": [
+"bombshells"
+],
 "bonanza": [
 "bonanzas"
 ],
@@ -8003,6 +8661,10 @@
 "boneless",
 "bones",
 "boning"
+],
+"bonehead": [
+"boneheaded",
+"boneheads"
 ],
 "boner": [
 "boners"
@@ -8060,6 +8722,14 @@
 "bookish",
 "books"
 ],
+"bookcase": [
+"bookcases"
+],
+"bookend": [
+"bookended",
+"bookending",
+"bookends"
+],
 "bookie": [
 "bookies"
 ],
@@ -8075,8 +8745,35 @@
 "booking",
 "books"
 ],
+"bookkeeper": [
+"bookkeepers"
+],
+"bookkeeping": [],
 "booklet": [
 "booklets"
+],
+"bookmaker": [
+"bookmakers"
+],
+"bookmark": [
+"bookmarked",
+"bookmarking",
+"bookmarks"
+],
+"bookmobile": [
+"bookmobiles"
+],
+"bookshelf": [
+"bookshelves"
+],
+"bookshelves": [
+"bookshelf"
+],
+"bookstore": [
+"bookstores"
+],
+"bookworm": [
+"bookworms"
 ],
 "boom": [
 "boomed",
@@ -8136,6 +8833,11 @@
 "bootees",
 "booties"
 ],
+"bootleg": [
+"bootlegged",
+"bootlegging",
+"bootlegs"
+],
 "booty": [
 "booties"
 ],
@@ -8154,6 +8856,12 @@
 "bordered",
 "bordering",
 "borders"
+],
+"borderland": [
+"borderlands"
+],
+"borderline": [
+"borderlines"
 ],
 "bore": [
 "bear",
@@ -8237,6 +8945,9 @@
 "bottled",
 "bottles",
 "bottling"
+],
+"bottleneck": [
+"bottlenecks"
 ],
 "bottom": [
 "bottomed",
@@ -8365,6 +9076,10 @@
 "bowling",
 "bowls"
 ],
+"bowlegged": [
+"bowleg",
+"bowlegs"
+],
 "bowler": [
 "bowlers"
 ],
@@ -8381,11 +9096,17 @@
 "bowsprit": [
 "bowsprits"
 ],
+"bowstring": [
+"bowstrings"
+],
 "box": [
 "boxed",
 "boxes",
 "boxing",
 "boxlike"
+],
+"boxcar": [
+"boxcars"
 ],
 "boxer": [
 "boxers"
@@ -8406,6 +9127,9 @@
 "boycotted",
 "boycotting",
 "boycotts"
+],
+"boyfriend": [
+"boyfriends"
 ],
 "boyhood": [
 "boyhoods"
@@ -8471,12 +9195,35 @@
 "brainlessly",
 "brains"
 ],
+"brainchild": [
+"brainchildren"
+],
 "brainless": [
 "brain",
 "brained",
 "braining",
 "brainlessly",
 "brains"
+],
+"brainstorm": [
+"brainstormed",
+"brainstorming",
+"brainstorms"
+],
+"brainstorming": [
+"brainstorm",
+"brainstormed",
+"brainstorms"
+],
+"brainwash": [
+"brainwashed",
+"brainwashes",
+"brainwashing"
+],
+"brainwashing": [
+"brainwash",
+"brainwashed",
+"brainwashes"
 ],
 "brainy": [
 "brainier",
@@ -8599,8 +9346,14 @@
 "breading",
 "breads"
 ],
+"breadfruit": [
+"breadfruits"
+],
 "breadth": [
 "breadths"
+],
+"breadwinner": [
+"breadwinners"
 ],
 "break": [
 "breaking",
@@ -8614,13 +9367,37 @@
 "breakage": [
 "breakages"
 ],
+"breakdown": [
+"breakdowns"
+],
 "breaker": [
 "breakers"
+],
+"breakfast": [
+"breakfasted",
+"breakfasting",
+"breakfasts"
+],
+"breakneck": [],
+"breakthrough": [
+"breakthroughs"
+],
+"breakwater": [
+"breakwaters"
 ],
 "breast": [
 "breasted",
 "breasting",
 "breasts"
+],
+"breastbone": [
+"breastbones"
+],
+"breastplate": [
+"breastplates"
+],
+"breaststroke": [
+"breaststrokes"
 ],
 "breath": [
 "breathless",
@@ -8642,6 +9419,9 @@
 "breathlessly",
 "breathlessness",
 "breaths"
+],
+"breathtaking": [
+"breathtakingly"
 ],
 "bred": [
 "breed",
@@ -8709,17 +9489,33 @@
 "bricking",
 "bricks"
 ],
+"brickbat": [
+"brickbats"
+],
+"bricklayer": [
+"bricklayers"
+],
 "bridal": [
 "bridals"
 ],
 "bride": [
 "brides"
 ],
+"bridegroom": [
+"bridegrooms"
+],
+"bridesmaid": [
+"bridesmaids"
+],
 "bridge": [
 "bridged",
 "bridges",
 "bridging"
 ],
+"bridgehead": [
+"bridgeheads"
+],
+"bridgework": [],
 "bridle": [
 "bridled",
 "bridles",
@@ -8733,6 +9529,9 @@
 "briefly",
 "briefness",
 "briefs"
+],
+"briefcase": [
+"briefcases"
 ],
 "briefing": [
 "brief",
@@ -8862,10 +9661,27 @@
 "broadness",
 "broads"
 ],
+"broadcast": [
+"broadcasted",
+"broadcasting",
+"broadcasts"
+],
+"broadcaster": [
+"broadcasters"
+],
+"broadcloth": [],
 "broaden": [
 "broadened",
 "broadening",
 "broadens"
+],
+"broadside": [
+"broadsided",
+"broadsides",
+"broadsiding"
+],
+"broadsword": [
+"broadswords"
 ],
 "brocade": [
 "brocaded",
@@ -8956,6 +9772,9 @@
 "broom": [
 "brooms"
 ],
+"broomstick": [
+"broomsticks"
+],
 "broth": [
 "broths"
 ],
@@ -8988,6 +9807,16 @@
 "brow": [
 "brows"
 ],
+"browbeat": [
+"browbeaten",
+"browbeating",
+"browbeats"
+],
+"browbeaten": [
+"browbeat",
+"browbeating",
+"browbeats"
+],
 "brown": [
 "browned",
 "browner",
@@ -9008,6 +9837,12 @@
 "browning",
 "brownness",
 "browns"
+],
+"brownout": [
+"brownouts"
+],
+"brownstone": [
+"brownstones"
 ],
 "browse": [
 "browsed",
@@ -9047,6 +9882,7 @@
 "brushes",
 "brushing"
 ],
+"brushwood": [],
 "brusque": [
 "brusk",
 "brusker",
@@ -9103,6 +9939,9 @@
 "bucking",
 "bucks"
 ],
+"buckboard": [
+"buckboards"
+],
 "bucket": [
 "bucketed",
 "bucketful",
@@ -9127,6 +9966,15 @@
 "buckler": [
 "bucklers"
 ],
+"buckshot": [],
+"buckskin": [
+"buckskins"
+],
+"bucktoothed": [
+"buckteeth",
+"bucktooth"
+],
+"buckwheat": [],
 "bucolic": [
 "bucolically",
 "bucolics"
@@ -9192,6 +10040,9 @@
 "bugaboo": [
 "bugaboos"
 ],
+"bugbear": [
+"bugbears"
+],
 "buggy": [
 "buggier",
 "buggies",
@@ -9242,6 +10093,9 @@
 "bulking",
 "bulks"
 ],
+"bulkhead": [
+"bulkheads"
+],
 "bulky": [
 "bulkier",
 "bulkiest",
@@ -9254,6 +10108,11 @@
 "bullishly",
 "bullishness",
 "bulls"
+],
+"bulldog": [
+"bulldogged",
+"bulldogging",
+"bulldogs"
 ],
 "bulldoze": [
 "bulldozed",
@@ -9271,6 +10130,34 @@
 "bulletining",
 "bulletins"
 ],
+"bulletproof": [
+"bulletproofed",
+"bulletproofing",
+"bulletproofs"
+],
+"bullfight": [
+"bullfighting",
+"bullfights"
+],
+"bullfighter": [
+"bullfighters"
+],
+"bullfighting": [
+"bullfight",
+"bullfights"
+],
+"bullfrog": [
+"bullfrogs"
+],
+"bullheaded": [
+"bullhead",
+"bullheadedly",
+"bullheadedness",
+"bullheads"
+],
+"bullhorn": [
+"bullhorns"
+],
 "bullion": [],
 "bullish": [
 "bull",
@@ -9282,6 +10169,9 @@
 ],
 "bullock": [
 "bullocks"
+],
+"bullpen": [
+"bullpens"
 ],
 "bully": [
 "bullied",
@@ -9305,6 +10195,9 @@
 "bumbled",
 "bumbles",
 "bumbling"
+],
+"bumblebee": [
+"bumblebees"
 ],
 "bumbling": [
 "bumble",
@@ -9375,6 +10268,9 @@
 ],
 "bunker": [
 "bunkers"
+],
+"bunkhouse": [
+"bunkhouses"
 ],
 "bunkum": [
 "buncombe"
@@ -9499,6 +10395,9 @@
 "burnous",
 "burnouses"
 ],
+"burnout": [
+"burnouts"
+],
 "burnt": [
 "burn",
 "burned",
@@ -9546,6 +10445,9 @@
 "busses",
 "bussing"
 ],
+"busboy": [
+"busboys"
+],
 "bush": [
 "bushed",
 "bushes",
@@ -9565,6 +10467,11 @@
 ],
 "bushman": [
 "bushmen"
+],
+"bushwhack": [
+"bushwhacked",
+"bushwhacking",
+"bushwhacks"
 ],
 "bushy": [
 "bushier",
@@ -9625,6 +10532,10 @@
 "busying",
 "busyness"
 ],
+"busybody": [
+"busybodies"
+],
+"busywork": [],
 "but": [
 "buts"
 ],
@@ -9656,6 +10567,23 @@
 "buttering",
 "butters"
 ],
+"buttercup": [
+"buttercups"
+],
+"butterfat": [],
+"butterfingers": [
+"butterfingered"
+],
+"butterfly": [
+"butterflied",
+"butterflies",
+"butterflying"
+],
+"buttermilk": [],
+"butternut": [
+"butternuts"
+],
+"butterscotch": [],
 "buttery": [
 "butterier",
 "butteries",
@@ -9668,6 +10596,11 @@
 "buttoned",
 "buttoning",
 "buttons"
+],
+"buttonhole": [
+"buttonholed",
+"buttonholes",
+"buttonholing"
 ],
 "buttress": [
 "buttressed",
@@ -9683,6 +10616,9 @@
 "buyer": [
 "buyers"
 ],
+"buyout": [
+"buyouts"
+],
 "buzz": [
 "buzzed",
 "buzzes",
@@ -9693,6 +10629,9 @@
 ],
 "buzzer": [
 "buzzers"
+],
+"buzzword": [
+"buzzwords"
 ],
 "by": [],
 "bye": [
@@ -9740,10 +10679,16 @@
 "cabinet": [
 "cabinets"
 ],
+"cabinetmaker": [
+"cabinetmakers"
+],
 "cable": [
 "cabled",
 "cables",
 "cabling"
+],
+"cablegram": [
+"cablegrams"
 ],
 "caboose": [
 "cabooses"
@@ -9939,6 +10884,7 @@
 "calfs",
 "calves"
 ],
+"calfskin": [],
 "caliber": [
 "calibers",
 "calibre",
@@ -10143,13 +11089,25 @@
 "camper": [
 "campers"
 ],
+"campfire": [
+"campfires"
+],
+"campground": [
+"campgrounds"
+],
 "camphor": [],
+"campsite": [
+"campsites"
+],
 "campus": [
 "campuses"
 ],
 "campy": [
 "campier",
 "campiest"
+],
+"camshaft": [
+"camshafts"
 ],
 "can": [
 "canned",
@@ -10216,6 +11174,10 @@
 "candles",
 "candling"
 ],
+"candlelight": [],
+"candlestick": [
+"candlesticks"
+],
 "candor": [
 "candour"
 ],
@@ -10276,6 +11238,9 @@
 "cannonaded",
 "cannonades",
 "cannonading"
+],
+"cannonball": [
+"cannonballs"
 ],
 "cannot": [],
 "canny": [
@@ -10367,6 +11332,9 @@
 "canvasses",
 "canvassing"
 ],
+"canvasback": [
+"canvasbacks"
+],
 "canvass": [
 "canvassed",
 "canvasses",
@@ -10457,6 +11425,11 @@
 "capricious": [
 "capriciously",
 "capriciousness"
+],
+"capsize": [
+"capsized",
+"capsizes",
+"capsizing"
 ],
 "capstan": [
 "capstans"
@@ -10569,6 +11542,7 @@
 "carding",
 "cards"
 ],
+"cardboard": [],
 "cardiac": [],
 "cardigan": [
 "cardigans"
@@ -10582,6 +11556,11 @@
 ],
 "cardiology": [],
 "cardiovascular": [],
+"cardsharp": [
+"cardsharper",
+"cardsharpers",
+"cardsharps"
+],
 "care": [
 "cared",
 "careful",
@@ -10640,6 +11619,8 @@
 "caret": [
 "carets"
 ],
+"careworn": [],
+"carfare": [],
 "cargo": [
 "cargoes",
 "cargos"
@@ -10742,6 +11723,9 @@
 "carpeted",
 "carpets"
 ],
+"carport": [
+"carports"
+],
 "carrel": [
 "carrell",
 "carrells",
@@ -10767,6 +11751,21 @@
 "carries",
 "carrying"
 ],
+"carryall": [
+"carryalls"
+],
+"carryout": [
+"carryouts"
+],
+"carryover": [
+"carryovers"
+],
+"carsick": [
+"carsickness"
+],
+"carsickness": [
+"carsick"
+],
 "cart": [
 "carted",
 "carting",
@@ -10791,6 +11790,14 @@
 "cartoonist": [
 "cartoonists"
 ],
+"cartridge": [
+"cartridges"
+],
+"cartwheel": [
+"cartwheeled",
+"cartwheeling",
+"cartwheels"
+],
 "carve": [
 "carved",
 "carves",
@@ -10814,6 +11821,10 @@
 "casein": [],
 "casement": [
 "casements"
+],
+"casework": [],
+"caseworker": [
+"caseworkers"
 ],
 "cash": [
 "cashed",
@@ -10866,6 +11877,9 @@
 "castanet": [
 "castanets"
 ],
+"castaway": [
+"castaways"
+],
 "caste": [
 "castes"
 ],
@@ -10888,6 +11902,9 @@
 "castled",
 "castles",
 "castling"
+],
+"castoff": [
+"castoffs"
 ],
 "castor": [
 "caster",
@@ -10979,10 +11996,24 @@
 "catatonic": [
 "catatonics"
 ],
+"catbird": [
+"catbirds"
+],
+"catboat": [
+"catboats"
+],
+"catcall": [
+"catcalled",
+"catcalling",
+"catcalls"
+],
 "catch": [
 "catches",
 "catching",
 "caught"
+],
+"catchall": [
+"catchalls"
 ],
 "catcher": [
 "catchers"
@@ -10991,6 +12022,9 @@
 "catch",
 "catches",
 "caught"
+],
+"catchword": [
+"catchwords"
 ],
 "catchy": [
 "catchier",
@@ -11041,6 +12075,10 @@
 "caterwauling",
 "caterwauls"
 ],
+"catfish": [
+"catfishes"
+],
+"catgut": [],
 "catharsis": [
 "catharses"
 ],
@@ -11057,6 +12095,16 @@
 "cathodes"
 ],
 "catholic": [],
+"catholicism": [],
+"catkin": [
+"catkins"
+],
+"catnap": [
+"catnapped",
+"catnapping",
+"catnaps"
+],
+"catnip": [],
 "catsup": [
 "catchup",
 "catchups",
@@ -11064,12 +12112,18 @@
 "ketchup",
 "ketchups"
 ],
+"cattail": [
+"cattails"
+],
 "cattle": [],
 "catty": [
 "cattier",
 "cattiest",
 "cattily",
 "cattiness"
+],
+"catwalk": [
+"catwalks"
 ],
 "caucus": [
 "caucused",
@@ -11117,6 +12171,9 @@
 "causes",
 "causing",
 "cos"
+],
+"causeway": [
+"causeways"
 ],
 "caustic": [
 "caustically",
@@ -11328,6 +12385,11 @@
 "centres",
 "centring"
 ],
+"centerpiece": [
+"centerpieces",
+"centrepiece",
+"centrepieces"
+],
 "centigrade": [],
 "centigram": [
 "centigramme",
@@ -11510,6 +12572,9 @@
 "chairing",
 "chairs"
 ],
+"chairlift": [
+"chairlifts"
+],
 "chairman": [
 "chairmen"
 ],
@@ -11535,6 +12600,9 @@
 "chalked",
 "chalking",
 "chalks"
+],
+"chalkboard": [
+"chalkboards"
 ],
 "chalky": [
 "chalkier",
@@ -11562,6 +12630,9 @@
 ],
 "chamberlain": [
 "chamberlains"
+],
+"chambermaid": [
+"chambermaids"
 ],
 "chameleon": [
 "chameleons"
@@ -11633,6 +12704,9 @@
 ],
 "changeling": [
 "changelings"
+],
+"changeover": [
+"changeovers"
 ],
 "channel": [
 "channeled",
@@ -11716,6 +12790,9 @@
 ],
 "charade": [
 "charades"
+],
+"charcoal": [
+"charcoals"
 ],
 "charge": [
 "charged",
@@ -11833,6 +12910,9 @@
 "chattering",
 "chatters"
 ],
+"chatterbox": [
+"chatterboxes"
+],
 "chatty": [
 "chattier",
 "chattiest",
@@ -11862,6 +12942,9 @@
 "cheapening",
 "cheapens"
 ],
+"cheapskate": [
+"cheapskates"
+],
 "cheat": [
 "cheated",
 "cheating",
@@ -11873,6 +12956,11 @@
 "checks",
 "cheque",
 "cheques"
+],
+"checkbook": [
+"checkbooks",
+"chequebook",
+"chequebooks"
 ],
 "checked": [
 "check",
@@ -11888,6 +12976,11 @@
 "chequer",
 "chequers"
 ],
+"checkerboard": [
+"checkerboards",
+"chequerboard",
+"chequerboards"
+],
 "checkered": [
 "checker",
 "checkering",
@@ -11902,6 +12995,23 @@
 "chequer",
 "chequers"
 ],
+"checklist": [
+"checklists"
+],
+"checkmate": [
+"checkmated",
+"checkmates",
+"checkmating"
+],
+"checkout": [
+"checkouts"
+],
+"checkpoint": [
+"checkpoints"
+],
+"checkroom": [
+"checkrooms"
+],
 "cheddar": [
 "cheddars"
 ],
@@ -11909,6 +13019,9 @@
 "cheeked",
 "cheeking",
 "cheeks"
+],
+"cheekbone": [
+"cheekbones"
 ],
 "cheeky": [
 "cheekier",
@@ -11947,6 +13060,9 @@
 "cheerlessness",
 "cheers"
 ],
+"cheerleader": [
+"cheerleaders"
+],
 "cheerless": [
 "cheer",
 "cheered",
@@ -11969,6 +13085,13 @@
 "cheese": [
 "cheeses"
 ],
+"cheeseburger": [
+"cheeseburgers"
+],
+"cheesecake": [
+"cheesecakes"
+],
+"cheesecloth": [],
 "cheesy": [
 "cheesier",
 "cheesiest",
@@ -12018,6 +13141,9 @@
 ],
 "cherubic": [],
 "chess": [],
+"chessboard": [
+"chessboards"
+],
 "chessman": [
 "chessmen"
 ],
@@ -12026,6 +13152,9 @@
 "chestful",
 "chestfuls",
 "chests"
+],
+"chestnut": [
+"chestnuts"
 ],
 "chevron": [
 "chevrons"
@@ -12062,6 +13191,11 @@
 "chickening",
 "chickens"
 ],
+"chickenpox": [],
+"chickpea": [
+"chickpeas"
+],
+"chickweed": [],
 "chicle": [],
 "chicory": [
 "chicories"
@@ -12124,6 +13258,10 @@
 "childlike",
 "children"
 ],
+"childbearing": [],
+"childbirth": [
+"childbirths"
+],
 "childhood": [
 "childhoods"
 ],
@@ -12153,6 +13291,11 @@
 "childless",
 "childlessness",
 "children"
+],
+"childproof": [
+"childproofed",
+"childproofing",
+"childproofs"
 ],
 "children": [
 "child",
@@ -12282,6 +13425,11 @@
 "chit": [
 "chits"
 ],
+"chitchat": [
+"chitchats",
+"chitchatted",
+"chitchatting"
+],
 "chitin": [],
 "chitlins": [
 "chitlings",
@@ -12381,6 +13529,12 @@
 "chop",
 "chopped",
 "chopping"
+],
+"chopstick": [
+"chopsticks"
+],
+"chopsticks": [
+"chopstick"
 ],
 "choral": [
 "chorally",
@@ -12527,6 +13681,9 @@
 ],
 "churchman": [
 "churchmen"
+],
+"churchyard": [
+"churchyards"
 ],
 "churl": [
 "churlish",
@@ -12783,6 +13940,9 @@
 "clamming",
 "clams"
 ],
+"clambake": [
+"clambakes"
+],
 "clamber": [
 "clambered",
 "clambering",
@@ -12840,9 +14000,15 @@
 "clapping",
 "claps"
 ],
+"clapboard": [
+"clapboarded",
+"clapboarding",
+"clapboards"
+],
 "clapper": [
 "clappers"
 ],
+"claptrap": [],
 "claret": [
 "clarets"
 ],
@@ -12906,6 +14072,12 @@
 "classified",
 "classifies",
 "classifying"
+],
+"classmate": [
+"classmates"
+],
+"classroom": [
+"classrooms"
 ],
 "classy": [
 "classier",
@@ -13007,6 +14179,9 @@
 "clearness",
 "clears"
 ],
+"clearinghouse": [
+"clearinghouses"
+],
 "cleat": [
 "cleats"
 ],
@@ -13091,6 +14266,9 @@
 "cliff": [
 "cliffs"
 ],
+"cliffhanger": [
+"cliffhangers"
+],
 "climactic": [],
 "climate": [
 "climates"
@@ -13151,6 +14329,9 @@
 "clips",
 "clipt"
 ],
+"clipboard": [
+"clipboards"
+],
 "clipper": [
 "clippers"
 ],
@@ -13181,6 +14362,9 @@
 "cloaking",
 "cloaks"
 ],
+"cloakroom": [
+"cloakrooms"
+],
 "clobber": [
 "clobbered",
 "clobbering",
@@ -13192,6 +14376,9 @@
 "clocks"
 ],
 "clockwise": [],
+"clockwork": [
+"clockworks"
+],
 "clod": [
 "cloddish",
 "clods"
@@ -13242,6 +14429,10 @@
 "closest",
 "closing"
 ],
+"closemouthed": [],
+"closeout": [
+"closeouts"
+],
 "closet": [
 "closeted",
 "closeting",
@@ -13270,6 +14461,12 @@
 "clothed",
 "clothing"
 ],
+"clothesline": [
+"clotheslines"
+],
+"clothespin": [
+"clothespins"
+],
 "clothier": [
 "clothiers"
 ],
@@ -13287,6 +14484,9 @@
 "clouding",
 "cloudless",
 "clouds"
+],
+"cloudburst": [
+"cloudbursts"
 ],
 "cloudless": [
 "cloud",
@@ -13323,6 +14523,10 @@
 "clover": [
 "clovers"
 ],
+"cloverleaf": [
+"cloverleafs",
+"cloverleaves"
+],
 "clown": [
 "clowned",
 "clowning",
@@ -13349,6 +14553,13 @@
 "clubbed",
 "clubbing",
 "clubs"
+],
+"clubfoot": [
+"clubfeet",
+"clubfooted"
+],
+"clubhouse": [
+"clubhouses"
 ],
 "cluck": [
 "clucked",
@@ -13456,6 +14667,9 @@
 "coaster": [
 "coasters"
 ],
+"coastline": [
+"coastlines"
+],
 "coat": [
 "coated",
 "coating",
@@ -13489,8 +14703,15 @@
 "cobbler": [
 "cobblers"
 ],
+"cobblestone": [
+"cobblestones"
+],
 "cobra": [
 "cobras"
+],
+"cobweb": [
+"cobwebbed",
+"cobwebs"
 ],
 "cocaine": [
 "cocain"
@@ -13522,11 +14743,28 @@
 "cockerels"
 ],
 "cockeyed": [],
+"cockfight": [
+"cockfighting",
+"cockfights"
+],
 "cockle": [
 "cockles"
 ],
+"cockleshell": [
+"cockleshells"
+],
 "cockney": [
 "cockneys"
+],
+"cockpit": [
+"cockpits"
+],
+"cockroach": [
+"cockroaches"
+],
+"cocksure": [],
+"cocktail": [
+"cocktails"
 ],
 "cocky": [
 "cockier",
@@ -13571,6 +14809,9 @@
 "codex": [
 "codexes",
 "codices"
+],
+"codfish": [
+"codfishes"
 ],
 "codger": [
 "codgers"
@@ -13618,6 +14859,12 @@
 "coffee": [
 "coffees"
 ],
+"coffeehouse": [
+"coffeehouses"
+],
+"coffeepot": [
+"coffeepots"
+],
 "coffer": [
 "coffers"
 ],
@@ -13656,6 +14903,9 @@
 ],
 "cognizant": [
 "cognisant"
+],
+"cogwheel": [
+"cogwheels"
 ],
 "cohabit": [
 "cohabited",
@@ -13769,6 +15019,9 @@
 "collaring",
 "collarless",
 "collars"
+],
+"collarbone": [
+"collarbones"
 ],
 "collate": [
 "collated",
@@ -13927,6 +15180,9 @@
 "coloratura": [
 "coloraturas"
 ],
+"colorblindness": [
+"colorblind"
+],
 "colored": [
 "color",
 "colorful",
@@ -13947,6 +15203,10 @@
 "colourlessly",
 "colourlessness",
 "colours"
+],
+"colorfast": [
+"colorfastness",
+"colourfast"
 ],
 "colorful": [
 "color",
@@ -14112,6 +15372,9 @@
 "cumming",
 "cums"
 ],
+"comeback": [
+"comebacks"
+],
 "comedian": [
 "comedians",
 "comedienne",
@@ -14121,6 +15384,9 @@
 "comedian",
 "comedians",
 "comediennes"
+],
+"comedown": [
+"comedowns"
 ],
 "comedy": [
 "comedies"
@@ -14335,6 +15601,12 @@
 "commonness",
 "commons"
 ],
+"commonplace": [
+"commonplaces"
+],
+"commonwealth": [
+"commonwealths"
+],
 "commotion": [
 "commotions"
 ],
@@ -14407,6 +15679,9 @@
 "companionably"
 ],
 "companionship": [],
+"companionway": [
+"companionways"
+],
 "company": [
 "companies"
 ],
@@ -15736,6 +17011,9 @@
 "contending",
 "contends"
 ],
+"contender": [
+"contenders"
+],
 "content": [
 "contented",
 "contentedly",
@@ -16098,6 +17376,9 @@
 "cooking",
 "cooks"
 ],
+"cookbook": [
+"cookbooks"
+],
 "cookery": [
 "cookeries"
 ],
@@ -16109,6 +17390,9 @@
 "cook",
 "cooked",
 "cooks"
+],
+"cookout": [
+"cookouts"
 ],
 "cool": [
 "cooled",
@@ -16199,6 +17483,9 @@
 "copper": [
 "coppers"
 ],
+"copperhead": [
+"copperheads"
+],
 "coppice": [
 "coppiced",
 "coppices",
@@ -16225,6 +17512,19 @@
 "copied",
 "copies",
 "copying"
+],
+"copycat": [
+"copycats",
+"copycatted",
+"copycatting"
+],
+"copyright": [
+"copyrighted",
+"copyrighting",
+"copyrights"
+],
+"copywriter": [
+"copywriters"
 ],
 "coquette": [
 "coquetted",
@@ -16279,6 +17579,11 @@
 "corking",
 "corks"
 ],
+"corkscrew": [
+"corkscrewed",
+"corkscrewing",
+"corkscrews"
+],
 "cormorant": [
 "cormorants"
 ],
@@ -16286,6 +17591,12 @@
 "corned",
 "corning",
 "corns"
+],
+"cornball": [
+"cornballs"
+],
+"corncob": [
+"corncobs"
 ],
 "cornea": [
 "corneas"
@@ -16295,12 +17606,21 @@
 "cornering",
 "corners"
 ],
+"cornerstone": [
+"cornerstones"
+],
 "cornet": [
 "cornets"
+],
+"cornflakes": [],
+"cornflower": [
+"cornflowers"
 ],
 "cornice": [
 "cornices"
 ],
+"cornmeal": [],
+"cornstarch": [],
 "cornucopia": [
 "cornucopias"
 ],
@@ -16576,6 +17896,15 @@
 "cottoning",
 "cottons"
 ],
+"cottonmouth": [
+"cottonmouths"
+],
+"cottontail": [
+"cottontails"
+],
+"cottonwood": [
+"cottonwoods"
+],
 "cotyledon": [
 "cotyledons"
 ],
@@ -16633,6 +17962,9 @@
 "counts"
 ],
 "countable": [],
+"countdown": [
+"countdowns"
+],
 "countenance": [
 "countenanced",
 "countenances",
@@ -16648,19 +17980,27 @@
 "counteracting",
 "counteracts"
 ],
+"counterattack": [
+"counterattacked",
+"counterattacking",
+"counterattacks"
+],
 "counterbalance": [
 "counterbalanced",
 "counterbalances",
 "counterbalancing"
 ],
+"counterclockwise": [],
 "counterculture": [
 "countercultures"
 ],
+"counterespionage": [],
 "counterfeit": [
 "counterfeited",
 "counterfeiting",
 "counterfeits"
 ],
+"counterintelligence": [],
 "countermand": [
 "countermanded",
 "countermanding",
@@ -16681,6 +18021,13 @@
 "counterpointed",
 "counterpointing",
 "counterpoints"
+],
+"counterproductive": [],
+"counterrevolution": [
+"counterrevolutions"
+],
+"counterrevolutionary": [
+"counterrevolutionaries"
 ],
 "countersign": [
 "countersigned",
@@ -16705,6 +18052,9 @@
 ],
 "countryman": [
 "countrymen"
+],
+"countryside": [
+"countrysides"
 ],
 "countrywoman": [
 "countrywomen"
@@ -16768,6 +18118,9 @@
 "courtesy": [
 "courtesies"
 ],
+"courthouse": [
+"courthouses"
+],
 "courtier": [
 "courtiers"
 ],
@@ -16780,8 +18133,14 @@
 "courtliness",
 "courts"
 ],
+"courtroom": [
+"courtrooms"
+],
 "courtship": [
 "courtships"
+],
+"courtyard": [
+"courtyards"
 ],
 "cousin": [
 "cousins"
@@ -16803,6 +18162,9 @@
 "covers"
 ],
 "coverage": [],
+"coverall": [
+"coveralls"
+],
 "covering": [
 "cover",
 "covered",
@@ -16840,19 +18202,41 @@
 "cowards"
 ],
 "cowardice": [],
+"cowboy": [
+"cowboys"
+],
 "cower": [
 "cowered",
 "cowering",
 "cowers"
 ],
+"cowgirl": [
+"cowgirls"
+],
+"cowhand": [
+"cowhands"
+],
+"cowhide": [
+"cowhides"
+],
 "cowl": [
 "cowls"
+],
+"cowlick": [
+"cowlicks"
 ],
 "cowling": [
 "cowlings"
 ],
 "coworker": [
 "coworkers"
+],
+"cowpoke": [
+"cowpokes"
+],
+"cowpox": [],
+"cowslip": [
+"cowslips"
 ],
 "coxcomb": [
 "coxcombs"
@@ -16909,6 +18293,9 @@
 "cracking",
 "cracks"
 ],
+"crackdown": [
+"crackdowns"
+],
 "cracked": [
 "crack",
 "cracking",
@@ -16917,10 +18304,16 @@
 "cracker": [
 "crackers"
 ],
+"crackerjack": [
+"crackerjacks"
+],
 "crackle": [
 "crackled",
 "crackles",
 "crackling"
+],
+"crackpot": [
+"crackpots"
 ],
 "cradle": [
 "cradled",
@@ -16983,6 +18376,12 @@
 "cranked",
 "cranking",
 "cranks"
+],
+"crankcase": [
+"crankcases"
+],
+"crankshaft": [
+"crankshafts"
 ],
 "cranky": [
 "crankier",
@@ -17049,6 +18448,11 @@
 ],
 "craw": [
 "craws"
+],
+"crawfish": [
+"crawfishes",
+"crayfish",
+"crayfishes"
 ],
 "crawl": [
 "crawled",
@@ -17244,6 +18648,7 @@
 "crestless",
 "crests"
 ],
+"crestfallen": [],
 "cretin": [
 "cretins"
 ],
@@ -17452,7 +18857,26 @@
 "crossly",
 "crossness"
 ],
+"crossbar": [
+"crossbars"
+],
 "crossbones": [],
+"crossbow": [
+"crossbows"
+],
+"crossbred": [
+"crossbreed",
+"crossbreeding",
+"crossbreeds"
+],
+"crossbreed": [
+"crossbred",
+"crossbreeding",
+"crossbreeds"
+],
+"crossfire": [
+"crossfires"
+],
 "crossing": [
 "cross",
 "crossed",
@@ -17462,8 +18886,17 @@
 "crossly",
 "crossness"
 ],
+"crossover": [
+"crossovers"
+],
+"crosspiece": [
+"crosspieces"
+],
 "crossroads": [
 "crossroad"
+],
+"crosswalk": [
+"crosswalks"
 ],
 "crossways": [
 "crosswise"
@@ -17493,6 +18926,9 @@
 "crowed",
 "crowing",
 "crows"
+],
+"crowbar": [
+"crowbars"
 ],
 "crowd": [
 "crowded",
@@ -17642,6 +19078,9 @@
 "cried",
 "cries",
 "crying"
+],
+"crybaby": [
+"crybabies"
 ],
 "crying": [
 "cried",
@@ -17832,6 +19271,12 @@
 "cupping",
 "cups",
 "cupsful"
+],
+"cupboard": [
+"cupboards"
+],
+"cupcake": [
+"cupcakes"
 ],
 "cupful": [
 "cup",
@@ -18076,6 +19521,9 @@
 "cuts",
 "cutting"
 ],
+"cutback": [
+"cutbacks"
+],
 "cute": [
 "cutely",
 "cuteness",
@@ -18099,6 +19547,9 @@
 ],
 "cutter": [
 "cutters"
+],
+"cutthroat": [
+"cutthroats"
 ],
 "cutting": [
 "cut",
@@ -18243,6 +19694,9 @@
 "dairies",
 "dairy"
 ],
+"dairymaid": [
+"dairymaids"
+],
 "dairyman": [
 "dairymen"
 ],
@@ -18381,6 +19835,9 @@
 "daringly",
 "durst"
 ],
+"daredevil": [
+"daredevils"
+],
 "daring": [
 "dare",
 "dared",
@@ -18398,6 +19855,9 @@
 "darkened",
 "darkening",
 "darkens"
+],
+"darkroom": [
+"darkrooms"
 ],
 "darling": [
 "darlings"
@@ -18419,6 +19879,9 @@
 "dashes",
 "dashing"
 ],
+"dashboard": [
+"dashboards"
+],
 "dashiki": [
 "dashikis"
 ],
@@ -18436,6 +19899,9 @@
 "datum",
 "datums"
 ],
+"database": [
+"databases"
+],
 "date": [
 "dated",
 "dateless",
@@ -18447,6 +19913,11 @@
 "dateless",
 "dates",
 "dating"
+],
+"dateline": [
+"datelined",
+"datelines",
+"datelining"
 ],
 "dative": [
 "datives"
@@ -18514,6 +19985,20 @@
 "daily",
 "days"
 ],
+"daybed": [
+"daybeds"
+],
+"daybreak": [],
+"daydream": [
+"daydreamed",
+"daydreaming",
+"daydreams",
+"daydreamt"
+],
+"daylight": [
+"daylights"
+],
+"daytime": [],
 "daze": [
 "dazed",
 "dazedly",
@@ -18545,10 +20030,21 @@
 "deadliness",
 "deadly"
 ],
+"deadbeat": [
+"deadbeats"
+],
 "deaden": [
 "deadened",
 "deadening",
 "deadens"
+],
+"deadline": [
+"deadlines"
+],
+"deadlock": [
+"deadlocked",
+"deadlocking",
+"deadlocks"
 ],
 "deadly": [
 "dead",
@@ -18558,6 +20054,12 @@
 "deadliest",
 "deadliness"
 ],
+"deadpan": [
+"deadpanned",
+"deadpanning",
+"deadpans"
+],
+"deadwood": [],
 "deaf": [
 "deafer",
 "deafest",
@@ -18610,6 +20112,12 @@
 "deathly",
 "deaths"
 ],
+"deathbed": [
+"deathbeds"
+],
+"deathblow": [
+"deathblows"
+],
 "deathless": [
 "death",
 "deathlessly",
@@ -18630,6 +20138,9 @@
 "deathlessly",
 "deathlike",
 "deaths"
+],
+"deathtrap": [
+"deathtraps"
 ],
 "deb": [
 "debs"
@@ -19048,6 +20559,7 @@
 "deer": [
 "deers"
 ],
+"deerskin": [],
 "deescalate": [
 "deescalated",
 "deescalates",
@@ -20252,6 +21764,9 @@
 "desk": [
 "desks"
 ],
+"desktop": [
+"desktops"
+],
 "desolate": [
 "desolated",
 "desolately",
@@ -20620,6 +22135,12 @@
 "devoutness"
 ],
 "dew": [],
+"dewdrop": [
+"dewdrops"
+],
+"dewlap": [
+"dewlaps"
+],
 "dewy": [
 "dewier",
 "dewiest",
@@ -20832,6 +22353,9 @@
 "died",
 "dies",
 "dying"
+],
+"diehard": [
+"diehards"
 ],
 "diereses": [
 "diaereses",
@@ -21147,6 +22671,9 @@
 "dipsomania": [],
 "dipsomaniac": [
 "dipsomaniacs"
+],
+"dipstick": [
+"dipsticks"
 ],
 "dire": [
 "direful",
@@ -21799,6 +23326,9 @@
 "dishing"
 ],
 "disharmony": [],
+"dishcloth": [
+"dishcloths"
+],
 "dishearten": [
 "disheartened",
 "disheartening",
@@ -21836,6 +23366,18 @@
 "dishonorably",
 "dishonourable",
 "dishonourably"
+],
+"dishpan": [
+"dishpans"
+],
+"dishrag": [
+"dishrags"
+],
+"dishtowel": [
+"dishtowels"
+],
+"dishwasher": [
+"dishwashers"
 ],
 "disillusion": [
 "disillusioned",
@@ -22129,6 +23671,12 @@
 "disproportion": [
 "disproportions"
 ],
+"disproportionate": [
+"disproportionately"
+],
+"disproportionately": [
+"disproportionate"
+],
 "disprove": [
 "disproved",
 "disproven",
@@ -22151,6 +23699,9 @@
 "disputed",
 "disputes",
 "disputing"
+],
+"disqualification": [
+"disqualifications"
 ],
 "disqualify": [
 "disqualified",
@@ -22240,6 +23791,9 @@
 "dissented",
 "dissenting",
 "dissents"
+],
+"dissenter": [
+"dissenters"
 ],
 "dissertation": [
 "dissertations"
@@ -22350,6 +23904,9 @@
 ],
 "distillation": [
 "distillations"
+],
+"distiller": [
+"distillers"
 ],
 "distillery": [
 "distilleries"
@@ -22654,6 +24211,9 @@
 "docketing",
 "dockets"
 ],
+"dockyard": [
+"dockyards"
+],
 "doctor": [
 "doctored",
 "doctoring",
@@ -22722,6 +24282,12 @@
 "dogging",
 "dogs"
 ],
+"dogfight": [
+"dogfights"
+],
+"dogfish": [
+"dogfishes"
+],
 "dogged": [
 "dog",
 "dogging",
@@ -22734,11 +24300,23 @@
 "doggiest",
 "doggy"
 ],
+"doggone": [
+"doggoned",
+"doggoneder",
+"doggonedest",
+"doggoner",
+"doggones",
+"doggonest",
+"doggoning"
+],
 "doggy": [
 "doggie",
 "doggier",
 "doggies",
 "doggiest"
+],
+"doghouse": [
+"doghouses"
 ],
 "dogie": [
 "dogies",
@@ -22754,6 +24332,14 @@
 "dogmatism": [],
 "dogmatist": [
 "dogmatists"
+],
+"dogtrot": [
+"dogtrots",
+"dogtrotted",
+"dogtrotting"
+],
+"dogwood": [
+"dogwoods"
 ],
 "doily": [
 "doilies"
@@ -22928,11 +24514,29 @@
 "dooming",
 "dooms"
 ],
+"doomsday": [],
 "door": [
 "doors"
 ],
+"doorbell": [
+"doorbells"
+],
+"doorknob": [
+"doorknobs"
+],
 "doorman": [
 "doormen"
+],
+"doormat": [
+"doormats"
+],
+"doorstep": [
+"doorstepped",
+"doorstepping",
+"doorsteps"
+],
+"doorway": [
+"doorways"
 ],
 "dope": [
 "doped",
@@ -23089,6 +24693,11 @@
 "dousing"
 ],
 "dove": [],
+"dovetail": [
+"dovetailed",
+"dovetailing",
+"dovetails"
+],
 "dowager": [
 "dowagers"
 ],
@@ -23110,8 +24719,51 @@
 "downing",
 "downs"
 ],
+"downbeat": [
+"downbeats"
+],
+"downcast": [],
 "downer": [
 "downers"
+],
+"downfall": [
+"downfalls"
+],
+"downgrade": [
+"downgraded",
+"downgrades",
+"downgrading"
+],
+"downhill": [
+"downhills"
+],
+"download": [
+"downloaded",
+"downloading",
+"downloads"
+],
+"downpour": [
+"downpours"
+],
+"downright": [],
+"downsize": [
+"downsized",
+"downsizes",
+"downsizing"
+],
+"downstage": [],
+"downstairs": [],
+"downstate": [],
+"downstream": [],
+"downswing": [
+"downswings"
+],
+"downtown": [
+"downtowns"
+],
+"downtrodden": [],
+"downturn": [
+"downturns"
 ],
 "downward": [
 "downwards"
@@ -23119,6 +24771,7 @@
 "downwards": [
 "downward"
 ],
+"downwind": [],
 "downy": [
 "downier",
 "downiest"
@@ -23166,6 +24819,9 @@
 "draughtsman",
 "draughtsmen"
 ],
+"draftsmanship": [
+"draughtsmanship"
+],
 "drafty": [
 "draftier",
 "draftiest",
@@ -23181,8 +24837,14 @@
 "dragging",
 "drags"
 ],
+"dragnet": [
+"dragnets"
+],
 "dragon": [
 "dragons"
+],
+"dragonfly": [
+"dragonflies"
 ],
 "dragoon": [
 "dragooned",
@@ -23195,6 +24857,9 @@
 "drains"
 ],
 "drainage": [],
+"drainpipe": [
+"drainpipes"
+],
 "drake": [
 "drakes"
 ],
@@ -23261,6 +24926,12 @@
 "draws",
 "drew"
 ],
+"drawback": [
+"drawbacks"
+],
+"drawbridge": [
+"drawbridges"
+],
 "drawer": [
 "drawers"
 ],
@@ -23281,6 +24952,9 @@
 "draws",
 "drew"
 ],
+"drawstring": [
+"drawstrings"
+],
 "dray": [
 "drays"
 ],
@@ -23293,6 +24967,7 @@
 "dreadfully",
 "dreadfulness"
 ],
+"dreadlocks": [],
 "dream": [
 "dreamed",
 "dreaming",
@@ -23301,6 +24976,7 @@
 "dreams",
 "dreamt"
 ],
+"dreamland": [],
 "dreamless": [
 "dream",
 "dreamed",
@@ -23364,6 +25040,10 @@
 "dresses",
 "drest"
 ],
+"dressmaker": [
+"dressmakers"
+],
+"dressmaking": [],
 "dressy": [
 "dressier",
 "dressiest",
@@ -23414,6 +25094,7 @@
 "drifter": [
 "drifters"
 ],
+"driftwood": [],
 "drill": [
 "drilled",
 "drilling",
@@ -23468,6 +25149,9 @@
 "driver": [
 "drivers"
 ],
+"driveway": [
+"driveways"
+],
 "drizzle": [
 "drizzled",
 "drizzles",
@@ -23513,6 +25197,9 @@
 ],
 "droplet": [
 "droplets"
+],
+"dropout": [
+"dropouts"
 ],
 "dropper": [
 "droppers"
@@ -23568,6 +25255,9 @@
 "druggist": [
 "druggists"
 ],
+"drugstore": [
+"drugstores"
+],
 "druid": [
 "druids"
 ],
@@ -23578,6 +25268,9 @@
 ],
 "drummer": [
 "drummers"
+],
+"drumstick": [
+"drumsticks"
 ],
 "drunk": [
 "drank",
@@ -23696,6 +25389,9 @@
 "digging",
 "digs"
 ],
+"dugout": [
+"dugouts"
+],
 "duh": [],
 "duke": [
 "dukes"
@@ -23726,6 +25422,12 @@
 "dumbest",
 "dumbly",
 "dumbness"
+],
+"dumbbell": [
+"dumbbells"
+],
+"dumbwaiter": [
+"dumbwaiters"
 ],
 "dumdum": [
 "dumdums"
@@ -23845,6 +25547,9 @@
 "duster": [
 "dusters"
 ],
+"dustpan": [
+"dustpans"
+],
 "dusty": [
 "dustier",
 "dustiest",
@@ -23907,6 +25612,7 @@
 "dyeing",
 "dyes"
 ],
+"dyestuff": [],
 "dying": [
 "dice",
 "die",
@@ -23924,6 +25630,9 @@
 ],
 "dynamic": [
 "dynamics"
+],
+"dynamically": [
+"dynamical"
 ],
 "dynamics": [
 "dynamic"
@@ -23975,13 +25684,33 @@
 "earfuls",
 "ears"
 ],
+"earache": [
+"earaches"
+],
+"eardrum": [
+"eardrums"
+],
 "earl": [
 "earls"
+],
+"earlobe": [
+"earlobes"
 ],
 "early": [
 "earlier",
 "earliest",
 "earliness"
+],
+"earmark": [
+"earmarked",
+"earmarking",
+"earmarks"
+],
+"earmuff": [
+"earmuffs"
+],
+"earmuffs": [
+"earmuff"
 ],
 "earn": [
 "earned",
@@ -23994,9 +25723,17 @@
 "earnests"
 ],
 "earnings": [],
+"earphone": [
+"earphones"
+],
+"earplug": [
+"earplugs"
+],
 "earring": [
 "earrings"
 ],
+"earshot": [],
+"earsplitting": [],
 "earth": [
 "earthed",
 "earthing",
@@ -24006,6 +25743,7 @@
 "earths"
 ],
 "earthen": [],
+"earthenware": [],
 "earthling": [
 "earthlings"
 ],
@@ -24016,6 +25754,16 @@
 "earthlier",
 "earthliest",
 "earths"
+],
+"earthquake": [
+"earthquakes"
+],
+"earthshaking": [],
+"earthwork": [
+"earthworks"
+],
+"earthworm": [
+"earthworms"
 ],
 "earthy": [
 "earthier",
@@ -24058,6 +25806,7 @@
 "easily",
 "easiness"
 ],
+"easygoing": [],
 "eat": [
 "ate",
 "eaten",
@@ -24078,6 +25827,14 @@
 ],
 "eaves": [
 "eave"
+],
+"eavesdrop": [
+"eavesdropped",
+"eavesdropping",
+"eavesdrops"
+],
+"eavesdropper": [
+"eavesdroppers"
 ],
 "ebb": [
 "ebbed",
@@ -24353,8 +26110,17 @@
 "egging",
 "eggs"
 ],
+"egghead": [
+"eggheads"
+],
 "eggnog": [
 "eggnogs"
+],
+"eggplant": [
+"eggplants"
+],
+"eggshell": [
+"eggshells"
 ],
 "ego": [
 "egos"
@@ -24403,6 +26169,9 @@
 "eh": [],
 "eider": [
 "eiders"
+],
+"eiderdown": [
+"eiderdowns"
 ],
 "eight": [
 "eights"
@@ -24483,6 +26252,7 @@
 "elbowing",
 "elbows"
 ],
+"elbowroom": [],
 "elder": [
 "eldest",
 "old",
@@ -24491,6 +26261,9 @@
 "oldest",
 "oldish",
 "oldness"
+],
+"elderberry": [
+"elderberries"
 ],
 "elderly": [],
 "eldest": [
@@ -24570,6 +26343,7 @@
 "electromagnetic": [
 "electromagnetically"
 ],
+"electromagnetism": [],
 "electron": [
 "electrons"
 ],
@@ -24707,6 +26481,7 @@
 "eloquently"
 ],
 "else": [],
+"elsewhere": [],
 "elucidate": [
 "elucidated",
 "elucidates",
@@ -26533,6 +28308,9 @@
 "evenness",
 "evens"
 ],
+"evenhanded": [
+"evenhandedly"
+],
 "evening": [
 "even",
 "evened",
@@ -26554,6 +28332,7 @@
 "eventfulness",
 "events"
 ],
+"eventide": [],
 "eventual": [
 "eventually"
 ],
@@ -26564,7 +28343,20 @@
 "everglade": [
 "everglades"
 ],
+"evergreen": [
+"evergreens"
+],
+"everlasting": [
+"everlastingly",
+"everlastings"
+],
+"evermore": [],
 "every": [],
+"everybody": [],
+"everyday": [],
+"everyone": [],
+"everything": [],
+"everywhere": [],
 "evict": [
 "evicted",
 "evicting",
@@ -26589,6 +28381,9 @@
 "evilly",
 "evilness",
 "evils"
+],
+"evildoer": [
+"evildoers"
 ],
 "evince": [
 "evinced",
@@ -27298,6 +29093,9 @@
 "expresses",
 "expressing"
 ],
+"expressway": [
+"expressways"
+],
 "expropriate": [
 "expropriated",
 "expropriates",
@@ -27445,6 +29243,9 @@
 "extrapolations"
 ],
 "extrasensory": [],
+"extraterrestrial": [
+"extraterrestrials"
+],
 "extravagance": [
 "extravagances"
 ],
@@ -27529,6 +29330,14 @@
 "eyes",
 "eying"
 ],
+"eyeball": [
+"eyeballed",
+"eyeballing",
+"eyeballs"
+],
+"eyebrow": [
+"eyebrows"
+],
 "eyeful": [
 "eye",
 "eyed",
@@ -27538,8 +29347,40 @@
 "eyes",
 "eying"
 ],
+"eyeglass": [
+"eyeglasses"
+],
+"eyeglasses": [
+"eyeglass"
+],
+"eyelash": [
+"eyelashes"
+],
 "eyelet": [
 "eyelets"
+],
+"eyelid": [
+"eyelids"
+],
+"eyeliner": [
+"eyeliners"
+],
+"eyepiece": [
+"eyepieces"
+],
+"eyesight": [],
+"eyesore": [
+"eyesores"
+],
+"eyestrain": [],
+"eyeteeth": [
+"eyetooth"
+],
+"eyetooth": [
+"eyeteeth"
+],
+"eyewitness": [
+"eyewitnesses"
 ],
 "eyrie": [
 "aerie",
@@ -27713,6 +29554,9 @@
 "fairness",
 "fairs"
 ],
+"fairground": [
+"fairgrounds"
+],
 "fairly": [
 "fair",
 "fairer",
@@ -27721,11 +29565,17 @@
 "fairness",
 "fairs"
 ],
+"fairway": [
+"fairways"
+],
 "fairy": [
 "faerie",
 "faeries",
 "faery",
 "fairies"
+],
+"fairyland": [
+"fairylands"
 ],
 "faith": [
 "faithful",
@@ -27794,6 +29644,7 @@
 "fallibleness",
 "fallibly"
 ],
+"fallout": [],
 "fallow": [
 "fallowed",
 "fallowing",
@@ -27913,6 +29764,9 @@
 "fanciness",
 "fancying"
 ],
+"fanfare": [
+"fanfares"
+],
 "fang": [
 "fanged",
 "fangs"
@@ -27930,6 +29784,9 @@
 "fantasizing"
 ],
 "fantastic": [],
+"fantastically": [
+"fantastical"
+],
 "fantasy": [
 "fantasied",
 "fantasies",
@@ -27947,6 +29804,7 @@
 "furthermost",
 "furthest"
 ],
+"faraway": [],
 "farce": [
 "farces"
 ],
@@ -27958,6 +29816,9 @@
 "fares",
 "faring"
 ],
+"farewell": [
+"farewells"
+],
 "farina": [],
 "farm": [
 "farmed",
@@ -27967,10 +29828,22 @@
 "farmer": [
 "farmers"
 ],
+"farmhand": [
+"farmhands"
+],
+"farmhouse": [
+"farmhouses"
+],
 "farming": [
 "farm",
 "farmed",
 "farms"
+],
+"farmyard": [
+"farmyards"
+],
+"farsighted": [
+"farsightedness"
 ],
 "fart": [
 "farted",
@@ -27992,6 +29865,9 @@
 "further",
 "furthermost",
 "furthest"
+],
+"farthing": [
+"farthings"
 ],
 "fascinate": [
 "fascinated",
@@ -28101,6 +29977,9 @@
 "fathers"
 ],
 "fatherhood": [],
+"fatherland": [
+"fatherlands"
+],
 "fatherless": [
 "father",
 "fathered",
@@ -28163,6 +30042,7 @@
 "faultlessness",
 "faults"
 ],
+"faultfinding": [],
 "faultless": [
 "fault",
 "faulted",
@@ -28289,11 +30169,15 @@
 "featherless",
 "feathers"
 ],
+"featherbedding": [],
 "feathered": [
 "feather",
 "feathering",
 "featherless",
 "feathers"
+],
+"featherweight": [
+"featherweights"
 ],
 "feathery": [
 "featherier",
@@ -28359,6 +30243,7 @@
 "feeding",
 "feeds"
 ],
+"feedback": [],
 "feel": [
 "feeling",
 "feels",
@@ -28500,6 +30385,9 @@
 "ferried",
 "ferries",
 "ferrying"
+],
+"ferryboat": [
+"ferryboats"
 ],
 "fertile": [],
 "fertility": [],
@@ -28662,6 +30550,12 @@
 "fibre",
 "fibres"
 ],
+"fiberboard": [
+"fibreboard"
+],
+"fiberglass": [
+"fibreglass"
+],
 "fibre": [
 "fiber",
 "fibers",
@@ -28707,6 +30601,7 @@
 "fiddles",
 "fiddling"
 ],
+"fiddlesticks": [],
 "fidelity": [],
 "fidget": [
 "fidgeted",
@@ -28792,6 +30687,9 @@
 "figures",
 "figuring"
 ],
+"figurehead": [
+"figureheads"
+],
 "figurine": [
 "figurines"
 ],
@@ -28870,6 +30768,9 @@
 "filmed",
 "filming",
 "films"
+],
+"filmstrip": [
+"filmstrips"
 ],
 "filmy": [
 "filmier",
@@ -28977,6 +30878,17 @@
 "fingered",
 "fingers"
 ],
+"fingernail": [
+"fingernails"
+],
+"fingerprint": [
+"fingerprinted",
+"fingerprinting",
+"fingerprints"
+],
+"fingertip": [
+"fingertips"
+],
 "finicky": [
 "finickier",
 "finickiest",
@@ -29011,6 +30923,61 @@
 "fires",
 "firing"
 ],
+"firearm": [
+"firearms"
+],
+"fireball": [
+"fireballs"
+],
+"firebomb": [
+"firebombed",
+"firebombing",
+"firebombs"
+],
+"firebrand": [
+"firebrands"
+],
+"firebreak": [
+"firebreaks"
+],
+"firecracker": [
+"firecrackers"
+],
+"firefighter": [
+"firefighters"
+],
+"firefly": [
+"fireflies"
+],
+"firehouse": [
+"firehouses"
+],
+"fireman": [
+"firemen"
+],
+"fireplace": [
+"fireplaces"
+],
+"fireplug": [
+"fireplugs"
+],
+"firepower": [],
+"fireproof": [
+"fireproofed",
+"fireproofing",
+"fireproofs"
+],
+"fireside": [
+"firesides"
+],
+"firetrap": [
+"firetraps"
+],
+"firewater": [],
+"firewood": [],
+"fireworks": [
+"firework"
+],
 "firm": [
 "firmed",
 "firmer",
@@ -29027,6 +30994,10 @@
 "firstly",
 "firsts"
 ],
+"firstborn": [
+"firstborns"
+],
+"firsthand": [],
 "firstly": [
 "first",
 "firsts"
@@ -29049,10 +31020,16 @@
 "fishery": [
 "fisheries"
 ],
+"fishhook": [
+"fishhooks"
+],
 "fishing": [
 "fish",
 "fished",
 "fishes"
+],
+"fishnet": [
+"fishnets"
 ],
 "fishy": [
 "fishier",
@@ -29097,6 +31074,7 @@
 "fitter",
 "fittest"
 ],
+"fittingly": [],
 "five": [
 "fives"
 ],
@@ -29180,8 +31158,20 @@
 "flagon": [
 "flagons"
 ],
+"flagpole": [
+"flagpoles"
+],
 "flagrant": [
 "flagrantly"
+],
+"flagship": [
+"flagships"
+],
+"flagstaff": [
+"flagstaffs"
+],
+"flagstone": [
+"flagstones"
 ],
 "flail": [
 "flailed",
@@ -29260,6 +31250,9 @@
 "flapping",
 "flaps"
 ],
+"flapjack": [
+"flapjacks"
+],
 "flapper": [
 "flappers"
 ],
@@ -29275,6 +31268,12 @@
 "flashest",
 "flashing"
 ],
+"flashback": [
+"flashbacks"
+],
+"flashbulb": [
+"flashbulbs"
+],
 "flasher": [
 "flash",
 "flashed",
@@ -29288,6 +31287,9 @@
 "flasher",
 "flashes",
 "flashest"
+],
+"flashlight": [
+"flashlights"
 ],
 "flashy": [
 "flashier",
@@ -29308,6 +31310,26 @@
 "flatting",
 "flattish"
 ],
+"flatbed": [
+"flatbeds"
+],
+"flatboat": [
+"flatboats"
+],
+"flatcar": [
+"flatcars"
+],
+"flatfish": [
+"flatfishes"
+],
+"flatfoot": [
+"flatfeet",
+"flatfoots"
+],
+"flatfooted": [],
+"flatiron": [
+"flatirons"
+],
 "flatten": [
 "flattened",
 "flattening",
@@ -29326,8 +31348,12 @@
 "flattering": [],
 "flatteringly": [],
 "flattery": [],
+"flattop": [
+"flattops"
+],
 "flatulence": [],
 "flatulent": [],
+"flatware": [],
 "flaunt": [
 "flaunted",
 "flaunting",
@@ -29524,6 +31550,9 @@
 "flexibility",
 "flexibly"
 ],
+"flextime": [
+"flexitime"
+],
 "flick": [
 "flicked",
 "flicking",
@@ -29574,6 +31603,9 @@
 ],
 "flint": [
 "flints"
+],
+"flintlock": [
+"flintlocks"
 ],
 "flinty": [
 "flintier",
@@ -29637,10 +31669,28 @@
 "flooding",
 "floods"
 ],
+"floodgate": [
+"floodgates"
+],
+"floodlight": [
+"floodlighted",
+"floodlighting",
+"floodlights",
+"floodlit"
+],
+"floodlit": [
+"floodlight",
+"floodlighted",
+"floodlighting",
+"floodlights"
+],
 "floor": [
 "floored",
 "flooring",
 "floors"
+],
+"floorboard": [
+"floorboards"
 ],
 "flooring": [
 "floor",
@@ -29655,6 +31705,9 @@
 "flopped",
 "flopping",
 "flops"
+],
+"flophouse": [
+"flophouses"
 ],
 "floppy": [
 "floppier",
@@ -29730,6 +31783,9 @@
 "flowering",
 "flowerless",
 "flowers"
+],
+"flowerpot": [
+"flowerpots"
 ],
 "flowery": [
 "flowerier",
@@ -29884,6 +31940,23 @@
 "flown",
 "fly"
 ],
+"flyleaf": [
+"flyleaves"
+],
+"flypaper": [
+"flypapers"
+],
+"flyspeck": [
+"flyspecked",
+"flyspecking",
+"flyspecks"
+],
+"flyweight": [
+"flyweights"
+],
+"flywheel": [
+"flywheels"
+],
 "foal": [
 "foaled",
 "foaling",
@@ -29953,6 +32026,9 @@
 "foggily",
 "fogginess"
 ],
+"foghorn": [
+"foghorns"
+],
 "fogy": [
 "fogey",
 "fogeys",
@@ -29977,6 +32053,7 @@
 "folding",
 "folds"
 ],
+"foldaway": [],
 "folder": [
 "folders"
 ],
@@ -29987,6 +32064,7 @@
 "folk": [
 "folks"
 ],
+"folklore": [],
 "folksy": [
 "folksier",
 "folksiest",
@@ -30037,6 +32115,9 @@
 "food": [
 "foods"
 ],
+"foodstuff": [
+"foodstuffs"
+],
 "fool": [
 "fooled",
 "fooling",
@@ -30048,6 +32129,18 @@
 "foolery": [
 "fooleries"
 ],
+"foolhardiness": [
+"foolhardier",
+"foolhardiest",
+"foolhardily",
+"foolhardy"
+],
+"foolhardy": [
+"foolhardier",
+"foolhardiest",
+"foolhardily",
+"foolhardiness"
+],
 "foolish": [
 "fool",
 "fooled",
@@ -30056,6 +32149,8 @@
 "foolishness",
 "fools"
 ],
+"foolproof": [],
+"foolscap": [],
 "foot": [
 "feet",
 "footed",
@@ -30064,6 +32159,22 @@
 "foots"
 ],
 "footage": [],
+"football": [
+"footballing",
+"footballs"
+],
+"footbridge": [
+"footbridges"
+],
+"footfall": [
+"footfalls"
+],
+"foothill": [
+"foothills"
+],
+"foothold": [
+"footholds"
+],
 "footing": [
 "feet",
 "foot",
@@ -30071,9 +32182,37 @@
 "footless",
 "foots"
 ],
+"footlights": [],
+"footlocker": [
+"footlockers"
+],
+"footloose": [],
 "footman": [
 "footmen"
 ],
+"footnote": [
+"footnoted",
+"footnotes",
+"footnoting"
+],
+"footpath": [
+"footpaths"
+],
+"footprint": [
+"footprints"
+],
+"footrest": [
+"footrests"
+],
+"footsore": [],
+"footstep": [
+"footsteps"
+],
+"footstool": [
+"footstools"
+],
+"footwear": [],
+"footwork": [],
 "fop": [
 "foppish",
 "foppishness",
@@ -30174,6 +32313,11 @@
 "fore": [
 "fores"
 ],
+"forearm": [
+"forearmed",
+"forearming",
+"forearms"
+],
 "forebode": [
 "foreboded",
 "forebodes",
@@ -30184,24 +32328,127 @@
 "foreboded",
 "forebodes"
 ],
+"forecast": [
+"forecasted",
+"forecasting",
+"forecasts"
+],
+"forecaster": [
+"forecasters"
+],
+"forecastle": [
+"forecastles"
+],
+"foreclose": [
+"foreclosed",
+"forecloses",
+"foreclosing"
+],
+"foreclosure": [
+"foreclosures"
+],
+"forefather": [
+"forefathers"
+],
+"forefeet": [
+"forefoot"
+],
+"forefinger": [
+"forefingers"
+],
+"forefoot": [
+"forefeet"
+],
+"forefront": [
+"forefronts"
+],
+"foreground": [
+"foregrounded",
+"foregrounding",
+"foregrounds"
+],
+"forehand": [
+"forehands"
+],
+"forehead": [
+"foreheads"
+],
 "foreign": [
 "foreignness"
 ],
 "foreigner": [
 "foreigners"
 ],
+"foreknowledge": [],
+"foreleg": [
+"forelegs"
+],
+"forelock": [
+"forelocks"
+],
 "foreman": [
 "foremen"
+],
+"foremast": [
+"foremasts"
+],
+"foremost": [],
+"forenoon": [
+"forenoons"
 ],
 "forensic": [
 "forensically",
 "forensics"
 ],
+"foreplay": [],
+"forerunner": [
+"forerunners"
+],
+"foresaw": [
+"foresee",
+"foreseeing",
+"foreseen",
+"foresees"
+],
+"foresee": [
+"foresaw",
+"foreseeing",
+"foreseen",
+"foresees"
+],
 "foreseeable": [],
+"foreseen": [
+"foresaw",
+"foresee",
+"foreseeing",
+"foresees"
+],
+"foreshadow": [
+"foreshadowed",
+"foreshadowing",
+"foreshadows"
+],
+"foreshorten": [
+"foreshortened",
+"foreshortening",
+"foreshortens"
+],
+"foresight": [
+"foresighted",
+"foresightedness"
+],
+"foreskin": [
+"foreskins"
+],
 "forest": [
 "forested",
 "foresting",
 "forests"
+],
+"forestall": [
+"forestalled",
+"forestalling",
+"forestalls"
 ],
 "forester": [
 "foresters"
@@ -30217,11 +32464,13 @@
 "foretells",
 "foretold"
 ],
+"forethought": [],
 "foretold": [
 "foretell",
 "foretelling",
 "foretells"
 ],
+"forever": [],
 "forewarn": [
 "forewarned",
 "forewarning",
@@ -30229,6 +32478,9 @@
 ],
 "forewoman": [
 "forewomen"
+],
+"foreword": [
+"forewords"
 ],
 "forfeit": [
 "forfeited",
@@ -30348,6 +32600,9 @@
 "forking",
 "forks"
 ],
+"forklift": [
+"forklifts"
+],
 "forlorn": [
 "forlornly"
 ],
@@ -30394,6 +32649,7 @@
 "formerly": [
 "former"
 ],
+"formica": [],
 "formidable": [
 "formidably"
 ],
@@ -30475,6 +32731,12 @@
 "fortes"
 ],
 "forth": [],
+"forthcoming": [],
+"forthright": [
+"forthrightly",
+"forthrightness"
+],
+"forthwith": [],
 "fortieth": [
 "fortieths"
 ],
@@ -30488,6 +32750,14 @@
 ],
 "fortissimo": [],
 "fortitude": [],
+"fortnight": [
+"fortnightly",
+"fortnights"
+],
+"fortnightly": [
+"fortnight",
+"fortnights"
+],
 "fortress": [
 "fortresses"
 ],
@@ -30597,12 +32867,20 @@
 "fountain": [
 "fountains"
 ],
+"fountainhead": [
+"fountainheads"
+],
 "four": [
 "fours"
 ],
+"fourposter": [
+"fourposters"
+],
+"fourscore": [],
 "foursome": [
 "foursomes"
 ],
+"foursquare": [],
 "fourteen": [
 "fourteens"
 ],
@@ -30622,6 +32900,20 @@
 "foxed",
 "foxes",
 "foxing"
+],
+"foxglove": [
+"foxgloves"
+],
+"foxhole": [
+"foxholes"
+],
+"foxhound": [
+"foxhounds"
+],
+"foxtrot": [
+"foxtrots",
+"foxtrotted",
+"foxtrotting"
 ],
 "foxy": [
 "foxier",
@@ -30678,6 +32970,9 @@
 "framed",
 "frames",
 "framing"
+],
+"framework": [
+"frameworks"
 ],
 "franc": [
 "francs"
@@ -30800,16 +33095,31 @@
 "freedom": [
 "freedoms"
 ],
+"freehand": [],
 "freelance": [
 "freelanced",
 "freelances",
 "freelancing"
 ],
+"freelancer": [
+"freelancers"
+],
+"freeload": [
+"freeloaded",
+"freeloading",
+"freeloads"
+],
 "freeman": [
 "freemen"
 ],
+"freemason": [],
+"freestanding": [],
 "freethinker": [
 "freethinkers"
+],
+"freethinking": [],
+"freeway": [
+"freeways"
 ],
 "freewheeling": [
 "freewheel",
@@ -30877,6 +33187,7 @@
 "freshman": [
 "freshmen"
 ],
+"freshwater": [],
 "fret": [
 "fretful",
 "fretfully",
@@ -30893,6 +33204,7 @@
 "fretted",
 "fretting"
 ],
+"fretwork": [],
 "friable": [],
 "friar": [
 "friars"
@@ -31095,6 +33407,18 @@
 "frosting",
 "frosts"
 ],
+"frostbite": [
+"frostbit",
+"frostbites",
+"frostbiting",
+"frostbitten"
+],
+"frostbitten": [
+"frostbit",
+"frostbite",
+"frostbites",
+"frostbiting"
+],
 "frosting": [
 "frost",
 "frosted",
@@ -31159,6 +33483,9 @@
 "fruitlessly",
 "fruitlessness",
 "fruits"
+],
+"fruitcake": [
+"fruitcakes"
 ],
 "fruitful": [
 "fruit",
@@ -31300,6 +33627,9 @@
 "fulls",
 "fully",
 "fulness"
+],
+"fullback": [
+"fullbacks"
 ],
 "fully": [
 "full",
@@ -31491,6 +33821,7 @@
 "furthest"
 ],
 "furtherance": [],
+"furthermore": [],
 "furthest": [
 "far",
 "farther",
@@ -31531,6 +33862,9 @@
 "fussed",
 "fusses",
 "fussing"
+],
+"fussbudget": [
+"fussbudgets"
 ],
 "fussy": [
 "fussier",
@@ -31611,6 +33945,9 @@
 "gadabout": [
 "gadabouts"
 ],
+"gadfly": [
+"gadflies"
+],
 "gadget": [
 "gadgets"
 ],
@@ -31658,6 +33995,16 @@
 ],
 "gainful": [
 "gainfully"
+],
+"gainsaid": [
+"gainsay",
+"gainsaying",
+"gainsays"
+],
+"gainsay": [
+"gainsaid",
+"gainsaying",
+"gainsays"
 ],
 "gait": [
 "gaits"
@@ -31767,6 +34114,12 @@
 "gamest",
 "gaming"
 ],
+"gamecock": [
+"gamecocks"
+],
+"gamekeeper": [
+"gamekeepers"
+],
 "gamesmanship": [],
 "gamete": [
 "gametes"
@@ -31796,6 +34149,7 @@
 "ganging",
 "gangs"
 ],
+"gangland": [],
 "ganglia": [
 "ganglion",
 "ganglions"
@@ -31814,6 +34168,9 @@
 "gangliest",
 "gangling"
 ],
+"gangplank": [
+"gangplanks"
+],
 "gangrene": [
 "gangrened",
 "gangrenes",
@@ -31822,6 +34179,9 @@
 "gangrenous": [],
 "gangster": [
 "gangsters"
+],
+"gangway": [
+"gangways"
 ],
 "gannet": [
 "gannets"
@@ -31984,10 +34344,14 @@
 "gastronomically"
 ],
 "gastronomy": [],
+"gasworks": [],
 "gate": [
 "gated",
 "gates",
 "gating"
+],
+"gateway": [
+"gateways"
 ],
 "gather": [
 "gathered",
@@ -32095,6 +34459,9 @@
 "gearing",
 "gears"
 ],
+"gearshift": [
+"gearshifts"
+],
 "gee": [
 "geed",
 "geeing",
@@ -32141,6 +34508,9 @@
 ],
 "gem": [
 "gems"
+],
+"gemstone": [
+"gemstones"
 ],
 "gendarme": [
 "gendarmes"
@@ -32290,6 +34660,9 @@
 "gentling",
 "gently"
 ],
+"gentlefolk": [
+"gentlefolks"
+],
 "gentleman": [
 "gentlemanly",
 "gentlemen"
@@ -32310,6 +34683,9 @@
 "genuflected",
 "genuflecting",
 "genuflects"
+],
+"genuflection": [
+"genuflections"
 ],
 "genuine": [
 "genuinely",
@@ -32405,6 +34781,9 @@
 "got",
 "gotten"
 ],
+"getaway": [
+"getaways"
+],
 "getup": [
 "getups"
 ],
@@ -32438,6 +34817,27 @@
 "ghostliness",
 "ghostly",
 "ghosts"
+],
+"ghostwrite": [
+"ghostwrites",
+"ghostwriting",
+"ghostwritten",
+"ghostwrote"
+],
+"ghostwriter": [
+"ghostwriters"
+],
+"ghostwritten": [
+"ghostwrite",
+"ghostwrites",
+"ghostwriting",
+"ghostwrote"
+],
+"ghostwrote": [
+"ghostwrite",
+"ghostwrites",
+"ghostwriting",
+"ghostwritten"
 ],
 "ghoul": [
 "ghoulish",
@@ -32564,7 +34964,11 @@
 "gingering",
 "gingers"
 ],
+"gingerbread": [],
 "gingerly": [],
+"gingersnap": [
+"gingersnaps"
+],
 "gingham": [],
 "gingivitis": [],
 "ginkgo": [
@@ -32598,6 +35002,9 @@
 "girlishness",
 "girls"
 ],
+"girlfriend": [
+"girlfriends"
+],
 "girlhood": [
 "girlhoods"
 ],
@@ -32627,6 +35034,9 @@
 "given",
 "gives",
 "giving"
+],
+"giveaway": [
+"giveaways"
 ],
 "given": [
 "gave",
@@ -32738,6 +35148,7 @@
 "glassfuls",
 "glassing"
 ],
+"glassware": [],
 "glassy": [
 "glassier",
 "glassiest",
@@ -32918,6 +35329,9 @@
 "glowed",
 "glows"
 ],
+"glowworm": [
+"glowworms"
+],
 "glucose": [],
 "glue": [
 "glued",
@@ -33002,11 +35416,20 @@
 "goalie": [
 "goalies"
 ],
+"goalkeeper": [
+"goalkeepers"
+],
 "goat": [
 "goats"
 ],
 "goatee": [
 "goatees"
+],
+"goatherd": [
+"goatherds"
+],
+"goatskin": [
+"goatskins"
 ],
 "gob": [
 "gobbed",
@@ -33041,13 +35464,38 @@
 "godlike",
 "gods"
 ],
+"godchild": [
+"godchildren"
+],
+"godchildren": [
+"godchild"
+],
+"goddaughter": [
+"goddaughters"
+],
 "goddess": [
 "goddesses"
 ],
+"godfather": [
+"godfathers"
+],
+"godforsaken": [],
 "godly": [
 "godlier",
 "godliest",
 "godliness"
+],
+"godmother": [
+"godmothers"
+],
+"godparent": [
+"godparents"
+],
+"godsend": [
+"godsends"
+],
+"godson": [
+"godsons"
 ],
 "gofer": [
 "gofers"
@@ -33084,6 +35532,16 @@
 "golden": [
 "goldener",
 "goldenest"
+],
+"goldenrod": [],
+"goldfinch": [
+"goldfinches"
+],
+"goldfish": [
+"goldfishes"
+],
+"goldsmith": [
+"goldsmiths"
 ],
 "golf": [
 "golfed",
@@ -33159,6 +35617,7 @@
 "goodly",
 "goodness"
 ],
+"goodwill": [],
 "goody": [
 "goodie",
 "goodies"
@@ -33186,6 +35645,9 @@
 "goosed",
 "gooses",
 "goosing"
+],
+"gooseberry": [
+"gooseberries"
 ],
 "gopher": [
 "gophers"
@@ -33404,14 +35866,49 @@
 "grandness",
 "grands"
 ],
+"grandchild": [
+"grandchildren"
+],
+"grandchildren": [
+"grandchild"
+],
+"granddad": [
+"grandad",
+"grandads",
+"granddads"
+],
+"granddaughter": [
+"granddaughters"
+],
 "grandee": [
 "grandees"
 ],
 "grandeur": [],
+"grandfather": [
+"grandfathered",
+"grandfathering",
+"grandfatherly",
+"grandfathers"
+],
 "grandiloquence": [],
 "grandiloquent": [],
 "grandiose": [
 "grandiosely"
+],
+"grandmother": [
+"grandmotherly",
+"grandmothers"
+],
+"grandparent": [
+"grandparents"
+],
+"grandson": [
+"grandsons"
+],
+"grandstand": [
+"grandstanded",
+"grandstanding",
+"grandstands"
 ],
 "grange": [
 "granges"
@@ -33444,6 +35941,12 @@
 "grape": [
 "grapes"
 ],
+"grapefruit": [
+"grapefruits"
+],
+"grapevine": [
+"grapevines"
+],
 "graph": [
 "graphed",
 "graphing",
@@ -33451,6 +35954,9 @@
 ],
 "graphic": [
 "graphics"
+],
+"graphically": [
+"graphical"
 ],
 "graphics": [
 "graphic"
@@ -33482,6 +35988,12 @@
 "grassed",
 "grasses",
 "grassing"
+],
+"grasshopper": [
+"grasshoppers"
+],
+"grassland": [
+"grasslands"
 ],
 "grassy": [
 "grassier",
@@ -33553,6 +36065,12 @@
 "gravest",
 "graving"
 ],
+"gravestone": [
+"gravestones"
+],
+"graveyard": [
+"graveyards"
+],
 "gravitate": [
 "gravitated",
 "gravitates",
@@ -33608,6 +36126,7 @@
 "greases",
 "greasing"
 ],
+"greasepaint": [],
 "greasy": [
 "greasier",
 "greasiest",
@@ -33641,7 +36160,19 @@
 "greenness",
 "greens"
 ],
+"greenback": [
+"greenbacks"
+],
 "greenery": [],
+"greengrocer": [
+"greengrocers"
+],
+"greenhorn": [
+"greenhorns"
+],
+"greenhouse": [
+"greenhouses"
+],
 "greenish": [
 "green",
 "greened",
@@ -33699,11 +36230,24 @@
 "greyness",
 "greys"
 ],
+"greyhound": [
+"greyhounds"
+],
 "grid": [
 "grids"
 ],
 "griddle": [
 "griddles"
+],
+"griddlecake": [
+"griddlecakes"
+],
+"gridiron": [
+"gridirons"
+],
+"gridlock": [
+"gridlocked",
+"gridlocks"
 ],
 "grief": [
 "griefs"
@@ -33768,6 +36312,9 @@
 ],
 "grinder": [
 "grinders"
+],
+"grindstone": [
+"grindstones"
 ],
 "gringo": [
 "gringos"
@@ -33907,7 +36454,14 @@
 "grounder": [
 "grounders"
 ],
+"groundhog": [
+"groundhogs"
+],
 "groundless": [],
+"groundswell": [
+"groundswells"
+],
+"groundwork": [],
 "group": [
 "grouped",
 "grouping",
@@ -33967,6 +36521,7 @@
 "grubbily",
 "grubbiness"
 ],
+"grubstake": [],
 "grudge": [
 "grudged",
 "grudges",
@@ -34046,10 +36601,16 @@
 "guarding",
 "guards"
 ],
+"guardhouse": [
+"guardhouses"
+],
 "guardian": [
 "guardians"
 ],
 "guardianship": [],
+"guardrail": [
+"guardrails"
+],
 "guava": [
 "guavas"
 ],
@@ -34069,6 +36630,7 @@
 "guesses",
 "guessing"
 ],
+"guesswork": [],
 "guest": [
 "guested",
 "guesting",
@@ -34084,6 +36646,12 @@
 "guided",
 "guides",
 "guiding"
+],
+"guidebook": [
+"guidebooks"
+],
+"guideline": [
+"guidelines"
 ],
 "guild": [
 "guilds"
@@ -34182,6 +36750,9 @@
 "gumbo": [
 "gumbos"
 ],
+"gumdrop": [
+"gumdrops"
+],
 "gummy": [
 "gummier",
 "gummiest"
@@ -34192,11 +36763,33 @@
 "gunning",
 "guns"
 ],
+"gunboat": [
+"gunboats"
+],
+"gunfight": [
+"gunfights"
+],
+"gunfire": [],
 "gunk": [],
+"gunman": [
+"gunmen"
+],
 "gunner": [
 "gunners"
 ],
 "gunnery": [],
+"gunpoint": [],
+"gunpowder": [],
+"gunrunner": [
+"gunrunners"
+],
+"gunrunning": [],
+"gunshot": [
+"gunshots"
+],
+"gunsmith": [
+"gunsmiths"
+],
 "guppy": [
 "guppies"
 ],
@@ -34398,6 +36991,9 @@
 "hackneying",
 "hackneys"
 ],
+"hacksaw": [
+"hacksaws"
+],
 "had": [
 "hadst",
 "has",
@@ -34437,17 +37033,59 @@
 "hailing",
 "hails"
 ],
+"hailstone": [
+"hailstones"
+],
+"hailstorm": [
+"hailstorms"
+],
 "hair": [
 "haired",
 "hairless",
 "hairlike",
 "hairs"
 ],
+"hairbreadth": [
+"hairbreadths",
+"hairsbreadth",
+"hairsbreadths"
+],
+"hairbrush": [
+"hairbrushes"
+],
+"haircut": [
+"haircuts"
+],
+"hairdresser": [
+"hairdressers"
+],
+"hairdressing": [],
 "hairless": [
 "hair",
 "haired",
 "hairlike",
 "hairs"
+],
+"hairline": [
+"hairlines"
+],
+"hairpiece": [
+"hairpieces"
+],
+"hairpin": [
+"hairpins"
+],
+"hairsbreadth": [
+"hairbreadth",
+"hairbreadths",
+"hairsbreadths"
+],
+"hairsplitting": [],
+"hairstyle": [
+"hairstyles"
+],
+"hairstylist": [
+"hairstylists"
 ],
 "hairy": [
 "hairier",
@@ -34471,6 +37109,17 @@
 "half": [
 "halves"
 ],
+"halfback": [
+"halfbacks"
+],
+"halfpenny": [
+"halfpence",
+"halfpennies"
+],
+"halftime": [
+"halftimes"
+],
+"halfway": [],
 "halibut": [
 "halibuts"
 ],
@@ -34484,6 +37133,11 @@
 "halleluiah",
 "halleluiahs",
 "hallelujahs"
+],
+"hallmark": [
+"hallmarked",
+"hallmarking",
+"hallmarks"
 ],
 "hallow": [
 "hallowed",
@@ -34509,6 +37163,9 @@
 ],
 "hallucinogenic": [
 "hallucinogenics"
+],
+"hallway": [
+"hallways"
 ],
 "halo": [
 "haloed",
@@ -34555,6 +37212,11 @@
 "hamming",
 "hams"
 ],
+"hamburger": [
+"hamburg",
+"hamburgers",
+"hamburgs"
+],
 "hamlet": [
 "hamlets"
 ],
@@ -34574,6 +37236,16 @@
 "hamster": [
 "hamsters"
 ],
+"hamstring": [
+"hamstringing",
+"hamstrings",
+"hamstrung"
+],
+"hamstrung": [
+"hamstring",
+"hamstringing",
+"hamstrings"
+],
 "hand": [
 "handed",
 "handful",
@@ -34581,6 +37253,26 @@
 "handing",
 "hands",
 "handsful"
+],
+"handbag": [
+"handbags"
+],
+"handball": [
+"handballs"
+],
+"handbill": [
+"handbills"
+],
+"handbook": [
+"handbooks"
+],
+"handcart": [
+"handcarts"
+],
+"handcuff": [
+"handcuffed",
+"handcuffing",
+"handcuffs"
 ],
 "handful": [
 "hand",
@@ -34590,10 +37282,40 @@
 "hands",
 "handsful"
 ],
+"handgun": [
+"handguns"
+],
+"handkerchief": [
+"handkerchiefs",
+"handkerchieves"
+],
 "handle": [
 "handled",
 "handles",
 "handling"
+],
+"handlebar": [
+"handlebars"
+],
+"handmade": [],
+"handmaiden": [
+"handmaid",
+"handmaidens",
+"handmaids"
+],
+"handout": [
+"handouts"
+],
+"handpick": [
+"handpicked",
+"handpicking",
+"handpicks"
+],
+"handrail": [
+"handrails"
+],
+"handshake": [
+"handshakes"
 ],
 "handsome": [
 "handsomely",
@@ -34601,11 +37323,23 @@
 "handsomer",
 "handsomest"
 ],
+"handspring": [
+"handsprings"
+],
+"handstand": [
+"handstands"
+],
+"handwork": [],
+"handwriting": [],
+"handwritten": [],
 "handy": [
 "handier",
 "handiest",
 "handily",
 "handiness"
+],
+"handyman": [
+"handymen"
 ],
 "hang": [
 "hanged",
@@ -34616,6 +37350,7 @@
 "hangar": [
 "hangars"
 ],
+"hangdog": [],
 "hanger": [
 "hangers"
 ],
@@ -34627,6 +37362,15 @@
 ],
 "hangman": [
 "hangmen"
+],
+"hangnail": [
+"hangnails"
+],
+"hangout": [
+"hangouts"
+],
+"hangover": [
+"hangovers"
 ],
 "hank": [
 "hanks"
@@ -34701,12 +37445,31 @@
 "hardest",
 "hardness"
 ],
+"hardback": [
+"hardbacks"
+],
+"hardball": [],
+"hardcover": [
+"hardcovers"
+],
 "harden": [
 "hardened",
 "hardening",
 "hardens"
 ],
+"hardheaded": [
+"hardheadedly",
+"hardheadedness"
+],
 "hardly": [],
+"hardship": [
+"hardships"
+],
+"hardtack": [],
+"hardware": [],
+"hardwood": [
+"hardwoods"
+],
 "hardy": [
 "hardier",
 "hardiest",
@@ -34717,6 +37480,11 @@
 "hared",
 "hares",
 "haring"
+],
+"harebrained": [],
+"harelip": [
+"harelipped",
+"harelips"
 ],
 "harem": [
 "harems"
@@ -34910,11 +37678,17 @@
 "hatches",
 "hatching"
 ],
+"hatchback": [
+"hatchbacks"
+],
 "hatchery": [
 "hatcheries"
 ],
 "hatchet": [
 "hatchets"
+],
+"hatchway": [
+"hatchways"
 ],
 "hate": [
 "hated",
@@ -35002,11 +37776,21 @@
 "hawser": [
 "hawsers"
 ],
+"hawthorn": [
+"hawthorns"
+],
 "hay": [
 "hayed",
 "haying",
 "hays"
 ],
+"hayloft": [
+"haylofts"
+],
+"haystack": [
+"haystacks"
+],
+"haywire": [],
 "hazard": [
 "hazarded",
 "hazarding",
@@ -35022,6 +37806,9 @@
 ],
 "hazel": [
 "hazels"
+],
+"hazelnut": [
+"hazelnuts"
 ],
 "hazy": [
 "hazier",
@@ -35040,17 +37827,82 @@
 "headless",
 "heads"
 ],
+"headache": [
+"headaches"
+],
+"headband": [
+"headbands"
+],
+"headboard": [
+"headboards"
+],
+"headdress": [
+"headdresses"
+],
+"headfirst": [],
+"headgear": [],
+"headhunter": [
+"headhunters"
+],
 "heading": [
 "head",
 "headed",
 "headless",
 "heads"
 ],
+"headland": [
+"headlands"
+],
 "headless": [
 "head",
 "headed",
 "heading",
 "heads"
+],
+"headlight": [
+"headlights"
+],
+"headline": [
+"headlined",
+"headlines",
+"headlining"
+],
+"headlong": [],
+"headmaster": [
+"headmasters"
+],
+"headmistress": [
+"headmistresses"
+],
+"headphone": [
+"headphones"
+],
+"headphones": [
+"headphone"
+],
+"headquarters": [
+"headquarter",
+"headquartered",
+"headquartering"
+],
+"headrest": [
+"headrests"
+],
+"headroom": [],
+"headset": [
+"headsets"
+],
+"headstone": [
+"headstones"
+],
+"headstrong": [],
+"headwaiter": [
+"headwaiters"
+],
+"headwaters": [],
+"headway": [],
+"headwind": [
+"headwinds"
 ],
 "heady": [
 "headier",
@@ -35108,6 +37960,7 @@
 "hearkening",
 "hearkens"
 ],
+"hearsay": [],
 "hearse": [
 "hearses"
 ],
@@ -35117,11 +37970,24 @@
 "heartlessness",
 "hearts"
 ],
+"heartache": [
+"heartaches"
+],
+"heartbeat": [
+"heartbeats"
+],
+"heartbreak": [
+"heartbreaks"
+],
+"heartbreaking": [],
+"heartbroken": [],
+"heartburn": [],
 "hearten": [
 "heartened",
 "heartening",
 "heartens"
 ],
+"heartfelt": [],
 "hearth": [
 "hearths"
 ],
@@ -35132,6 +37998,20 @@
 "heartiness",
 "hearty"
 ],
+"heartland": [
+"heartlands"
+],
+"heartrending": [
+"heartrendingly"
+],
+"heartsick": [
+"heartsickness"
+],
+"heartstrings": [],
+"heartthrob": [
+"heartthrobs"
+],
+"heartwarming": [],
 "hearty": [
 "heartier",
 "hearties",
@@ -35162,6 +38042,7 @@
 "heather": [
 "heathers"
 ],
+"heatstroke": [],
 "heave": [
 "heaved",
 "heaves",
@@ -35190,6 +38071,10 @@
 "heavily",
 "heaviness"
 ],
+"heavyset": [],
+"heavyweight": [
+"heavyweights"
+],
 "heck": [],
 "heckle": [
 "heckled",
@@ -35211,6 +38096,9 @@
 "hedged",
 "hedges",
 "hedging"
+],
+"hedgehog": [
+"hedgehogs"
 ],
 "hedgerow": [
 "hedgerows"
@@ -35332,6 +38220,7 @@
 "hellishly",
 "hellishness"
 ],
+"hellbent": [],
 "hellion": [
 "hellions"
 ],
@@ -35397,6 +38286,11 @@
 "helplessness",
 "helps"
 ],
+"helpmate": [
+"helpmates",
+"helpmeet",
+"helpmeets"
+],
 "hem": [
 "haem",
 "hemmed",
@@ -35411,6 +38305,12 @@
 ],
 "hemispheric": [],
 "hemispherical": [],
+"hemline": [
+"hemlines"
+],
+"hemlock": [
+"hemlocks"
+],
 "hemoglobin": [
 "haemoglobin"
 ],
@@ -35442,10 +38342,17 @@
 "hemorrhoid"
 ],
 "hemp": [],
+"hemstitch": [
+"hemstitched",
+"hemstitches",
+"hemstitching"
+],
 "hen": [
 "hens"
 ],
 "hence": [],
+"henceforth": [],
+"henceforward": [],
 "henchman": [
 "henchmen"
 ],
@@ -35453,6 +38360,11 @@
 "hennaed",
 "hennaing",
 "hennas"
+],
+"henpeck": [
+"henpecked",
+"henpecking",
+"henpecks"
 ],
 "hepatitis": [],
 "heptagon": [
@@ -35499,6 +38411,12 @@
 "herdsmen"
 ],
 "here": [],
+"hereabout": [
+"hereabouts"
+],
+"hereafter": [
+"hereafters"
+],
 "hereditary": [],
 "heredity": [],
 "heresy": [
@@ -35508,6 +38426,8 @@
 "heretics"
 ],
 "heretical": [],
+"hereupon": [],
+"herewith": [],
 "heritage": [
 "heritages"
 ],
@@ -35516,6 +38436,9 @@
 ],
 "hermaphroditic": [],
 "hermetic": [],
+"hermetically": [
+"hermetical"
+],
 "hermit": [
 "hermits"
 ],
@@ -35550,6 +38473,7 @@
 "herring": [
 "herrings"
 ],
+"herringbone": [],
 "hers": [
 "her",
 "hoer",
@@ -35557,6 +38481,7 @@
 "she",
 "shes"
 ],
+"herself": [],
 "hertz": [
 "hertzes"
 ],
@@ -35613,6 +38538,9 @@
 "hexameters"
 ],
 "hey": [],
+"heyday": [
+"heydays"
+],
 "hi": [],
 "hiatus": [
 "hiatuses"
@@ -35682,9 +38610,16 @@
 "hides",
 "hiding"
 ],
+"hideaway": [
+"hideaways"
+],
+"hidebound": [],
 "hideous": [
 "hideously",
 "hideousness"
+],
+"hideout": [
+"hideouts"
 ],
 "hierarchical": [
 "hierarchically"
@@ -35702,8 +38637,29 @@
 "highness",
 "highs"
 ],
+"highball": [
+"highballs"
+],
+"highborn": [],
+"highboy": [
+"highboys"
+],
+"highbrow": [
+"highbrows"
+],
+"highchair": [
+"highchairs"
+],
 "highfalutin": [
 "highfaluting"
+],
+"highland": [
+"highlands"
+],
+"highlight": [
+"highlighted",
+"highlighting",
+"highlights"
 ],
 "highly": [
 "high",
@@ -35719,6 +38675,17 @@
 "highly",
 "highs"
 ],
+"highroad": [
+"highroads"
+],
+"hightail": [
+"hightailed",
+"hightailing",
+"hightails"
+],
+"highway": [
+"highways"
+],
 "hike": [
 "hiked",
 "hikes",
@@ -35732,8 +38699,17 @@
 "hill": [
 "hills"
 ],
+"hillbilly": [
+"hillbillies"
+],
 "hillock": [
 "hillocks"
+],
+"hillside": [
+"hillsides"
+],
+"hilltop": [
+"hilltops"
 ],
 "hilly": [
 "hillier",
@@ -35748,6 +38724,7 @@
 "hes",
 "hims"
 ],
+"himself": [],
 "hind": [
 "hinds"
 ],
@@ -35756,9 +38733,17 @@
 "hindering",
 "hinders"
 ],
+"hindmost": [],
+"hindquarter": [
+"hindquarters"
+],
+"hindquarters": [
+"hindquarter"
+],
 "hindrance": [
 "hindrances"
 ],
+"hindsight": [],
 "hinge": [
 "hinged",
 "hinges",
@@ -35811,6 +38796,7 @@
 "hirsuteness"
 ],
 "his": [],
+"hispanic": [],
 "hiss": [
 "hissed",
 "hisses",
@@ -35843,6 +38829,11 @@
 "hitched",
 "hitches",
 "hitching"
+],
+"hitchhike": [
+"hitchhiked",
+"hitchhikes",
+"hitchhiking"
 ],
 "hither": [],
 "hive": [
@@ -35895,8 +38886,24 @@
 "hobby": [
 "hobbies"
 ],
+"hobbyhorse": [
+"hobbyhorses"
+],
 "hobbyist": [
 "hobbyists"
+],
+"hobgoblin": [
+"hobgoblins"
+],
+"hobnail": [
+"hobnailed",
+"hobnailing",
+"hobnails"
+],
+"hobnailed": [
+"hobnail",
+"hobnailing",
+"hobnails"
 ],
 "hobnob": [
 "hobnobbed",
@@ -35913,6 +38920,9 @@
 "hocks"
 ],
 "hockey": [],
+"hockshop": [
+"hockshops"
+],
 "hod": [
 "hods"
 ],
@@ -35925,6 +38935,9 @@
 "hoed",
 "hoeing",
 "hoes"
+],
+"hoedown": [
+"hoedowns"
 ],
 "hog": [
 "hogged",
@@ -35943,6 +38956,10 @@
 "hoggishly",
 "hogs"
 ],
+"hogshead": [
+"hogsheads"
+],
+"hogwash": [],
 "hoist": [
 "hoisted",
 "hoisting",
@@ -35965,6 +38982,9 @@
 "held",
 "hold",
 "holds"
+],
+"holdover": [
+"holdovers"
 ],
 "hole": [
 "holed",
@@ -36004,6 +39024,7 @@
 "hollyhock": [
 "hollyhocks"
 ],
+"hollywood": [],
 "holocaust": [
 "holocausts"
 ],
@@ -36036,6 +39057,19 @@
 "homes",
 "homing"
 ],
+"homebody": [
+"homebodies"
+],
+"homeboy": [
+"homeboys"
+],
+"homecoming": [
+"homecomings"
+],
+"homegrown": [],
+"homeland": [
+"homelands"
+],
 "homeless": [
 "home",
 "homed",
@@ -36049,6 +39083,10 @@
 "homeliest",
 "homeliness"
 ],
+"homemade": [],
+"homemaker": [
+"homemakers"
+],
 "homeopathic": [
 "homoeopathic"
 ],
@@ -36060,12 +39098,31 @@
 "homering",
 "homers"
 ],
+"homeroom": [
+"homerooms"
+],
+"homesick": [
+"homesickness"
+],
+"homesickness": [
+"homesick"
+],
+"homespun": [],
+"homestead": [
+"homesteaded",
+"homesteading",
+"homesteads"
+],
+"homestretch": [
+"homestretches"
+],
 "homeward": [
 "homewards"
 ],
 "homewards": [
 "homeward"
 ],
+"homework": [],
 "homey": [
 "homeyness",
 "homeys",
@@ -36128,11 +39185,27 @@
 "honeys",
 "honied"
 ],
+"honeybee": [
+"honeybees"
+],
+"honeycomb": [
+"honeycombed",
+"honeycombing",
+"honeycombs"
+],
 "honeyed": [
 "honey",
 "honeying",
 "honeys",
 "honied"
+],
+"honeymoon": [
+"honeymooned",
+"honeymooning",
+"honeymoons"
+],
+"honeysuckle": [
+"honeysuckles"
 ],
 "honk": [
 "honked",
@@ -36178,6 +39251,11 @@
 "hoodlum": [
 "hoodlums"
 ],
+"hoodwink": [
+"hoodwinked",
+"hoodwinking",
+"hoodwinks"
+],
 "hooey": [],
 "hoof": [
 "hoofed",
@@ -36202,6 +39280,9 @@
 ],
 "hooker": [
 "hookers"
+],
+"hookworm": [
+"hookworms"
 ],
 "hooky": [
 "hookey"
@@ -36291,6 +39372,11 @@
 "hopper": [
 "hoppers"
 ],
+"hopscotch": [
+"hopscotched",
+"hopscotches",
+"hopscotching"
+],
 "horde": [
 "horded",
 "hordes",
@@ -36323,6 +39409,9 @@
 "horning",
 "hornlike",
 "horns"
+],
+"hornpipe": [
+"hornpipes"
 ],
 "horny": [
 "hornier",
@@ -36368,7 +39457,35 @@
 "horses",
 "horsing"
 ],
+"horseback": [],
+"horsefly": [
+"horseflies"
+],
+"horsehair": [],
+"horseman": [
+"horsemen"
+],
 "horsemanship": [],
+"horseplay": [],
+"horsepower": [],
+"horseradish": [
+"horseradishes"
+],
+"horseshoe": [
+"horseshoed",
+"horseshoeing",
+"horseshoes"
+],
+"horseshoes": [
+"horseshoe",
+"horseshoed",
+"horseshoeing"
+],
+"horsewhip": [
+"horsewhipped",
+"horsewhipping",
+"horsewhips"
+],
 "horsewoman": [
 "horsewomen"
 ],
@@ -36442,6 +39559,10 @@
 "hostesses",
 "hostessing"
 ],
+"hostile": [
+"hostilely",
+"hostiles"
+],
 "hostility": [
 "hostilities"
 ],
@@ -36454,11 +39575,37 @@
 "hottest",
 "hotting"
 ],
+"hotbed": [
+"hotbeds"
+],
+"hotcake": [
+"hotcakes"
+],
 "hotel": [
 "hotels"
 ],
 "hotelier": [
 "hoteliers"
+],
+"hothead": [
+"hotheaded",
+"hotheadedly",
+"hotheadedness",
+"hotheads"
+],
+"hotheaded": [
+"hothead",
+"hotheadedly",
+"hotheadedness",
+"hotheads"
+],
+"hothouse": [
+"hothoused",
+"hothouses",
+"hothousing"
+],
+"hotshot": [
+"hotshots"
 ],
 "hound": [
 "hounded",
@@ -36468,6 +39615,9 @@
 "hour": [
 "hourly",
 "hours"
+],
+"hourglass": [
+"hourglasses"
 ],
 "hourly": [
 "hour",
@@ -36480,6 +39630,71 @@
 "houses",
 "housing"
 ],
+"houseboat": [
+"houseboats"
+],
+"housebreak": [
+"housebreaking",
+"housebreaks",
+"housebroke",
+"housebroken"
+],
+"housebreaking": [
+"housebreak",
+"housebreaks",
+"housebroke",
+"housebroken"
+],
+"housebroken": [
+"housebreak",
+"housebreaking",
+"housebreaks",
+"housebroke"
+],
+"housecoat": [
+"housecoats"
+],
+"housefly": [
+"houseflies"
+],
+"household": [
+"households"
+],
+"householder": [
+"householders"
+],
+"househusband": [
+"househusbands"
+],
+"housekeeper": [
+"housekeepers"
+],
+"housekeeping": [],
+"housemaid": [
+"housemaids"
+],
+"housemother": [
+"housemothers"
+],
+"houseplant": [
+"houseplants"
+],
+"housetop": [
+"housetops"
+],
+"housewares": [],
+"housewarming": [
+"housewarmings"
+],
+"housewife": [
+"housewifely",
+"housewives"
+],
+"housewives": [
+"housewife",
+"housewifely"
+],
+"housework": [],
 "housing": [
 "house",
 "housed",
@@ -36501,10 +39716,14 @@
 "hovering",
 "hovers"
 ],
+"hovercraft": [
+"hovercrafts"
+],
 "how": [
 "hows"
 ],
 "howdy": [],
+"however": [],
 "howitzer": [
 "howitzers"
 ],
@@ -36521,6 +39740,7 @@
 "howled",
 "howls"
 ],
+"howsoever": [],
 "hub": [
 "hubs"
 ],
@@ -36529,6 +39749,9 @@
 ],
 "hubby": [
 "hubbies"
+],
+"hubcap": [
+"hubcaps"
 ],
 "hubris": [],
 "huckster": [
@@ -36629,6 +39852,7 @@
 "humanizes",
 "humanizing"
 ],
+"humankind": [],
 "humanly": [
 "human",
 "humaner",
@@ -36648,9 +39872,15 @@
 "humbling",
 "humbly"
 ],
+"humbug": [
+"humbugged",
+"humbugging",
+"humbugs"
+],
 "humdinger": [
 "humdingers"
 ],
+"humdrum": [],
 "humerus": [
 "humeri"
 ],
@@ -36681,6 +39911,9 @@
 "humiliations"
 ],
 "humility": [],
+"hummingbird": [
+"hummingbirds"
+],
 "hummock": [
 "hummocks"
 ],
@@ -36744,6 +39977,14 @@
 "humping",
 "humps"
 ],
+"humpback": [
+"humpbacked",
+"humpbacks"
+],
+"humpbacked": [
+"humpback",
+"humpbacks"
+],
 "humus": [
 "houmous",
 "houmus",
@@ -36754,11 +39995,23 @@
 "hunches",
 "hunching"
 ],
+"hunchback": [
+"hunchbacked",
+"hunchbacks"
+],
+"hunchbacked": [
+"hunchback",
+"hunchbacks"
+],
 "hundred": [
 "hundreds"
 ],
+"hundredfold": [],
 "hundredth": [
 "hundredths"
+],
+"hundredweight": [
+"hundredweights"
 ],
 "hung": [
 "hang",
@@ -37020,12 +40273,16 @@
 "hypersensitive": [
 "hypersensitiveness"
 ],
+"hypersensitivity": [
+"hypersensitivities"
+],
 "hypertension": [],
 "hyperventilate": [
 "hyperventilated",
 "hyperventilates",
 "hyperventilating"
 ],
+"hyperventilation": [],
 "hyphen": [
 "hyphened",
 "hyphening",
@@ -37133,6 +40390,19 @@
 "iced",
 "ices",
 "icing"
+],
+"iceberg": [
+"icebergs"
+],
+"icebound": [],
+"icebox": [
+"iceboxes"
+],
+"icebreaker": [
+"icebreakers"
+],
+"icecap": [
+"icecaps"
 ],
 "icicle": [
 "icicles"
@@ -39376,6 +42646,9 @@
 "inkling": [
 "inklings"
 ],
+"inkwell": [
+"inkwells"
+],
 "inky": [
 "inkier",
 "inkiest",
@@ -39412,6 +42685,9 @@
 ],
 "inning": [
 "innings"
+],
+"innkeeper": [
+"innkeepers"
 ],
 "innocence": [],
 "innocent": [
@@ -39979,7 +43255,9 @@
 "interconnection": [
 "interconnections"
 ],
+"intercontinental": [],
 "intercourse": [],
+"interdenominational": [],
 "interdependence": [],
 "interdependent": [
 "interdependently"
@@ -39990,6 +43268,7 @@
 "interdicts"
 ],
 "interdiction": [],
+"interdisciplinary": [],
 "interest": [
 "interested",
 "interesting",
@@ -40107,7 +43386,18 @@
 "internationally",
 "internationals"
 ],
+"internationalism": [],
+"internationalize": [
+"internationalise",
+"internationalised",
+"internationalises",
+"internationalising",
+"internationalized",
+"internationalizes",
+"internationalizing"
+],
 "internecine": [],
+"internet": [],
 "internist": [
 "internists"
 ],
@@ -40156,6 +43446,9 @@
 "interrelate",
 "interrelates",
 "interrelating"
+],
+"interrelationship": [
+"interrelationships"
 ],
 "interrogate": [
 "interrogated",
@@ -40225,6 +43518,9 @@
 ],
 "interviewee": [
 "interviewees"
+],
+"interviewer": [
+"interviewers"
 ],
 "interweave": [
 "interweaved",
@@ -40664,6 +43960,9 @@
 "ironing",
 "irons"
 ],
+"ironclad": [
+"ironclads"
+],
 "ironic": [],
 "ironical": [
 "ironically"
@@ -40673,6 +43972,7 @@
 "ironed",
 "irons"
 ],
+"ironware": [],
 "irony": [
 "ironies"
 ],
@@ -40900,6 +44200,7 @@
 "itineraries"
 ],
 "its": [],
+"itself": [],
 "ivory": [
 "ivories"
 ],
@@ -40925,12 +44226,36 @@
 "jackal": [
 "jackals"
 ],
+"jackass": [
+"jackasses"
+],
 "jackdaw": [
 "jackdaws"
 ],
 "jacket": [
 "jacketed",
 "jackets"
+],
+"jackhammer": [
+"jackhammers"
+],
+"jackknife": [
+"jackknifed",
+"jackknifes",
+"jackknifing",
+"jackknives"
+],
+"jackknives": [
+"jackknife",
+"jackknifed",
+"jackknifes",
+"jackknifing"
+],
+"jackpot": [
+"jackpots"
+],
+"jackrabbit": [
+"jackrabbits"
 ],
 "jade": [
 "jaded",
@@ -40966,6 +44291,14 @@
 "jailed",
 "jailing",
 "jails"
+],
+"jailbreak": [
+"gaolbreak",
+"gaolbreaks",
+"jailbreaking",
+"jailbreaks",
+"jailbroke",
+"jailbroken"
 ],
 "jailer": [
 "gaoler",
@@ -41053,8 +44386,24 @@
 "jawing",
 "jaws"
 ],
+"jawbone": [
+"jawboned",
+"jawbones",
+"jawboning"
+],
+"jawbreaker": [
+"jawbreakers"
+],
 "jay": [
 "jays"
+],
+"jaywalk": [
+"jaywalked",
+"jaywalking",
+"jaywalks"
+],
+"jaywalker": [
+"jaywalkers"
 ],
 "jazz": [
 "jazzed",
@@ -41092,6 +44441,12 @@
 "jellying",
 "jellylike"
 ],
+"jellybean": [
+"jellybeans"
+],
+"jellyfish": [
+"jellyfishes"
+],
 "jeopardize": [
 "jeopardise",
 "jeopardised",
@@ -41113,6 +44468,7 @@
 "jerkin": [
 "jerkins"
 ],
+"jerkwater": [],
 "jerky": [
 "jerkier",
 "jerkiest",
@@ -41206,6 +44562,12 @@
 "jiggles",
 "jiggling"
 ],
+"jigsaw": [
+"jigsawed",
+"jigsawing",
+"jigsawn",
+"jigsaws"
+],
 "jihad": [
 "jehad",
 "jehads",
@@ -41278,6 +44640,9 @@
 "jockeyed",
 "jockeying",
 "jockeys"
+],
+"jockstrap": [
+"jockstraps"
 ],
 "jocose": [
 "jocosely",
@@ -41448,6 +44813,18 @@
 "joyously",
 "joyousness"
 ],
+"joyride": [
+"joyridden",
+"joyrides",
+"joyriding",
+"joyrode"
+],
+"joyrider": [
+"joyriders"
+],
+"joystick": [
+"joysticks"
+],
 "jubilant": [
 "jubilantly"
 ],
@@ -41548,6 +44925,9 @@
 ],
 "jumper": [
 "jumpers"
+],
+"jumpsuit": [
+"jumpsuits"
 ],
 "jumpy": [
 "jumpier",
@@ -41727,6 +45107,9 @@
 "keeps",
 "kept"
 ],
+"keepsake": [
+"keepsakes"
+],
 "keg": [
 "kegs"
 ],
@@ -41773,10 +45156,37 @@
 "kettle": [
 "kettles"
 ],
+"kettledrum": [
+"kettledrums"
+],
 "key": [
 "keyed",
 "keying",
 "keys"
+],
+"keyboard": [
+"keyboarded",
+"keyboarding",
+"keyboards"
+],
+"keyhole": [
+"keyholes"
+],
+"keynote": [
+"keynoted",
+"keynotes",
+"keynoting"
+],
+"keypunch": [
+"keypunched",
+"keypunches",
+"keypunching"
+],
+"keystone": [
+"keystones"
+],
+"keystroke": [
+"keystrokes"
 ],
 "khaki": [
 "khakis"
@@ -41806,6 +45216,15 @@
 "kicking",
 "kicks"
 ],
+"kickback": [
+"kickbacks"
+],
+"kickoff": [
+"kickoffs"
+],
+"kickstand": [
+"kickstands"
+],
 "kid": [
 "kidded",
 "kidding",
@@ -41819,6 +45238,13 @@
 "kiddy": [
 "kiddie",
 "kiddies"
+],
+"kidnap": [
+"kidnaped",
+"kidnaping",
+"kidnapped",
+"kidnapping",
+"kidnaps"
 ],
 "kidnaper": [
 "kidnapers",
@@ -41838,6 +45264,9 @@
 "killing",
 "kills"
 ],
+"killdeer": [
+"killdeers"
+],
 "killer": [
 "killers"
 ],
@@ -41845,6 +45274,9 @@
 "kill",
 "killed",
 "kills"
+],
+"killjoy": [
+"killjoys"
 ],
 "kiln": [
 "kilned",
@@ -41950,6 +45382,9 @@
 "kingdom": [
 "kingdoms"
 ],
+"kingpin": [
+"kingpins"
+],
 "kingship": [],
 "kink": [
 "kinked",
@@ -41997,6 +45432,7 @@
 "kitchenette": [
 "kitchenettes"
 ],
+"kitchenware": [],
 "kite": [
 "kited",
 "kites",
@@ -42066,6 +45502,11 @@
 "kneeing",
 "knees"
 ],
+"kneecap": [
+"kneecapped",
+"kneecapping",
+"kneecaps"
+],
 "kneel": [
 "kneeled",
 "kneeling",
@@ -42113,6 +45554,9 @@
 "knightly",
 "knights"
 ],
+"knighthood": [
+"knighthoods"
+],
 "knit": [
 "knits",
 "knitted",
@@ -42123,6 +45567,7 @@
 "knits",
 "knitted"
 ],
+"knitwear": [],
 "knives": [
 "knife",
 "knifed",
@@ -42144,6 +45589,9 @@
 "knocker": [
 "knockers"
 ],
+"knockout": [
+"knockouts"
+],
 "knockwurst": [
 "knackwurst",
 "knackwursts",
@@ -42156,6 +45604,9 @@
 "knots",
 "knotted",
 "knotting"
+],
+"knothole": [
+"knotholes"
 ],
 "knotty": [
 "knottier",
@@ -42329,6 +45780,9 @@
 "lacked",
 "lacks"
 ],
+"lackluster": [
+"lacklustre"
+],
 "laconic": [
 "laconically"
 ],
@@ -42389,6 +45843,12 @@
 "ladies",
 "ladylike"
 ],
+"ladybug": [
+"ladybugs"
+],
+"ladyfinger": [
+"ladyfingers"
+],
 "ladyship": [
 "ladyships"
 ],
@@ -42445,6 +45905,12 @@
 "lambasting",
 "lambasts"
 ],
+"lambkin": [
+"lambkins"
+],
+"lambskin": [
+"lambskins"
+],
 "lame": [
 "lamed",
 "lamely",
@@ -42479,10 +45945,14 @@
 "lamp": [
 "lamps"
 ],
+"lampblack": [],
 "lampoon": [
 "lampooned",
 "lampooning",
 "lampoons"
+],
+"lamppost": [
+"lampposts"
 ],
 "lamprey": [
 "lampreys"
@@ -42510,11 +45980,44 @@
 "landless",
 "lands"
 ],
+"landfill": [
+"landfills"
+],
+"landholder": [
+"landholders"
+],
 "landing": [
 "land",
 "landed",
 "landless",
 "lands"
+],
+"landlady": [
+"landladies"
+],
+"landlocked": [],
+"landlord": [
+"landlords"
+],
+"landmark": [
+"landmarks"
+],
+"landmass": [
+"landmasses"
+],
+"landowner": [
+"landowners"
+],
+"landscape": [
+"landscaped",
+"landscapes",
+"landscaping"
+],
+"landslide": [
+"landslid",
+"landslidden",
+"landslides",
+"landsliding"
 ],
 "landward": [
 "landwards"
@@ -42572,6 +46075,9 @@
 "lapses",
 "lapsing"
 ],
+"laptop": [
+"laptops"
+],
 "larboard": [
 "larboards"
 ],
@@ -42626,6 +46132,9 @@
 "larked",
 "larking",
 "larks"
+],
+"larkspur": [
+"larkspurs"
 ],
 "larva": [
 "larvae",
@@ -42764,6 +46273,9 @@
 "laughable": [
 "laughably"
 ],
+"laughingstock": [
+"laughingstocks"
+],
 "laughter": [],
 "launch": [
 "launched",
@@ -42815,6 +46327,9 @@
 "lawlessness",
 "laws"
 ],
+"lawbreaker": [
+"lawbreakers"
+],
 "lawful": [
 "law",
 "lawfully",
@@ -42833,8 +46348,14 @@
 "lawlessness",
 "laws"
 ],
+"lawmaker": [
+"lawmakers"
+],
 "lawn": [
 "lawns"
+],
+"lawsuit": [
+"lawsuits"
 ],
 "lawyer": [
 "lawyers"
@@ -42856,6 +46377,7 @@
 "lies",
 "lying"
 ],
+"layaway": [],
 "layer": [
 "layered",
 "layering",
@@ -42866,6 +46388,15 @@
 ],
 "layman": [
 "laymen"
+],
+"layoff": [
+"layoffs"
+],
+"layout": [
+"layouts"
+],
+"layover": [
+"layovers"
 ],
 "laywoman": [
 "laywomen"
@@ -42884,6 +46415,7 @@
 "laziness",
 "lazying"
 ],
+"lazybones": [],
 "lea": [
 "leas"
 ],
@@ -42980,6 +46512,11 @@
 "leapt",
 "lept"
 ],
+"leapfrog": [
+"leapfrogged",
+"leapfrogging",
+"leapfrogs"
+],
 "leapt": [
 "leap",
 "leaped",
@@ -43033,8 +46570,14 @@
 "littler",
 "littlest"
 ],
+"leastwise": [
+"leastways"
+],
 "leather": [
 "leathers"
+],
+"leatherneck": [
+"leathernecks"
 ],
 "leathery": [],
 "leave": [
@@ -43117,6 +46660,10 @@
 "lees": [
 "lee"
 ],
+"leeward": [
+"leewards"
+],
+"leeway": [],
 "left": [
 "leave",
 "leaved",
@@ -43125,6 +46672,12 @@
 ],
 "leftist": [
 "leftists"
+],
+"leftover": [
+"leftovers"
+],
+"leftovers": [
+"leftover"
 ],
 "lefty": [
 "leftie",
@@ -43253,10 +46806,14 @@
 "legitimizes",
 "legitimizing"
 ],
+"legroom": [
+"legrooms"
+],
 "legume": [
 "legumes"
 ],
 "leguminous": [],
+"legwork": [],
 "lei": [
 "leis"
 ],
@@ -43300,6 +46857,12 @@
 "lengthened",
 "lengthening",
 "lengthens"
+],
+"lengthways": [
+"lengthwise"
+],
+"lengthwise": [
+"lengthways"
 ],
 "lengthy": [
 "lengthier",
@@ -43381,6 +46944,9 @@
 "lets",
 "letting"
 ],
+"letdown": [
+"letdowns"
+],
 "lethal": [
 "lethally"
 ],
@@ -43392,6 +46958,9 @@
 "lettered",
 "lettering",
 "letters"
+],
+"letterhead": [
+"letterheads"
 ],
 "lettering": [
 "letter",
@@ -43423,6 +46992,9 @@
 "levelly",
 "levelness",
 "levels"
+],
+"levelheaded": [
+"levelheadedness"
 ],
 "lever": [
 "levered",
@@ -43623,6 +47195,13 @@
 "lifelike",
 "lives"
 ],
+"lifeblood": [],
+"lifeboat": [
+"lifeboats"
+],
+"lifeguard": [
+"lifeguards"
+],
 "lifeless": [
 "life",
 "lifelessly",
@@ -43630,13 +47209,30 @@
 "lifelike",
 "lives"
 ],
+"lifeline": [
+"lifelines"
+],
+"lifelong": [],
 "lifer": [
 "lifers"
+],
+"lifesaving": [],
+"lifestyle": [
+"lifestyles"
+],
+"lifetime": [
+"lifetimes"
+],
+"lifework": [
+"lifeworks"
 ],
 "lift": [
 "lifted",
 "lifting",
 "lifts"
+],
+"liftoff": [
+"liftoffs"
 ],
 "ligament": [
 "ligaments"
@@ -43671,6 +47267,9 @@
 "lights",
 "lit"
 ],
+"lighthouse": [
+"lighthouses"
+],
 "lighting": [
 "light",
 "lighted",
@@ -43684,6 +47283,9 @@
 "lightning": [
 "lightninged",
 "lightnings"
+],
+"lightweight": [
+"lightweights"
 ],
 "likable": [
 "likability",
@@ -43728,6 +47330,7 @@
 "likest",
 "liking"
 ],
+"likewise": [],
 "liking": [
 "like",
 "liked",
@@ -43765,9 +47368,11 @@
 "limes",
 "liming"
 ],
+"limelight": [],
 "limerick": [
 "limericks"
 ],
+"limestone": [],
 "limit": [
 "limited",
 "limiting",
@@ -43843,6 +47448,9 @@
 ],
 "linear": [
 "linearly"
+],
+"linebacker": [
+"linebackers"
 ],
 "lineman": [
 "linemen"
@@ -43944,6 +47552,13 @@
 "lipids"
 ],
 "liposuction": [],
+"lipreading": [
+"lipread",
+"lipreads"
+],
+"lipstick": [
+"lipsticks"
+],
 "liquefaction": [],
 "liquefy": [
 "liquefied",
@@ -44095,6 +47710,9 @@
 "littering",
 "litters"
 ],
+"litterbug": [
+"litterbugs"
+],
 "little": [
 "least",
 "less",
@@ -44132,6 +47750,7 @@
 "livelihood": [
 "livelihoods"
 ],
+"livelong": [],
 "lively": [
 "livelier",
 "liveliest",
@@ -44166,6 +47785,7 @@
 "livest",
 "living"
 ],
+"livestock": [],
 "livid": [
 "lividly"
 ],
@@ -44196,6 +47816,11 @@
 "loading",
 "loads"
 ],
+"loadstone": [
+"loadstones",
+"lodestone",
+"lodestones"
+],
 "loaf": [
 "loafed",
 "loafing",
@@ -44214,6 +47839,9 @@
 ],
 "loaner": [
 "loaners"
+],
+"loanword": [
+"loanwords"
 ],
 "loath": [
 "loth"
@@ -44308,6 +47936,13 @@
 "locket": [
 "lockets"
 ],
+"lockjaw": [],
+"lockout": [
+"lockouts"
+],
+"locksmith": [
+"locksmiths"
+],
 "loco": [
 "locos"
 ],
@@ -44326,6 +47961,16 @@
 ],
 "lode": [
 "lodes"
+],
+"lodestar": [
+"loadstar",
+"loadstars",
+"lodestars"
+],
+"lodestone": [
+"loadstone",
+"loadstones",
+"lodestones"
 ],
 "lodge": [
 "lodged",
@@ -44381,12 +48026,21 @@
 "logistics": [
 "logistic"
 ],
+"logjam": [
+"logjams"
+],
 "logo": [
 "logos"
+],
+"logotype": [
+"logotypes"
 ],
 "logrolling": [],
 "loin": [
 "loins"
+],
+"loincloth": [
+"loincloths"
 ],
 "loiter": [
 "loitered",
@@ -44439,6 +48093,13 @@
 "longs"
 ],
 "longevity": [],
+"longhair": [
+"longhairs"
+],
+"longhand": [],
+"longhorn": [
+"longhorns"
+],
 "longing": [
 "long",
 "longed",
@@ -44460,6 +48121,9 @@
 "looked",
 "looking",
 "looks"
+],
+"lookout": [
+"lookouts"
 ],
 "looks": [
 "look",
@@ -44485,6 +48149,9 @@
 "looped",
 "looping",
 "loops"
+],
+"loophole": [
+"loopholes"
 ],
 "loose": [
 "loosed",
@@ -44583,6 +48250,17 @@
 "loudly",
 "loudness"
 ],
+"loudmouth": [
+"loudmouthed",
+"loudmouths"
+],
+"loudmouthed": [
+"loudmouth",
+"loudmouths"
+],
+"loudspeaker": [
+"loudspeakers"
+],
 "lounge": [
 "lounged",
 "lounges",
@@ -44642,6 +48320,9 @@
 "loveableness",
 "loveably"
 ],
+"lovebird": [
+"lovebirds"
+],
 "loveless": [
 "love",
 "loved",
@@ -44661,6 +48342,7 @@
 "lover": [
 "lovers"
 ],
+"lovesick": [],
 "loving": [
 "love",
 "loved",
@@ -44682,6 +48364,10 @@
 "lowness",
 "lows"
 ],
+"lowbrow": [
+"lowbrows"
+],
+"lowdown": [],
 "lower": [
 "low",
 "lowed",
@@ -44693,6 +48379,10 @@
 "lowly",
 "lowness",
 "lows"
+],
+"lowercase": [],
+"lowland": [
+"lowlands"
 ],
 "lowly": [
 "low",
@@ -44797,8 +48487,14 @@
 "lumbering",
 "lumbers"
 ],
+"lumberjack": [
+"lumberjacks"
+],
 "lumberman": [
 "lumbermen"
+],
+"lumberyard": [
+"lumberyards"
 ],
 "luminary": [
 "luminaries"
@@ -44835,8 +48531,14 @@
 "lunches",
 "lunching"
 ],
+"luncheon": [
+"luncheons"
+],
 "luncheonette": [
 "luncheonettes"
+],
+"lunchroom": [
+"lunchrooms"
 ],
 "lung": [
 "lungful",
@@ -45043,6 +48745,9 @@
 "madame": [
 "mesdames"
 ],
+"madcap": [
+"madcaps"
+],
 "madden": [
 "maddened",
 "maddening",
@@ -45063,6 +48768,9 @@
 "mademoiselle": [
 "mademoiselles",
 "mesdemoiselles"
+],
+"madhouse": [
+"madhouses"
 ],
 "madman": [
 "madmen"
@@ -45127,6 +48835,7 @@
 "magnetic": [
 "magnetically"
 ],
+"magnetism": [],
 "magnetization": [
 "magnetisation"
 ],
@@ -45200,10 +48909,16 @@
 "maidens"
 ],
 "maidenhood": [],
+"maidservant": [
+"maidservants"
+],
 "mail": [
 "mailed",
 "mailing",
 "mails"
+],
+"mailbox": [
+"mailboxes"
 ],
 "mailer": [
 "mailers"
@@ -45220,9 +48935,37 @@
 "mainly",
 "mains"
 ],
+"mainframe": [
+"mainframes"
+],
+"mainland": [
+"mainlands"
+],
+"mainline": [
+"mainlined",
+"mainlines",
+"mainlining"
+],
 "mainly": [
 "main",
 "mains"
+],
+"mainmast": [
+"mainmasts"
+],
+"mainsail": [
+"mainsails"
+],
+"mainspring": [
+"mainsprings"
+],
+"mainstay": [
+"mainstays"
+],
+"mainstream": [
+"mainstreamed",
+"mainstreaming",
+"mainstreams"
 ],
 "maintain": [
 "maintained",
@@ -45253,6 +48996,9 @@
 ],
 "maker": [
 "makers"
+],
+"makeshift": [
+"makeshifts"
 ],
 "making": [
 "made",
@@ -45494,10 +49240,25 @@
 "mangoes",
 "mangos"
 ],
+"mangrove": [
+"mangroves"
+],
 "mangy": [
 "mangier",
 "mangiest",
 "manginess"
+],
+"manhandle": [
+"manhandled",
+"manhandles",
+"manhandling"
+],
+"manhole": [
+"manholes"
+],
+"manhood": [],
+"manhunt": [
+"manhunts"
 ],
 "mania": [
 "manias"
@@ -45554,6 +49315,7 @@
 "manipulative": [
 "manipulatively"
 ],
+"mankind": [],
 "manly": [
 "man",
 "manlier",
@@ -45636,14 +49398,22 @@
 "manors"
 ],
 "manorial": [],
+"manpower": [],
 "manse": [
 "manses"
+],
+"manservant": [
+"menservants"
 ],
 "mansion": [
 "mansions"
 ],
+"manslaughter": [],
 "mantel": [
 "mantels"
+],
+"mantelpiece": [
+"mantelpieces"
 ],
 "mantilla": [
 "mantillas"
@@ -45785,6 +49555,9 @@
 "marking",
 "marks"
 ],
+"markdown": [
+"markdowns"
+],
 "marked": [
 "mark",
 "marking",
@@ -45808,6 +49581,9 @@
 "market",
 "marketed",
 "markets"
+],
+"marketplace": [
+"marketplaces"
 ],
 "marking": [
 "mark",
@@ -45945,6 +49721,9 @@
 "mashes",
 "mashing"
 ],
+"masher": [
+"mashers"
+],
 "mask": [
 "masked",
 "masking",
@@ -46025,7 +49804,24 @@
 "mastering",
 "masters"
 ],
+"mastermind": [
+"masterminded",
+"masterminding",
+"masterminds"
+],
+"masterpiece": [
+"masterpieces"
+],
+"masterstroke": [
+"masterstrokes"
+],
+"masterwork": [
+"masterworks"
+],
 "mastery": [],
+"masthead": [
+"mastheads"
+],
 "masticate": [
 "masticated",
 "masticates",
@@ -46065,12 +49861,19 @@
 "matching",
 "matchless"
 ],
+"matchbook": [
+"matchbooks"
+],
 "matchless": [
 "match",
 "matched",
 "matches",
 "matching"
 ],
+"matchmaker": [
+"matchmakers"
+],
+"matchmaking": [],
 "mate": [
 "mated",
 "mates",
@@ -46182,6 +49985,7 @@
 "mattering",
 "matters"
 ],
+"matthew": [],
 "matting": [
 "mat",
 "mats",
@@ -46286,6 +50090,12 @@
 "maybe": [
 "maybes"
 ],
+"mayday": [
+"maydays"
+],
+"mayfly": [
+"mayflies"
+],
 "mayhem": [],
 "mayo": [],
 "mayonnaise": [],
@@ -46294,6 +50104,9 @@
 ],
 "mayoral": [],
 "mayoralty": [],
+"maypole": [
+"maypoles"
+],
 "maze": [
 "mazes"
 ],
@@ -46308,6 +50121,9 @@
 "mead": [],
 "meadow": [
 "meadows"
+],
+"meadowlark": [
+"meadowlarks"
 ],
 "meager": [
 "meagerer",
@@ -46333,6 +50149,9 @@
 ],
 "meal": [
 "meals"
+],
+"mealtime": [
+"mealtimes"
 ],
 "mealy": [
 "mealier",
@@ -46363,6 +50182,7 @@
 "meant"
 ],
 "meaningful": [],
+"meaningfully": [],
 "meaningless": [],
 "means": [
 "mean",
@@ -46382,6 +50202,8 @@
 "meanness",
 "means"
 ],
+"meantime": [],
+"meanwhile": [],
 "measles": [],
 "measly": [
 "measlier",
@@ -46414,6 +50236,9 @@
 "meat": [
 "meatless",
 "meats"
+],
+"meatball": [
+"meatballs"
 ],
 "meaty": [
 "meatier",
@@ -46487,10 +50312,12 @@
 "medic": [
 "medics"
 ],
+"medicaid": [],
 "medical": [
 "medically",
 "medicals"
 ],
+"medicare": [],
 "medicate": [
 "medicated",
 "medicates",
@@ -46553,6 +50380,9 @@
 "meet",
 "meets",
 "met"
+],
+"meetinghouse": [
+"meetinghouses"
 ],
 "megabyte": [
 "megabytes"
@@ -46631,6 +50461,9 @@
 "melted",
 "melting",
 "melts"
+],
+"meltdown": [
+"meltdowns"
 ],
 "member": [
 "members"
@@ -46712,6 +50545,9 @@
 "menacing",
 "menacingly"
 ],
+"menage": [
+"menages"
+],
 "menagerie": [
 "menageries"
 ],
@@ -46726,6 +50562,9 @@
 "mendacity": [],
 "mendicant": [
 "mendicants"
+],
+"menfolk": [
+"menfolks"
 ],
 "menhaden": [
 "menhadens"
@@ -46877,6 +50716,10 @@
 "merrily",
 "merriness"
 ],
+"merrymaker": [
+"merrymakers"
+],
+"merrymaking": [],
 "mesa": [
 "mesas"
 ],
@@ -47053,6 +50896,7 @@
 "methodically",
 "methodicalness"
 ],
+"methodism": [],
 "methodological": [
 "methodologically"
 ],
@@ -47157,6 +51001,9 @@
 "microscopes"
 ],
 "microscopic": [],
+"microscopically": [
+"microscopical"
+],
 "microscopy": [],
 "microsecond": [
 "microseconds"
@@ -47170,9 +51017,20 @@
 "mid": [
 "midmost"
 ],
+"midair": [],
+"midday": [],
 "middle": [
 "middlemost",
 "middles"
+],
+"middlebrow": [
+"middlebrows"
+],
+"middleman": [
+"middlemen"
+],
+"middleweight": [
+"middleweights"
 ],
 "middling": [],
 "middy": [
@@ -47184,6 +51042,13 @@
 "midget": [
 "midgets"
 ],
+"midland": [
+"midlands"
+],
+"midnight": [],
+"midpoint": [
+"midpoints"
+],
 "midriff": [
 "midriffs"
 ],
@@ -47191,8 +51056,41 @@
 "midshipmen"
 ],
 "midst": [],
+"midstream": [],
+"midsummer": [],
+"midterm": [
+"midterms"
+],
+"midway": [
+"midways"
+],
+"midweek": [
+"midweeks"
+],
+"midwest": [],
+"midwestern": [],
+"midwife": [
+"midwifed",
+"midwifes",
+"midwifing",
+"midwived",
+"midwives",
+"midwiving"
+],
 "midwifery": [
 "midwiferies"
+],
+"midwinter": [],
+"midwives": [
+"midwife",
+"midwifed",
+"midwifes",
+"midwifing",
+"midwived",
+"midwiving"
+],
+"midyear": [
+"midyears"
 ],
 "mien": [
 "miens"
@@ -47249,6 +51147,12 @@
 "mileage": [
 "mileages"
 ],
+"milepost": [
+"mileposts"
+],
+"milestone": [
+"milestones"
+],
 "milieu": [
 "milieus",
 "milieux"
@@ -47292,8 +51196,17 @@
 "milking",
 "milks"
 ],
+"milkmaid": [
+"milkmaids"
+],
+"milkman": [
+"milkmen"
+],
 "milksop": [
 "milksops"
+],
+"milkweed": [
+"milkweeds"
 ],
 "milky": [
 "milkier",
@@ -47358,6 +51271,9 @@
 "millisecond": [
 "milliseconds"
 ],
+"millstone": [
+"millstones"
+],
 "mime": [
 "mimed",
 "mimes",
@@ -47388,6 +51304,7 @@
 "minces",
 "mincing"
 ],
+"mincemeat": [],
 "mind": [
 "minded",
 "minding",
@@ -47418,6 +51335,9 @@
 ],
 "mine": [
 "my"
+],
+"minefield": [
+"minefields"
 ],
 "miner": [
 "miners"
@@ -47455,6 +51375,16 @@
 "miniaturizes",
 "miniaturizing"
 ],
+"minibike": [
+"minibikes"
+],
+"minibus": [
+"minibuses",
+"minibusses"
+],
+"minicomputer": [
+"minicomputers"
+],
 "minima": [
 "minimum",
 "minimums"
@@ -47483,6 +51413,10 @@
 "minion": [
 "minions"
 ],
+"miniseries": [],
+"miniskirt": [
+"miniskirts"
+],
 "minister": [
 "ministered",
 "ministering",
@@ -47494,6 +51428,9 @@
 ],
 "ministry": [
 "ministries"
+],
+"minivan": [
+"minivans"
 ],
 "mink": [
 "minks"
@@ -48136,6 +52073,9 @@
 "mockery": [
 "mockeries"
 ],
+"mockingbird": [
+"mockingbirds"
+],
 "modal": [
 "modals"
 ],
@@ -48171,6 +52111,7 @@
 "modernness",
 "moderns"
 ],
+"modernism": [],
 "modernistic": [],
 "modernity": [],
 "modernization": [
@@ -48299,6 +52240,10 @@
 "molecule": [
 "molecules"
 ],
+"molehill": [
+"molehills"
+],
+"moleskin": [],
 "molest": [
 "molested",
 "molesting",
@@ -48396,6 +52341,9 @@
 "moneys",
 "monied",
 "monies"
+],
+"moneymaker": [
+"moneymakers"
 ],
 "mongoose": [
 "mongeese",
@@ -48564,6 +52512,29 @@
 "moonless",
 "moons"
 ],
+"moonbeam": [
+"moonbeams"
+],
+"moonlight": [
+"moonlighted",
+"moonlighting",
+"moonlights"
+],
+"moonlighter": [
+"moonlighters"
+],
+"moonlit": [],
+"moonscape": [
+"moonscapes"
+],
+"moonshine": [],
+"moonshot": [
+"moonshots"
+],
+"moonstone": [
+"moonstones"
+],
+"moonstruck": [],
 "moor": [
 "moored",
 "mooring",
@@ -48651,6 +52622,7 @@
 "much",
 "muchness"
 ],
+"moreover": [],
 "mores": [],
 "morgue": [
 "morgues"
@@ -48696,6 +52668,9 @@
 "mortared",
 "mortaring",
 "mortars"
+],
+"mortarboard": [
+"mortarboards"
 ],
 "mortgage": [
 "mortgaged",
@@ -48768,6 +52743,11 @@
 "moth": [
 "moths"
 ],
+"mothball": [
+"mothballed",
+"mothballing",
+"mothballs"
+],
 "mother": [
 "mothered",
 "mothering",
@@ -48775,6 +52755,10 @@
 "motherliness",
 "motherly",
 "mothers"
+],
+"motherhood": [],
+"motherland": [
+"motherlands"
 ],
 "motherless": [
 "mother",
@@ -48836,8 +52820,29 @@
 "motoring",
 "motors"
 ],
+"motorbike": [
+"motorbiked",
+"motorbikes",
+"motorbiking"
+],
+"motorboat": [
+"motorboated",
+"motorboating",
+"motorboats"
+],
 "motorcade": [
 "motorcades"
+],
+"motorcar": [
+"motorcars"
+],
+"motorcycle": [
+"motorcycled",
+"motorcycles",
+"motorcycling"
+],
+"motorcyclist": [
+"motorcyclists"
 ],
 "motorist": [
 "motorists"
@@ -48897,6 +52902,9 @@
 "mountaineers"
 ],
 "mountainous": [],
+"mountaintop": [
+"mountaintops"
+],
 "mountebank": [
 "mountebanks"
 ],
@@ -48938,6 +52946,11 @@
 "mouser": [
 "mousers"
 ],
+"mousetrap": [
+"mousetrapped",
+"mousetrapping",
+"mousetraps"
+],
 "mousse": [
 "moussed",
 "mousses",
@@ -48969,6 +52982,12 @@
 "mouthfuls",
 "mouthing",
 "mouths"
+],
+"mouthpiece": [
+"mouthpieces"
+],
+"mouthwash": [
+"mouthwashes"
 ],
 "movable": [
 "movables",
@@ -49024,6 +53043,11 @@
 "mucked",
 "mucking",
 "mucks"
+],
+"muckrake": [
+"muckraked",
+"muckrakes",
+"muckraking"
 ],
 "mucky": [
 "muckier",
@@ -49123,6 +53147,7 @@
 "multicoloured"
 ],
 "multicultural": [],
+"multiculturalism": [],
 "multifaceted": [],
 "multifarious": [
 "multifariously",
@@ -49275,6 +53300,11 @@
 "mushes",
 "mushing"
 ],
+"mushroom": [
+"mushroomed",
+"mushrooming",
+"mushrooms"
+],
 "mushy": [
 "mushier",
 "mushiest",
@@ -49299,6 +53329,12 @@
 ],
 "musketeer": [
 "musketeers"
+],
+"muskmelon": [
+"muskmelons"
+],
+"muskrat": [
+"muskrats"
 ],
 "musky": [
 "muskie",
@@ -49519,6 +53555,9 @@
 "naming"
 ],
 "namely": [],
+"namesake": [
+"namesakes"
+],
 "nanny": [
 "nannies",
 "nannying"
@@ -49642,6 +53681,7 @@
 "nationalizes",
 "nationalizing"
 ],
+"nationwide": [],
 "native": [
 "natives"
 ],
@@ -49764,6 +53804,10 @@
 "nearness",
 "nears"
 ],
+"nearsighted": [
+"nearsightedly",
+"nearsightedness"
+],
 "neat": [
 "neater",
 "neatest",
@@ -49811,6 +53855,17 @@
 "neckerchiefs",
 "neckerchieves"
 ],
+"necklace": [
+"necklaced",
+"necklaces",
+"necklacing"
+],
+"neckline": [
+"necklines"
+],
+"necktie": [
+"neckties"
+],
 "necromancy": [],
 "nectar": [
 "nectars"
@@ -49844,6 +53899,7 @@
 "needles",
 "needling"
 ],
+"needlepoint": [],
 "needless": [
 "need",
 "needed",
@@ -49854,6 +53910,7 @@
 "needlessness",
 "needs"
 ],
+"needlework": [],
 "needs": [
 "need",
 "needed",
@@ -50126,18 +54183,53 @@
 "neutrons"
 ],
 "never": [],
+"nevermore": [],
 "nevertheless": [],
 "new": [
 "newer",
 "newest",
 "newness"
 ],
+"newborn": [
+"newborns"
+],
 "newel": [
 "newels"
 ],
 "newfangled": [],
 "newly": [],
+"newlywed": [
+"newlyweds"
+],
 "news": [],
+"newsboy": [
+"newsboys"
+],
+"newscast": [
+"newscasts"
+],
+"newscaster": [
+"newscasters"
+],
+"newsletter": [
+"newsletters"
+],
+"newsman": [
+"newsmen"
+],
+"newspaper": [
+"newspapers"
+],
+"newsprint": [],
+"newsreel": [
+"newsreels"
+],
+"newsstand": [
+"newsstands"
+],
+"newsworthy": [
+"newsworthiness"
+],
 "newsy": [
 "newsier",
 "newsiest"
@@ -50181,6 +54273,11 @@
 "nickel": [
 "nickels"
 ],
+"nickname": [
+"nicknamed",
+"nicknames",
+"nicknaming"
+],
 "nicotine": [],
 "niece": [
 "nieces"
@@ -50212,6 +54309,21 @@
 "nite",
 "nites"
 ],
+"nightcap": [
+"nightcaps"
+],
+"nightclub": [
+"nightclubbed",
+"nightclubbing",
+"nightclubs"
+],
+"nightfall": [],
+"nightgown": [
+"nightgowns"
+],
+"nighthawk": [
+"nighthawks"
+],
 "nightie": [
 "nighties",
 "nighty"
@@ -50219,6 +54331,7 @@
 "nightingale": [
 "nightingales"
 ],
+"nightlife": [],
 "nightly": [
 "night",
 "nights",
@@ -50233,6 +54346,16 @@
 "nightmare",
 "nightmares"
 ],
+"nightshade": [
+"nightshades"
+],
+"nightshirt": [
+"nightshirts"
+],
+"nightstick": [
+"nightsticks"
+],
+"nighttime": [],
 "nihilism": [],
 "nihilist": [
 "nihilists"
@@ -50261,6 +54384,9 @@
 ],
 "ninepins": [
 "ninepin"
+],
+"nineteen": [
+"nineteens"
 ],
 "nineteenth": [
 "nineteenths"
@@ -50311,6 +54437,9 @@
 ],
 "nitroglycerine": [
 "nitroglycerin"
+],
+"nitwit": [
+"nitwits"
 ],
 "nix": [
 "nixed",
@@ -50374,6 +54503,9 @@
 "noiselessness",
 "noises",
 "noising"
+],
+"noisemaker": [
+"noisemakers"
 ],
 "noisome": [],
 "noisy": [
@@ -50525,6 +54657,7 @@
 "nooks"
 ],
 "noon": [],
+"noonday": [],
 "noose": [
 "nooses"
 ],
@@ -50553,8 +54686,13 @@
 "normally": [
 "normal"
 ],
+"norman": [],
 "normative": [],
 "north": [],
+"northbound": [],
+"northeast": [],
+"northeasterly": [],
+"northeastern": [],
 "northerly": [
 "northerlies"
 ],
@@ -50570,10 +54708,22 @@
 "northwards": [
 "northward"
 ],
+"northwest": [],
+"northwesterly": [],
+"northwestern": [],
 "nose": [
 "nosed",
 "noses",
 "nosing"
+],
+"nosebleed": [
+"nosebleeds"
+],
+"nosedive": [
+"nosedived",
+"nosedives",
+"nosediving",
+"nosedove"
 ],
 "nosegay": [
 "nosegays"
@@ -50633,10 +54783,18 @@
 "notes",
 "noting"
 ],
+"notebook": [
+"notebooks"
+],
 "noted": [
 "note",
 "notes",
 "noting"
+],
+"noteworthy": [
+"noteworthier",
+"noteworthiest",
+"noteworthiness"
 ],
 "nothingness": [
 "nothing",
@@ -50720,6 +54878,7 @@
 "noway": [
 "noways"
 ],
+"nowhere": [],
 "noxious": [],
 "nozzle": [
 "nozzles"
@@ -50794,6 +54953,11 @@
 "numbs"
 ],
 "numberless": [],
+"numbskull": [
+"numbskulls",
+"numskull",
+"numskulls"
+],
 "numeral": [
 "numerals"
 ],
@@ -50838,6 +55002,9 @@
 "nurses",
 "nursing"
 ],
+"nursemaid": [
+"nursemaids"
+],
 "nursery": [
 "nurseries"
 ],
@@ -50853,6 +55020,12 @@
 "nuts",
 "nutted",
 "nutting"
+],
+"nutcracker": [
+"nutcrackers"
+],
+"nuthatch": [
+"nuthatches"
 ],
 "nutmeg": [
 "nutmegs"
@@ -50879,6 +55052,9 @@
 "nut",
 "nutted",
 "nutting"
+],
+"nutshell": [
+"nutshells"
 ],
 "nutty": [
 "nuttier",
@@ -50922,6 +55098,9 @@
 "oaring",
 "oars"
 ],
+"oarlock": [
+"oarlocks"
+],
 "oarsman": [
 "oarsmen"
 ],
@@ -50937,6 +55116,7 @@
 "oath": [
 "oaths"
 ],
+"oatmeal": [],
 "oats": [
 "oat"
 ],
@@ -51224,6 +55404,7 @@
 "ocean": [
 "oceans"
 ],
+"oceangoing": [],
 "oceanic": [],
 "oceanography": [],
 "ocelot": [
@@ -51272,6 +55453,9 @@
 "oddest",
 "oddly",
 "oddness"
+],
+"oddball": [
+"oddballs"
 ],
 "oddity": [
 "oddities"
@@ -51327,10 +55511,18 @@
 "offs"
 ],
 "offal": [],
+"offbeat": [
+"offbeats"
+],
 "offence": [
 "offences",
 "offense",
 "offenses"
+],
+"offend": [
+"offended",
+"offending",
+"offends"
 ],
 "offense": [
 "offence",
@@ -51355,8 +55547,16 @@
 "offertory": [
 "offertories"
 ],
+"offhand": [
+"offhanded",
+"offhandedly",
+"offhandedness"
+],
 "office": [
 "offices"
+],
+"officeholder": [
+"officeholders"
 ],
 "officer": [
 "officers"
@@ -51380,6 +55580,19 @@
 "offed",
 "offs"
 ],
+"offset": [
+"offsets",
+"offsetting"
+],
+"offshoot": [
+"offshoots"
+],
+"offshore": [],
+"offside": [],
+"offspring": [
+"offsprings"
+],
+"offstage": [],
 "oft": [],
 "often": [
 "oftener",
@@ -51405,6 +55618,12 @@
 "oiled",
 "oiling",
 "oils"
+],
+"oilcloth": [
+"oilcloths"
+],
+"oilskin": [
+"oilskins"
 ],
 "oily": [
 "oilier",
@@ -51524,6 +55743,8 @@
 "onerously",
 "onerousness"
 ],
+"oneself": [],
+"onetime": [],
 "onion": [
 "onions"
 ],
@@ -51607,6 +55828,7 @@
 "openness",
 "opens"
 ],
+"openwork": [],
 "opera": [
 "opus",
 "opuses"
@@ -52071,6 +56293,8 @@
 "otherness",
 "others"
 ],
+"otherwise": [],
+"otherworldly": [],
 "otter": [
 "otters"
 ],
@@ -52095,6 +56319,7 @@
 "ours": [
 "our"
 ],
+"ourselves": [],
 "oust": [
 "ousted",
 "ousting",
@@ -52108,19 +56333,110 @@
 "outing",
 "outs"
 ],
+"outage": [
+"outages"
+],
+"outbid": [
+"outbidding",
+"outbids"
+],
+"outbound": [],
+"outbreak": [
+"outbreaks"
+],
+"outbuilding": [
+"outbuildings"
+],
+"outburst": [
+"outbursts"
+],
+"outcast": [
+"outcasts"
+],
+"outclass": [
+"outclassed",
+"outclasses",
+"outclassing"
+],
+"outcome": [
+"outcomes"
+],
+"outcrop": [
+"outcropped",
+"outcropping",
+"outcrops"
+],
+"outcry": [
+"outcries"
+],
+"outdated": [],
+"outdistance": [
+"outdistanced",
+"outdistances",
+"outdistancing"
+],
 "outdo": [
 "outdid",
 "outdoes",
 "outdoing",
 "outdone"
 ],
+"outdoor": [
+"outdoors"
+],
+"outdoors": [
+"outdoor"
+],
 "outer": [
 "outermost"
+],
+"outfield": [
+"outfields"
 ],
 "outfit": [
 "outfits",
 "outfitted",
 "outfitting"
+],
+"outfitter": [
+"outfitters"
+],
+"outflank": [
+"outflanked",
+"outflanking",
+"outflanks"
+],
+"outfox": [
+"outfoxed",
+"outfoxes",
+"outfoxing"
+],
+"outgoing": [
+"outgoings"
+],
+"outgrew": [
+"outgrow",
+"outgrowing",
+"outgrown",
+"outgrows"
+],
+"outgrow": [
+"outgrew",
+"outgrowing",
+"outgrown",
+"outgrows"
+],
+"outgrown": [
+"outgrew",
+"outgrow",
+"outgrowing",
+"outgrows"
+],
+"outgrowth": [
+"outgrowths"
+],
+"outhouse": [
+"outhouses"
 ],
 "outing": [
 "out",
@@ -52131,12 +56447,77 @@
 "outlandishly",
 "outlandishness"
 ],
+"outlast": [
+"outlasted",
+"outlasting",
+"outlasts"
+],
+"outlaw": [
+"outlawed",
+"outlawing",
+"outlaws"
+],
+"outlay": [
+"outlaid",
+"outlaying",
+"outlays"
+],
 "outlet": [
 "outlets"
 ],
+"outline": [
+"outlined",
+"outlines",
+"outlining"
+],
+"outlive": [
+"outlived",
+"outlives",
+"outliving"
+],
+"outlook": [
+"outlooks"
+],
+"outlying": [],
+"outmaneuver": [
+"outmaneuvered",
+"outmaneuvering",
+"outmaneuvers",
+"outmanoeuvre",
+"outmanoeuvred",
+"outmanoeuvres",
+"outmanoeuvring"
+],
 "outmoded": [],
+"outnumber": [
+"outnumbered",
+"outnumbering",
+"outnumbers"
+],
+"outpatient": [
+"outpatients"
+],
+"outperform": [
+"outperformed",
+"outperforming",
+"outperforms"
+],
+"outplacement": [],
+"outplay": [
+"outplayed",
+"outplaying",
+"outplays"
+],
+"outpost": [
+"outposts"
+],
 "outpouring": [
 "outpourings"
+],
+"output": [
+"outputs",
+"outputted",
+"outputting"
 ],
 "outrage": [
 "outraged",
@@ -52146,25 +56527,100 @@
 "outrageous": [
 "outrageously"
 ],
+"outran": [
+"outrun",
+"outrunning",
+"outruns"
+],
+"outrank": [
+"outranked",
+"outranking",
+"outranks"
+],
 "outre": [],
+"outreach": [
+"outreached",
+"outreaches",
+"outreaching"
+],
 "outrigger": [
 "outriggers"
+],
+"outright": [],
+"outrun": [
+"outran",
+"outrunning",
+"outruns"
+],
+"outsell": [
+"outselling",
+"outsells",
+"outsold"
+],
+"outset": [
+"outsets"
+],
+"outshine": [
+"outshined",
+"outshines",
+"outshining",
+"outshone"
+],
+"outshone": [
+"outshine",
+"outshined",
+"outshines",
+"outshining"
+],
+"outside": [
+"outsides"
 ],
 "outsider": [
 "outsiders"
 ],
+"outsize": [
+"outsized",
+"outsizes"
+],
 "outskirts": [
 "outskirt"
+],
+"outsmart": [
+"outsmarted",
+"outsmarting",
+"outsmarts"
+],
+"outsold": [
+"outsell",
+"outselling",
+"outsells"
 ],
 "outsourcing": [
 "outsource",
 "outsourced",
 "outsources"
 ],
+"outspoken": [
+"outspokenly",
+"outspokenness"
+],
+"outspread": [
+"outspreading",
+"outspreads"
+],
+"outstanding": [
+"outstandingly"
+],
 "outstretched": [
 "outstretch",
 "outstretches",
 "outstretching"
+],
+"outstrip": [
+"outstripped",
+"outstripping",
+"outstrips",
+"outstript"
 ],
 "outward": [
 "outwardly",
@@ -52177,6 +56633,22 @@
 "outwards": [
 "outward",
 "outwardly"
+],
+"outweigh": [
+"outweighed",
+"outweighing",
+"outweighs"
+],
+"outwit": [
+"outwits",
+"outwitted",
+"outwitting"
+],
+"outworn": [
+"outwear",
+"outwearing",
+"outwears",
+"outwore"
 ],
 "ova": [
 "ovum"
@@ -52198,7 +56670,25 @@
 "overly",
 "overs"
 ],
+"overabundance": [],
+"overabundant": [],
+"overachieve": [
+"overachieved",
+"overachieves",
+"overachieving"
+],
+"overact": [
+"overacted",
+"overacting",
+"overacts"
+],
+"overactive": [],
+"overage": [
+"overages"
+],
+"overall": [],
 "overalls": [],
+"overanxious": [],
 "overate": [
 "overeat",
 "overeaten",
@@ -52264,6 +56754,12 @@
 "overcompensated",
 "overcompensates",
 "overcompensating"
+],
+"overconfident": [],
+"overcook": [
+"overcooked",
+"overcooking",
+"overcooks"
 ],
 "overcrowd": [
 "overcrowded",
@@ -52336,6 +56832,15 @@
 "overeating",
 "overeats"
 ],
+"overemphasize": [
+"overemphasise",
+"overemphasised",
+"overemphasises",
+"overemphasising",
+"overemphasized",
+"overemphasizes",
+"overemphasizing"
+],
 "overestimate": [
 "overestimated",
 "overestimates",
@@ -52347,6 +56852,11 @@
 "overexposing"
 ],
 "overexposure": [],
+"overextend": [
+"overextended",
+"overextending",
+"overextends"
+],
 "overflow": [
 "overflowed",
 "overflowing",
@@ -52408,6 +56918,11 @@
 "overhanging",
 "overhangs"
 ],
+"overindulge": [
+"overindulged",
+"overindulges",
+"overindulging"
+],
 "overindulgence": [],
 "overjoyed": [
 "overjoy",
@@ -52464,6 +56979,11 @@
 "overplaying",
 "overplays"
 ],
+"overpopulate": [
+"overpopulated",
+"overpopulates",
+"overpopulating"
+],
 "overpopulation": [],
 "overpower": [
 "overpowered",
@@ -52519,6 +57039,7 @@
 "overriding",
 "overrode"
 ],
+"overripe": [],
 "overrode": [
 "overridden",
 "override",
@@ -52556,10 +57077,16 @@
 "overseeing",
 "oversees"
 ],
+"overseer": [
+"overseers"
+],
 "oversell": [
 "overselling",
 "oversells",
 "oversold"
+],
+"oversensitive": [
+"oversensitiveness"
 ],
 "overshadow": [
 "overshadowed",
@@ -52582,6 +57109,9 @@
 "oversight": [
 "oversights"
 ],
+"oversimplification": [
+"oversimplifications"
+],
 "oversimplify": [
 "oversimplified",
 "oversimplifies",
@@ -52603,6 +57133,11 @@
 "oversleeping",
 "oversleeps"
 ],
+"overspend": [
+"overspending",
+"overspends",
+"overspent"
+],
 "overstate": [
 "overstated",
 "overstates",
@@ -52621,7 +57156,17 @@
 "overstepping",
 "oversteps"
 ],
+"overstock": [
+"overstocked",
+"overstocking",
+"overstocks"
+],
 "overstuffed": [],
+"oversupply": [
+"oversupplied",
+"oversupplies",
+"oversupplying"
+],
 "overt": [
 "overtly"
 ],
@@ -52804,6 +57349,12 @@
 "paces",
 "pacing"
 ],
+"pacemaker": [
+"pacemakers"
+],
+"pacesetter": [
+"pacesetters"
+],
 "pachyderm": [
 "pachyderms"
 ],
@@ -52849,6 +57400,9 @@
 "packed",
 "packs"
 ],
+"packinghouse": [
+"packinghouses"
+],
 "pact": [
 "pacts"
 ],
@@ -52874,6 +57428,11 @@
 ],
 "paddy": [
 "paddies"
+],
+"padlock": [
+"padlocked",
+"padlocking",
+"padlocks"
 ],
 "padre": [
 "padres"
@@ -52950,6 +57509,9 @@
 "painlessness",
 "pains"
 ],
+"painkiller": [
+"painkillers"
+],
 "painless": [
 "pain",
 "pained",
@@ -52963,10 +57525,16 @@
 "painlessness",
 "pains"
 ],
+"painstaking": [
+"painstakingly"
+],
 "paint": [
 "painted",
 "painting",
 "paints"
+],
+"paintbrush": [
+"paintbrushes"
 ],
 "painter": [
 "painterly",
@@ -53020,6 +57588,9 @@
 "paling",
 "palish"
 ],
+"paleface": [
+"palefaces"
+],
 "paleontologist": [
 "palaeontologist",
 "palaeontologists",
@@ -53054,6 +57625,9 @@
 "palls"
 ],
 "palladium": [],
+"pallbearer": [
+"pallbearers"
+],
 "pallet": [
 "pallets"
 ],
@@ -53136,6 +57710,11 @@
 "panaceas"
 ],
 "panache": [],
+"pancake": [
+"pancaked",
+"pancakes",
+"pancaking"
+],
 "panchromatic": [],
 "pancreas": [
 "pancreases"
@@ -53183,6 +57762,11 @@
 ],
 "pang": [
 "pangs"
+],
+"panhandle": [
+"panhandled",
+"panhandles",
+"panhandling"
 ],
 "panic": [
 "panicked",
@@ -53239,6 +57823,9 @@
 "panted",
 "panting"
 ],
+"pantsuit": [
+"pantsuits"
+],
 "pantyhose": [],
 "pap": [
 "paps"
@@ -53266,6 +57853,19 @@
 "paperless",
 "papers"
 ],
+"paperback": [
+"paperbacks"
+],
+"paperboy": [
+"paperboys"
+],
+"papergirl": [
+"papergirls"
+],
+"paperweight": [
+"paperweights"
+],
+"paperwork": [],
 "papery": [],
 "papoose": [
 "papooses"
@@ -53518,6 +58118,9 @@
 "parka": [
 "parkas"
 ],
+"parkway": [
+"parkways"
+],
 "parlance": [],
 "parlay": [
 "parlayed",
@@ -53701,6 +58304,7 @@
 "partridges"
 ],
 "parturition": [],
+"partway": [],
 "party": [
 "partied",
 "parties",
@@ -53721,6 +58325,12 @@
 ],
 "passage": [
 "passages"
+],
+"passageway": [
+"passageways"
+],
+"passbook": [
+"passbooks"
 ],
 "passe": [],
 "passenger": [
@@ -53749,6 +58359,16 @@
 "passives"
 ],
 "passivity": [],
+"passkey": [
+"passkeys"
+],
+"passover": [],
+"passport": [
+"passports"
+],
+"password": [
+"passwords"
+],
 "past": [
 "pasts"
 ],
@@ -53760,6 +58380,7 @@
 "pastes",
 "pasting"
 ],
+"pasteboard": [],
 "pastel": [
 "pastels"
 ],
@@ -53816,6 +58437,9 @@
 "patches",
 "patching"
 ],
+"patchwork": [
+"patchworks"
+],
 "patchy": [
 "patchier",
 "patchiest",
@@ -53862,6 +58486,9 @@
 "pathologies"
 ],
 "pathos": [],
+"pathway": [
+"pathways"
+],
 "patience": [],
 "patient": [
 "patienter",
@@ -54007,6 +58634,12 @@
 "pawning",
 "pawns"
 ],
+"pawnbroker": [
+"pawnbrokers"
+],
+"pawnshop": [
+"pawnshops"
+],
 "pawpaw": [
 "papaw",
 "papaws",
@@ -54019,11 +58652,31 @@
 "pays"
 ],
 "payable": [],
+"paycheck": [
+"paychecks",
+"paycheque",
+"paycheques"
+],
+"payday": [
+"paydays"
+],
 "payee": [
 "payees"
 ],
+"payload": [
+"payloads"
+],
+"paymaster": [
+"paymasters"
+],
 "payment": [
 "payments"
+],
+"payoff": [
+"payoffs"
+],
+"payroll": [
+"payrolls"
 ],
 "pea": [
 "peas",
@@ -54044,6 +58697,10 @@
 "peacefulness",
 "peaces"
 ],
+"peacemaker": [
+"peacemakers"
+],
+"peacetime": [],
 "peach": [
 "peaches"
 ],
@@ -54222,6 +58879,12 @@
 "peeping",
 "peeps"
 ],
+"peeper": [
+"peepers"
+],
+"peephole": [
+"peepholes"
+],
 "peer": [
 "peered",
 "peering",
@@ -54381,6 +59044,17 @@
 "penitentiary": [
 "penitentiaries"
 ],
+"penknife": [
+"penknives"
+],
+"penknives": [
+"penknife"
+],
+"penlight": [
+"penlights",
+"penlite",
+"penlites"
+],
 "penmanship": [],
 "pennant": [
 "pennants"
@@ -54397,6 +59071,9 @@
 "pence",
 "pennies",
 "penniless"
+],
+"pennyweight": [
+"pennyweights"
 ],
 "penology": [],
 "pension": [
@@ -54418,6 +59095,9 @@
 ],
 "pentathlon": [
 "pentathlons"
+],
+"penthouse": [
+"penthouses"
 ],
 "penultimate": [
 "penultimates"
@@ -54446,6 +59126,12 @@
 "peppered",
 "peppering",
 "peppers"
+],
+"peppercorn": [
+"peppercorns"
+],
+"peppermint": [
+"peppermints"
 ],
 "pepperoni": [
 "pepperonis"
@@ -54567,6 +59253,9 @@
 ],
 "performance": [
 "performances"
+],
+"performer": [
+"performers"
 ],
 "perfume": [
 "perfumed",
@@ -55226,6 +59915,17 @@
 "photoing",
 "photos"
 ],
+"photocopier": [
+"photocopiers"
+],
+"photocopy": [
+"photocopied",
+"photocopies",
+"photocopying"
+],
+"photoelectric": [
+"photoelectrically"
+],
 "photogenic": [
 "photogenically"
 ],
@@ -55234,10 +59934,15 @@
 "photographing",
 "photographs"
 ],
+"photographic": [
+"photographically"
+],
 "photography": [],
+"photojournalism": [],
 "photon": [
 "photons"
 ],
+"photosynthesis": [],
 "phrasal": [],
 "phrase": [
 "phrased",
@@ -55302,6 +60007,9 @@
 "piano": [
 "pianos"
 ],
+"pianoforte": [
+"pianofortes"
+],
 "piazza": [
 "piazzas",
 "piazze"
@@ -55318,6 +60026,12 @@
 "picking",
 "picks"
 ],
+"pickaxe": [
+"pickax",
+"pickaxed",
+"pickaxes",
+"pickaxing"
+],
 "pickerel": [
 "pickerels"
 ],
@@ -55331,6 +60045,9 @@
 "pickled",
 "pickles",
 "pickling"
+],
+"pickpocket": [
+"pickpockets"
 ],
 "picky": [
 "pickier",
@@ -55373,11 +60090,16 @@
 "pie": [
 "pies"
 ],
+"piebald": [
+"piebalds"
+],
 "piece": [
 "pieced",
 "pieces",
 "piecing"
 ],
+"piecemeal": [],
+"piecework": [],
 "pied": [
 "pi",
 "pieing",
@@ -55412,6 +60134,11 @@
 "pigeon": [
 "pigeons"
 ],
+"pigeonhole": [
+"pigeonholed",
+"pigeonholes",
+"pigeonholing"
+],
 "piggish": [
 "pig",
 "pigged",
@@ -55424,6 +60151,19 @@
 "piggier",
 "piggies",
 "piggiest"
+],
+"piggyback": [
+"pickaback",
+"pickabacked",
+"pickabacking",
+"pickabacks",
+"piggybacked",
+"piggybacking",
+"piggybacks"
+],
+"pigheaded": [
+"pigheadedly",
+"pigheadedness"
 ],
 "piglet": [
 "piglets"
@@ -55438,8 +60178,17 @@
 "pygmies",
 "pygmy"
 ],
+"pigpen": [
+"pigpens"
+],
+"pigskin": [
+"pigskins"
+],
 "pigsty": [
 "pigsties"
+],
+"pigtail": [
+"pigtails"
 ],
 "pike": [
 "piked",
@@ -55498,6 +60247,9 @@
 "pillared",
 "pillars"
 ],
+"pillbox": [
+"pillboxes"
+],
 "pillion": [
 "pillions"
 ],
@@ -55510,6 +60262,9 @@
 "piloted",
 "piloting",
 "pilots"
+],
+"pilothouse": [
+"pilothouses"
 ],
 "pimento": [
 "pimentos",
@@ -55550,15 +60305,27 @@
 "pinches",
 "pinching"
 ],
+"pincushion": [
+"pincushions"
+],
 "pine": [
 "pined",
 "pines",
 "pining"
 ],
+"pineapple": [
+"pineapples"
+],
 "ping": [
 "pinged",
 "pinging",
 "pings"
+],
+"pinhead": [
+"pinheads"
+],
+"pinhole": [
+"pinholes"
 ],
 "pinion": [
 "pinioned",
@@ -55574,6 +60341,7 @@
 "pinkness",
 "pinks"
 ],
+"pinkeye": [],
 "pinkie": [
 "pinkies",
 "pinky"
@@ -55597,6 +60365,22 @@
 "pinochle": [
 "pinocle"
 ],
+"pinpoint": [
+"pinpointed",
+"pinpointing",
+"pinpoints"
+],
+"pinprick": [
+"pinpricks"
+],
+"pinstripe": [
+"pinstriped",
+"pinstripes"
+],
+"pinstriped": [
+"pinstripe",
+"pinstripes"
+],
 "pint": [
 "pints"
 ],
@@ -55606,6 +60390,11 @@
 ],
 "pinup": [
 "pinups"
+],
+"pinwheel": [
+"pinwheeled",
+"pinwheeling",
+"pinwheels"
 ],
 "pioneer": [
 "pioneered",
@@ -55626,6 +60415,9 @@
 "pipes",
 "piping"
 ],
+"pipeline": [
+"pipelines"
+],
 "piping": [
 "pipe",
 "piped",
@@ -55633,6 +60425,9 @@
 ],
 "pippin": [
 "pippins"
+],
+"pipsqueak": [
+"pipsqueaks"
 ],
 "piquancy": [],
 "piquant": [
@@ -55702,12 +60497,20 @@
 "pitcher": [
 "pitchers"
 ],
+"pitchfork": [
+"pitchforked",
+"pitchforking",
+"pitchforks"
+],
 "pitchman": [
 "pitchmen"
 ],
 "piteous": [
 "piteously",
 "piteousness"
+],
+"pitfall": [
+"pitfalls"
 ],
 "pith": [],
 "pithy": [
@@ -55848,6 +60651,7 @@
 "plainclothesman": [
 "plainclothesmen"
 ],
+"plainspoken": [],
 "plaint": [
 "plaints"
 ],
@@ -55919,6 +60723,7 @@
 "plastering",
 "plasters"
 ],
+"plasterboard": [],
 "plastered": [
 "plaster",
 "plastering",
@@ -55998,6 +60803,25 @@
 "playing",
 "plays"
 ],
+"playact": [
+"playacted",
+"playacting",
+"playacts"
+],
+"playacting": [
+"playact",
+"playacted",
+"playacts"
+],
+"playback": [
+"playbacks"
+],
+"playbill": [
+"playbills"
+],
+"playboy": [
+"playboys"
+],
 "player": [
 "players"
 ],
@@ -56008,6 +60832,24 @@
 "playfulness",
 "playing",
 "plays"
+],
+"playground": [
+"playgrounds"
+],
+"playhouse": [
+"playhouses"
+],
+"playmate": [
+"playmates"
+],
+"playoff": [
+"playoffs"
+],
+"playpen": [
+"playpens"
+],
+"plaything": [
+"playthings"
 ],
 "plaza": [
 "plazas"
@@ -56164,6 +61006,11 @@
 "ploughmen",
 "plowmen"
 ],
+"plowshare": [
+"ploughshare",
+"ploughshares",
+"plowshares"
+],
 "ploy": [
 "ploys"
 ],
@@ -56282,6 +61129,7 @@
 "plies",
 "plying"
 ],
+"plywood": [],
 "pneumatic": [
 "pneumatically"
 ],
@@ -56303,6 +61151,9 @@
 "pockets",
 "pocketsful"
 ],
+"pocketbook": [
+"pocketbooks"
+],
 "pocketful": [
 "pocket",
 "pocketed",
@@ -56310,6 +61161,12 @@
 "pocketing",
 "pockets",
 "pocketsful"
+],
+"pocketknife": [
+"pocketknives"
+],
+"pocketknives": [
+"pocketknife"
 ],
 "pockmark": [
 "pockmarked",
@@ -56444,11 +61301,17 @@
 "poles",
 "poling"
 ],
+"polecat": [
+"polecats"
+],
 "polemic": [
 "polemics"
 ],
 "polemical": [
 "polemically"
+],
+"polestar": [
+"polestars"
 ],
 "police": [
 "policed",
@@ -56463,6 +61326,9 @@
 ],
 "policy": [
 "policies"
+],
+"policyholder": [
+"policyholders"
 ],
 "polio": [],
 "poliomyelitis": [],
@@ -56685,6 +61551,9 @@
 "ponies",
 "ponying"
 ],
+"ponytail": [
+"ponytails"
+],
 "pooch": [
 "pooches"
 ],
@@ -56721,18 +61590,28 @@
 "poorly",
 "poorness"
 ],
+"poorhouse": [
+"poorhouses"
+],
 "pop": [
 "popped",
 "popping",
 "pops"
 ],
+"popcorn": [],
 "pope": [
 "popes"
+],
+"popgun": [
+"popguns"
 ],
 "poplar": [
 "poplars"
 ],
 "poplin": [],
+"popover": [
+"popovers"
+],
 "poppa": [
 "papa",
 "papas",
@@ -56741,6 +61620,7 @@
 "poppy": [
 "poppies"
 ],
+"poppycock": [],
 "populace": [
 "populaces"
 ],
@@ -56850,8 +61730,14 @@
 "porter": [
 "porters"
 ],
+"porterhouse": [
+"porterhouses"
+],
 "portfolio": [
 "portfolios"
+],
+"porthole": [
+"portholes"
 ],
 "portico": [
 "porticoes",
@@ -56968,6 +61854,14 @@
 ],
 "postage": [],
 "postal": [],
+"postcard": [
+"postcards"
+],
+"postdate": [
+"postdated",
+"postdates",
+"postdating"
+],
 "poster": [
 "posters"
 ],
@@ -56975,6 +61869,10 @@
 "posteriors"
 ],
 "posterity": [],
+"postgraduate": [
+"postgraduates"
+],
+"posthaste": [],
 "posthumous": [
 "posthumously"
 ],
@@ -56984,10 +61882,23 @@
 "postman": [
 "postmen"
 ],
+"postmark": [
+"postmarked",
+"postmarking",
+"postmarks"
+],
+"postmaster": [
+"postmasters"
+],
+"postmistress": [
+"postmistresses"
+],
 "postmortem": [
 "postmortems"
 ],
 "postnatal": [],
+"postoperative": [],
+"postpaid": [],
 "postpartum": [],
 "postpone": [
 "postponed",
@@ -56996,6 +61907,9 @@
 ],
 "postponement": [
 "postponements"
+],
+"postscript": [
+"postscripts"
 ],
 "postulate": [
 "postulated",
@@ -57022,9 +61936,21 @@
 "potability",
 "potables"
 ],
+"potash": [],
 "potassium": [],
 "potato": [
 "potatoes"
+],
+"potbellied": [
+"potbellies",
+"potbelly"
+],
+"potbelly": [
+"potbellied",
+"potbellies"
+],
+"potboiler": [
+"potboilers"
 ],
 "potency": [
 "potencies"
@@ -57049,11 +61975,28 @@
 "potted",
 "potting"
 ],
+"potholder": [
+"potholders"
+],
+"pothole": [
+"potholed",
+"potholes",
+"potholing"
+],
 "potion": [
 "potions"
 ],
+"potluck": [
+"potlucks"
+],
+"potpie": [
+"potpies"
+],
 "potpourri": [
 "potpourris"
+],
+"potshot": [
+"potshots"
 ],
 "potter": [
 "pottered",
@@ -57111,6 +62054,9 @@
 "powerlessness",
 "powers"
 ],
+"powerboat": [
+"powerboats"
+],
 "powerful": [
 "power",
 "powered",
@@ -57120,6 +62066,9 @@
 "powerlessly",
 "powerlessness",
 "powers"
+],
+"powerhouse": [
+"powerhouses"
 ],
 "powerless": [
 "power",
@@ -57191,6 +62140,9 @@
 "pragmatic": [
 "pragmatics"
 ],
+"pragmatically": [
+"pragmatical"
+],
 "pragmatism": [],
 "pragmatist": [
 "pragmatists"
@@ -57202,6 +62154,11 @@
 "praised",
 "praises",
 "praising"
+],
+"praiseworthy": [
+"praiseworthier",
+"praiseworthiest",
+"praiseworthiness"
 ],
 "praline": [
 "pralines"
@@ -58020,6 +62977,9 @@
 "primping",
 "primps"
 ],
+"primrose": [
+"primroses"
+],
 "prince": [
 "princelier",
 "princeliest",
@@ -58064,6 +63024,9 @@
 "print",
 "printed",
 "prints"
+],
+"printout": [
+"printouts"
 ],
 "prior": [
 "priors"
@@ -58143,6 +63106,13 @@
 "prized",
 "prizes",
 "prizing"
+],
+"prizefight": [
+"prizefighting",
+"prizefights"
+],
+"prizefighter": [
+"prizefighters"
 ],
 "pro": [
 "pros"
@@ -58583,6 +63553,13 @@
 "proofing",
 "proofs"
 ],
+"proofread": [
+"proofreading",
+"proofreads"
+],
+"proofreader": [
+"proofreaders"
+],
 "prop": [
 "propped",
 "propping",
@@ -58659,6 +63636,9 @@
 "prophetesses"
 ],
 "prophetic": [],
+"prophetically": [
+"prophetical"
+],
 "prophylactic": [
 "prophylactics"
 ],
@@ -58844,6 +63824,7 @@
 "protesting",
 "protests"
 ],
+"protestant": [],
 "protestation": [
 "protestations"
 ],
@@ -59176,6 +64157,9 @@
 "puffing",
 "puffs"
 ],
+"puffball": [
+"puffballs"
+],
 "puffy": [
 "puffier",
 "puffiest",
@@ -59210,6 +64194,13 @@
 ],
 "pulley": [
 "pulleys"
+],
+"pullman": [],
+"pullout": [
+"pullouts"
+],
+"pullover": [
+"pullovers"
 ],
 "pulmonary": [],
 "pulp": [
@@ -59390,6 +64381,9 @@
 "purer",
 "purest"
 ],
+"purebred": [
+"purebreds"
+],
 "puree": [
 "pureed",
 "pureeing",
@@ -59542,8 +64536,14 @@
 "pushes",
 "pushing"
 ],
+"pushcart": [
+"pushcarts"
+],
 "pusher": [
 "pushers"
+],
+"pushover": [
+"pushovers"
 ],
 "pushy": [
 "pushier",
@@ -59562,6 +64562,14 @@
 "pussier",
 "pussies",
 "pussiest"
+],
+"pussycat": [
+"pussycats"
+],
+"pussyfoot": [
+"pussyfooted",
+"pussyfooting",
+"pussyfoots"
 ],
 "pustule": [
 "pustules"
@@ -59784,11 +64792,25 @@
 "quarterly",
 "quarters"
 ],
+"quarterback": [
+"quarterbacked",
+"quarterbacking",
+"quarterbacks"
+],
+"quarterdeck": [
+"quarterdecks"
+],
+"quarterfinal": [
+"quarterfinals"
+],
 "quarterly": [
 "quarter",
 "quartered",
 "quartering",
 "quarters"
+],
+"quartermaster": [
+"quartermasters"
 ],
 "quartet": [
 "quartets",
@@ -59913,6 +64935,11 @@
 "quickie": [
 "quickies"
 ],
+"quicklime": [],
+"quicksand": [
+"quicksands"
+],
+"quicksilver": [],
 "quid": [
 "quids"
 ],
@@ -60066,6 +65093,15 @@
 "races",
 "racing"
 ],
+"racehorse": [
+"racehorses"
+],
+"racetrack": [
+"racetracks"
+],
+"raceway": [
+"raceways"
+],
 "racial": [
 "racially"
 ],
@@ -60103,6 +65139,9 @@
 "racketing",
 "rackets",
 "racquets"
+],
+"racquetball": [
+"racquetballs"
 ],
 "racy": [
 "racier",
@@ -60146,10 +65185,15 @@
 "radioing",
 "radios"
 ],
+"radioactive": [
+"radioactively"
+],
+"radioactivity": [],
 "radiologist": [
 "radiologists"
 ],
 "radiology": [],
+"radiotherapy": [],
 "radish": [
 "radishes"
 ],
@@ -60203,6 +65247,11 @@
 "raglan": [
 "raglans"
 ],
+"ragout": [
+"ragouts"
+],
+"ragtime": [],
+"ragweed": [],
 "raid": [
 "raided",
 "raiding",
@@ -60221,6 +65270,14 @@
 "raillery": [
 "railleries"
 ],
+"railroad": [
+"railroaded",
+"railroading",
+"railroads"
+],
+"railway": [
+"railways"
+],
 "raiment": [],
 "rain": [
 "rained",
@@ -60228,6 +65285,22 @@
 "rainless",
 "rains"
 ],
+"rainbow": [
+"rainbows"
+],
+"raincoat": [
+"raincoats"
+],
+"raindrop": [
+"raindrops"
+],
+"rainfall": [
+"rainfalls"
+],
+"rainstorm": [
+"rainstorms"
+],
+"rainwater": [],
 "rainy": [
 "rainier",
 "rainiest"
@@ -60385,6 +65458,11 @@
 "rankles",
 "rankling"
 ],
+"ransack": [
+"ransacked",
+"ransacking",
+"ransacks"
+],
 "ransom": [
 "ransomed",
 "ransoming",
@@ -60512,6 +65590,9 @@
 "rasping",
 "rasps"
 ],
+"raspberry": [
+"raspberries"
+],
 "raspy": [
 "raspier",
 "raspiest"
@@ -60594,10 +65675,19 @@
 "rattler": [
 "rattlers"
 ],
+"rattlesnake": [
+"rattlesnakes"
+],
+"rattletrap": [
+"rattletraps"
+],
 "rattling": [
 "rattle",
 "rattled",
 "rattles"
+],
+"rattrap": [
+"rattraps"
 ],
 "ratty": [
 "rattier",
@@ -60667,6 +65757,7 @@
 "rawness"
 ],
 "rawboned": [],
+"rawhide": [],
 "ray": [
 "rays"
 ],
@@ -60746,6 +65837,9 @@
 ],
 "readjustment": [
 "readjustments"
+],
+"readout": [
+"readouts"
 ],
 "ready": [
 "readied",
@@ -60833,6 +65927,16 @@
 "reappearance": [
 "reappearances"
 ],
+"reapply": [
+"reapplied",
+"reapplies",
+"reapplying"
+],
+"reappoint": [
+"reappointed",
+"reappointing",
+"reappoints"
+],
 "reapportion": [
 "reapportioned",
 "reapportioning",
@@ -60841,6 +65945,11 @@
 "reapportionment": [],
 "reappraisal": [
 "reappraisals"
+],
+"reappraise": [
+"reappraised",
+"reappraises",
+"reappraising"
 ],
 "rear": [
 "reared",
@@ -61315,6 +66424,12 @@
 "redness",
 "reds"
 ],
+"redcap": [
+"redcaps"
+],
+"redcoat": [
+"redcoats"
+],
 "redden": [
 "reddened",
 "reddening",
@@ -61349,6 +66464,14 @@
 "redevelopment": [
 "redevelopments"
 ],
+"redhead": [
+"redheaded",
+"redheads"
+],
+"redheaded": [
+"redhead",
+"redheads"
+],
 "redid": [
 "redo",
 "redoes",
@@ -61366,6 +66489,9 @@
 "redistributing"
 ],
 "redistribution": [],
+"redneck": [
+"rednecks"
+],
 "redo": [
 "redid",
 "redoes",
@@ -61411,6 +66537,9 @@
 ],
 "redundant": [
 "redundantly"
+],
+"redwood": [
+"redwoods"
 ],
 "reed": [
 "reeds"
@@ -61903,6 +67032,11 @@
 "reinvented",
 "reinventing",
 "reinvents"
+],
+"reinvest": [
+"reinvested",
+"reinvesting",
+"reinvests"
 ],
 "reiterate": [
 "reiterated",
@@ -63006,6 +68140,11 @@
 "restlessness",
 "rests"
 ],
+"restart": [
+"restarted",
+"restarting",
+"restarts"
+],
 "restate": [
 "restated",
 "restates",
@@ -63953,9 +69092,17 @@
 "ringer": [
 "ringers"
 ],
+"ringleader": [
+"ringleaders"
+],
 "ringlet": [
 "ringlets"
 ],
+"ringmaster": [
+"ringmasters"
+],
+"ringside": [],
+"ringworm": [],
 "rink": [
 "rinks"
 ],
@@ -63996,10 +69143,16 @@
 "riposting",
 "riposts"
 ],
+"ripper": [
+"rippers"
+],
 "ripple": [
 "rippled",
 "ripples",
 "rippling"
+],
+"ripsaw": [
+"ripsaws"
 ],
 "rise": [
 "risen",
@@ -64063,6 +69216,9 @@
 "river": [
 "rivers"
 ],
+"riverside": [
+"riversides"
+],
 "rivet": [
 "riveted",
 "riveting",
@@ -64076,6 +69232,27 @@
 ],
 "road": [
 "roads"
+],
+"roadbed": [
+"roadbeds"
+],
+"roadblock": [
+"roadblocked",
+"roadblocking",
+"roadblocks"
+],
+"roadkill": [],
+"roadrunner": [
+"roadrunners"
+],
+"roadside": [
+"roadsides"
+],
+"roadway": [
+"roadways"
+],
+"roadwork": [
+"roadworks"
 ],
 "roam": [
 "roamed",
@@ -64169,6 +69346,9 @@
 "roe": [
 "roes"
 ],
+"roebuck": [
+"roebucks"
+],
 "roentgen": [
 "roentgens",
 "rontgen",
@@ -64208,6 +69388,7 @@
 "roller": [
 "rollers"
 ],
+"rollerblade": [],
 "rollicking": [
 "rollick",
 "rollicked",
@@ -64257,6 +69438,9 @@
 "roofs",
 "rooves"
 ],
+"rooftop": [
+"rooftops"
+],
 "rook": [
 "rooked",
 "rooking",
@@ -64286,6 +69470,9 @@
 "rooming",
 "rooms",
 "roomsful"
+],
+"roommate": [
+"roommates"
 ],
 "roomy": [
 "roomier",
@@ -64329,9 +69516,18 @@
 "rising"
 ],
 "roseate": [],
+"rosebud": [
+"rosebuds"
+],
+"rosebush": [
+"rosebushes"
+],
 "rosemary": [],
 "rosette": [
 "rosettes"
+],
+"rosewood": [
+"rosewoods"
 ],
 "rosin": [
 "rosined",
@@ -64419,6 +69615,16 @@
 "roughening",
 "roughens"
 ],
+"roughhouse": [
+"roughhoused",
+"roughhouses",
+"roughhousing"
+],
+"roughneck": [
+"roughnecked",
+"roughnecking",
+"roughnecks"
+],
 "roughshod": [],
 "roulette": [],
 "round": [
@@ -64430,6 +69636,12 @@
 "roundness",
 "rounds"
 ],
+"roundabout": [
+"roundabouts"
+],
+"roundhouse": [
+"roundhouses"
+],
 "roundish": [
 "round",
 "rounded",
@@ -64440,6 +69652,9 @@
 "rounds"
 ],
 "roundly": [],
+"roundworm": [
+"roundworms"
+],
 "rouse": [
 "roused",
 "rouses",
@@ -64479,6 +69694,9 @@
 "rowing",
 "rows"
 ],
+"rowboat": [
+"rowboats"
+],
 "rowdy": [
 "rowdier",
 "rowdies",
@@ -64514,6 +69732,11 @@
 "rubberizes",
 "rubberizing"
 ],
+"rubberneck": [
+"rubbernecked",
+"rubbernecking",
+"rubbernecks"
+],
 "rubbery": [
 "rubberier",
 "rubberiest"
@@ -64524,6 +69747,9 @@
 "rubbishing"
 ],
 "rubble": [],
+"rubdown": [
+"rubdowns"
+],
 "rubella": [],
 "rubicund": [],
 "ruble": [
@@ -64692,6 +69918,15 @@
 "running",
 "runs"
 ],
+"runaround": [
+"runarounds"
+],
+"runaway": [
+"runaways"
+],
+"rundown": [
+"rundowns"
+],
 "rune": [
 "runes"
 ],
@@ -64715,8 +69950,14 @@
 "runnier",
 "runniest"
 ],
+"runoff": [
+"runoffs"
+],
 "runt": [
 "runts"
+],
+"runway": [
+"runways"
 ],
 "rupee": [
 "rupees"
@@ -64754,6 +69995,11 @@
 "rustled",
 "rustles",
 "rustling"
+],
+"rustproof": [
+"rustproofed",
+"rustproofing",
+"rustproofs"
 ],
 "rusty": [
 "rustier",
@@ -64815,6 +70061,7 @@
 "sacking",
 "sacks"
 ],
+"sackcloth": [],
 "sacking": [
 "sack",
 "sacked",
@@ -64866,6 +70113,9 @@
 "saddles",
 "saddling"
 ],
+"saddlebag": [
+"saddlebags"
+],
 "sadism": [],
 "sadist": [
 "sadists"
@@ -64885,6 +70135,12 @@
 "safes",
 "safest"
 ],
+"safeguard": [
+"safeguarded",
+"safeguarding",
+"safeguards"
+],
+"safekeeping": [],
 "safety": [
 "safeties"
 ],
@@ -64912,6 +70168,7 @@
 "sages",
 "sagest"
 ],
+"sagebrush": [],
 "saguaro": [
 "saguaros"
 ],
@@ -64925,6 +70182,12 @@
 "sailed",
 "sailing",
 "sails"
+],
+"sailboat": [
+"sailboats"
+],
+"sailfish": [
+"sailfishes"
 ],
 "sailing": [
 "sail",
@@ -65043,9 +70306,19 @@
 "salting",
 "salts"
 ],
+"saltcellar": [
+"saltcellars"
+],
 "saltine": [
 "saltines"
 ],
+"saltpeter": [
+"saltpetre"
+],
+"saltshaker": [
+"saltshakers"
+],
+"saltwater": [],
 "salty": [
 "saltier",
 "saltiest",
@@ -65138,8 +70411,42 @@
 "sandal": [
 "sandals"
 ],
+"sandalwood": [],
+"sandbag": [
+"sandbagged",
+"sandbagging",
+"sandbags"
+],
+"sandbank": [
+"sandbanks"
+],
+"sandbar": [
+"sandbars"
+],
+"sandblast": [
+"sandblasted",
+"sandblasting",
+"sandblasts"
+],
+"sandbox": [
+"sandboxes"
+],
+"sandlot": [
+"sandlots"
+],
 "sandman": [
 "sandmen"
+],
+"sandpaper": [
+"sandpapered",
+"sandpapering",
+"sandpapers"
+],
+"sandstone": [
+"sandstones"
+],
+"sandstorm": [
+"sandstorms"
 ],
 "sandy": [
 "sandier",
@@ -65209,6 +70516,9 @@
 "sappiest",
 "sappiness"
 ],
+"sapsucker": [
+"sapsuckers"
+],
 "sarcasm": [
 "sarcasms"
 ],
@@ -65269,6 +70579,9 @@
 "sitting"
 ],
 "satanic": [],
+"satanically": [
+"satanical"
+],
 "satchel": [
 "satchels"
 ],
@@ -65288,6 +70601,9 @@
 ],
 "satiety": [],
 "satin": [],
+"satinwood": [
+"satinwoods"
+],
 "satiny": [],
 "satire": [
 "satires"
@@ -65331,6 +70647,7 @@
 "saturating"
 ],
 "saturation": [],
+"saturn": [],
 "saturnine": [],
 "satyr": [
 "satyrs"
@@ -65339,6 +70656,9 @@
 "sauced",
 "sauces",
 "saucing"
+],
+"saucepan": [
+"saucepans"
 ],
 "saucer": [
 "saucers"
@@ -65446,6 +70766,13 @@
 "seeing",
 "seen",
 "sees"
+],
+"sawdust": [],
+"sawhorse": [
+"sawhorses"
+],
+"sawmill": [
+"sawmills"
 ],
 "sawn": [],
 "sawyer": [
@@ -65635,6 +70962,9 @@
 "scares",
 "scaring"
 ],
+"scarecrow": [
+"scarecrows"
+],
 "scarf": [
 "scarfed",
 "scarfing",
@@ -65672,6 +71002,14 @@
 "scattered",
 "scattering",
 "scatters"
+],
+"scatterbrain": [
+"scatterbrained",
+"scatterbrains"
+],
+"scatterbrained": [
+"scatterbrain",
+"scatterbrains"
 ],
 "scavenge": [
 "scavenged",
@@ -65796,6 +71134,9 @@
 "scholarly",
 "scholars"
 ],
+"scholarship": [
+"scholarships"
+],
 "scholastic": [
 "scholastically"
 ],
@@ -65803,6 +71144,15 @@
 "schooled",
 "schooling",
 "schools"
+],
+"schoolboy": [
+"schoolboys"
+],
+"schoolgirl": [
+"schoolgirls"
+],
+"schoolhouse": [
+"schoolhouses"
 ],
 "schooling": [
 "school",
@@ -65812,6 +71162,25 @@
 "schoolmarm": [
 "schoolmarmish",
 "schoolmarms"
+],
+"schoolmaster": [
+"schoolmasters"
+],
+"schoolmate": [
+"schoolmates"
+],
+"schoolmistress": [
+"schoolmistresses"
+],
+"schoolroom": [
+"schoolrooms"
+],
+"schoolteacher": [
+"schoolteachers"
+],
+"schoolwork": [],
+"schoolyard": [
+"schoolyards"
 ],
 "schooner": [
 "schooners"
@@ -65868,6 +71237,9 @@
 "scoffing",
 "scoffs"
 ],
+"scofflaw": [
+"scofflaws"
+],
 "scold": [
 "scolded",
 "scolding",
@@ -65909,6 +71281,9 @@
 "scoreless",
 "scores",
 "scoring"
+],
+"scoreboard": [
+"scoreboards"
 ],
 "scoreless": [
 "score",
@@ -65961,6 +71336,9 @@
 "scouted",
 "scouts"
 ],
+"scoutmaster": [
+"scoutmasters"
+],
 "scow": [
 "scows"
 ],
@@ -65992,6 +71370,9 @@
 "scrapped",
 "scrapping",
 "scraps"
+],
+"scrapbook": [
+"scrapbooks"
 ],
 "scrape": [
 "scraped",
@@ -66039,10 +71420,22 @@
 "screening",
 "screens"
 ],
+"screenplay": [
+"screenplays"
+],
+"screenwriter": [
+"screenwriters"
+],
 "screw": [
 "screwed",
 "screwing",
 "screws"
+],
+"screwball": [
+"screwballs"
+],
+"screwdriver": [
+"screwdrivers"
 ],
 "screwy": [
 "screwier",
@@ -66078,6 +71471,9 @@
 "scriptural": [],
 "scripture": [
 "scriptures"
+],
+"scriptwriter": [
+"scriptwriters"
 ],
 "scrod": [
 "schrod",
@@ -66225,6 +71621,7 @@
 "scuttles",
 "scuttling"
 ],
+"scuttlebutt": [],
 "scuzzy": [
 "scuzzier",
 "scuzziest"
@@ -66237,6 +71634,18 @@
 "sea": [
 "seas"
 ],
+"seabed": [
+"seabeds"
+],
+"seaboard": [
+"seaboards"
+],
+"seacoast": [
+"seacoasts"
+],
+"seafaring": [],
+"seafood": [],
+"seagoing": [],
 "seal": [
 "sealed",
 "sealing",
@@ -66245,6 +71654,7 @@
 "sealant": [
 "sealants"
 ],
+"sealskin": [],
 "seam": [
 "seamed",
 "seaming",
@@ -66273,6 +71683,12 @@
 "seance": [
 "seances"
 ],
+"seaplane": [
+"seaplanes"
+],
+"seaport": [
+"seaports"
+],
 "sear": [
 "seared",
 "searing",
@@ -66290,6 +71706,27 @@
 "searched",
 "searches",
 "searchingly"
+],
+"searchlight": [
+"searchlights"
+],
+"seascape": [
+"seascapes"
+],
+"seashell": [
+"seashells"
+],
+"seashore": [
+"seashores"
+],
+"seasick": [
+"seasickness"
+],
+"seasickness": [
+"seasick"
+],
+"seaside": [
+"seasides"
 ],
 "season": [
 "seasoned",
@@ -66317,6 +71754,17 @@
 ],
 "seawards": [
 "seaward"
+],
+"seaway": [
+"seaways"
+],
+"seaweed": [
+"seaweeds"
+],
+"seaworthy": [
+"seaworthier",
+"seaworthiest",
+"seaworthiness"
 ],
 "sebaceous": [],
 "secede": [
@@ -66351,6 +71799,7 @@
 "secondaries",
 "secondarily"
 ],
+"secondhand": [],
 "secondly": [
 "second",
 "seconded",
@@ -66535,8 +71984,17 @@
 "seeping",
 "seeps"
 ],
+"seepage": [
+"seepages"
+],
 "seer": [
 "seers"
+],
+"seersucker": [],
+"seesaw": [
+"seesawed",
+"seesawing",
+"seesaws"
 ],
 "seethe": [
 "seethed",
@@ -66608,10 +72066,14 @@
 "selflessness",
 "selves"
 ],
+"selfsame": [],
 "sell": [
 "selling",
 "sells",
 "sold"
+],
+"sellout": [
+"sellouts"
 ],
 "seltzer": [
 "seltzers"
@@ -66693,7 +72155,11 @@
 ],
 "semiprecious": [],
 "semiprivate": [],
+"semiprofessional": [
+"semiprofessionals"
+],
 "semiskilled": [],
+"semitic": [],
 "semitrailer": [
 "semitrailers"
 ],
@@ -67037,6 +72503,9 @@
 "setting",
 "setts"
 ],
+"setback": [
+"setbacks"
+],
 "settee": [
 "settees"
 ],
@@ -67197,6 +72666,11 @@
 "shadowing",
 "shadows"
 ],
+"shadowbox": [
+"shadowboxed",
+"shadowboxes",
+"shadowboxing"
+],
 "shadowy": [
 "shadowier",
 "shadowiest"
@@ -67230,6 +72704,9 @@
 "shakes",
 "shaking",
 "shook"
+],
+"shakedown": [
+"shakedowns"
 ],
 "shaken": [
 "shake",
@@ -67292,6 +72769,9 @@
 "shames",
 "shaming"
 ],
+"shamefaced": [
+"shamefacedly"
+],
 "shameful": [
 "shame",
 "shamed",
@@ -67318,6 +72798,9 @@
 "shampooed",
 "shampooing",
 "shampoos"
+],
+"shamrock": [
+"shamrocks"
 ],
 "shanghai": [
 "shanghaied",
@@ -67365,9 +72848,13 @@
 "shares",
 "sharing"
 ],
+"shareholder": [
+"shareholders"
+],
 "shark": [
 "sharks"
 ],
+"sharkskin": [],
 "sharp": [
 "sharped",
 "sharper",
@@ -67396,6 +72883,7 @@
 "shattering",
 "shatters"
 ],
+"shatterproof": [],
 "shave": [
 "shaved",
 "shaven",
@@ -67478,9 +72966,15 @@
 ],
 "sheen": [],
 "sheep": [],
+"sheepfold": [
+"sheepfolds"
+],
 "sheepish": [
 "sheepishly",
 "sheepishness"
+],
+"sheepskin": [
+"sheepskins"
 ],
 "sheer": [
 "sheered",
@@ -67533,6 +73027,9 @@
 "shellacking",
 "shellacks",
 "shellacs"
+],
+"shellfish": [
+"shellfishes"
 ],
 "shelter": [
 "sheltered",
@@ -67651,6 +73148,12 @@
 "shinning",
 "shins"
 ],
+"shinbone": [
+"shinbones"
+],
+"shindig": [
+"shindigs"
+],
 "shine": [
 "shined",
 "shines",
@@ -67675,6 +73178,7 @@
 "shinnies",
 "shinnying"
 ],
+"shinsplints": [],
 "shiny": [
 "shinier",
 "shiniest",
@@ -67685,13 +73189,35 @@
 "shipping",
 "ships"
 ],
+"shipboard": [
+"shipboards"
+],
+"shipbuilder": [
+"shipbuilders"
+],
+"shipbuilding": [],
+"shipmate": [
+"shipmates"
+],
 "shipment": [
 "shipments"
+],
+"shipper": [
+"shippers"
 ],
 "shipping": [
 "ship",
 "shipped",
 "ships"
+],
+"shipshape": [],
+"shipwreck": [
+"shipwrecked",
+"shipwrecking",
+"shipwrecks"
+],
+"shipyard": [
+"shipyards"
 ],
 "shire": [
 "shires"
@@ -67704,6 +73230,9 @@
 "shirt": [
 "shirtless",
 "shirts"
+],
+"shirttail": [
+"shirttails"
 ],
 "shit": [
 "shat",
@@ -67743,6 +73272,7 @@
 "shockingly",
 "shocks"
 ],
+"shockproof": [],
 "shod": [
 "shodden",
 "shoe",
@@ -67764,6 +73294,20 @@
 "shoeing",
 "shoes",
 "shoon"
+],
+"shoehorn": [
+"shoehorned",
+"shoehorning",
+"shoehorns"
+],
+"shoelace": [
+"shoelaces"
+],
+"shoemaker": [
+"shoemakers"
+],
+"shoestring": [
+"shoestrings"
 ],
 "shogun": [
 "shoguns"
@@ -67790,6 +73334,9 @@
 "shoots",
 "shot"
 ],
+"shootout": [
+"shootouts"
+],
 "shop": [
 "shoppe",
 "shopped",
@@ -67797,15 +73344,26 @@
 "shopping",
 "shops"
 ],
+"shopkeeper": [
+"shopkeepers"
+],
 "shoplifting": [
 "shoplift",
 "shoplifted",
 "shoplifts"
 ],
+"shopper": [
+"shoppers"
+],
+"shoptalk": [],
+"shopworn": [],
 "shore": [
 "shored",
 "shores",
 "shoring"
+],
+"shoreline": [
+"shorelines"
 ],
 "shorn": [
 "shear",
@@ -67825,6 +73383,21 @@
 "shortage": [
 "shortages"
 ],
+"shortbread": [],
+"shortcake": [
+"shortcakes"
+],
+"shortchange": [
+"shortchanged",
+"shortchanges",
+"shortchanging"
+],
+"shortcoming": [
+"shortcomings"
+],
+"shortcut": [
+"shortcuts"
+],
 "shorten": [
 "shortened",
 "shortening",
@@ -67834,6 +73407,13 @@
 "shorten",
 "shortened",
 "shortens"
+],
+"shortfall": [
+"shortfalls"
+],
+"shorthand": [],
+"shorthorn": [
+"shorthorns"
 ],
 "shortly": [],
 "shorts": [
@@ -67845,10 +73425,25 @@
 "shortish",
 "shortness"
 ],
+"shortsighted": [
+"shortsightedly",
+"shortsightedness"
+],
+"shortstop": [
+"shortstops"
+],
+"shortwave": [
+"shortwaves"
+],
 "shot": [
 "shoot",
 "shooting",
 "shoots"
+],
+"shotgun": [
+"shotgunned",
+"shotgunning",
+"shotguns"
 ],
 "should": [
 "shouldst"
@@ -67899,6 +73494,19 @@
 "shown",
 "shows"
 ],
+"showboat": [
+"showboated",
+"showboating",
+"showboats"
+],
+"showcase": [
+"showcased",
+"showcases",
+"showcasing"
+],
+"showdown": [
+"showdowns"
+],
 "shower": [
 "showered",
 "showering",
@@ -67930,6 +73538,15 @@
 "showed",
 "showing",
 "shows"
+],
+"showpiece": [
+"showpieces"
+],
+"showplace": [
+"showplaces"
+],
+"showroom": [
+"showrooms"
 ],
 "showy": [
 "showier",
@@ -68059,6 +73676,9 @@
 "shuffles",
 "shuffling"
 ],
+"shuffleboard": [
+"shuffleboards"
+],
 "shun": [
 "shunned",
 "shunning",
@@ -68078,15 +73698,30 @@
 "shuts",
 "shutting"
 ],
+"shutdown": [
+"shutdowns"
+],
+"shuteye": [],
+"shutout": [
+"shutouts"
+],
 "shutter": [
 "shuttered",
 "shuttering",
 "shutters"
 ],
+"shutterbug": [
+"shutterbugs"
+],
 "shuttle": [
 "shuttled",
 "shuttles",
 "shuttling"
+],
+"shuttlecock": [
+"shuttlecocked",
+"shuttlecocking",
+"shuttlecocks"
 ],
 "shy": [
 "shied",
@@ -68129,6 +73764,9 @@
 "sickly",
 "sickness",
 "sicks"
+],
+"sickbed": [
+"sickbeds"
 ],
 "sicken": [
 "sickened",
@@ -68173,6 +73811,57 @@
 "sided",
 "sides",
 "siding"
+],
+"sidearm": [
+"sidearms"
+],
+"sidebar": [
+"sidebars"
+],
+"sideboard": [
+"sideboards"
+],
+"sideburns": [],
+"sidecar": [
+"sidecars"
+],
+"sidekick": [
+"sidekicks"
+],
+"sideline": [
+"sidelined",
+"sidelines",
+"sidelining"
+],
+"sidelong": [],
+"sidereal": [],
+"sidesaddle": [
+"sidesaddles"
+],
+"sideshow": [
+"sideshows"
+],
+"sidesplitting": [],
+"sidestep": [
+"sidestepped",
+"sidestepping",
+"sidesteps"
+],
+"sideswipe": [
+"sideswiped",
+"sideswipes",
+"sideswiping"
+],
+"sidetrack": [
+"sidetracked",
+"sidetracking",
+"sidetracks"
+],
+"sidewalk": [
+"sidewalks"
+],
+"sideways": [
+"sidewise"
 ],
 "siding": [
 "side",
@@ -68226,6 +73915,10 @@
 "sighting",
 "sights"
 ],
+"sightseeing": [],
+"sightseer": [
+"sightseers"
+],
 "sign": [
 "signed",
 "signing",
@@ -68262,6 +73955,9 @@
 "signature": [
 "signatures"
 ],
+"signboard": [
+"signboards"
+],
 "signet": [
 "signets"
 ],
@@ -68276,6 +73972,11 @@
 "signified",
 "signifies",
 "signifying"
+],
+"signpost": [
+"signposted",
+"signposting",
+"signposts"
 ],
 "silage": [],
 "silence": [
@@ -68308,6 +74009,9 @@
 "silks"
 ],
 "silken": [],
+"silkworm": [
+"silkworms"
+],
 "silky": [
 "silkier",
 "silkiest",
@@ -68336,6 +74040,13 @@
 "silvering",
 "silvers"
 ],
+"silverfish": [
+"silverfishes"
+],
+"silversmith": [
+"silversmiths"
+],
+"silverware": [],
 "silvery": [],
 "simian": [
 "simians"
@@ -68457,6 +74168,9 @@
 "singles",
 "singling"
 ],
+"singsong": [
+"singsongs"
+],
 "singular": [
 "singularly",
 "singulars"
@@ -68475,6 +74189,9 @@
 "sinkable": [],
 "sinker": [
 "sinkers"
+],
+"sinkhole": [
+"sinkholes"
 ],
 "sinner": [
 "sinners"
@@ -68619,6 +74336,11 @@
 "skates",
 "skating"
 ],
+"skateboard": [
+"skateboarded",
+"skateboarding",
+"skateboards"
+],
 "skedaddle": [
 "skedaddled",
 "skedaddles",
@@ -68733,6 +74455,12 @@
 "skinning",
 "skins"
 ],
+"skinflint": [
+"skinflints"
+],
+"skinhead": [
+"skinheads"
+],
 "skinless": [
 "skin",
 "skinned",
@@ -68744,6 +74472,7 @@
 "skinniest",
 "skinniness"
 ],
+"skintight": [],
 "skip": [
 "skipped",
 "skipping",
@@ -68782,6 +74511,9 @@
 "skull": [
 "skulls"
 ],
+"skullcap": [
+"skullcaps"
+],
 "skullduggery": [
 "skulduggery"
 ],
@@ -68796,9 +74528,37 @@
 "skyed",
 "skying"
 ],
+"skycap": [
+"skycaps"
+],
+"skydiver": [
+"skydivers"
+],
+"skyjack": [
+"skyjacked",
+"skyjacking",
+"skyjacks"
+],
+"skylark": [
+"skylarked",
+"skylarking",
+"skylarks"
+],
+"skylight": [
+"skylights"
+],
+"skyline": [
+"skylines"
+],
+"skyrocket": [
+"skyrocketed",
+"skyrocketing",
+"skyrockets"
+],
 "skywards": [
 "skyward"
 ],
+"skywriting": [],
 "slab": [
 "slabbed",
 "slabbing",
@@ -68888,6 +74648,12 @@
 "slapping",
 "slaps"
 ],
+"slapdash": [],
+"slaphappy": [
+"slaphappier",
+"slaphappiest"
+],
+"slapstick": [],
 "slash": [
 "slashed",
 "slashes",
@@ -68915,6 +74681,9 @@
 "slaughtered",
 "slaughtering",
 "slaughters"
+],
+"slaughterhouse": [
+"slaughterhouses"
 ],
 "slave": [
 "slaved",
@@ -68958,6 +74727,11 @@
 "sledges",
 "sledging"
 ],
+"sledgehammer": [
+"sledgehammered",
+"sledgehammering",
+"sledgehammers"
+],
 "sleek": [
 "sleeked",
 "sleeker",
@@ -68985,6 +74759,19 @@
 "sleeplessness",
 "sleeps",
 "slept"
+],
+"sleepwalk": [
+"sleepwalked",
+"sleepwalking",
+"sleepwalks"
+],
+"sleepwalker": [
+"sleepwalkers"
+],
+"sleepwalking": [
+"sleepwalk",
+"sleepwalked",
+"sleepwalks"
 ],
 "sleepy": [
 "sleepier",
@@ -69105,6 +74892,9 @@
 "slings",
 "slung"
 ],
+"slingshot": [
+"slingshots"
+],
 "slink": [
 "slinked",
 "slinking",
@@ -69119,6 +74909,12 @@
 "slipped",
 "slipping",
 "slips"
+],
+"slipcover": [
+"slipcovers"
+],
+"slipknot": [
+"slipknots"
 ],
 "slippage": [
 "slippages"
@@ -69250,6 +75046,12 @@
 "slowness",
 "slows"
 ],
+"slowdown": [
+"slowdowns"
+],
+"slowpoke": [
+"slowpokes"
+],
 "sludge": [],
 "slug": [
 "slugged",
@@ -69277,6 +75079,9 @@
 "slumbered",
 "slumbering",
 "slumbers"
+],
+"slumlord": [
+"slumlords"
 ],
 "slump": [
 "slumped",
@@ -69348,6 +75153,7 @@
 "smallness",
 "smalls"
 ],
+"smallpox": [],
 "smarmy": [
 "smarmier",
 "smarmiest"
@@ -69480,11 +75286,17 @@
 "smokes",
 "smoking"
 ],
+"smokehouse": [
+"smokehouses"
+],
 "smokeless": [
 "smoke",
 "smoked",
 "smokes",
 "smoking"
+],
+"smokestack": [
+"smokestacks"
 ],
 "smoky": [
 "smokey",
@@ -69602,6 +75414,12 @@
 "snappishness",
 "snaps"
 ],
+"snapdragon": [
+"snapdragons"
+],
+"snapper": [
+"snappers"
+],
 "snappish": [
 "snap",
 "snapped",
@@ -69615,6 +75433,9 @@
 "snappiest",
 "snappily",
 "snappiness"
+],
+"snapshot": [
+"snapshots"
 ],
 "snare": [
 "snared",
@@ -69813,6 +75634,53 @@
 "snowing",
 "snows"
 ],
+"snowball": [
+"snowballed",
+"snowballing",
+"snowballs"
+],
+"snowbelt": [],
+"snowbound": [],
+"snowdrift": [
+"snowdrifts"
+],
+"snowdrop": [
+"snowdrops"
+],
+"snowfall": [
+"snowfalls"
+],
+"snowflake": [
+"snowflakes"
+],
+"snowman": [
+"snowmen"
+],
+"snowmobile": [
+"snowmobiled",
+"snowmobiles",
+"snowmobiling"
+],
+"snowplow": [
+"snowplough",
+"snowploughed",
+"snowploughing",
+"snowploughs",
+"snowplowed",
+"snowplowing",
+"snowplows"
+],
+"snowshoe": [
+"snowshoed",
+"snowshoeing",
+"snowshoes"
+],
+"snowstorm": [
+"snowstorms"
+],
+"snowsuit": [
+"snowsuits"
+],
 "snowy": [
 "snowier",
 "snowiest",
@@ -69871,6 +75739,11 @@
 "soaping",
 "soaps"
 ],
+"soapbox": [
+"soapboxes"
+],
+"soapstone": [],
+"soapsuds": [],
 "soapy": [
 "soapier",
 "soapiest",
@@ -69986,10 +75859,17 @@
 "softly",
 "softness"
 ],
+"softball": [
+"softballs"
+],
 "soften": [
 "softened",
 "softening",
 "softens"
+],
+"software": [],
+"softwood": [
+"softwoods"
 ],
 "softy": [
 "softie",
@@ -70184,6 +76064,13 @@
 "sombreros"
 ],
 "some": [],
+"somebody": [
+"somebodies"
+],
+"someday": [],
+"somehow": [],
+"someone": [],
+"someplace": [],
 "somersault": [
 "somersaulted",
 "somersaulting",
@@ -70193,6 +76080,16 @@
 "somersetted",
 "somersetting"
 ],
+"something": [],
+"sometime": [],
+"sometimes": [],
+"someway": [
+"someways"
+],
+"somewhat": [
+"summat"
+],
+"somewhere": [],
 "somnambulism": [],
 "somnambulist": [
 "somnambulists"
@@ -70210,6 +76107,9 @@
 ],
 "song": [
 "songs"
+],
+"songbird": [
+"songbirds"
 ],
 "songster": [
 "songsters"
@@ -70407,6 +76307,14 @@
 "soundness",
 "sounds"
 ],
+"soundproof": [
+"soundproofed",
+"soundproofing",
+"soundproofs"
+],
+"soundtrack": [
+"soundtracks"
+],
 "soup": [
 "souped",
 "souping",
@@ -70434,12 +76342,21 @@
 "sources",
 "sourcing"
 ],
+"sourdough": [
+"sourdoughs"
+],
+"sourpuss": [
+"sourpusses"
+],
 "souse": [
 "soused",
 "souses",
 "sousing"
 ],
 "south": [],
+"southeast": [],
+"southeasterly": [],
+"southeastern": [],
 "southerly": [
 "southerlies"
 ],
@@ -70450,12 +76367,18 @@
 "southerner": [
 "southerners"
 ],
+"southpaw": [
+"southpaws"
+],
 "southward": [
 "southwards"
 ],
 "southwards": [
 "southward"
 ],
+"southwest": [],
+"southwesterly": [],
+"southwestern": [],
 "souvenir": [
 "souvenirs"
 ],
@@ -70487,6 +76410,9 @@
 "soy": [
 "soya"
 ],
+"soybean": [
+"soybeans"
+],
 "spa": [
 "spas"
 ],
@@ -70494,6 +76420,23 @@
 "spaced",
 "spaces",
 "spacing"
+],
+"spacecraft": [
+"spacecrafts"
+],
+"spaceman": [
+"spacemen"
+],
+"spaceship": [
+"spaceships"
+],
+"spacesuit": [
+"spacesuits"
+],
+"spacewalk": [
+"spacewalked",
+"spacewalking",
+"spacewalks"
 ],
 "spacey": [
 "spacier",
@@ -70512,6 +76455,7 @@
 "spades",
 "spading"
 ],
+"spadework": [],
 "spaghetti": [],
 "span": [
 "spanned",
@@ -70552,6 +76496,7 @@
 "sparing",
 "sparingly"
 ],
+"spareribs": [],
 "sparing": [
 "spare",
 "spared",
@@ -70584,6 +76529,7 @@
 "sparser",
 "sparsest"
 ],
+"spartan": [],
 "spasm": [
 "spasms"
 ],
@@ -70630,6 +76576,9 @@
 "spoke",
 "spoken"
 ],
+"speakeasy": [
+"speakeasies"
+],
 "speaker": [
 "speakers"
 ],
@@ -70638,6 +76587,12 @@
 "spearing",
 "spears"
 ],
+"spearhead": [
+"spearheaded",
+"spearheading",
+"spearheads"
+],
+"spearmint": [],
 "special": [
 "specially",
 "specials"
@@ -70775,11 +76730,17 @@
 "speeding",
 "speeds"
 ],
+"speedboat": [
+"speedboats"
+],
 "speedometer": [
 "speedometers"
 ],
 "speedster": [
 "speedsters"
+],
+"speedway": [
+"speedways"
 ],
 "speedy": [
 "speedier",
@@ -70792,6 +76753,14 @@
 "spelling",
 "spells",
 "spelt"
+],
+"spellbinder": [
+"spellbinders"
+],
+"spellbound": [
+"spellbind",
+"spellbinding",
+"spellbinds"
 ],
 "speller": [
 "spellers"
@@ -70815,6 +76784,9 @@
 "spending",
 "spends",
 "spent"
+],
+"spendthrift": [
+"spendthrifts"
 ],
 "spent": [
 "spend",
@@ -70893,6 +76865,9 @@
 "spilling",
 "spills",
 "spilt"
+],
+"spillway": [
+"spillways"
 ],
 "spilt": [
 "spill",
@@ -70994,6 +76969,9 @@
 "spitted",
 "spitting"
 ],
+"spitball": [
+"spitballs"
+],
 "spite": [
 "spited",
 "spiteful",
@@ -71014,6 +76992,9 @@
 "spites",
 "spiting"
 ],
+"spitfire": [
+"spitfires"
+],
 "spittle": [],
 "spittoon": [
 "spittoons"
@@ -71026,6 +77007,9 @@
 "sploshed",
 "sploshes",
 "sploshing"
+],
+"splashdown": [
+"splashdowns"
 ],
 "splashy": [
 "splashier",
@@ -71117,11 +77101,15 @@
 "spoils",
 "spoilt"
 ],
+"spoilage": [],
 "spoiled": [
 "spoil",
 "spoiling",
 "spoils",
 "spoilt"
+],
+"spoilsport": [
+"spoilsports"
 ],
 "spoilt": [
 "spoil",
@@ -71201,6 +77189,9 @@
 "spoons",
 "spoonsful"
 ],
+"spoonbill": [
+"spoonbills"
+],
 "spoonerism": [
 "spoonerisms"
 ],
@@ -71243,6 +77234,12 @@
 "sported",
 "sporting"
 ],
+"sportscast": [
+"sportscasts"
+],
+"sportscaster": [
+"sportscasters"
+],
 "sportsman": [
 "sportsmanlike",
 "sportsmen"
@@ -71252,6 +77249,7 @@
 "sportsmen"
 ],
 "sportsmanship": [],
+"sportswear": [],
 "sportswoman": [
 "sportswomen"
 ],
@@ -71275,6 +77273,12 @@
 "spots",
 "spotted",
 "spotting"
+],
+"spotlight": [
+"spotlighted",
+"spotlighting",
+"spotlights",
+"spotlit"
 ],
 "spotter": [
 "spotters"
@@ -71322,6 +77326,9 @@
 "spreading",
 "spreads"
 ],
+"spreadsheet": [
+"spreadsheets"
+],
 "spree": [
 "sprees"
 ],
@@ -71341,6 +77348,10 @@
 "springs",
 "sprung"
 ],
+"springboard": [
+"springboards"
+],
+"springtime": [],
 "springy": [
 "springier",
 "springiest",
@@ -71446,6 +77457,9 @@
 "spied",
 "spies",
 "spying"
+],
+"spyglass": [
+"spyglasses"
 ],
 "squab": [
 "squabs"
@@ -71662,6 +77676,9 @@
 "stages",
 "staging"
 ],
+"stagecoach": [
+"stagecoaches"
+],
 "stagger": [
 "staggered",
 "staggering",
@@ -71702,10 +77719,22 @@
 "stair": [
 "stairs"
 ],
+"staircase": [
+"staircases"
+],
+"stairway": [
+"stairways"
+],
+"stairwell": [
+"stairwells"
+],
 "stake": [
 "staked",
 "stakes",
 "staking"
+],
+"stakeout": [
+"stakeouts"
 ],
 "stalactite": [
 "stalactites"
@@ -71720,6 +77749,11 @@
 "stales",
 "stalest",
 "staling"
+],
+"stalemate": [
+"stalemated",
+"stalemates",
+"stalemating"
 ],
 "stalk": [
 "stalked",
@@ -71796,6 +77830,18 @@
 "stands",
 "stood"
 ],
+"standoff": [
+"standoffs"
+],
+"standout": [
+"standouts"
+],
+"standpoint": [
+"standpoints"
+],
+"standstill": [
+"standstills"
+],
 "stank": [
 "stink",
 "stinking",
@@ -71820,6 +77866,7 @@
 "starring",
 "stars"
 ],
+"starboard": [],
 "starch": [
 "starched",
 "starches",
@@ -71837,6 +77884,9 @@
 "stares",
 "staring"
 ],
+"starfish": [
+"starfishes"
+],
 "stark": [
 "starker",
 "starkest",
@@ -71852,9 +77902,11 @@
 "starlet": [
 "starlets"
 ],
+"starlight": [],
 "starling": [
 "starlings"
 ],
+"starlit": [],
 "starry": [
 "starrier",
 "starriest"
@@ -71898,6 +77950,9 @@
 "stating"
 ],
 "statehood": [],
+"statehouse": [
+"statehouses"
+],
 "stateless": [
 "state",
 "stated",
@@ -71915,6 +77970,10 @@
 "statementing",
 "statements"
 ],
+"stateroom": [
+"staterooms"
+],
+"stateside": [],
 "statesman": [
 "statesmanlike",
 "statesmen"
@@ -71998,6 +78057,14 @@
 "stead": [
 "steads"
 ],
+"steadfast": [
+"steadfastly",
+"steadfastness"
+],
+"steadfastness": [
+"steadfast",
+"steadfastly"
+],
 "steady": [
 "steadied",
 "steadier",
@@ -72028,8 +78095,16 @@
 "steaming",
 "steams"
 ],
+"steamboat": [
+"steamboats"
+],
 "steamer": [
 "steamers"
+],
+"steamroller": [
+"steamrollered",
+"steamrollering",
+"steamrollers"
 ],
 "steamship": [
 "steamships"
@@ -72063,6 +78138,12 @@
 ],
 "steeple": [
 "steeples"
+],
+"steeplechase": [
+"steeplechases"
+],
+"steeplejack": [
+"steeplejacks"
 ],
 "steer": [
 "steered",
@@ -72102,8 +78183,38 @@
 "stoep",
 "stoeps"
 ],
+"stepbrother": [
+"stepbrothers"
+],
+"stepchild": [
+"stepchildren"
+],
+"stepdaughter": [
+"stepdaughters"
+],
+"stepfather": [
+"stepfathers"
+],
+"stepladder": [
+"stepladders"
+],
+"stepmother": [
+"stepmothers"
+],
+"stepparent": [
+"stepparents"
+],
 "steppe": [
 "steppes"
+],
+"steppingstone": [
+"steppingstones"
+],
+"stepsister": [
+"stepsisters"
+],
+"stepson": [
+"stepsons"
 ],
 "stereo": [
 "stereos"
@@ -72111,6 +78222,16 @@
 "stereophonic": [],
 "stereoscope": [
 "stereoscopes"
+],
+"stereotype": [
+"stereotyped",
+"stereotypes",
+"stereotyping"
+],
+"stereotyped": [
+"stereotype",
+"stereotypes",
+"stereotyping"
 ],
 "sterile": [],
 "sterility": [],
@@ -72166,6 +78287,7 @@
 "stewardess": [
 "stewardesses"
 ],
+"stewardship": [],
 "stick": [
 "sticking",
 "sticks",
@@ -72236,6 +78358,10 @@
 "stillness",
 "stills"
 ],
+"stillbirth": [
+"stillbirths"
+],
+"stillborn": [],
 "stilt": [
 "stilts"
 ],
@@ -72266,6 +78392,9 @@
 "stinging",
 "stings",
 "stung"
+],
+"stingray": [
+"stingrays"
 ],
 "stingy": [
 "stingier",
@@ -72337,16 +78466,33 @@
 "stockades",
 "stockading"
 ],
+"stockbroker": [
+"stockbrokers"
+],
+"stockholder": [
+"stockholders"
+],
 "stocking": [
 "stock",
 "stocked",
 "stocks"
+],
+"stockpile": [
+"stockpiled",
+"stockpiles",
+"stockpiling"
+],
+"stockroom": [
+"stockrooms"
 ],
 "stocky": [
 "stockier",
 "stockiest",
 "stockily",
 "stockiness"
+],
+"stockyard": [
+"stockyards"
 ],
 "stodgy": [
 "stodgier",
@@ -72389,6 +78535,9 @@
 "stomaching",
 "stomachs"
 ],
+"stomachache": [
+"stomachaches"
+],
 "stomp": [
 "stomped",
 "stomping",
@@ -72404,6 +78553,12 @@
 "stones",
 "stoning"
 ],
+"stonewall": [
+"stonewalled",
+"stonewalling",
+"stonewalls"
+],
+"stonework": [],
 "stony": [
 "stoney",
 "stonier",
@@ -72432,6 +78587,18 @@
 "stopping",
 "stops"
 ],
+"stopcock": [
+"stopcocks"
+],
+"stopgap": [
+"stopgaps"
+],
+"stoplight": [
+"stoplights"
+],
+"stopover": [
+"stopovers"
+],
 "stoppage": [
 "stoppages"
 ],
@@ -72440,11 +78607,26 @@
 "stoppering",
 "stoppers"
 ],
+"stopwatch": [
+"stopwatches"
+],
 "storage": [],
 "store": [
 "stored",
 "stores",
 "storing"
+],
+"storefront": [
+"storefronts"
+],
+"storehouse": [
+"storehouses"
+],
+"storekeeper": [
+"storekeepers"
+],
+"storeroom": [
+"storerooms"
 ],
 "storey": [
 "storeyed",
@@ -72481,6 +78663,12 @@
 "storied",
 "stories"
 ],
+"storybook": [
+"storybooks"
+],
+"storyteller": [
+"storytellers"
+],
 "stout": [
 "stouter",
 "stoutest",
@@ -72494,10 +78682,16 @@
 "staves",
 "staving"
 ],
+"stovepipe": [
+"stovepipes"
+],
 "stow": [
 "stowed",
 "stowing",
 "stows"
+],
+"stowaway": [
+"stowaways"
 ],
 "straddle": [
 "straddled",
@@ -72525,10 +78719,28 @@
 "straightness",
 "straights"
 ],
+"straightaway": [
+"straightaways",
+"straightway"
+],
 "straighten": [
 "straightened",
 "straightening",
 "straightens"
+],
+"straightforward": [
+"straightforwardly",
+"straightforwardness",
+"straightforwards"
+],
+"straightjacket": [
+"straightjacketed",
+"straightjacketing",
+"straightjackets",
+"straitjacket",
+"straitjacketed",
+"straitjacketing",
+"straitjackets"
 ],
 "strain": [
 "strained",
@@ -72545,6 +78757,15 @@
 ],
 "strait": [
 "straits"
+],
+"straitjacket": [
+"straightjacket",
+"straightjacketed",
+"straightjacketing",
+"straightjackets",
+"straitjacketed",
+"straitjacketing",
+"straitjackets"
 ],
 "strand": [
 "stranded",
@@ -72567,6 +78788,9 @@
 "strangled",
 "strangles",
 "strangling"
+],
+"stranglehold": [
+"strangleholds"
 ],
 "strangulate": [
 "strangulated",
@@ -72608,6 +78832,9 @@
 "strategic": [
 "strategics"
 ],
+"strategically": [
+"strategical"
+],
 "strategist": [
 "strategists"
 ],
@@ -72632,6 +78859,9 @@
 "straw": [
 "straws"
 ],
+"strawberry": [
+"strawberries"
+],
 "stray": [
 "strayed",
 "straying",
@@ -72654,9 +78884,26 @@
 "streamer": [
 "streamers"
 ],
+"streamline": [
+"streamlined",
+"streamlines",
+"streamlining"
+],
+"streamlined": [
+"streamline",
+"streamlines",
+"streamlining"
+],
 "street": [
 "streets"
 ],
+"streetcar": [
+"streetcars"
+],
+"streetwalker": [
+"streetwalkers"
+],
+"streetwise": [],
 "strength": [
 "strengths"
 ],
@@ -72751,6 +78998,9 @@
 "striking",
 "struck"
 ],
+"strikeout": [
+"strikeouts"
+],
 "striker": [
 "strikers"
 ],
@@ -72800,6 +79050,11 @@
 "stripper": [
 "strippers"
 ],
+"striptease": [
+"stripteased",
+"stripteases",
+"stripteasing"
+],
 "strive": [
 "strived",
 "striven",
@@ -72840,6 +79095,12 @@
 "stronger",
 "strongest",
 "strongly"
+],
+"strongbox": [
+"strongboxes"
+],
+"stronghold": [
+"strongholds"
 ],
 "strontium": [],
 "strop": [
@@ -73148,6 +79409,9 @@
 "subcontracted",
 "subcontracting",
 "subcontracts"
+],
+"subcontractor": [
+"subcontractors"
 ],
 "subculture": [
 "subcultures"
@@ -73565,6 +79829,12 @@
 "sugarless",
 "sugars"
 ],
+"sugarcane": [],
+"sugarcoat": [
+"sugarcoated",
+"sugarcoating",
+"sugarcoats"
+],
 "sugarless": [
 "sugar",
 "sugared",
@@ -73608,6 +79878,9 @@
 "suitability",
 "suitableness",
 "suitably"
+],
+"suitcase": [
+"suitcases"
 ],
 "suite": [
 "suites"
@@ -73720,6 +79993,10 @@
 "summering",
 "summers"
 ],
+"summerhouse": [
+"summerhouses"
+],
+"summertime": [],
 "summery": [],
 "summit": [
 "summits"
@@ -73744,19 +80021,61 @@
 "sunning",
 "suns"
 ],
+"sunbathe": [
+"sunbathed",
+"sunbathes",
+"sunbathing"
+],
 "sunbather": [
 "sunbathers"
+],
+"sunbeam": [
+"sunbeams"
+],
+"sunbelt": [
+"sunbelts"
+],
+"sunblock": [
+"sunblocks"
+],
+"sunbonnet": [
+"sunbonnets"
+],
+"sunburn": [
+"sunburned",
+"sunburning",
+"sunburns",
+"sunburnt"
+],
+"sunburnt": [
+"sunburn",
+"sunburned",
+"sunburning",
+"sunburns"
 ],
 "sundae": [
 "sundaes"
 ],
+"sunday": [],
 "sunder": [
 "sundered",
 "sundering",
 "sunders"
 ],
+"sundial": [
+"sundials"
+],
+"sundown": [
+"sundowns"
+],
 "sundries": [
 "sundry"
+],
+"sunfish": [
+"sunfishes"
+],
+"sunflower": [
+"sunflowers"
 ],
 "sung": [
 "sang",
@@ -73764,6 +80083,7 @@
 "singing",
 "sings"
 ],
+"sunglasses": [],
 "sunk": [
 "sank",
 "sink",
@@ -73778,11 +80098,33 @@
 "sinks",
 "sunk"
 ],
+"sunlamp": [
+"sunlamps"
+],
+"sunlight": [],
+"sunlit": [],
 "sunny": [
 "sunnier",
 "sunniest",
 "sunniness"
 ],
+"sunrise": [
+"sunrises"
+],
+"sunroof": [
+"sunroofs"
+],
+"sunscreen": [
+"sunscreens"
+],
+"sunset": [
+"sunsets"
+],
+"sunshine": [],
+"sunspot": [
+"sunspots"
+],
+"sunstroke": [],
 "suntan": [
 "suntanned",
 "suntanning",
@@ -73905,6 +80247,9 @@
 "supervising"
 ],
 "supervision": [],
+"supervisor": [
+"supervisors"
+],
 "supervisory": [],
 "supine": [
 "supinely"
@@ -73944,6 +80289,7 @@
 "supplication": [
 "supplications"
 ],
+"supplies": [],
 "supply": [
 "supple",
 "suppleness",
@@ -73956,6 +80302,9 @@
 "supports"
 ],
 "supportable": [],
+"supporter": [
+"supporters"
+],
 "supportive": [],
 "suppose": [
 "supposed",
@@ -74003,6 +80352,8 @@
 "surer",
 "surest"
 ],
+"surefire": [],
+"surefooted": [],
 "surely": [
 "sure",
 "sureness",
@@ -74021,6 +80372,11 @@
 "surfaced",
 "surfaces",
 "surfacing"
+],
+"surfboard": [
+"surfboarded",
+"surfboarding",
+"surfboards"
 ],
 "surfeit": [
 "surfeited",
@@ -74225,6 +80581,9 @@
 "swallowing",
 "swallows"
 ],
+"swallowtail": [
+"swallowtails"
+],
 "swam": [
 "swim",
 "swimming",
@@ -74317,6 +80676,9 @@
 "swore",
 "sworn"
 ],
+"swearword": [
+"swearwords"
+],
 "sweat": [
 "sweated",
 "sweating",
@@ -74324,6 +80686,12 @@
 ],
 "sweater": [
 "sweaters"
+],
+"sweatshirt": [
+"sweatshirts"
+],
+"sweatshop": [
+"sweatshops"
 ],
 "sweaty": [
 "sweatier",
@@ -74339,6 +80707,9 @@
 "sweeps",
 "swept"
 ],
+"sweepstakes": [
+"sweepstake"
+],
 "sweet": [
 "sweeter",
 "sweetest",
@@ -74347,6 +80718,9 @@
 "sweetness",
 "sweets"
 ],
+"sweetbread": [
+"sweetbreads"
+],
 "sweeten": [
 "sweetened",
 "sweetening",
@@ -74354,6 +80728,9 @@
 ],
 "sweetener": [
 "sweeteners"
+],
+"sweetheart": [
+"sweethearts"
 ],
 "sweetie": [
 "sweeties"
@@ -74365,6 +80742,9 @@
 "sweetly",
 "sweetness",
 "sweets"
+],
+"sweetmeat": [
+"sweetmeats"
 ],
 "swell": [
 "swelled",
@@ -74431,6 +80811,9 @@
 "swims",
 "swum"
 ],
+"swimsuit": [
+"swimsuits"
+],
 "swindle": [
 "swindled",
 "swindles",
@@ -74471,6 +80854,12 @@
 "switches",
 "switching"
 ],
+"switchblade": [
+"switchblades"
+],
+"switchboard": [
+"switchboards"
+],
 "swivel": [
 "swiveled",
 "swiveling",
@@ -74508,6 +80897,10 @@
 "sword": [
 "swords"
 ],
+"swordfish": [
+"swordfishes"
+],
+"swordplay": [],
 "swordsman": [
 "swordsmen"
 ],
@@ -74580,6 +80973,9 @@
 "symbols"
 ],
 "symbolic": [],
+"symbolically": [
+"symbolical"
+],
 "symbolism": [],
 "symbolize": [
 "symbolise",
@@ -74754,6 +81150,9 @@
 "systems"
 ],
 "systematic": [],
+"systematically": [
+"systematical"
+],
 "systematize": [
 "systematise",
 "systematised",
@@ -74792,9 +81191,28 @@
 "tableau",
 "tableaus"
 ],
+"tablecloth": [
+"tablecloths"
+],
+"tableland": [
+"tablelands"
+],
+"tablespoon": [
+"tablespoonful",
+"tablespoonfuls",
+"tablespoons",
+"tablespoonsful"
+],
+"tablespoonful": [
+"tablespoon",
+"tablespoonfuls",
+"tablespoons",
+"tablespoonsful"
+],
 "tablet": [
 "tablets"
 ],
+"tableware": [],
 "tabloid": [
 "tabloids"
 ],
@@ -74903,16 +81321,30 @@
 "tailless",
 "tails"
 ],
+"tailgate": [
+"tailgated",
+"tailgates",
+"tailgating"
+],
 "tailless": [
 "tail",
 "tailed",
 "tailing",
 "tails"
 ],
+"taillight": [
+"taillights"
+],
 "tailor": [
 "tailored",
 "tailoring",
 "tailors"
+],
+"tailpipe": [
+"tailpipes"
+],
+"tailspin": [
+"tailspins"
 ],
 "taint": [
 "tainted",
@@ -74935,6 +81367,15 @@
 "takes",
 "taking",
 "took"
+],
+"takeoff": [
+"takeoffs"
+],
+"takeout": [
+"takeouts"
+],
+"takeover": [
+"takeovers"
 ],
 "taking": [
 "take",
@@ -75147,9 +81588,15 @@
 "tapestry": [
 "tapestries"
 ],
+"tapeworm": [
+"tapeworms"
+],
 "tapioca": [],
 "tapir": [
 "tapirs"
+],
+"taproot": [
+"taproots"
 ],
 "taps": [
 "tap",
@@ -75236,6 +81683,9 @@
 "tasking",
 "tasks"
 ],
+"taskmaster": [
+"taskmasters"
+],
 "tassel": [
 "tasseled",
 "tasseling",
@@ -75307,6 +81757,9 @@
 "tattles",
 "tattling"
 ],
+"tattletale": [
+"tattletales"
+],
 "tattoo": [
 "tattooed",
 "tattooing",
@@ -75363,6 +81816,9 @@
 "taxis",
 "taxying"
 ],
+"taxicab": [
+"taxicabs"
+],
 "taxidermist": [
 "taxidermists"
 ],
@@ -75395,8 +81851,16 @@
 "teach",
 "teaches"
 ],
+"teacup": [
+"teacupful",
+"teacupfuls",
+"teacups"
+],
 "teak": [
 "teaks"
+],
+"teakettle": [
+"teakettles"
 ],
 "teal": [
 "teals"
@@ -75406,8 +81870,15 @@
 "teaming",
 "teams"
 ],
+"teammate": [
+"teammates"
+],
 "teamster": [
 "teamsters"
+],
+"teamwork": [],
+"teapot": [
+"teapots"
 ],
 "tear": [
 "teared",
@@ -75418,6 +81889,9 @@
 "tears",
 "tore",
 "torn"
+],
+"teardrop": [
+"teardrops"
 ],
 "tearful": [
 "tear",
@@ -75434,6 +81908,18 @@
 "teases",
 "teasing",
 "teasingly"
+],
+"teaspoon": [
+"teaspoonful",
+"teaspoonfuls",
+"teaspoons",
+"teaspoonsful"
+],
+"teaspoonful": [
+"teaspoon",
+"teaspoonfuls",
+"teaspoons",
+"teaspoonsful"
 ],
 "teat": [
 "teats"
@@ -75620,6 +82106,9 @@
 "tells",
 "told"
 ],
+"telltale": [
+"telltales"
+],
 "temblor": [
 "temblors"
 ],
@@ -75763,6 +82252,14 @@
 "tenderly",
 "tenderness",
 "tenders"
+],
+"tenderfeet": [
+"tenderfoot",
+"tenderfoots"
+],
+"tenderfoot": [
+"tenderfeet",
+"tenderfoots"
 ],
 "tenderize": [
 "tenderise",
@@ -76023,6 +82520,9 @@
 "texting",
 "texts"
 ],
+"textbook": [
+"textbooks"
+],
 "textile": [
 "textiles"
 ],
@@ -76085,6 +82585,9 @@
 "thanklessly",
 "thanklessness"
 ],
+"thanksgiving": [
+"thanksgivings"
+],
 "that": [
 "those"
 ],
@@ -76138,8 +82641,12 @@
 "themed",
 "themes"
 ],
+"themselves": [
+"themself"
+],
 "then": [],
 "thence": [],
+"thenceforth": [],
 "theocracy": [
 "theocracies"
 ],
@@ -76192,6 +82699,13 @@
 "therapies"
 ],
 "there": [],
+"thereabout": [
+"thereabouts"
+],
+"thereafter": [],
+"therefore": [],
+"therein": [],
+"thereupon": [],
 "thermal": [
 "thermally",
 "thermals"
@@ -76261,6 +82775,7 @@
 "thickest",
 "thickly"
 ],
+"thickset": [],
 "thief": [
 "thieves",
 "thievish"
@@ -76284,6 +82799,9 @@
 ],
 "thigh": [
 "thighs"
+],
+"thighbone": [
+"thighbones"
 ],
 "thimble": [
 "thimbleful",
@@ -76389,6 +82907,13 @@
 "thoroughly",
 "thoroughness"
 ],
+"thoroughbred": [
+"thoroughbreds"
+],
+"thoroughfare": [
+"thoroughfares"
+],
+"thoroughgoing": [],
 "those": [
 "that"
 ],
@@ -76407,6 +82932,8 @@
 "thinks"
 ],
 "thoughtful": [],
+"thoughtfully": [],
+"thoughtfulness": [],
 "thoughtless": [],
 "thousand": [
 "thousands"
@@ -76433,6 +82960,7 @@
 "threadlike",
 "threads"
 ],
+"threadbare": [],
 "threat": [
 "threats"
 ],
@@ -76444,6 +82972,10 @@
 ],
 "three": [
 "threes"
+],
+"threefold": [],
+"threescore": [
+"threescores"
 ],
 "threesome": [
 "threesomes"
@@ -76538,6 +83070,12 @@
 "through": [
 "thru"
 ],
+"throughout": [],
+"throughway": [
+"throughways",
+"thruway",
+"thruways"
+],
 "throve": [
 "thrive",
 "thrived",
@@ -76550,6 +83088,12 @@
 "throwing",
 "thrown",
 "throws"
+],
+"throwaway": [
+"throwaways"
+],
+"throwback": [
+"throwbacks"
 ],
 "thrown": [
 "threw",
@@ -76572,6 +83116,11 @@
 "thrusting",
 "thrusts"
 ],
+"thruway": [
+"throughway",
+"throughways",
+"thruways"
+],
 "thud": [
 "thudded",
 "thudding",
@@ -76586,6 +83135,15 @@
 "thumbing",
 "thumbs"
 ],
+"thumbnail": [
+"thumbnails"
+],
+"thumbscrew": [
+"thumbscrews"
+],
+"thumbtack": [
+"thumbtacks"
+],
 "thump": [
 "thumped",
 "thumping",
@@ -76596,9 +83154,28 @@
 "thundering",
 "thunders"
 ],
+"thunderbolt": [
+"thunderbolts"
+],
+"thunderclap": [
+"thunderclaps"
+],
+"thundercloud": [
+"thunderclouds"
+],
+"thunderhead": [
+"thunderheads"
+],
 "thunderous": [
 "thunderously"
 ],
+"thundershower": [
+"thundershowers"
+],
+"thunderstorm": [
+"thunderstorms"
+],
+"thunderstruck": [],
 "thus": [],
 "thwack": [
 "thwacked",
@@ -76621,6 +83198,7 @@
 "thyroid": [
 "thyroids"
 ],
+"thyself": [],
 "ti": [
 "tis"
 ],
@@ -76681,6 +83259,9 @@
 "tides",
 "tiding"
 ],
+"tidewater": [
+"tidewaters"
+],
 "tidings": [],
 "tidy": [
 "tidied",
@@ -76721,6 +83302,9 @@
 "tightened",
 "tightening",
 "tightens"
+],
+"tightrope": [
+"tightropes"
 ],
 "tights": [
 "tight",
@@ -76768,6 +83352,10 @@
 "timbering",
 "timbers"
 ],
+"timberland": [],
+"timberline": [
+"timberlines"
+],
 "timbre": [
 "timbres"
 ],
@@ -76778,6 +83366,9 @@
 "timelessness",
 "times",
 "timing"
+],
+"timekeeper": [
+"timekeepers"
 ],
 "timeless": [
 "time",
@@ -76792,6 +83383,9 @@
 "timeliest",
 "timeliness"
 ],
+"timepiece": [
+"timepieces"
+],
 "timer": [
 "timers"
 ],
@@ -76803,6 +83397,12 @@
 "timelessness",
 "timing"
 ],
+"timetable": [
+"timetabled",
+"timetables",
+"timetabling"
+],
+"timeworn": [],
 "timid": [
 "timider",
 "timidest",
@@ -76841,9 +83441,13 @@
 "tincturing"
 ],
 "tinder": [],
+"tinderbox": [
+"tinderboxes"
+],
 "tine": [
 "tines"
 ],
+"tinfoil": [],
 "tinge": [
 "tinged",
 "tingeing",
@@ -76896,6 +83500,9 @@
 "tipping",
 "tips"
 ],
+"tipper": [
+"tippers"
+],
 "tipple": [
 "tippled",
 "tipples",
@@ -76909,6 +83516,14 @@
 "tipsiest",
 "tipsily",
 "tipsiness"
+],
+"tiptoe": [
+"tiptoed",
+"tiptoeing",
+"tiptoes"
+],
+"tiptop": [
+"tiptops"
 ],
 "tirade": [
 "tirades"
@@ -76980,6 +83595,12 @@
 "titles",
 "titling"
 ],
+"titmice": [
+"titmouse"
+],
+"titmouse": [
+"titmice"
+],
 "titter": [
 "tittered",
 "tittering",
@@ -76996,6 +83617,9 @@
 "toad": [
 "toads"
 ],
+"toadstool": [
+"toadstools"
+],
 "toady": [
 "toadied",
 "toadies",
@@ -77008,6 +83632,9 @@
 ],
 "toaster": [
 "toasters"
+],
+"toastmaster": [
+"toastmasters"
 ],
 "toasty": [
 "toastie",
@@ -77044,6 +83671,12 @@
 "toed",
 "toeing",
 "toes"
+],
+"toehold": [
+"toeholds"
+],
+"toenail": [
+"toenails"
 ],
 "toffee": [
 "toffees",
@@ -77125,6 +83758,12 @@
 "tolling",
 "tolls"
 ],
+"tollbooth": [
+"tollbooths"
+],
+"tollgate": [
+"tollgates"
+],
 "tom": [
 "toms"
 ],
@@ -77141,8 +83780,21 @@
 "tombing",
 "tombs"
 ],
+"tomboy": [
+"tomboyish",
+"tomboys"
+],
+"tombstone": [
+"tombstones"
+],
+"tomcat": [
+"tomcats"
+],
 "tome": [
 "tomes"
+],
+"tomfoolery": [
+"tomfooleries"
 ],
 "tomorrow": [
 "tomorrows"
@@ -77222,10 +83874,22 @@
 "toothed",
 "toothless"
 ],
+"toothache": [
+"toothaches"
+],
+"toothbrush": [
+"toothbrushes"
+],
 "toothless": [
 "teeth",
 "tooth",
 "toothed"
+],
+"toothpaste": [
+"toothpastes"
+],
+"toothpick": [
+"toothpicks"
 ],
 "toothsome": [],
 "toothy": [
@@ -77243,11 +83907,17 @@
 "topaz": [
 "topazes"
 ],
+"topcoat": [
+"topcoats"
+],
 "topic": [
 "topics"
 ],
 "topical": [
 "topically"
+],
+"topknot": [
+"topknots"
 ],
 "topless": [
 "top",
@@ -77255,6 +83925,9 @@
 "topped",
 "topping",
 "tops"
+],
+"topmast": [
+"topmasts"
 ],
 "topographic": [],
 "topographical": [
@@ -77275,11 +83948,16 @@
 "topples",
 "toppling"
 ],
+"topsail": [
+"topsails"
+],
+"topsoil": [],
 "torch": [
 "torched",
 "torches",
 "torching"
 ],
+"torchlight": [],
 "tore": [
 "tear",
 "teared",
@@ -77352,6 +84030,9 @@
 "tortoise": [
 "tortoises"
 ],
+"tortoiseshell": [
+"tortoiseshells"
+],
 "tortuous": [
 "tortuously",
 "tortuousness"
@@ -77409,6 +84090,9 @@
 "touching",
 "touchingly"
 ],
+"touchdown": [
+"touchdowns"
+],
 "touche": [
 "touches"
 ],
@@ -77423,6 +84107,9 @@
 "touched",
 "touches",
 "touchingly"
+],
+"touchstone": [
+"touchstones"
 ],
 "touchy": [
 "touchier",
@@ -77514,11 +84201,24 @@
 "towered",
 "towers"
 ],
+"towhead": [
+"towheaded",
+"towheads"
+],
+"towheaded": [
+"towhead",
+"towheads"
+],
 "town": [
 "towns"
 ],
+"townsfolk": [],
 "township": [
 "townships"
+],
+"townspeople": [],
+"towpath": [
+"towpaths"
 ],
 "toxic": [],
 "toxicity": [
@@ -77583,6 +84283,11 @@
 "trades",
 "trading"
 ],
+"trademark": [
+"trademarked",
+"trademarking",
+"trademarks"
+],
 "trader": [
 "traders"
 ],
@@ -77623,6 +84328,9 @@
 "trailed",
 "trailing",
 "trails"
+],
+"trailblazer": [
+"trailblazers"
 ],
 "trailer": [
 "trailers"
@@ -77745,6 +84453,9 @@
 "transacting",
 "transacts"
 ],
+"transaction": [
+"transactions"
+],
 "transatlantic": [],
 "transceiver": [
 "transceivers"
@@ -77759,6 +84470,7 @@
 "transcendental": [
 "transcendentally"
 ],
+"transcendentalism": [],
 "transcribe": [
 "transcribed",
 "transcribes",
@@ -77951,6 +84663,9 @@
 "trapping",
 "traps"
 ],
+"trapdoor": [
+"trapdoors"
+],
 "trapeze": [
 "trapezes"
 ],
@@ -77958,7 +84673,11 @@
 "trapezoids"
 ],
 "trapezoidal": [],
+"trapper": [
+"trappers"
+],
 "trappings": [],
+"trapshooting": [],
 "trash": [
 "trashed",
 "trashes",
@@ -78056,6 +84775,9 @@
 "treadled",
 "treadles",
 "treadling"
+],
+"treadmill": [
+"treadmills"
 ],
 "treason": [],
 "treasonable": [],
@@ -78457,6 +85179,9 @@
 "troubles",
 "troubling"
 ],
+"troublemaker": [
+"troublemakers"
+],
 "troublesome": [
 "troublesomely"
 ],
@@ -78610,6 +85335,16 @@
 "trustingly",
 "trusts"
 ],
+"trustworthiness": [
+"trustworthier",
+"trustworthiest",
+"trustworthy"
+],
+"trustworthy": [
+"trustworthier",
+"trustworthiest",
+"trustworthiness"
+],
 "trusty": [
 "trustier",
 "trusties",
@@ -78636,6 +85371,9 @@
 "tried",
 "tries",
 "try"
+],
+"tryout": [
+"tryouts"
 ],
 "tryst": [
 "trysted",
@@ -78712,6 +85450,9 @@
 "tugging",
 "tugs"
 ],
+"tugboat": [
+"tugboats"
+],
 "tuition": [],
 "tulip": [
 "tulips"
@@ -78722,8 +85463,12 @@
 "tumbles",
 "tumbling"
 ],
+"tumbledown": [],
 "tumbler": [
 "tumblers"
+],
+"tumbleweed": [
+"tumbleweeds"
 ],
 "tummy": [
 "tummies"
@@ -78834,8 +85579,40 @@
 "turning",
 "turns"
 ],
+"turnabout": [
+"turnabouts"
+],
+"turnaround": [
+"turnarounds",
+"turnround",
+"turnrounds"
+],
+"turncoat": [
+"turncoats"
+],
 "turnip": [
 "turnips"
+],
+"turnkey": [
+"turnkeys"
+],
+"turnoff": [
+"turnoffs"
+],
+"turnout": [
+"turnouts"
+],
+"turnover": [
+"turnovers"
+],
+"turnpike": [
+"turnpikes"
+],
+"turnstile": [
+"turnstiles"
+],
+"turntable": [
+"turntables"
 ],
 "turpentine": [],
 "turpitude": [],
@@ -78848,6 +85625,13 @@
 ],
 "turtle": [
 "turtles"
+],
+"turtledove": [
+"turtledoves"
+],
+"turtleneck": [
+"turtlenecked",
+"turtlenecks"
 ],
 "tush": [
 "tushes"
@@ -79011,6 +85795,7 @@
 "two": [
 "twos"
 ],
+"twofold": [],
 "twosome": [
 "twosomes"
 ],
@@ -79040,6 +85825,41 @@
 "typed",
 "types",
 "typing"
+],
+"typecast": [
+"typecasting",
+"typecasts"
+],
+"typescript": [
+"typescripts"
+],
+"typeset": [
+"typesets",
+"typesetting"
+],
+"typesetter": [
+"typesetters"
+],
+"typewrite": [
+"typewrites",
+"typewriting",
+"typewritten",
+"typewrote"
+],
+"typewriter": [
+"typewriters"
+],
+"typewritten": [
+"typewrite",
+"typewrites",
+"typewriting",
+"typewrote"
+],
+"typewrote": [
+"typewrite",
+"typewrites",
+"typewriting",
+"typewritten"
 ],
 "typhoid": [],
 "typhoon": [
@@ -79155,6 +85975,17 @@
 "ultra": [
 "ultras"
 ],
+"ultraconservative": [
+"ultraconservatives"
+],
+"ultramarine": [],
+"ultrasonic": [
+"ultrasonically"
+],
+"ultrasound": [
+"ultrasounds"
+],
+"ultraviolet": [],
 "umber": [],
 "umbilical": [],
 "umbrage": [],
@@ -79177,6 +86008,7 @@
 "umpires",
 "umpiring"
 ],
+"umpteen": [],
 "umpteenth": [],
 "unabashed": [
 "unabashedly"
@@ -79580,6 +86412,11 @@
 "underlies",
 "underlying"
 ],
+"underline": [
+"underlined",
+"underlines",
+"underlining"
+],
 "underling": [
 "underlings"
 ],
@@ -79764,6 +86601,9 @@
 "underwriting",
 "underwritten",
 "underwrote"
+],
+"underwriter": [
+"underwriters"
 ],
 "underwritten": [
 "underwrite",
@@ -80368,6 +87208,7 @@
 "unravels"
 ],
 "unread": [],
+"unreadable": [],
 "unready": [
 "unreadiness"
 ],
@@ -80749,8 +87590,13 @@
 "uppermost",
 "uppers"
 ],
+"uppercase": [],
 "upperclassman": [
 "upperclassmen"
+],
+"uppercut": [
+"uppercuts",
+"uppercutting"
 ],
 "uppity": [],
 "uprising": [
@@ -80763,7 +87609,23 @@
 "upsets",
 "upsetting"
 ],
+"upshot": [
+"upshots"
+],
 "upstanding": [],
+"upstart": [
+"upstarted",
+"upstarting",
+"upstarts"
+],
+"upsurge": [
+"upsurged",
+"upsurges",
+"upsurging"
+],
+"upswing": [
+"upswings"
+],
 "upwards": [
 "upward",
 "upwardly"
@@ -81032,6 +87894,10 @@
 "vainest",
 "vainly"
 ],
+"vainglorious": [
+"vaingloriously"
+],
+"vainglory": [],
 "valance": [
 "valances"
 ],
@@ -81258,6 +88124,7 @@
 "vasectomy": [
 "vasectomies"
 ],
+"vaseline": [],
 "vassal": [
 "vassals"
 ],
@@ -81756,6 +88623,19 @@
 "videoing",
 "videos"
 ],
+"videocassette": [
+"videocassettes"
+],
+"videodisc": [
+"videodiscs",
+"videodisk",
+"videodisks"
+],
+"videotape": [
+"videotaped",
+"videotapes",
+"videotaping"
+],
 "vie": [
 "vied",
 "vies",
@@ -81773,6 +88653,9 @@
 "view",
 "viewed",
 "views"
+],
+"viewpoint": [
+"viewpoints"
 ],
 "vigil": [
 "vigils"
@@ -81847,6 +88730,9 @@
 "vinegars"
 ],
 "vinegary": [],
+"vineyard": [
+"vineyards"
+],
 "vintage": [
 "vintages"
 ],
@@ -82159,6 +89045,9 @@
 "volleying",
 "volleys"
 ],
+"volleyball": [
+"volleyballs"
+],
 "volt": [
 "volts"
 ],
@@ -82240,6 +89129,11 @@
 ],
 "voucher": [
 "vouchers"
+],
+"vouchsafe": [
+"vouchsafed",
+"vouchsafes",
+"vouchsafing"
 ],
 "vow": [
 "vowed",
@@ -82428,6 +89322,15 @@
 "waist": [
 "waists"
 ],
+"waistband": [
+"waistbands"
+],
+"waistcoat": [
+"waistcoats"
+],
+"waistline": [
+"waistlines"
+],
 "wait": [
 "waited",
 "waiting",
@@ -82482,6 +89385,12 @@
 "walker": [
 "walkers"
 ],
+"walkout": [
+"walkouts"
+],
+"walkway": [
+"walkways"
+],
 "wall": [
 "walled",
 "walling",
@@ -82490,8 +89399,20 @@
 "wallaby": [
 "wallabies"
 ],
+"wallboard": [],
 "wallet": [
 "wallets"
+],
+"walleye": [
+"walleyed",
+"walleyes"
+],
+"walleyed": [
+"walleye",
+"walleyes"
+],
+"wallflower": [
+"wallflowers"
 ],
 "wallop": [
 "walloped",
@@ -82502,6 +89423,11 @@
 "wallowed",
 "wallowing",
 "wallows"
+],
+"wallpaper": [
+"wallpapered",
+"wallpapering",
+"wallpapers"
 ],
 "walnut": [
 "walnuts"
@@ -82598,6 +89524,24 @@
 "ware": [
 "wares"
 ],
+"warehouse": [
+"warehoused",
+"warehouses",
+"warehousing"
+],
+"warfare": [],
+"warhead": [
+"warheads"
+],
+"warhorse": [
+"warhorses"
+],
+"warlock": [
+"warlocks"
+],
+"warlord": [
+"warlords"
+],
 "warm": [
 "warmed",
 "warmer",
@@ -82628,6 +89572,9 @@
 "warping",
 "warps"
 ],
+"warpath": [
+"warpaths"
+],
 "warrant": [
 "warranted",
 "warranting",
@@ -82644,9 +89591,16 @@
 "warrior": [
 "warriors"
 ],
+"warship": [
+"warships"
+],
 "wart": [
 "warts"
 ],
+"warthog": [
+"warthogs"
+],
+"wartime": [],
 "warty": [
 "wartier",
 "wartiest"
@@ -82677,6 +89631,18 @@
 "washable": [
 "washables"
 ],
+"washbasin": [
+"washbasins"
+],
+"washboard": [
+"washboards"
+],
+"washbowl": [
+"washbowls"
+],
+"washcloth": [
+"washcloths"
+],
 "washer": [
 "washers"
 ],
@@ -82684,6 +89650,18 @@
 "wash",
 "washed",
 "washes"
+],
+"washout": [
+"washouts"
+],
+"washroom": [
+"washrooms"
+],
+"washstand": [
+"washstands"
+],
+"washtub": [
+"washtubs"
 ],
 "wasp": [
 "waspish",
@@ -82711,6 +89689,9 @@
 "wastes",
 "wasting"
 ],
+"wastebasket": [
+"wastebaskets"
+],
 "wasted": [
 "waste",
 "wasteful",
@@ -82727,6 +89708,10 @@
 "wastes",
 "wasting"
 ],
+"wasteland": [
+"wastelands"
+],
+"wastepaper": [],
 "wastrel": [
 "wastrels"
 ],
@@ -82738,6 +89723,12 @@
 "watchfulness",
 "watching"
 ],
+"watchband": [
+"watchbands"
+],
+"watchdog": [
+"watchdogs"
+],
 "watchful": [
 "watch",
 "watched",
@@ -82746,11 +89737,80 @@
 "watchfulness",
 "watching"
 ],
+"watchmaker": [
+"watchmakers"
+],
+"watchman": [
+"watchmen"
+],
+"watchtower": [
+"watchtowers"
+],
+"watchword": [
+"watchwords"
+],
 "water": [
 "watered",
 "watering",
 "waters"
 ],
+"waterbed": [
+"waterbeds"
+],
+"watercolor": [
+"watercolors",
+"watercolour",
+"watercolours"
+],
+"watercourse": [
+"watercourses"
+],
+"watercress": [],
+"waterfall": [
+"waterfalls"
+],
+"waterfowl": [
+"waterfowls"
+],
+"waterfront": [
+"waterfronts"
+],
+"waterline": [
+"waterlines"
+],
+"waterlogged": [],
+"watermark": [
+"watermarked",
+"watermarking",
+"watermarks"
+],
+"watermelon": [
+"watermelons"
+],
+"waterproof": [
+"waterproofed",
+"waterproofing",
+"waterproofs"
+],
+"waterproofing": [
+"waterproof",
+"waterproofed",
+"waterproofs"
+],
+"watershed": [
+"watersheds"
+],
+"waterside": [
+"watersides"
+],
+"waterspout": [
+"waterspouts"
+],
+"watertight": [],
+"waterway": [
+"waterways"
+],
+"waterworks": [],
 "watery": [
 "waterier",
 "wateriest",
@@ -82771,6 +89831,9 @@
 "waves",
 "waving"
 ],
+"wavelength": [
+"wavelengths"
+],
 "waver": [
 "wavered",
 "wavering",
@@ -82788,6 +89851,9 @@
 "waxing"
 ],
 "waxen": [],
+"waxwing": [
+"waxwings"
+],
 "waxy": [
 "waxier",
 "waxiest",
@@ -82795,6 +89861,22 @@
 ],
 "way": [
 "ways"
+],
+"wayfaring": [
+"wayfarings"
+],
+"waylaid": [
+"waylay",
+"waylaying",
+"waylays"
+],
+"waylay": [
+"waylaid",
+"waylaying",
+"waylays"
+],
+"wayside": [
+"waysides"
 ],
 "wayward": [
 "waywardly",
@@ -82879,6 +89961,9 @@
 "weathering",
 "weathers"
 ],
+"weathercock": [
+"weathercocks"
+],
 "weathering": [
 "weather",
 "weathered",
@@ -82895,6 +89980,11 @@
 ],
 "weatherman": [
 "weathermen"
+],
+"weatherproof": [
+"weatherproofed",
+"weatherproofing",
+"weatherproofs"
 ],
 "weave": [
 "weaved",
@@ -82928,6 +90018,7 @@
 "wedges",
 "wedging"
 ],
+"wedlock": [],
 "wee": [
 "weed",
 "weeing",
@@ -82950,6 +90041,14 @@
 "week": [
 "weekly",
 "weeks"
+],
+"weekday": [
+"weekdays"
+],
+"weekend": [
+"weekended",
+"weekending",
+"weekends"
 ],
 "weekly": [
 "week",
@@ -82996,6 +90095,7 @@
 "weightlessness",
 "weights"
 ],
+"weightlifting": [],
 "weighty": [
 "weightier",
 "weightiest",
@@ -83033,6 +90133,9 @@
 "wellness",
 "wells"
 ],
+"wellspring": [
+"wellsprings"
+],
 "welsh": [
 "welch",
 "welched",
@@ -83051,6 +90154,9 @@
 "weltered",
 "weltering",
 "welters"
+],
+"welterweight": [
+"welterweights"
 ],
 "wench": [
 "wenches"
@@ -83128,6 +90234,12 @@
 "wettest",
 "wetting"
 ],
+"wetback": [
+"wetbacks"
+],
+"wetland": [
+"wetlands"
+],
 "whack": [
 "whacked",
 "whacking",
@@ -83138,6 +90250,7 @@
 "whales",
 "whaling"
 ],
+"whalebone": [],
 "whaler": [
 "whalers"
 ],
@@ -83166,6 +90279,9 @@
 "whats",
 "wot"
 ],
+"whatever": [],
+"whatnot": [],
+"whatsoever": [],
 "wheat": [],
 "wheaten": [],
 "wheedle": [
@@ -83177,6 +90293,15 @@
 "wheeled",
 "wheeling",
 "wheels"
+],
+"wheelbarrow": [
+"wheelbarrows"
+],
+"wheelbase": [
+"wheelbases"
+],
+"wheelchair": [
+"wheelchairs"
 ],
 "wheeze": [
 "wheezed",
@@ -83201,18 +90326,28 @@
 "whens"
 ],
 "whence": [],
+"whenever": [],
 "where": [
 "wheres"
 ],
+"wherefore": [
+"wherefores"
+],
+"whereupon": [],
+"wherewithal": [],
 "whet": [
 "whets",
 "whetted",
 "whetting"
 ],
 "whether": [],
+"whetstone": [
+"whetstones"
+],
 "whew": [],
 "whey": [],
 "which": [],
+"whichever": [],
 "whiff": [
 "whiffed",
 "whiffing",
@@ -83269,6 +90404,9 @@
 "whupping",
 "whups"
 ],
+"whiplash": [
+"whiplashes"
+],
 "whippet": [
 "whippets"
 ],
@@ -83295,6 +90433,12 @@
 ],
 "whirligig": [
 "whirligigs"
+],
+"whirlpool": [
+"whirlpools"
+],
+"whirlwind": [
+"whirlwinds"
 ],
 "whirr": [
 "whir",
@@ -83345,10 +90489,24 @@
 "whiting",
 "whitish"
 ],
+"whitecap": [
+"whitecaps"
+],
+"whitefish": [
+"whitefishes"
+],
 "whiten": [
 "whitened",
 "whitening",
 "whitens"
+],
+"whitewall": [
+"whitewalls"
+],
+"whitewash": [
+"whitewashed",
+"whitewashes",
+"whitewashing"
 ],
 "whither": [],
 "whiting": [
@@ -83390,10 +90548,18 @@
 "whom"
 ],
 "whoa": [],
+"whoever": [
+"whomever"
+],
 "whole": [
 "wholeness",
 "wholes",
 "wholly"
+],
+"wholesale": [
+"wholesaled",
+"wholesales",
+"wholesaling"
 ],
 "wholesome": [
 "wholesomely",
@@ -83408,6 +90574,9 @@
 ],
 "whom": [
 "who"
+],
+"whomever": [
+"whoever"
 ],
 "whoop": [
 "whooped",
@@ -83445,6 +90614,9 @@
 "whorls"
 ],
 "whose": [],
+"whosoever": [
+"whomsoever"
+],
 "why": [
 "whys"
 ],
@@ -83461,6 +90633,7 @@
 "wicker": [
 "wickers"
 ],
+"wickerwork": [],
 "wicket": [
 "wickets"
 ],
@@ -83475,6 +90648,7 @@
 "widening",
 "widens"
 ],
+"widespread": [],
 "widow": [
 "widowed",
 "widowing",
@@ -83514,6 +90688,11 @@
 "wigglier",
 "wiggliest"
 ],
+"wigwag": [
+"wigwagged",
+"wigwagging",
+"wigwags"
+],
 "wigwam": [
 "wigwams"
 ],
@@ -83524,12 +90703,27 @@
 "wildness",
 "wilds"
 ],
+"wildcat": [
+"wildcats",
+"wildcatted",
+"wildcatting"
+],
 "wildebeest": [
 "wildebeests"
 ],
 "wilderness": [
 "wildernesses"
 ],
+"wildfire": [
+"wildfires"
+],
+"wildflower": [
+"wildflowers"
+],
+"wildfowl": [
+"wildfowls"
+],
+"wildlife": [],
 "wile": [
 "wiled",
 "wiles",
@@ -83594,6 +90788,7 @@
 "willowier",
 "willowiest"
 ],
+"willpower": [],
 "wilt": [
 "wilful",
 "wilfully",
@@ -83648,12 +90843,27 @@
 "winds",
 "wound"
 ],
+"windbag": [
+"windbags"
+],
+"windbreak": [
+"windbreaks"
+],
+"windbreaker": [
+"windbreakers"
+],
+"windburn": [
+"windburned"
+],
 "winded": [
 "wind",
 "winding",
 "windless",
 "winds",
 "wound"
+],
+"windfall": [
+"windfalls"
 ],
 "winding": [
 "wind",
@@ -83662,10 +90872,42 @@
 "winds",
 "wound"
 ],
+"windlass": [
+"windlasses"
+],
+"windmill": [
+"windmilled",
+"windmilling",
+"windmills"
+],
 "window": [
 "windowless",
 "windows"
 ],
+"windowpane": [
+"windowpanes"
+],
+"windowsill": [
+"windowsills"
+],
+"windpipe": [
+"windpipes"
+],
+"windshield": [
+"windshields"
+],
+"windsock": [
+"windsocks"
+],
+"windstorm": [
+"windstorms"
+],
+"windsurfing": [
+"windsurf",
+"windsurfed",
+"windsurfs"
+],
+"windswept": [],
 "windward": [],
 "windy": [
 "windier",
@@ -83702,6 +90944,12 @@
 "winglike",
 "wings"
 ],
+"wingspan": [
+"wingspans"
+],
+"wingspread": [
+"wingspreads"
+],
 "wink": [
 "winked",
 "winking",
@@ -83734,6 +90982,7 @@
 "wintering",
 "winters"
 ],
+"wintergreen": [],
 "winterize": [
 "winterise",
 "winterised",
@@ -83743,6 +90992,7 @@
 "winterizes",
 "winterizing"
 ],
+"wintertime": [],
 "wintery": [
 "winterier",
 "winteriest",
@@ -83780,6 +91030,11 @@
 "wires",
 "wiring"
 ],
+"wiretap": [
+"wiretapped",
+"wiretapping",
+"wiretaps"
+],
 "wiring": [
 "wire",
 "wired",
@@ -83800,12 +91055,23 @@
 "wisest",
 "wising"
 ],
+"wiseacre": [
+"wiseacres"
+],
+"wisecrack": [
+"wisecracked",
+"wisecracking",
+"wisecracks"
+],
 "wish": [
 "wished",
 "wishes",
 "wishful",
 "wishfully",
 "wishing"
+],
+"wishbone": [
+"wishbones"
 ],
 "wishful": [
 "wish",
@@ -83846,11 +91112,30 @@
 "witches",
 "witching"
 ],
+"witchcraft": [],
 "witchery": [],
 "with": [],
 "withal": [],
+"withdraw": [
+"withdrawing",
+"withdrawn",
+"withdraws",
+"withdrew"
+],
 "withdrawal": [
 "withdrawals"
+],
+"withdrawn": [
+"withdraw",
+"withdrawing",
+"withdraws",
+"withdrew"
+],
+"withdrew": [
+"withdraw",
+"withdrawing",
+"withdrawn",
+"withdraws"
 ],
 "wither": [
 "withered",
@@ -83863,6 +91148,27 @@
 "withered",
 "withering",
 "witheringly"
+],
+"withheld": [
+"withhold",
+"withholding",
+"withholds"
+],
+"withhold": [
+"withheld",
+"withholding",
+"withholds"
+],
+"without": [],
+"withstand": [
+"withstanding",
+"withstands",
+"withstood"
+],
+"withstood": [
+"withstand",
+"withstanding",
+"withstands"
 ],
 "witless": [
 "wist",
@@ -83920,6 +91226,7 @@
 "woefulness",
 "woes"
 ],
+"woebegone": [],
 "woeful": [
 "woe",
 "woefuller",
@@ -83957,6 +91264,9 @@
 "wolfish",
 "wolfs",
 "wolves"
+],
+"wolfhound": [
+"wolfhounds"
 ],
 "wolfish": [
 "wolf",
@@ -84003,6 +91313,7 @@
 "womanizes",
 "womanizing"
 ],
+"womankind": [],
 "womanly": [
 "woman",
 "womanish",
@@ -84053,6 +91364,9 @@
 "wonderingly",
 "wonders"
 ],
+"wonderland": [
+"wonderlands"
+],
 "wonderment": [],
 "wondrous": [
 "wondrously"
@@ -84073,6 +91387,23 @@
 "wooding",
 "woods"
 ],
+"woodcarving": [
+"woodcarvings"
+],
+"woodchuck": [
+"woodchucks"
+],
+"woodcock": [
+"woodcocks"
+],
+"woodcraft": [],
+"woodcut": [
+"woodcuts",
+"woodcutting"
+],
+"woodcutter": [
+"woodcutters"
+],
 "wooded": [
 "wood",
 "wooding",
@@ -84084,10 +91415,19 @@
 "woodenly",
 "woodenness"
 ],
+"woodland": [
+"woodlands"
+],
 "woodman": [
 "woodmen",
 "woodsman",
 "woodsmen"
+],
+"woodpile": [
+"woodpiles"
+],
+"woodshed": [
+"woodsheds"
 ],
 "woodsman": [
 "woodman",
@@ -84098,6 +91438,15 @@
 "woodsier",
 "woodsiest",
 "woodsiness"
+],
+"woodwind": [
+"woodwinds"
+],
+"woodwork": [
+"woodworking"
+],
+"woodworking": [
+"woodwork"
 ],
 "woody": [
 "woodier",
@@ -84124,6 +91473,7 @@
 "woollen",
 "woollens"
 ],
+"woolgathering": [],
 "woollen": [
 "woolen",
 "woolens",
@@ -84194,8 +91544,24 @@
 "workaholic": [
 "workaholics"
 ],
+"workbench": [
+"workbenches"
+],
+"workbook": [
+"workbooks"
+],
+"workday": [
+"workdays"
+],
 "worker": [
 "workers"
+],
+"workfare": [],
+"workforce": [
+"workforces"
+],
+"workhorse": [
+"workhorses"
 ],
 "working": [
 "work",
@@ -84204,6 +91570,9 @@
 ],
 "workingman": [
 "workingmen"
+],
+"workload": [
+"workloads"
 ],
 "workman": [
 "workmanlike",
@@ -84214,6 +91583,21 @@
 "workmen"
 ],
 "workmanship": [],
+"workout": [
+"workouts"
+],
+"workplace": [
+"workplaces"
+],
+"workshop": [
+"workshops"
+],
+"workstation": [
+"workstations"
+],
+"workweek": [
+"workweeks"
+],
 "world": [
 "worldlier",
 "worldliest",
@@ -84228,11 +91612,13 @@
 "worldliness",
 "worlds"
 ],
+"worldwide": [],
 "worm": [
 "wormed",
 "worming",
 "worms"
 ],
+"wormwood": [],
 "wormy": [
 "wormier",
 "wormiest"
@@ -84250,6 +91636,9 @@
 "worries",
 "worrying",
 "worryingly"
+],
+"worrywart": [
+"worrywarts"
 ],
 "worse": [
 "bad",
@@ -84305,6 +91694,7 @@
 "worthlessly",
 "worthlessness"
 ],
+"worthwhile": [],
 "worthy": [
 "worthier",
 "worthies",
@@ -84366,6 +91756,9 @@
 "wrapping",
 "wraps",
 "wrapt"
+],
+"wraparound": [
+"wraparounds"
 ],
 "wrapper": [
 "wrappers"
@@ -84467,6 +91860,12 @@
 "wrist": [
 "wrists"
 ],
+"wristband": [
+"wristbands"
+],
+"wristwatch": [
+"wristwatches"
+],
 "writ": [
 "write",
 "writes",
@@ -84515,6 +91914,12 @@
 "wrongness",
 "wrongs"
 ],
+"wrongdoer": [
+"wrongdoers"
+],
+"wrongdoing": [
+"wrongdoings"
+],
 "wrongful": [
 "wrong",
 "wronged",
@@ -84526,6 +91931,10 @@
 "wrongly",
 "wrongness",
 "wrongs"
+],
+"wrongheaded": [
+"wrongheadedly",
+"wrongheadedness"
 ],
 "wrote": [
 "writ",
@@ -84606,6 +92015,15 @@
 "yard": [
 "yards"
 ],
+"yardage": [
+"yardages"
+],
+"yardarm": [
+"yardarms"
+],
+"yardstick": [
+"yardsticks"
+],
 "yarmulke": [
 "yarmelke",
 "yarmelkes",
@@ -84646,6 +92064,9 @@
 "year": [
 "yearly",
 "years"
+],
+"yearbook": [
+"yearbooks"
 ],
 "yearling": [
 "yearlings"
@@ -84798,6 +92219,12 @@
 "yours": [
 "yer",
 "your"
+],
+"yourself": [
+"yourselves"
+],
+"yourselves": [
+"yourself"
 ],
 "youth": [
 "youthful",

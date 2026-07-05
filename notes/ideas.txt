@@ -7,14 +7,38 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Since positioning can be arbitary, help guide or ideate places on the baord to exicit certain placements.
+
+thinking of trigram rightclicking is daunting.
+
+
+I rarely see rare consonant unigrams on the board
+
+
+Implement a point teir
+
+
 Start building out the more obscure teir
 
-(Rebuild the more obscure dictionary from)
+My primary dictionary being used to validate words is in the repo as 
+It was original created from file in another project folder ~/Documents/code/wordmountain/v1/12dicts-6.0.2/American/6of12.txt. I thinned the file after many versions into spellingDictionary20k-nocompound.txt (removing phrases, proper nouns, and much more), which I then re-inflated with some words back into this project's expandedAllowedWords.txt.
+There was a reapeatable process to re-populate this dictionary, I believe wrapped up in build_expanded_dictionary.py.
+
+Let's go through a similar process, this time sourcing more words from  ~/Documents/code/wordmountain/v1/12dicts-6.0.2/2of12.txt
+
+(Rebuild the more obscure dictionary, for example to include
 .//v1/12dicts-6.0.2/American/2of12.txt:30455:revisionist
-* Maybe add an obscurity extra score +2
+
+Maybe the two dictionaries are inflated at their own files, and the word matching refer to both of them (configurable rule in config.yaml)
+
+When it comes to the word hinting, words exclusively from 2of12.txt
+* add an obscurity extra score +2 (see for example compounding_class_extra_score)
+
+When the player gets an obscure word (new in the player's player_dictionary) it should be highlighted in the right pane as a different color. (it's own configurable color in colors.yaml), let's pick orange.
 
 
-An incentive to 
+
+An incentive to make people re-use tile paths
 
 
 trigrams right click

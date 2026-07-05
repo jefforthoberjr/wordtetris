@@ -98,10 +98,11 @@ class MovingSidePane:
     def width(self):
         return self._width
 
-    def add_cleared_words(self, words, new_flags=None):
-        """Show words just cleared, newest on top. `new_flags`, if given, marks
-        which words are new to the player's dictionary (shown green)."""
-        self._word_list.add_words(words, new_flags)
+    def add_cleared_words(self, words, new_flags=None, obscure_flags=None):
+        """Show words just cleared, newest on top. `new_flags` / `obscure_flags`,
+        if given, mark which words are new to the player's dictionary (green) and
+        which are obscure-tier only (orange -- when also new)."""
+        self._word_list.add_words(words, new_flags, obscure_flags)
 
     def word_at(self, x, y):
         """The cleared word displayed at pixel (x, y), or None if the click is

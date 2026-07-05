@@ -13,7 +13,7 @@ import csv
 import os
 
 from config import CONFIG
-from models.word_dictionary import all_words, is_word
+from models.word_dictionary import all_words, is_word, is_obscure
 from models import spell_check
 from models import morpheme_check
 
@@ -81,8 +81,19 @@ def _config():
             "max_suggestions": costs["max_suggestions"],
             "min_word_length": costs["min_word_length"],
             "max_length_delta": block.get("max_length_delta", 3),
+            "obscurity_extra_score": block.get("obscurity_extra_score", 2),
         }
     return _costs, _suffix_tails, _settings
+
+
+def obscurity_surcharge(word_upper):
+    """Extra exoticness a suggestion earns for being valid ONLY via the obscure
+    tier -- config spell_check.obscurity_extra_score (default 2). Zero when the
+    word is in the main tier or the obscure tier is off. Applied to BOTH the
+    letter- and morpheme-level scans so obscure "did you mean?" words rank below
+    equally-close common ones. (The CLI reuses this so its ranking matches.)"""
+    extra = _config()[2]["obscurity_extra_score"]
+    return extra if (extra and is_obscure(word_upper)) else 0
 
 
 # --- frequency tiebreaker (Google unigram counts) ---------------------------
@@ -130,9 +141,9 @@ def _scan_constrained(word):
         if abs(len(candidate) - len(word)) <= delta:
             hit = spell_check.evaluate(word, candidate, costs, tails)
             if hit is not None:
+                exo = hit["exoticness"] + obscurity_surcharge(candidate)
                 scored.append((
-                    hit["exoticness"], hit["edits"],
-                    -freq.get(candidate, 0), candidate))
+                    exo, hit["edits"], -freq.get(candidate, 0), candidate))
     scored.sort()
     return scored
 
@@ -172,8 +183,8 @@ def _scan_morphemes(word):
     scored = []
     for cand, info in hits.items():
         up = cand.upper()
-        scored.append((info["exoticness"], info["distance"],
-                       -freq.get(up, 0), up))
+        exo = info["exoticness"] + obscurity_surcharge(up)
+        scored.append((exo, info["distance"], -freq.get(up, 0), up))
     scored.sort()
     return scored
 

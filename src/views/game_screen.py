@@ -48,7 +48,8 @@ from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
-from models.word_dictionary import is_word, is_prefix, select_maximal_paths, all_words
+from models.word_dictionary import (
+    is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from models.spelling_suggester import SUGGEST_RULES
 from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
@@ -743,6 +744,20 @@ class GameScreen:
         self._player_word_piece_rule = select_rule(
             "game_screen.player_word_piece", player_word_piece_rules
         )
+
+        # Whether the gram-manipulate button (right-click) also works during the
+        # SELECTING phase, not just MOVING (game_screen.gram_manip_in_selecting).
+        # The omniswap modes spend most of their play in SELECT, so leaving it
+        # MOVING-only makes right-click feel dead there. Evaluated once (static
+        # config); see _try_gram_manipulate and the SELECTING branch of
+        # on_mouse_press.
+        gram_manip_in_selecting_rules = {
+            "rule_gram_manip_in_selecting_enabled": self._rule_gram_manip_in_selecting_enabled,
+            "rule_gram_manip_in_selecting_disabled": self._rule_gram_manip_in_selecting_disabled,
+        }
+        self._gram_manip_in_selecting = select_rule(
+            "game_screen.gram_manip_in_selecting", gram_manip_in_selecting_rules
+        )()
 
         # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy
         # runs. The mode owns how the moving phase presents its active element and
@@ -1966,6 +1981,31 @@ class GameScreen:
         nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
         self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
+    # Gram-manip-in-SELECTING rule (game_screen.gram_manip_in_selecting): whether
+    # right-click transforms a board gram during SELECTING as well as MOVING.
+    def _rule_gram_manip_in_selecting_enabled(self):
+        """Right-click manipulates board grams during SELECTING too (needed for
+        the omniswap modes, which live in SELECT)."""
+        return True
+
+    def _rule_gram_manip_in_selecting_disabled(self):
+        """Right-click is inert during SELECTING -- gram-manip is MOVING-only (the
+        original behavior, and the hard phase separation the timed modes want)."""
+        return False
+
+    def _try_gram_manipulate(self, x, y, button):
+        """If `button` is the gram-manipulate button (right-click), transform the
+        clicked cell's gram and report True (the click is consumed). Shared by the
+        MOVING and SELECTING phases so board gram-doubling works in BOTH -- the
+        omniswap modes spend most of their play in SELECT, so a MOVING-only gate
+        left right-click dead there. An UNASSIGNED (None) button never matches, so
+        it can't swallow a click when gram_manipulate isn't bound."""
+        manip_button = self._buttons["gram_manipulate"]
+        if manip_button is not None and button == manip_button:
+            self._handle_gram_manipulate(x, y)
+            return True
+        return False
+
     def _handle_gram_manipulate(self, x, y):
         """Right-click a board cell during MOVING (controls.yaml
         mouse.gram_manipulate): transform that cell's gram via the
@@ -2501,12 +2541,16 @@ class GameScreen:
             # with a new grouping saves the grouping but stays black (the count
             # didn't grow).
             new_flags = []
+            obscure_flags = []
             for fw, variation in zip(accepted, cleared_variations):
                 is_new = self._player_dict.add(fw.word, variation)
+                word_obscure = is_obscure(fw.word)
                 new_flags.append(is_new)
+                obscure_flags.append(word_obscure)
                 # Single sink for every clear (interactive / batch / auto).
-                L.log_30002(fw.word, fw.path, variation, is_new)
-            self._moving_side_pane.add_cleared_words(cleared_words, new_flags)
+                L.log_30002(fw.word, fw.path, variation, is_new, word_obscure)
+            self._moving_side_pane.add_cleared_words(
+                cleared_words, new_flags, obscure_flags)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))
         return cleared_words
 
@@ -2660,7 +2704,7 @@ class GameScreen:
         is_new = not self._player_dict.contains(word)
         self._clear_paths([found])
         self._words_submitted_this_select += 1
-        self._selecting_side_pane.accept_word(word, is_new)
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word))
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._recompute_candidates()
         # This clear may have won the game immediately (e.g. it removed the last
@@ -2708,7 +2752,7 @@ class GameScreen:
         self._pending.append(found)
         self._words_submitted_this_select += 1
         self._highlight_pending_cells(found.path)
-        self._selecting_side_pane.accept_word(word, is_new)
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word))
         # One-word-per-select ends the phase now; _end_selection clears the single
         # held word on the way out (game_screen.select_word_limit).
         if self._select_word_limit_rule():
@@ -3601,6 +3645,12 @@ class GameScreen:
                 elif self._selecting_side_pane.hit_clear(x, y):
                     self._disambig_cancel_rule()
                 return
+            # Right-click manipulates a board gram during SELECTING too, when
+            # game_screen.gram_manip_in_selecting is enabled (omniswap lives in
+            # SELECT, so gram-doubling must reach here). Consumes the click before
+            # the selection handling below, mirroring MOVING.
+            if self._gram_manip_in_selecting and self._try_gram_manipulate(x, y, button):
+                return
             self._selecting_side_pane.on_mouse_press(x, y, button, modifiers)
             # A left-click on the board (left of the pane) types that cell's gram
             # into the entry field, per the select-click rule. The pane handles
@@ -3614,13 +3664,10 @@ class GameScreen:
             return
         # MOVING phase: the gram-manipulate button (right-click) transforms a
         # cell's gram, mode-agnostic; every other button goes to the active mode
-        # (which owns piece/cursor input). The guard keeps an UNASSIGNED
+        # (which owns piece/cursor input). _try_gram_manipulate keeps an UNASSIGNED
         # gram_manipulate (None) from swallowing clicks.
         if self._phase == Phase.MOVING:
-            manip_button = self._buttons["gram_manipulate"]
-            if manip_button is not None and button == manip_button:
-                self._handle_gram_manipulate(x, y)
-            else:
+            if not self._try_gram_manipulate(x, y, button):
                 self._moving_mode.on_mouse_press(x, y, button)
 
     def on_mouse_motion(self, x, y, dx, dy):

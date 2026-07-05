@@ -119,10 +119,10 @@ class FakePane:
         # The carried hunt word pre-loaded into the field before an auto-submit.
         self.prefilled = word
 
-    def accept_word(self, word, is_new=False):
-        # is_new (word never collected before -> listed green) is recorded by
+    def accept_word(self, word, is_new=False, is_obscure=False):
+        # is_new (green) / is_obscure (orange when also new) are recorded by
         # production; the selection-logic tests only assert which words were
-        # accepted, so the flag is accepted but unused here.
+        # accepted, so the flags are accepted but unused here.
         self.accepted.append(word)
         self.errors = None
 
@@ -161,7 +161,7 @@ class FakeSidepane:
         self.cleared = []
         self.word_count = None
 
-    def add_cleared_words(self, words, new_flags=None):
+    def add_cleared_words(self, words, new_flags=None, obscure_flags=None):
         self.cleared += list(words)
 
     def set_word_count(self, count):
