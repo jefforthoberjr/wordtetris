@@ -446,29 +446,50 @@ rules:
   # Cell gram-manipulation: a RIGHT-click on a board cell during the MOVING phase
   # transforms the letters in that one cell (the controls.yaml mouse.gram_manipulate
   # button; mode-agnostic, so it works in jigsaw / typewriter / omniswap). The rule
-  # is chosen by the gram's LENGTH -- a separate slot for unigrams, digrams, and
-  # trigrams-or-larger -- plus a fourth slot for wild-vowel cells. Empty and
-  # fossilized cells are never affected. Each slot's rule_rightclick_none option
-  # restores the original "right-click does nothing" behavior. (NOTE: by default
-  # controls.yaml leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
+  # is chosen by the gram's vowel/consonant SHAPE (unigram + five digram shapes +
+  # two trigram shapes + a catch-all), plus a slot for wild-vowel cells. Empty and
+  # fossilized cells are never affected. Every rule is the doubling primitive
+  # C -> CC (double a consonant) with its reverse CC -> C (a doubled consonant
+  # collapses on the next right-click); Y counts as a CONSONANT throughout (so ITY
+  # / ARY / PHY are NOT treated as VCV/CVK). Each slot's rule_rightclick_none
+  # option restores "right-click does nothing". (NOTE: by default controls.yaml
+  # leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
 
-  # Unigram (1-letter cell): double the letter (O -> OO, B -> BB).
+  # Unigram (1-letter cell): double the letter (O -> OO, B -> BB). Pairs with the
+  # CC slot below for the L <-> LL toggle.
   game_screen.rightclick_unigram: rule_unigram_double
   # game_screen.rightclick_unigram: rule_rightclick_none
 
-  # Digram (2-letter cell):
-  #   rule_digram_dedup_or_flip -- a DOUBLED letter collapses to a single (EE -> E,
-  #     the dedup taking precedence); any other digram flips (UL -> LU). Pairs with
-  #     rule_unigram_double for a right-click toggle E -> EE -> E, and lets the
-  #     player single an initially-spawned double.
-  #   rule_digram_dedup -- a DOUBLED letter collapses to a single (EE -> E); any
-  #     other digram is left untouched (the dedup half, no flip).
-  #   rule_digram_flip -- always flip the two letters' order (UL -> LU, GN -> NG)
-  #   rule_rightclick_none -- right-click does nothing
-  # game_screen.rightclick_digram: rule_digram_dedup_or_flip
-  game_screen.rightclick_digram: rule_digram_dedup
-  # game_screen.rightclick_digram: rule_digram_flip
-  # game_screen.rightclick_digram: rule_rightclick_none
+  # Digrams (2-letter cells), one slot per shape. The consonant-doubling slots
+  # grow the gram to 3 letters; a second right-click on that doubled 3-letter form
+  # collapses it back to the digram (handled by the same slot).
+
+  # CC (a doubled consonant, e.g. LL): collapse to the single letter (LL -> L).
+  # The forward L -> LL is the unigram slot, so the two make an L <-> LL toggle.
+  game_screen.rightclick_cc: rule_cc_collapse
+  # game_screen.rightclick_cc: rule_rightclick_none
+
+  # CV (consonant+vowel, e.g. BA): double the consonant (BA -> BBA), collapse back
+  # on the next click (BBA -> BA).
+  game_screen.rightclick_cv: rule_cv_double
+  # game_screen.rightclick_cv: rule_rightclick_none
+
+  # VC (vowel+consonant, e.g. AN): double the consonant (AN -> ANN), collapse back
+  # on the next click (ANN -> AN).
+  game_screen.rightclick_vc: rule_vc_double
+  # game_screen.rightclick_vc: rule_rightclick_none
+
+  # VV (two vowels, e.g. EE / EA): no consonant to double -> right-click does
+  # nothing. (Left as a no-op since we only double consonants.)
+  game_screen.rightclick_vv: rule_rightclick_none
+
+  # CK (two DISTINCT consonants, e.g. ST): double the FRONT consonant (ST -> SST),
+  # collapse back on the next click (SST -> ST). Front-ONLY by design: the corpus
+  # says the front double lands in real words for 32% of CK digrams (ly->lly,
+  # pr->ppr, pl->ppl, bl->bbl, tr->ttr) but the back double (STT) for 0/59 -- so
+  # the back double is dropped, and no alternation state is needed.
+  game_screen.rightclick_ck: rule_ck_double
+  # game_screen.rightclick_ck: rule_rightclick_none
 
   # Word hunt (MOVING phase): the player types a word in the moving side pane and
   # the grams on the board involved in it light up (see views/hunt_highlight.py).
@@ -486,8 +507,36 @@ rules:
   # game_screen.hunt_highlight: rule_hunt_single_letters
   game_screen.hunt_highlight_style: rule_hunt_style_text_recolor
 
-  # Trigram or larger (3+ letter cell): no transform yet -- right-click does
-  # nothing. rule_gram_reverse (ING -> GNI) is available if you want to turn one on.
+  # Trigram+ right-click is routed by the gram's VOWEL/CONSONANT SHAPE, not just
+  # its length: two shapes have their own rule slots below (checked FIRST), and
+  # everything else falls to the trigram_plus catch-all here. Y counts as a
+  # CONSONANT throughout (so ITY / ARY / PHY are NOT treated as VCV/CVK). All
+  # doubling is the primitive C -> CC (double a consonant) with the reverse
+  # CC -> C (a doubled consonant collapses on the next right-click).
+
+  # VCV (vowel-consonant-vowel, e.g. ARE): double the single middle consonant
+  #   (ARE -> ARRE), and collapse it back on the next click (ARRE -> ARE).
+  #   Corpus-backed: the middle-consonant double lands in real words for ~73% of
+  #   VCV trigrams (ate->atte, ile->ille, ome->omme) -- the strongest of all the
+  #   shapes, so it's on by default.
+  game_screen.rightclick_vcv: rule_vcv_double
+  # game_screen.rightclick_vcv: rule_rightclick_none
+
+  # CVK (consonant-vowel-consonant, e.g. MER): double a consonant, ALTERNATING
+  #   which one across successive clicks so both forms are reachable --
+  #   MER -> MMER -> MER -> MERR -> MER. Each doubled form collapses back on the
+  #   next click. The alternation is tracked per board cell (starts on the 'back'
+  #   consonant, MER -> MERR, the corpus-favored double). Corpus-backed: ~46% of
+  #   CVK trigrams hit real words on the back double (cal->call, les->less), ~39%
+  #   on the front (com->comm, per->pper).
+  game_screen.rightclick_cvk: rule_cvk_double
+  # game_screen.rightclick_cvk: rule_rightclick_none
+
+  # Catch-all for every OTHER 3+ shape (CKV like "tra", VCK like "ant", CKS like
+  # "str"): right-click does nothing. These were analyzed against the corpus and
+  # NOT worth a doubling rule -- doubling a consonant inside a real cluster almost
+  # never yields a spellable chunk (CKV useful ~16% and front-only; VCK ~0%; CKS
+  # exactly 0%). rule_gram_reverse (ING -> GNI) is available if you want one on.
   game_screen.rightclick_trigram_plus: rule_rightclick_none
   # game_screen.rightclick_trigram_plus: rule_gram_reverse
 

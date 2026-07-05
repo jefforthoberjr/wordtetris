@@ -202,36 +202,83 @@ def rule_unigram_double(text):
     """Unigram: double the single letter (O -> OO, B -> BB)."""
     return text + text
 
-def rule_digram_flip(text):
-    """Digram: reverse the two letters' order (UL -> LU, GN -> NG)."""
-    return text[::-1]
+def rule_cc_collapse(text):
+    """CC digram (a doubled consonant, LL): collapse to the single letter,
+    CC -> C (LL -> L). The forward C -> CC lives in the unigram slot
+    (rule_unigram_double), so the two together make the L <-> LL toggle. Returns
+    None if the pair isn't a real double."""
+    if len(text) == 2 and text[0] == text[1]:
+        return text[0]                 # LL -> L
+    return None
 
-def rule_digram_dedup_or_flip(text):
-    """Digram: a DOUBLED letter collapses to a single (EE -> E), the dedup taking
-    precedence; any other digram flips (UL -> LU). Pairs with rule_unigram_double
-    for a right-click toggle E -> EE -> E, and lets the player single an
-    initially-spawned double (EE -> E)."""
-    if text[0] == text[1]:
-        result = text[0]
-    else:
-        result = text[::-1]
-    return result
+def rule_cv_double(text):
+    """CV digram (consonant+vowel, BA): double the consonant, C -> CC
+    (BA -> BBA); the 3-letter CCV form collapses back, CC -> C (BBA -> BA).
+    Returns None otherwise. The dispatcher routes only CV / CCV grams here
+    (see _gram_manip_family), so the shape is trusted."""
+    if len(text) == 2:
+        return text[0] + text          # BA -> BBA
+    if len(text) == 3:
+        return text[1:]                # BBA -> BA
+    return None
 
-def rule_digram_dedup(text):
-    """Digram: a DOUBLED letter collapses to a single (EE -> E); any other digram
-    is left untouched. The dedup half of rule_digram_dedup_or_flip without the
-    flip, so a mixed pair (UL) is never reordered. Still pairs with
-    rule_unigram_double for an E -> EE -> E toggle. Returns None on a mixed digram
-    so the dispatcher relabels nothing."""
-    result = None
-    if text[0] == text[1]:
-        result = text[0]
-    return result
+def rule_vc_double(text):
+    """VC digram (vowel+consonant, AN): double the consonant, C -> CC
+    (AN -> ANN); the 3-letter VCC form collapses back, CC -> C (ANN -> AN).
+    Returns None otherwise. The dispatcher routes only VC / VCC grams here."""
+    if len(text) == 2:
+        return text + text[1]          # AN -> ANN
+    if len(text) == 3:
+        return text[:2]                # ANN -> AN
+    return None
+
+def rule_ck_double(text):
+    """CK digram (two DISTINCT consonants, ST): double the FRONT consonant,
+    C -> CC (ST -> SST); the 3-letter CCK form collapses back, CC -> C
+    (SST -> ST). Front-only by design -- the back double (STT) never lands in
+    real words (0/59 CK digrams in the corpus vs. 32% for the front), so it's
+    dropped, and no alternation state is needed. Returns None otherwise. The
+    dispatcher routes only CK / CCK grams here."""
+    if len(text) == 2:
+        return text[0] + text          # ST -> SST
+    if len(text) == 3:
+        return text[1:]                # SST -> ST
+    return None
 
 def rule_gram_reverse(text):
     """Reverse a gram of any length (ING -> GNI). Offered for the trigram-or-
-    larger slot; identical to rule_digram_flip on a 2-letter gram."""
+    larger catch-all slot."""
     return text[::-1]
+
+def rule_vcv_double(text):
+    """VCV trigram (ARE): double the single middle consonant, C -> CC
+    (ARE -> ARRE); a 4-letter VCCV whose middle is a real double collapses back,
+    CC -> C (ARRE -> ARE). Returns None otherwise. The dispatcher only routes
+    genuine VCV / VCCV grams here (see _gram_manip_family), so the shape is
+    trusted. Corpus-backed: doubling the middle consonant lands inside real words
+    for ~73% of the VCV trigrams (ate->atte, ile->ille, ome->omme)."""
+    if len(text) == 3:
+        return text[0] + text[1] + text[1] + text[2]     # ARE -> ARRE
+    if len(text) == 4 and text[1] == text[2]:
+        return text[0] + text[1] + text[3]               # ARRE -> ARE
+    return None
+
+def rule_cvk_double(text, side="back"):
+    """CVK trigram (MER): double a consonant, C -> CC. `side` picks which one --
+    'front' -> CCVK (MER -> MMER), 'back' -> CVKK (MER -> MERR); the dispatcher
+    alternates side across successive doubles on a cell (see _advance_cvk_side)
+    so BOTH forms are reachable. A 4-letter doubled form collapses back, CC -> C
+    (MMER -> MER, MERR -> MER); `side` is irrelevant there. Returns None
+    otherwise. The dispatcher routes only genuine CVK-family grams here."""
+    if len(text) == 4:
+        if text[0] == text[1]:
+            return text[1:]                              # MMER -> MER
+        if text[2] == text[3]:
+            return text[:3]                              # MERR -> MER
+        return None
+    if len(text) == 3:
+        return text[0] + text if side == "front" else text + text[2]
+    return None
 
 def rule_rightclick_none(text):
     """Right-click leaves this gram untouched -- the original behavior, before
@@ -241,12 +288,65 @@ def rule_rightclick_none(text):
 
 _GRAM_MANIP_RULES = {
     "rule_unigram_double": rule_unigram_double,
-    "rule_digram_flip": rule_digram_flip,
-    "rule_digram_dedup_or_flip": rule_digram_dedup_or_flip,
-    "rule_digram_dedup": rule_digram_dedup,
+    "rule_cc_collapse": rule_cc_collapse,
+    "rule_cv_double": rule_cv_double,
+    "rule_vc_double": rule_vc_double,
+    "rule_ck_double": rule_ck_double,
     "rule_gram_reverse": rule_gram_reverse,
+    "rule_vcv_double": rule_vcv_double,
+    "rule_cvk_double": rule_cvk_double,
     "rule_rightclick_none": rule_rightclick_none,
 }
+
+# Y is a CONSONANT here (strict AEIOU), so ITY / ARY / PHY are NOT read as
+# VCV/CVK -- a deliberate choice: doubling a consonant in those Y-shapes never
+# lands in real words (see the corpus note in config.yaml).
+_STRICT_VOWELS = set("AEIOU")
+
+def _is_manip_vowel(ch):
+    return ch in _STRICT_VOWELS
+
+def _gram_manip_family(text):
+    """Classify a 2+ letter gram for right-click routing by its vowel/consonant
+    shape (Y is a consonant). Returns the config-slot key that owns this gram's
+    doubling cycle, or None for an unmatched shape (which falls to the
+    trigram_plus catch-all -- only reachable at 3+ letters):
+      2-letter:  'cc' (LL), 'ck' (ST), 'cv' (BA), 'vc' (AN), 'vv' (EE / EA)
+      3-letter forward:  'vcv' (ARE), 'cvk' (MER)
+      3-letter reverse (the doubled results the digram rules produce, recognized
+        so a second right-click collapses them):  'cv' (CCV=BBA), 'vc' (VCC=ANN),
+        'ck' (CCK=SST) -- only when the doubled pair is a REAL double, so genuine
+        clusters (STR, CKV, VCK) stay unmatched
+      4-letter reverse:  'vcv' (ARRE), 'cvk' (MMER / MERR)"""
+    v = [_is_manip_vowel(c) for c in text]
+    n = len(text)
+    if n == 2:
+        if not v[0] and not v[1]:
+            return "cc" if text[0] == text[1] else "ck"
+        if not v[0]:
+            return "cv"
+        if not v[1]:
+            return "vc"
+        return "vv"
+    if n == 3:
+        if v == [True, False, True]:
+            return "vcv"
+        if v == [False, True, False]:
+            return "cvk"
+        if v == [False, False, True] and text[0] == text[1]:
+            return "cv"                                   # CCV (BBA) -> collapse
+        if v == [True, False, False] and text[1] == text[2]:
+            return "vc"                                   # VCC (ANN) -> collapse
+        if v == [False, False, False] and text[0] == text[1]:
+            return "ck"                                   # CCK (SST) -> collapse
+    elif n == 4:
+        if v == [True, False, False, True] and text[1] == text[2]:
+            return "vcv"                                  # ARRE
+        if v == [False, False, True, False] and text[0] == text[1]:
+            return "cvk"                                  # MMER
+        if v == [False, True, False, False] and text[2] == text[3]:
+            return "cvk"                                  # MERR
+    return None
 
 
 class GameScreen:
@@ -316,12 +416,32 @@ class GameScreen:
         }
         # Cell gram-manipulation rules (right-click a cell during MOVING), one per
         # gram length plus wild; see the rule functions and game_screen.rightclick_*.
+        # Right-click gram rules, keyed by the gram's vowel/consonant SHAPE (not
+        # just its length) -- one config slot per shape, all routed via
+        # _gram_manip_family / _apply_shape_rule. cc/cv/vc/vv/ck cover the
+        # digrams (and their doubled 3-letter reverse forms); vcv/cvk cover the
+        # trigrams; trigram_plus is the catch-all for every other 3+ shape.
         self._rightclick_rules = {
             "unigram": select_rule("game_screen.rightclick_unigram", _GRAM_MANIP_RULES),
-            "digram": select_rule("game_screen.rightclick_digram", _GRAM_MANIP_RULES),
+            "cc": select_rule("game_screen.rightclick_cc", _GRAM_MANIP_RULES),
+            "cv": select_rule("game_screen.rightclick_cv", _GRAM_MANIP_RULES),
+            "vc": select_rule("game_screen.rightclick_vc", _GRAM_MANIP_RULES),
+            "vv": select_rule("game_screen.rightclick_vv", _GRAM_MANIP_RULES),
+            "ck": select_rule("game_screen.rightclick_ck", _GRAM_MANIP_RULES),
             "trigram_plus": select_rule("game_screen.rightclick_trigram_plus", _GRAM_MANIP_RULES),
+            "vcv": select_rule("game_screen.rightclick_vcv", _GRAM_MANIP_RULES),
+            "cvk": select_rule("game_screen.rightclick_cvk", _GRAM_MANIP_RULES),
             "vowelwild": select_rule("game_screen.rightclick_vowelwild", _GRAM_MANIP_RULES),
         }
+        # CVK doubling is stateful (it alternates front/back), so the pure-function
+        # slot can't carry the on/off; derive an explicit flag from its rule.
+        self._cvk_enabled = self._rightclick_rules["cvk"] is not rule_rightclick_none
+        # Per-cell alternation for CVK doubling: (x, y) -> the side last doubled
+        # ('front' / 'back'), so successive doubles on a cell flip sides
+        # (MER -> MMER -> MER -> MERR -> MER). Keyed by board coords; a gram that
+        # MOVES to another cell starts fresh (rare, self-heals). Collapses
+        # (4 letters -> 3) do NOT advance it, so the round-trip alternates cleanly.
+        self._cvk_double_side = {}
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
 
@@ -1871,17 +1991,14 @@ class GameScreen:
             L.log_20004(cell, None, None, "empty")
             return
         if gram.is_wild:
-            rule = self._rightclick_rules["vowelwild"]
+            new_text = self._rightclick_rules["vowelwild"](gram.text)
         elif len(gram) == 1:
-            rule = self._rightclick_rules["unigram"]
-        elif len(gram) == 2:
-            rule = self._rightclick_rules["digram"]
+            new_text = self._rightclick_rules["unigram"](gram.text)
         else:
-            rule = self._rightclick_rules["trigram_plus"]
-        new_text = rule(gram.text)
+            new_text = self._apply_shape_rule(cell, gram.text)
         if new_text is None:
-            # A rule that declines (e.g. rule_rightclick_none, or dedup on a mixed
-            # digram) -- relabel nothing, but record that the click was seen.
+            # A rule that declines (e.g. rule_rightclick_none, or a shape whose
+            # slot is off) -- relabel nothing, but record that the click was seen.
             L.log_20004(cell, gram.text, None, "rule_noop")
             return
         self._board.relabel_cell(cell[0], cell[1], new_text)
@@ -1890,6 +2007,35 @@ class GameScreen:
         # reflect the typed word (relabel_cell already re-synced the overlay).
         if self._moving_side_pane.hunt_text():
             self._refresh_hunt_highlight()
+
+    def _apply_shape_rule(self, cell, text):
+        """Route a right-click on a 2+ letter gram to its shape's config slot
+        (see _gram_manip_family). cc/cv/vc/vv/ck own the digrams (and the doubled
+        3-letter forms they produce); vcv/cvk own the trigrams; any 3+ shape with
+        no family (CKV, VCK, CKS, ...) falls to the trigram_plus catch-all. A
+        matched family whose own slot is off just returns None (no-op) -- it does
+        NOT fall through, so each shape's behavior is governed solely by its own
+        config key. CVK is the lone stateful rule (it alternates front/back
+        doubling); every other shape is a pure toggle. Returns new text or None."""
+        family = _gram_manip_family(text)
+        if family is None:
+            return self._rightclick_rules["trigram_plus"](text)
+        if family == "cvk":
+            if not self._cvk_enabled:
+                return None
+            rule = self._rightclick_rules["cvk"]
+            if len(text) == 3:
+                return rule(text, self._advance_cvk_side(cell))
+            return rule(text)          # 4-letter collapse; side is irrelevant
+        return self._rightclick_rules[family](text)
+
+    def _advance_cvk_side(self, cell):
+        """Pick which consonant the next CVK double touches, flipping from the
+        side this cell doubled last so repeated doubles alternate MMER/MERR. A
+        fresh cell defaults to 'back' (MER -> MERR), the corpus-favored double."""
+        side = "front" if self._cvk_double_side.get(cell) == "back" else "back"
+        self._cvk_double_side[cell] = side
+        return side
 
     def _rule_repeat_allow(self, word):
         """Allow a word to clear even if it cleared before (original behavior)."""
