@@ -31,8 +31,10 @@ import sys
 # Run standalone: put src/ on the path so `config` / `models` import as in-game.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from config import CONFIG
 from models import spell_check
-from models.spelling_suggester import _config, _freq_table
+from models import morpheme_check
+from models.spelling_suggester import _config, _freq_table, SUGGEST_RULES
 from models.word_dictionary import all_words, is_word
 
 _RELAXED_TRANSPOSITIONS = 9  # "unlimited" for a short word: probe 3a vs 3b.
@@ -82,6 +84,55 @@ def _classify(word, costs, tails):
     tier3a.sort()
     tier3b.sort()
     return tier1, tier2, tier3a, tier3b
+
+
+def _classify_morphemes(word):
+    """Bucket real dictionary words reachable from `word` by morpheme operations
+    into (within_cap, over_cap) -- distance <= max, and distance == max + 1 (the
+    near-misses just past the gate). Each row is (exoticness, distance, -freq,
+    word, ops-desc, freq)."""
+    model = morpheme_check.build_model(CONFIG.get("morpheme_check", {}))
+    freq = _freq_table()
+    max_d = model["max_distance"]
+    hits = morpheme_check.suggest(word, is_word, model, max_actions=max_d + 1)
+    within, over = [], []
+    for cand, info in hits.items():
+        cand_up = cand.upper()
+        f = freq.get(cand_up, 0)
+        desc = " + ".join(op["desc"] for op in info["ops"])
+        row = (info["exoticness"], info["distance"], -f, cand_up, desc, f)
+        if info["distance"] <= max_d:
+            within.append(row)
+        else:
+            over.append(row)
+    within.sort()
+    over.sort()
+    return within, over, max_d
+
+
+def _print_morphemes(within, over, max_d, top):
+    print("MORPHEME TIER -- real words a few affix operations from the typed "
+          "word (models/morpheme_check.py).")
+    print("         An operation is a single affix add / drop / swap; each is "
+          "morpheme distance 1.")
+    print("  within morpheme cap (distance <= %d) -- these are the hints, "
+          "ranked by exoticness:" % max_d)
+    if not within:
+        print("      (none)")
+    else:
+        print("      %-16s %-5s %-10s %-12s %s"
+              % ("word", "dist", "exoticness", "freq", "operation(s)"))
+        for exo, dist, _negf, cand, desc, f in within[:top]:
+            print("      %-16s %-5d %-10d %-12d %s" % (cand, dist, exo, f, desc))
+    print("  over morpheme cap (distance == %d) -- just past the gate, for "
+          "reference:" % (max_d + 1))
+    if not over:
+        print("      (none)")
+    else:
+        print("      %-16s %-5s %-10s %-12s %s"
+              % ("word", "dist", "exoticness", "freq", "operation(s)"))
+        for exo, dist, _negf, cand, desc, f in over[:top]:
+            print("      %-16s %-5d %-10d %-12d %s" % (cand, dist, exo, f, desc))
 
 
 def _spacer():
@@ -164,6 +215,10 @@ def main(argv=None):
     if is_word(word):
         print("NOTE: typed word IS in the dictionary -- the game only suggests "
               "for non-words; showing analysis anyway.")
+    rule_name = CONFIG["rules"]["game_screen.spell_suggest"]
+    shown = SUGGEST_RULES[rule_name](word)
+    print("IN-GAME 'did you mean?' would show (%s): %s"
+          % (rule_name, ", ".join(shown) if shown else "(nothing)"))
     print()
 
     tier1, tier2, tier3a, tier3b = _classify(word, costs, tails)
@@ -172,6 +227,9 @@ def main(argv=None):
     _print_tier2(tier2, opts.top)
     _spacer()
     _print_tier3(tier3a, tier3b, opts.top)
+    _spacer()
+    within, over, max_d = _classify_morphemes(word)
+    _print_morphemes(within, over, max_d, opts.top)
 
 
 if __name__ == "__main__":

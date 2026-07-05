@@ -7,10 +7,88 @@ GAME NAMES
 * catalyst cata LIST
 
 
-valorant
-(Can I get a spell checking CLI utility, to see the next top 20 scored things, displaying the exoticness scores and even searching passed the other limits (max lensheiv distance, etc.)
+Start building out the more obscure teir
 
-Also start including things that break the V+C+ etc. patterns. Just list anything other words that match the normal set of moves in the levenshien formula
+(Rebuild the more obscure dictionary from)
+.//v1/12dicts-6.0.2/American/2of12.txt:30455:revisionist
+* Maybe add an obscurity extra score +2
+
+
+exhault
+
+
+valorant
+
+
+less costly for
+
+UN-FOOBAR
+DE-FOOBAR
+NON-FOOBAR
+
+FOOBAR-ENCE
+FOOBAR-MENT
+FOOBAR-ARY
+
+(as in a mopheme swap on the same *fix, prefix for prefix swap and suffix for suffix swap)
+
+more costly for
+
+UN-FOOBAR => FOOBAR-ENCE
+FOOBAR-ENCE => DE-FOOBAR-ENCE
+
+
+So I'm thing a scoring regiments of 
+	*fix_remove_score: 2
+	prefix_add_score: 5 
+  prefix_swap_score: 4
+  suffix_add_score: 4
+  suffix_swap_score: 3
+
+  compounding_class_extra_score: 3
+  neoclassical_class_extra_score: 5
+
+So for example
+	UN-FOOBAR => FOOBAR-ENCE
+	includes a *fix_remove action and a suffix_add_score action
+
+	UN-FOOBAR => DE-FOOBAR
+	includes only a prefix_swap action
+
+
+
+
+
+
+Spacebar to speed up (override the fade in animation?)
+
+
+ABSOLUTIONIST => ABSOLUTIST
+(but then it turns out absolutist isn't in the dictionary either. Spell check to do fall back to root/head words?
+
+ABSOLUTIONIST
+did you mean
+absolution
+
+ABSOLUTIST
+did you mean
+absolutism
+absolution
+
+
+REVISIONIST was not in the dictionary
+
+
+trigrams right click
+
+CVC => CCVC
+VAV
+CCV
+VCC
+CCC
+VVC
+CVV
+VVV
 
 
 Right clicking

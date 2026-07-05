@@ -104,8 +104,11 @@ Two offline scripts in gram_corpus/ (not game runtime):
 
 # CLI TOOL FOR SPELLING HINTS SPELLCHECKER
 Exercising the in-game spelling hints feature
-venv/bin/python src/spell_check_cli.py CENTRO
-venv/bin/python src/spell_check_cli.py CENTRO --top 30
+
+python3 src/spell_check_cli.py CENTRO
+python3 src/spell_check_cli.py CENTRO --top 30
+python3 src/spell_check_cli.py REVISIONIST
+
 
 # REGENERATE THE INFLECTION-EXPANDED DICTIONARY
 

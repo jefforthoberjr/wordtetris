@@ -15,6 +15,7 @@ import os
 from config import CONFIG
 from models.word_dictionary import all_words, is_word
 from models import spell_check
+from models import morpheme_check
 
 
 # --- rule seam (game_screen.spell_suggest) ----------------------------------
@@ -31,9 +32,19 @@ def rule_spell_suggest_constrained(typed):
     return _suggest_constrained(typed)
 
 
+def rule_spell_suggest_constrained_morpheme(typed):
+    """The letter-level engine PLUS the morpheme-level engine
+    (models/morpheme_check.py), merged and ranked together by exoticness under
+    the shared max_suggestions cap. The morpheme engine runs in PARALLEL, so
+    spell_check's pattern-violation rejections never block a morpheme candidate
+    (e.g. ABSOLUTIONIST -> ABSOLUTION, a wrong-affix slip letters can't catch)."""
+    return _suggest_constrained_morpheme(typed)
+
+
 SUGGEST_RULES = {
     "rule_spell_suggest_off": rule_spell_suggest_off,
     "rule_spell_suggest_constrained": rule_spell_suggest_constrained,
+    "rule_spell_suggest_constrained_morpheme": rule_spell_suggest_constrained_morpheme,
 }
 
 
@@ -104,26 +115,81 @@ def _freq_table():
 
 # --- the scan ----------------------------------------------------------------
 
+def _scan_constrained(word):
+    """Every letter-level suggestion the matcher accepts for `word` (already
+    uppercase, already known non-word), as a sorted list of
+    (exoticness, edits, -frequency, WORD) rows. No max_suggestions cap here --
+    the caller trims, so the combined engine can merge before trimming."""
+    costs, tails, _settings = _config()
+    freq = _freq_table()
+    delta = _config()[2]["max_length_delta"]
+    scored = []
+    for candidate in all_words():
+        # Cheap length pre-filter before the O(n*m) matcher: an accepted
+        # alignment can't change length by more than its edit count.
+        if abs(len(candidate) - len(word)) <= delta:
+            hit = spell_check.evaluate(word, candidate, costs, tails)
+            if hit is not None:
+                scored.append((
+                    hit["exoticness"], hit["edits"],
+                    -freq.get(candidate, 0), candidate))
+    scored.sort()
+    return scored
+
+
 def _suggest_constrained(typed):
     """Rank close dictionary words for `typed`: keep every candidate the matcher
     accepts, sort by (exoticness, edits, -frequency), return the top words."""
     word = typed.strip().upper()
-    costs, tails, settings = _config()
-    result = []
-    if len(word) >= settings["min_word_length"] and not is_word(word):
-        freq = _freq_table()
-        delta = settings["max_length_delta"]
-        scored = []
-        for candidate in all_words():
-            # Cheap length pre-filter before the O(n*m) matcher: an accepted
-            # alignment can't change length by more than its edit count.
-            if abs(len(candidate) - len(word)) <= delta:
-                hit = spell_check.evaluate(word, candidate, costs, tails)
-                if hit is not None:
-                    scored.append((
-                        hit["exoticness"], hit["edits"],
-                        -freq.get(candidate, 0), candidate))
-        scored.sort()
-        for entry in scored[:settings["max_suggestions"]]:
-            result.append(entry[3])
-    return result
+    settings = _config()[2]
+    if len(word) < settings["min_word_length"] or is_word(word):
+        return []
+    return [row[3] for row in _scan_constrained(word)[:settings["max_suggestions"]]]
+
+
+# --- morpheme-level scan (models/morpheme_check.py) --------------------------
+
+_morpheme_model = None
+
+
+def _morpheme():
+    """Lazily build the morpheme model (inventory + scores) from config."""
+    global _morpheme_model
+    if _morpheme_model is None:
+        _morpheme_model = morpheme_check.build_model(
+            CONFIG.get("morpheme_check", {}))
+    return _morpheme_model
+
+
+def _scan_morphemes(word):
+    """Every real word within the morpheme cap of `word` (already uppercase), as
+    a sorted list of (exoticness, distance, -frequency, WORD) rows -- the same
+    shape as _scan_constrained so the two merge directly. `distance` (affix ops)
+    stands in for the letter scan's `edits` as the secondary rank key."""
+    model = _morpheme()
+    freq = _freq_table()
+    hits = morpheme_check.suggest(word, is_word, model, model["max_distance"])
+    scored = []
+    for cand, info in hits.items():
+        up = cand.upper()
+        scored.append((info["exoticness"], info["distance"],
+                       -freq.get(up, 0), up))
+    scored.sort()
+    return scored
+
+
+def _suggest_constrained_morpheme(typed):
+    """Merge the letter-level and morpheme-level scans, dedup by word keeping the
+    cheaper (exoticness, secondary, -freq) key, and return the top
+    max_suggestions words. Both scans share one cap and one ranking."""
+    word = typed.strip().upper()
+    settings = _config()[2]
+    if len(word) < settings["min_word_length"] or is_word(word):
+        return []
+    best = {}
+    for exo, second, negf, cand in _scan_constrained(word) + _scan_morphemes(word):
+        key = (exo, second, negf)
+        if cand not in best or key < best[cand]:
+            best[cand] = key
+    ranked = sorted(key + (cand,) for cand, key in best.items())
+    return [row[3] for row in ranked[:settings["max_suggestions"]]]

@@ -738,9 +738,12 @@ rules:
   # Spelling suggestions (game_screen.spell_suggest): which "did you mean?" engine
   # runs when a submitted word is not in the dictionary. The constrained matcher
   # (models/spell_check.py) only offers close, same-C/V-shape misspellings so the
-  # player can't farm it for unknown words; _off disables suggestions entirely.
-  # All tunables live in the top-level spell_check: block below.
-  game_screen.spell_suggest:   rule_spell_suggest_constrained
+  # player can't farm it for unknown words; _constrained_morpheme ALSO offers
+  # wrong-affix words (models/morpheme_check.py, e.g. ABSOLUTIONIST -> ABSOLUTION),
+  # merged under the same max_suggestions cap; _off disables suggestions entirely.
+  # Tunables live in the top-level spell_check: and morpheme_check: blocks below.
+  game_screen.spell_suggest:   rule_spell_suggest_constrained_morpheme
+  # game_screen.spell_suggest: rule_spell_suggest_constrained
   # game_screen.spell_suggest: rule_spell_suggest_off
 
 # Spelling-suggestion tunables for rule_spell_suggest_constrained. These are the
@@ -780,3 +783,75 @@ spell_check:
   # cheap T/S/C/SH swap. Mined from the 20k dictionary; all end in the N or S
   # families per the cV+n / cV+s design. Same tail covers TION/SION/CION etc.
   suffix_tails: [ION, IOUS, IONAL, IAN, OUS, IENT, IONARY, IONIST, EOUS, IENCY, UOUS]
+
+# Morpheme-distance suggestions (models/morpheme_check.py). Catches MORPHEME-level
+# slips rather than letter slips: a real stem with the wrong / one-too-many affix
+# (ABSOLUTIONIST -> ABSOLUTION, ABSOLUTIST -> ABSOLUTISM, REVISIONIST -> REVISION).
+# A word is PREFIX* + stem + SUFFIX*; a correction takes at most ONE action per
+# SLOT (the prefix end and the suffix end): remove / add / swap an affix.
+#   morpheme_distance = how many slots acted (1 or 2); the hard GATE.
+#   exoticness        = summed action cost; RANKING only. Each action has a base
+#     score below, plus a CLASS surcharge per special morpheme it touches.
+# So UN-x -> DE-x is one prefix_swap (4); UN-x -> x-ENCE is a fix_remove (2) +
+# suffix_add (4) = 6, distance 2. Inventory mined from an old stemming pass.
+morpheme_check:
+  max_morpheme_distance:  2   # most slots an action may touch (1 = one end only)
+  # Base action costs (which end + which action).
+  fix_remove_score:       2   # remove any affix, either end (UN-x -> x)
+  prefix_add_score:       5   # add a prefix        (x -> UN-x)
+  prefix_swap_score:      4   # swap prefix->prefix (UN-x -> DE-x)
+  suffix_add_score:       4   # add a suffix        (x -> x-MENT)
+  suffix_swap_score:      3   # swap suffix->suffix (x-ENCE -> x-MENT)
+  # Class surcharges, ADDED to the action cost for every special morpheme the
+  # action touches (a swap touches two). Heaviest class wins per morpheme:
+  #   common_inflection_comparative (7) > neoclassical (5) > compounding (3).
+  common_inflection_comparative_extra_score: 7  # -s/-ed/-ing/-er "did you mean a plural?"
+  compounding_class_extra_score:             3  # free-word affixes (super-, -woman)
+  neoclassical_class_extra_score:            5  # Greek/Latin combining forms (-graphy)
+  # The affix inventory + three surcharge bins. Hand-tune any bin by moving items
+  # in/out of it -- membership is all that matters. A binned affix must also stay
+  # in prefixes:/suffixes: (the bins only add a surcharge, they are not separate
+  # inventories).
+  prefixes: [dis, re, un, anti, non, mis, de, irr, im, ex, counter, contra, in,
+             pro, be, en, pre, ante, post, over, under, out, upper, sub, hyper,
+             inter, arch, step, grand, extra, super, ultra, multi, tri, bi, quad,
+             poly, mono, semi, centi, mega, kilo, giga, trans, equi, auto, micro,
+             macro, hypo, hetero, homo, aero, agro, anthro, astro, cyber, eco,
+             electr, gastro, geo, hydro, physio, psych, pyro, tele, thermo,
+             saurus, photo]
+  suffixes: [ion, tion, sion, ation, age, aged, aging, er, ers, eer, eers, ian, arian,
+             ite, itic, man, men, woman, women, teen, teenth, tieth, ess, ette,
+             person, or, ors, aire, ese, let, ist, istic, ism, ment, ity, ities,
+             ence, enced, ency, ance, anced, ancy, ery, ry, ary, arial, arily,
+             es, ies, dom, ness, hood, ship, tude, iety, ant, tor, ice, try, dry,
+             ure, urize, ured, urist, urer, urous, uress, ural, urization, acy,
+             acious, ie, ing, ed, ied, ify, ification, ified, ifier, ifiable,
+             ate, ated, ative, ating, ator, atory, atism, atorial, atious, ize,
+             ization, izer, izing, ized, itize, itization, itizer, itizing,
+             itized, ise, isation, iser, ising, ised, itise, itisation, itiser,
+             itising, itised, en, ive, ivity, ival, ish, ful, like, ous, ious,
+             some, able, ability, ible, ibility, ility, less, free, proof, ent,
+             ile, ular, atic, tic, ic, atics, tics, ics, ical, tical, est, ier,
+             iest, tial, ial, al, ory, tory, ean, ine, ose, one, ly, ology,
+             ologist, ological, ogy, ogist, ogical, graphy, graphic, graph,
+             sphere, spheric, us, um, gon, phone, phonist, phones, gram, phobia,
+             phobic, philia, philiac, aholic, ectomy, metry, itis, meter, metric,
+             scope, scopic, scopy, onomy, onomics, onomical, cracy, cratic, ium,
+             ia, iac, sis, osis, cide, cidal, vore, vorous]
+  # Super-common inflections / comparatives -- +common_inflection_comparative_extra_score
+  # so "did you mean a plural?" swaps (ABSOLUTIST -> ABSOLUTES) sink to the bottom.
+  # NOTE: -er/-ers are dual-use (comparative BIGGER vs agent-noun BAKER); drop them
+  # from this bin if you want agent nouns to rank normally.
+  common_inflection_comparative: [es, ies, ed, ied, ing, er, ers, est, ier, iest]
+  # Free-word affixes / near-compounds -- +compounding_class_extra_score.
+  compounding: [counter, over, under, out, upper, super, step, grand, arch, extra,
+                man, men, woman, women, person, proof, free, like, some]
+  # Neoclassical combining forms -- +neoclassical_class_extra_score (heaviest).
+  neoclassical: [centi, mega, kilo, giga, micro, macro, hypo, hetero, homo, aero, agro,
+           anthro, astro, cyber, eco, electr, gastro, geo, hydro, physio, psych,
+           pyro, tele, thermo, saurus, photo,
+           ology, ologist, ological, ogy, ogist, ogical, graphy, graphic, graph,
+           sphere, spheric, gon, phone, phonist, phones, gram, phobia, phobic,
+           philia, philiac, aholic, ectomy, metry, itis, meter, metric, scope,
+           scopic, scopy, onomy, onomics, onomical, cracy, cratic, ium, ia, iac,
+           sis, osis, cide, cidal, vore, vorous, us, um]
