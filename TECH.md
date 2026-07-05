@@ -102,6 +102,10 @@ Two offline scripts in gram_corpus/ (not game runtime):
 - ideation_analysis.py — for any gram, dumps the 20k-dict words by position ranked by real Google frequency (the grounding tool).
 - ideation_grader.py — generates cleaned3 end-to-end; rerun anytime, tweak thresholds at the top. The rubric is documented in its docstring.
 
+# CLI TOOL FOR SPELLING HINTS SPELLCHECKER
+Exercising the in-game spelling hints feature
+venv/bin/python src/spell_check_cli.py CENTRO
+venv/bin/python src/spell_check_cli.py CENTRO --top 30
 
 # REGENERATE THE INFLECTION-EXPANDED DICTIONARY
 
