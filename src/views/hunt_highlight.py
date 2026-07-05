@@ -106,9 +106,59 @@ def rule_hunt_single_letters(gram_text, search):
     return [ch in search for ch in gram_text]
 
 
+# Mirror of game_screen._STRICT_VOWELS (Y is a CONSONANT); kept local to avoid a
+# circular import (game_screen imports this module). Keep in sync.
+_MANIP_VOWELS = set("AEIOU")
+
+
+def _dedup_collapse(gram_text):
+    """If the gram holds one adjacent DOUBLED consonant -- the shape a right-click
+    would collapse, C -> CC's reverse (MMP, ANN, BBA, SST, ARRE, MMER, MERR) --
+    return (collapsed_text, kept_positions): the gram with the redundant copy
+    dropped, plus the ORIGINAL indices that survive. The DROPPED copy is the outer
+    one so the survivors read as the contiguous chunk (MMP -> 'MP' keeping [1, 2];
+    ANN -> 'AN' keeping [0, 1]). Only consonant doubles collapse -- a vowel double
+    (EE) has no manipulation rule, so it's ignored. Returns None when there's no
+    collapsible consonant double. Mirrors the game_screen.rightclick_* collapses."""
+    n = len(gram_text)
+    for i in range(n - 1):
+        ch = gram_text[i]
+        if ch == gram_text[i + 1] and ch not in _MANIP_VOWELS:
+            if i == 0:
+                kept = list(range(1, n))                     # drop the leading copy
+            elif i + 1 == n - 1:
+                kept = list(range(0, n - 1))                 # drop the trailing copy
+            else:
+                kept = [j for j in range(n) if j != i + 1]   # interior: drop the later copy
+            return "".join(gram_text[j] for j in kept), kept
+    return None
+
+
+def rule_hunt_full_gram_or_dedup(gram_text, search):
+    """Like rule_hunt_full_gram, but also lights a gram that is one right-click (a
+    doubling/dedup collapse) away from being a contiguous chunk of the search
+    word. If the whole gram already fits, every letter lights (the full-gram
+    case). Otherwise, if collapsing its doubled consonant would fit -- search
+    'LAMP', gram 'MMP' collapses to 'MP' -- only the SURVIVING letters light; the
+    redundant doubled copy stays dark, signalling 'one right-click makes this
+    usable'. Mirrors the game_screen.rightclick_* doubling rules."""
+    if not gram_text:
+        return []
+    if gram_text in search:
+        return [True] * len(gram_text)
+    collapse = _dedup_collapse(gram_text)
+    if collapse is not None:
+        collapsed, kept = collapse
+        if collapsed and collapsed in search:
+            kept_set = set(kept)
+            return [i in kept_set for i in range(len(gram_text))]
+    return [False] * len(gram_text)
+
+
 _HUNT_MATCH_RULES = {
     "rule_hunt_full_gram": rule_hunt_full_gram,
     "rule_hunt_single_letters": rule_hunt_single_letters,
+    "rule_hunt_full_gram_or_dedup": rule_hunt_full_gram_or_dedup,
 }
 
 

@@ -498,21 +498,31 @@ rules:
   #     rule_hunt_full_gram -- only a cell whose whole gram is a contiguous chunk
   #       of the word (INDICATIVE lights "IVE", not "CU"/"EN"/"ING"); all its
   #       letters color.
+  #     rule_hunt_full_gram_or_dedup -- like full_gram, but ALSO lights a gram
+  #       that is one right-click (a doubling/dedup collapse) from fitting: search
+  #       "LAMP", gram "MMP" lights its "MP" (collapse MMP -> MP), the redundant
+  #       doubled copy left dark. Accounts for the game_screen.rightclick_*
+  #       doubling rules. Doubling never adds a NEW match (a word with "BBA"
+  #       already has "BA"), so only the collapse direction is considered.
   #     rule_hunt_single_letters -- every single letter that appears anywhere in
   #       the word colors, even a partial / out-of-order cell (INDICATIVE lights
   #       C of "CU", both of "EN", I+N of "ING").
   #   hunt_highlight_style -- HOW a matched gram looks (the visual). Only the
   #     text-recolor style exists today; rect-tint / outline would be siblings.
   game_screen.hunt_highlight: rule_hunt_full_gram
+  # game_screen.hunt_highlight: rule_hunt_full_gram_or_dedup
   # game_screen.hunt_highlight: rule_hunt_single_letters
   game_screen.hunt_highlight_style: rule_hunt_style_text_recolor
 
-  # Trigram+ right-click is routed by the gram's VOWEL/CONSONANT SHAPE, not just
-  # its length: two shapes have their own rule slots below (checked FIRST), and
-  # everything else falls to the trigram_plus catch-all here. Y counts as a
-  # CONSONANT throughout (so ITY / ARY / PHY are NOT treated as VCV/CVK). All
-  # doubling is the primitive C -> CC (double a consonant) with the reverse
-  # CC -> C (a doubled consonant collapses on the next right-click).
+  # Trigram right-click is routed by the gram's VOWEL/CONSONANT SHAPE, not just
+  # its length: two shapes (VCV, CVK) have their own rule slots below. Every OTHER
+  # 3+ shape (CKV like "tra", VCK like "ant", CKS like "str") is an unconfigured
+  # no-op -- the corpus showed doubling a consonant inside a real cluster almost
+  # never yields a spellable chunk (CKV useful ~16% and front-only; VCK ~0%; CKS
+  # exactly 0%), so there's no catch-all rule for them. Y counts as a CONSONANT
+  # throughout (so ITY / ARY / PHY are NOT treated as VCV/CVK). All doubling is the
+  # primitive C -> CC (double a consonant) with the reverse CC -> C (a doubled
+  # consonant collapses on the next right-click).
 
   # VCV (vowel-consonant-vowel, e.g. ARE): double the single middle consonant
   #   (ARE -> ARRE), and collapse it back on the next click (ARRE -> ARE).
@@ -531,14 +541,6 @@ rules:
   #   on the front (com->comm, per->pper).
   game_screen.rightclick_cvk: rule_cvk_double
   # game_screen.rightclick_cvk: rule_rightclick_none
-
-  # Catch-all for every OTHER 3+ shape (CKV like "tra", VCK like "ant", CKS like
-  # "str"): right-click does nothing. These were analyzed against the corpus and
-  # NOT worth a doubling rule -- doubling a consonant inside a real cluster almost
-  # never yields a spellable chunk (CKV useful ~16% and front-only; VCK ~0%; CKS
-  # exactly 0%). rule_gram_reverse (ING -> GNI) is available if you want one on.
-  game_screen.rightclick_trigram_plus: rule_rightclick_none
-  # game_screen.rightclick_trigram_plus: rule_gram_reverse
 
   # Wild-vowel cell (the rule_scrabble_with_allvowelswild emblem cells): no
   # transform yet -- right-click does nothing. A wild cell holds no fixed letters,

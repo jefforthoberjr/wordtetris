@@ -245,11 +245,6 @@ def rule_ck_double(text):
         return text[1:]                # SST -> ST
     return None
 
-def rule_gram_reverse(text):
-    """Reverse a gram of any length (ING -> GNI). Offered for the trigram-or-
-    larger catch-all slot."""
-    return text[::-1]
-
 def rule_vcv_double(text):
     """VCV trigram (ARE): double the single middle consonant, C -> CC
     (ARE -> ARRE); a 4-letter VCCV whose middle is a real double collapses back,
@@ -292,7 +287,6 @@ _GRAM_MANIP_RULES = {
     "rule_cv_double": rule_cv_double,
     "rule_vc_double": rule_vc_double,
     "rule_ck_double": rule_ck_double,
-    "rule_gram_reverse": rule_gram_reverse,
     "rule_vcv_double": rule_vcv_double,
     "rule_cvk_double": rule_cvk_double,
     "rule_rightclick_none": rule_rightclick_none,
@@ -309,8 +303,9 @@ def _is_manip_vowel(ch):
 def _gram_manip_family(text):
     """Classify a 2+ letter gram for right-click routing by its vowel/consonant
     shape (Y is a consonant). Returns the config-slot key that owns this gram's
-    doubling cycle, or None for an unmatched shape (which falls to the
-    trigram_plus catch-all -- only reachable at 3+ letters):
+    doubling cycle, or None for an unmatched shape -- a plain no-op, only
+    reachable at 3+ letters (CKV, VCK, CKS were analyzed and found not worth a
+    doubling rule; see the config note):
       2-letter:  'cc' (LL), 'ck' (ST), 'cv' (BA), 'vc' (AN), 'vv' (EE / EA)
       3-letter forward:  'vcv' (ARE), 'cvk' (MER)
       3-letter reverse (the doubled results the digram rules produce, recognized
@@ -420,7 +415,7 @@ class GameScreen:
         # just its length) -- one config slot per shape, all routed via
         # _gram_manip_family / _apply_shape_rule. cc/cv/vc/vv/ck cover the
         # digrams (and their doubled 3-letter reverse forms); vcv/cvk cover the
-        # trigrams; trigram_plus is the catch-all for every other 3+ shape.
+        # trigrams; every other 3+ shape (CKV, VCK, CKS) is an unconfigured no-op.
         self._rightclick_rules = {
             "unigram": select_rule("game_screen.rightclick_unigram", _GRAM_MANIP_RULES),
             "cc": select_rule("game_screen.rightclick_cc", _GRAM_MANIP_RULES),
@@ -428,7 +423,6 @@ class GameScreen:
             "vc": select_rule("game_screen.rightclick_vc", _GRAM_MANIP_RULES),
             "vv": select_rule("game_screen.rightclick_vv", _GRAM_MANIP_RULES),
             "ck": select_rule("game_screen.rightclick_ck", _GRAM_MANIP_RULES),
-            "trigram_plus": select_rule("game_screen.rightclick_trigram_plus", _GRAM_MANIP_RULES),
             "vcv": select_rule("game_screen.rightclick_vcv", _GRAM_MANIP_RULES),
             "cvk": select_rule("game_screen.rightclick_cvk", _GRAM_MANIP_RULES),
             "vowelwild": select_rule("game_screen.rightclick_vowelwild", _GRAM_MANIP_RULES),
@@ -1975,10 +1969,11 @@ class GameScreen:
     def _handle_gram_manipulate(self, x, y):
         """Right-click a board cell during MOVING (controls.yaml
         mouse.gram_manipulate): transform that cell's gram via the
-        game_screen.rightclick_* rule for its length (unigram / digram /
-        trigram-plus) or wild-ness. Empty and fossilized cells are left alone,
-        the same as the swap rules. Mode-agnostic -- the MOVING modes never see
-        this button. A rule returning None (e.g. rule_rightclick_none) is a no-op."""
+        game_screen.rightclick_* rule for its vowel/consonant SHAPE (see
+        _apply_shape_rule) or wild-ness. Empty and fossilized cells are left
+        alone, the same as the swap rules. Mode-agnostic -- the MOVING modes never
+        see this button. A rule returning None (e.g. rule_rightclick_none, or a
+        shape with no rule) is a no-op."""
         cell = self._board.cell_at(x, y)
         if cell is None:
             L.log_20004(None, None, None, "off_board")
@@ -2012,14 +2007,14 @@ class GameScreen:
         """Route a right-click on a 2+ letter gram to its shape's config slot
         (see _gram_manip_family). cc/cv/vc/vv/ck own the digrams (and the doubled
         3-letter forms they produce); vcv/cvk own the trigrams; any 3+ shape with
-        no family (CKV, VCK, CKS, ...) falls to the trigram_plus catch-all. A
-        matched family whose own slot is off just returns None (no-op) -- it does
-        NOT fall through, so each shape's behavior is governed solely by its own
-        config key. CVK is the lone stateful rule (it alternates front/back
-        doubling); every other shape is a pure toggle. Returns new text or None."""
+        no family (CKV, VCK, CKS, ...) is a plain no-op. A matched family whose own
+        slot is off also returns None -- each shape's behavior is governed solely
+        by its own config key. CVK is the lone stateful rule (it alternates
+        front/back doubling); every other shape is a pure toggle. Returns new text
+        or None."""
         family = _gram_manip_family(text)
         if family is None:
-            return self._rightclick_rules["trigram_plus"](text)
+            return None
         if family == "cvk":
             if not self._cvk_enabled:
                 return None
