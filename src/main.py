@@ -8,6 +8,7 @@ from config import CONFIG
 from controls import control_keys
 import debug_panel
 import log_codes as L
+import session_log
 from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
 from views.main_menu_screen import MainMenuScreen
@@ -100,11 +101,44 @@ def on_resize(width, height):
     L.log_00011(w, h, window.get_pixel_ratio())
 
 
+# OS window-close (red button / programmatic close). The game screen's on_exit
+# only closes the session on in-app navigation, so a session left open here would
+# never get its END footer -- a log ending without that footer is then how we
+# tell a force-kill / freeze from a clean quit (see ONGOING_BUGS.md). Close the
+# session out first, then close the window. (Cmd+Q via the Cocoa menu bypasses
+# this handler -- a known gap noted in ONGOING_BUGS.md.)
+def on_close():
+    if session_log.is_open():
+        L.log_00002("window_closed")
+        session_log.close(reason="window_closed")
+    window.close()
+    return pyglet.event.EVENT_HANDLED
+
+
+# Liveness heartbeat cadence: a session-log line every _HEARTBEAT_PERIOD seconds
+# while a session is open, so an alt-tab freeze shows up as heartbeats that stop
+# (see ONGOING_BUGS.md / log_00012). Counter resets between sessions so each
+# game's heartbeats start at 1.
+_HEARTBEAT_PERIOD = 2.0
+_heartbeat_accum = 0.0
+_heartbeat_count = 0
+
+
 #update_game_tick is called at the frequency we decide
 def update_game_tick(dt):
+    global _heartbeat_accum, _heartbeat_count
     debug_panel.start_update()
     screen_manager.update(dt)
     debug_panel.end_update()
+    if session_log.is_open():
+        _heartbeat_accum += dt
+        if _heartbeat_accum >= _HEARTBEAT_PERIOD:
+            _heartbeat_accum = 0.0
+            _heartbeat_count += 1
+            L.log_00012(_heartbeat_count)
+    else:
+        _heartbeat_accum = 0.0
+        _heartbeat_count = 0
 
 
 window.push_handlers(
@@ -115,7 +149,8 @@ window.push_handlers(
     on_mouse_motion=on_mouse_motion,
     on_activate=on_activate,
     on_deactivate=on_deactivate,
-    on_resize=on_resize
+    on_resize=on_resize,
+    on_close=on_close
 )
 ups = 1 / CONFIG["game"]["ups"]
 pyglet.clock.schedule_interval(update_game_tick, ups) #Updates Per Second

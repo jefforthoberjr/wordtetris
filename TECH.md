@@ -86,14 +86,23 @@ grep '\[20005\]' sessions/<id>.log   omniswap OUTCOME: picked / swapped / cancel
                                       / invalid_target / word_piece / ignored,
                                       with the cell and swap source.
 grep -E '\[0001[01]\]' sessions/<id>.log   window focus (00010) + resize (00011),
-                                      each with physical size + pixel ratio. A
-                                      scale change here (e.g. after alt-tab / Space
-                                      switch on Retina) right before bad clicks is
-                                      the fingerprint of the focus coordinate desync.
+                                      each with physical size + pixel ratio. The
+                                      focus timeline (a resignKey/focus_lost with
+                                      no matching becomeKey/focus_gained) is the
+                                      lead for the alt-tab freeze -- see below.
+grep '\[00012\]' sessions/<id>.log   liveness heartbeat (~every 2s). Heartbeats
+                                      that STOP with no END footer = the loop
+                                      froze; heartbeats that CONTINUE past the
+                                      last input = only event delivery died.
 
 Known limit: timed modes (omniswap_vs_timer) drift slightly on replay because we
 log wall-clock timestamps, not the per-frame dt sequence -- so prefer reading the
 outcome codes above over re-playing to reproduce an exact click.
+
+NOTE: the "clicks landing on the wrong cell = Retina scale desync after alt-tab"
+theory is DISPROVEN for the freeze seen so far (scale stayed constant, clicks
+were correct but stopped being delivered). Open bugs and their evidence live in
+ONGOING_BUGS.md -- read it before chasing a focus/coordinate click bug.
 
 
 # SCRIPTS FOR JUDGING WORD IDEATION

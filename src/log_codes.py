@@ -36,10 +36,13 @@ def log_00002(reason):
     session_log.emit(2, "session ended", reason=reason)
 
 
-# Window/environment events. Logged because a macOS focus or Space change can
-# desync the Retina coordinate scale (window.width is physical here), which
-# misplaces clicks -- a click landing on the wrong cell shows up as a scale/size
-# change logged right before it. Pair with log_20003's `cell` field.
+# Window/environment events. Originally logged on the theory that a macOS focus
+# or Space change desyncs the Retina coordinate scale (window.width is physical
+# here) and misplaces clicks. That theory is DISPROVEN for the alt-tab freeze
+# seen so far (scale stayed constant, clicks were correct but stopped being
+# delivered) -- see ONGOING_BUGS.md. Still logged: the focus timeline is the key
+# to that bug (a resignKey with no matching becomeKey precedes the freeze).
+# Pair with log_20003's `cell` field and the log_00012 heartbeat.
 def log_00010(active, width, height, scale):
     """Window focus changed: `active` True on gaining focus (on_activate), False
     on losing it (on_deactivate). Records the physical size and pixel/point ratio
@@ -55,6 +58,16 @@ def log_00011(width, height, scale):
     point/pixel desync that misplaces clicks; see log_00010."""
     session_log.emit(11, f"window resized ({width}x{height} @{scale}x)",
                      width=width, height=height, scale=scale)
+
+
+def log_00012(count):
+    """Periodic liveness heartbeat from the update tick (~every 2s while a session
+    is open). Diagnoses the alt-tab freeze (ONGOING_BUGS.md): if heartbeats stop
+    with no session-end footer the whole loop froze, and the last heartbeat's
+    timestamp localizes it; if heartbeats keep coming after the last input then
+    the clock is alive and only event delivery died. `count` just orders them --
+    the line's own timestamp carries the timing."""
+    session_log.emit(12, "heartbeat", count=count)
 
 
 # --- 1xxxx  phase transitions ------------------------------------------------

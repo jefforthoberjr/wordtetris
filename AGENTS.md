@@ -15,6 +15,13 @@ The game_screen.py transitions between "phases" (e.g. MOVING and SELECTING). The
 As we experiment with adding more rules, I playtest, commenting in/out different rule combinations in config.yaml.
 
 
+# OUTPUT LANGUAGE
+All output — chat responses, code, comments, commit messages, and docs — must be
+in English. Do not substitute non-English words even when they're synonyms
+(e.g. no "никогда" for "never"). Before finishing a response, glance back over it
+and fix any stray non-English token. If you ever notice you emitted one, correct
+the line in plain English rather than leaving it.
+
 # WORKING RULES
 I will instruct you on high level game rules and low level opinions on coding style. 
 
