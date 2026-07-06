@@ -2,6 +2,7 @@ import math
 import pyglet
 from models.grid_cell import GridCell
 from models.gram import Gram, gram_font_size
+from models.gram_text_color import cell_text_color
 from views.shaders import get_shape_shader
 from config import get_color
 
@@ -123,6 +124,11 @@ class SquareGrid:
         if cell.label is not None:
             cell.label.text = text
             cell.label.font_size = font_size
+            # Recolor for the NEW gram: the board.cell_text_color score-gradient
+            # keys off gram length, so a relabel/swap that changes the letters
+            # must re-derive the glyph color or the old color stays on the cell
+            # while its letters move away.
+            cell.label.color = cell_text_color(gram)
         # Keep the hunt overlay's baked text in sync with the relabeled gram, else
         # a highlight would paint the OLD letters. GameScreen re-lights after.
         if cell.overlay is not None:

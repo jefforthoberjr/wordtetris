@@ -25,6 +25,16 @@ ups = 0
 busy_time_ms = 0
 idle_percent = 0
 
+# Session performance logging: accumulators for the perf snapshot written to the
+# session log every heartbeat (log_00015 in main.py's update tick). Kept SEPARATE
+# from the visual panel's draw_times/update_times above -- those reset on their own
+# 1s cadence and only while the panel is drawn, so a shared buffer would let panel
+# and logger fight over the reset and would go stale with the panel hidden. These
+# are fed by the same end_draw/end_update/end_event taps and reset by perf_snapshot.
+_log_draw_times = []
+_log_update_times = []
+_log_busy_ms = 0.0
+
 batch = None
 panel = None
 label = None
@@ -153,11 +163,13 @@ def start_draw():
 
 def end_draw():
     global draw_times, busy_time_ms
-    
+
     end_time = time.perf_counter()
     draw_time_ms = (end_time - draw_start_time) * 1000
     draw_times.append(draw_time_ms)
     busy_time_ms += draw_time_ms
+    _log_draw_times.append(draw_time_ms)
+    _add_log_busy(draw_time_ms)
 
 
 def start_update():
@@ -167,11 +179,13 @@ def start_update():
 
 def end_update():
     global update_times, busy_time_ms
-    
+
     end_time = time.perf_counter()
     update_time_ms = (end_time - update_start_time) * 1000
     update_times.append(update_time_ms)
     busy_time_ms += update_time_ms
+    _log_update_times.append(update_time_ms)
+    _add_log_busy(update_time_ms)
 
 
 def start_event():
@@ -181,10 +195,52 @@ def start_event():
 
 def end_event():
     global busy_time_ms
-    
+
     end_time = time.perf_counter()
     event_time_ms = (end_time - event_start_time) * 1000
     busy_time_ms += event_time_ms
+    _add_log_busy(event_time_ms)
+
+
+def _add_log_busy(ms):
+    global _log_busy_ms
+    _log_busy_ms += ms
+
+
+def _stats(samples):
+    """(min, avg, max) in ms over `samples`, or zeros when empty."""
+    if not samples:
+        return (0.0, 0.0, 0.0)
+    return (min(samples), sum(samples) / len(samples), max(samples))
+
+
+def perf_snapshot(window_seconds):
+    """Snapshot the per-frame timing accumulated since the last call, then RESET the
+    logging buffers. Returns a dict for log_00015. Works whether or not the debug
+    panel is visible (independent of the panel's own 1s stat cadence).
+
+    `window_seconds` is the wall time the samples span (the heartbeat period), used
+    to turn counts into per-second fps/ups and the busy time into idle percent."""
+    global _log_draw_times, _log_update_times, _log_busy_ms
+
+    update_ms = _stats(_log_update_times)
+    draw_ms = _stats(_log_draw_times)
+    if window_seconds > 0:
+        fps = round(len(_log_draw_times) / window_seconds)
+        ups = round(len(_log_update_times) / window_seconds)
+        idle_pct = max(0.0, 100.0 * (1.0 - _log_busy_ms / (window_seconds * 1000)))
+    else:
+        fps = ups = 0
+        idle_pct = 0.0
+    ram_mb = process.memory_info().rss / 1024 / 1024 if process else 0.0
+    vram_mb = get_vram_usage_mb()
+
+    _log_draw_times = []
+    _log_update_times = []
+    _log_busy_ms = 0.0
+
+    return {"update_ms": update_ms, "draw_ms": draw_ms, "fps": fps, "ups": ups,
+            "idle_pct": idle_pct, "ram_mb": ram_mb, "vram_mb": vram_mb}
 
 
 def get_vram_usage_mb():

@@ -10,6 +10,10 @@ window:
   width: 800
   height: 600
   title: Word Tetris
+  vsync: true             # false = don't block the loop on the monitor refresh [ref: window.vsync]
+  # vsync: false             # false = don't block the loop on the monitor refresh [ref: window.vsync]
+  osx_alt_loop: true      # macOS Apple Silicon: use pyglet's alt event loop; fixes dropped clicks [ref: window.osx_alt_loop]
+  # osx_alt_loop: false      # macOS Apple Silicon: use pyglet's alt event loop; fixes dropped clicks [ref: window.osx_alt_loop]
 
 game:
   ups: 60
@@ -23,6 +27,7 @@ audio:
 logging:
   enabled: true
   first_mouse_probe: true   # macOS: log OS-swallowed "click twice" clicks [ref: logging.first_mouse_probe]
+  perf_metrics: true        # per-heartbeat frame-time/RAM snapshot in the log [ref: logging.perf_metrics]
 
 # Points per cleared word; every weight is an independent tunable. [ref: scoring]
 scoring:

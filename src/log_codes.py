@@ -109,6 +109,31 @@ def log_00014(x, y, key_window, app_active):
                      x=x, y=y, key_window=key_window, app_active=app_active)
 
 
+# Periodic performance snapshot, emitted with each ~2s heartbeat while a session is
+# open (main.py update_game_tick), sourced from debug_panel's timing taps so it
+# works whether or not the debug panel is visible. Diagnoses the "click twice"
+# drops (ONGOING_BUGS.md, round 3): the OS discards mouse-downs when the app
+# services its Cocoa event port too slowly, so if update_max / draw_max climb over
+# a long session -- starving that port -- this is the smoking gun. Line up a spike
+# here with a gap in the [00014] window mouse-downs. update/draw are (min,avg,max)
+# ms over the window; fps/ups are per-second; ram_mb is process RSS; vram_mb is
+# None on integrated GPUs. Gated on logging.perf_metrics.
+def log_00015(update_ms, draw_ms, fps, ups, idle_pct, ram_mb, vram_mb):
+    """`update_ms` and `draw_ms` are (min, avg, max) tuples in milliseconds."""
+    umin, uavg, umax = update_ms
+    dmin, davg, dmax = draw_ms
+    vram_s = f"{vram_mb:.0f}" if vram_mb is not None else "n/a"
+    session_log.emit(
+        15,
+        f"perf upd {umin:.1f}/{uavg:.1f}/{umax:.1f}ms "
+        f"drw {dmin:.1f}/{davg:.1f}/{dmax:.1f}ms "
+        f"fps={fps} ups={ups} idle={idle_pct:.0f}% ram={ram_mb:.0f}MB vram={vram_s}",
+        update_min=round(umin, 3), update_avg=round(uavg, 3), update_max=round(umax, 3),
+        draw_min=round(dmin, 3), draw_avg=round(davg, 3), draw_max=round(dmax, 3),
+        fps=fps, ups=ups, idle_pct=round(idle_pct, 1), ram_mb=round(ram_mb, 1),
+        vram_mb=(round(vram_mb, 1) if vram_mb is not None else None))
+
+
 # --- 1xxxx  phase transitions ------------------------------------------------
 def _phase_name(phase):
     return getattr(phase, "name", "NONE")

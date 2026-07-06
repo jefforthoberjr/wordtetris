@@ -30,6 +30,52 @@ Session logging: capture a full play session to `sessions/<id>.log` for later
 analysis and replay (see `src/session_log.py`, `src/log_codes.py`). Toggle off for
 quick playtests where you don't want a file written.
 
+### window.vsync
+Vertical sync. `true` (pyglet's default) locks the buffer-swap to the monitor
+refresh to avoid screen tearing — but on macOS that swap (`context.flip()`) BLOCKS
+the main thread until the next refresh (~16 ms/frame), and pyglet only pumps the
+Cocoa event queue between frames, so input goes unserviced during the block. That
+is the prime suspect for the "click twice" drops (see `ONGOING_BUGS.md`): a fast
+trackpad tap landing in the flip-block blind spot is missed, and the same gap makes
+the red-X close button laggy. `false` makes `flip()` return immediately; pyglet's
+default event loop still paces redraws off the clock at `game.ups` (no busy-spin)
+and spends the inter-frame wait in an OS event-wait that wakes on input — so clicks
+are serviced promptly. Trade-off: possible screen tearing (unlikely to matter for a
+mostly-static word board). Applied in `main.py` via `window.set_vsync(...)`; the
+value is captured in each session's `.meta` snapshot, so you can A/B it and see
+which setting a given log ran under.
+
+### window.osx_alt_loop
+Forces pyglet to use its `CocoaAlternateEventLoop` on macOS. This is the actual fix
+for the "click twice" / dropped-click / laggy red-X bug on Apple Silicon (see
+`ONGOING_BUGS.md`, round 6). pyglet ships two macOS event loops: the standard
+`EventLoop`, which pumps input with `nextEventMatchingMask_untilDate_inMode_dequeue_`
+(one event per `step()`), and `CocoaAlternateEventLoop`, which drives pyglet off the
+built-in `NSApp.run()` loop via a timer. pyglet's OWN source comment on the standard
+pump reads: *"very broken with ctypes calls. Events eventually stop working properly
+after X returns"* — i.e. after a while it silently stops delivering clicks, exactly
+our symptom. pyglet auto-selects the good loop only when
+`platform.machine() == 'arm64' and "M1" in get_chip_model()` (`pyglet/app/__init__.py`),
+so an M2/M3/M4 chip (whose string lacks "M1") falls through to the broken loop. This
+machine reports `Apple M3`, so it was silently getting the broken loop. `true`
+(default) sets `pyglet.options.osx_alt_loop = True` in `main.py` BEFORE `pyglet.app`
+is imported (the loop class is locked in at that import), sidestepping the buggy pump
+on every Apple chip; `false` restores pyglet's stock per-chip auto-selection. Harmless
+off macOS (the option is only read in pyglet's darwin branch). Captured in each
+session's `.meta` snapshot for A/B.
+
+### logging.perf_metrics
+Writes a performance snapshot (`log_00015`) into the session log on every ~2s
+heartbeat while a session is open: update and draw time (min/avg/max ms), fps, ups,
+idle %, process RAM, and VRAM (n/a on integrated GPUs). Sourced from
+`src/debug_panel.py`'s timing taps via `perf_snapshot()`, so it records whether or
+not the debug panel is toggled visible. Purpose (see `ONGOING_BUGS.md`): the "click
+twice" drops are the OS discarding mouse-downs when the app services its Cocoa
+event port too slowly — if `update_max`/`draw_max` climb over a long session, that
+is the smoking gun, and a spike should line up with a gap in the `[00014]` window
+mouse-downs. Same cadence as the heartbeat so volume is trivial (~180 lines / 6-min
+game). Turn off to keep the log lean once the perf question is settled.
+
 ### logging.first_mouse_probe
 macOS-only diagnostic for the "have to click twice" bug (see `ONGOING_BUGS.md`).
 Cocoa asks a view `acceptsFirstMouse:` ONLY when a mouseDown lands on a window

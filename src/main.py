@@ -5,6 +5,18 @@ import pyglet
 ram_overhead.measure("after_pyglet")
 
 from config import CONFIG
+
+# CRITICAL: this must run BEFORE anything imports pyglet.app -- pyglet.window below
+# and every view import transitively do, and pyglet locks in its macOS event-loop
+# CLASS at pyglet.app import time. On Apple Silicon pyglet only auto-selects the good
+# CocoaAlternateEventLoop when the chip string contains "M1" (pyglet/app/__init__.py);
+# M2/M3/M4 fall through to the standard EventLoop, whose nextEventMatchingMask pump
+# pyglet's own source calls "very broken with ctypes calls -- events eventually stop
+# working properly after X returns". That is the "click twice" / laggy red-X drop bug
+# (ONGOING_BUGS.md). Forcing osx_alt_loop on makes pyglet drive off the built-in
+# NSApp.run() loop on every Apple chip, sidestepping the broken pump. [ref: window.osx_alt_loop]
+pyglet.options.osx_alt_loop = CONFIG["window"].get("osx_alt_loop", True)
+
 from controls import control_keys
 import debug_panel
 import log_codes as L
@@ -21,6 +33,14 @@ window = pyglet.window.Window(
     height=CONFIG["window"]["height"],
     caption=CONFIG["window"]["title"]
 )
+
+# vsync ON (pyglet's default) blocks the loop in the buffer-swap until the monitor
+# refresh, so events are only pumped ~once per frame -- a suspected cause of the
+# "click twice" drops where fast trackpad taps land in the flip-block blind spot
+# (ONGOING_BUGS.md). Set window.vsync: false to let the loop spin and poll input
+# far more often (redraws still paced by the clock at game.ups); replay.py already
+# runs vsync-off. Trade-off: possible screen tearing. Toggle preserves vsync-on.
+window.set_vsync(CONFIG["window"].get("vsync", True))
 
 ram_overhead.measure("after_window")
 
@@ -45,7 +65,8 @@ debug_visible = False
 debug_panel.init(window, ram_overhead.get_deltas())
 
 
-#vsync enabled (the default), on_draw() is called once per monitor refresh
+# With window.vsync true, on_draw() is driven once per monitor refresh; with it
+# false, pyglet redraws on the clock at game.ups instead (see window.set_vsync above).
 def on_draw():
     debug_panel.start_draw()
     
@@ -139,9 +160,19 @@ def update_game_tick(dt):
     if session_log.is_open():
         _heartbeat_accum += dt
         if _heartbeat_accum >= _HEARTBEAT_PERIOD:
+            # Actual elapsed span (>= period) drives the perf snapshot's per-second
+            # and idle math; capture it before zeroing.
+            period = _heartbeat_accum
             _heartbeat_accum = 0.0
             _heartbeat_count += 1
             L.log_00012(_heartbeat_count)
+            # Performance snapshot on the same 2s beat, interleaved in the session
+            # log so a frame-time spike lines up with the [00014] click gap it
+            # (hypothetically) caused -- see log_00015 / ONGOING_BUGS.md.
+            if CONFIG.get("logging", {}).get("perf_metrics", True):
+                m = debug_panel.perf_snapshot(period)
+                L.log_00015(m["update_ms"], m["draw_ms"], m["fps"], m["ups"],
+                            m["idle_pct"], m["ram_mb"], m["vram_mb"])
     else:
         _heartbeat_accum = 0.0
         _heartbeat_count = 0
