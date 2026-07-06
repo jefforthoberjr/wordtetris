@@ -14,6 +14,8 @@ The game_screen.py transitions between "phases" (e.g. MOVING and SELECTING). The
 
 As we experiment with adding more rules, I playtest, commenting in/out different rule combinations in config.yaml.
 
+To keep config.yaml scannable, its knobs carry only a terse one-line label; the full explanation for each lives in CONFIG_REFERENCE.md (keyed by the same dotted name). When you add or change a rule, put the short label in config.yaml and the prose in CONFIG_REFERENCE.md -- do NOT grow multi-paragraph comments back into config.yaml. See TECH.md.
+
 
 # OUTPUT LANGUAGE
 All output — chat responses, code, comments, commit messages, and docs — must be

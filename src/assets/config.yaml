@@ -1,3 +1,11 @@
+# ============================================================================
+# config.yaml -- the single edit point for playtest tuning (see AGENTS.md).
+# Every knob's full explanation lives in CONFIG_REFERENCE.md, keyed by the SAME
+# dotted name -- search that file for a key (e.g. game_screen.mode) for details.
+# Keep this file scannable: a terse one-line label per knob here; put the prose
+# in CONFIG_REFERENCE.md, not back into these comments.
+# ============================================================================
+
 window:
   width: 800
   height: 600
@@ -5,40 +13,17 @@ window:
 
 game:
   ups: 60
-  # UI language: a top-level key in assets/strings.yaml (e.g. en, es). Missing
-  # keys fall back to English.
-  language: en
+  language: en          # a top-level key in assets/strings.yaml (en, es, ...)
   # language: es
 
 audio:
   master_volume: 0.8
 
-# Session logging: capture a full play session to sessions/<id>.log for later
-# analysis and replay (see src/session_log.py, src/log_codes.py). Toggle off for
-# quick playtests where you don't want a file written.
+# Capture a play session to sessions/<id>.log for replay/analysis.
 logging:
   enabled: true
 
-# Scoring: points the player earns for each cleared word, summed into a running
-# total shown near the timer in the right pane (see models/scoring.py). Every
-# weight below is an INDEPENDENT tunable -- this is a playtest surface, so tune
-# freely; set enabled:false to switch scoring off entirely. A typical word
-# should land ~10-100 points with these defaults (a 3-letter unigram word ~20,
-# a 5-letter digram+trigram word ~33, an 8-letter new word over an obstacle ~75).
-#   word_base            -- flat points for completing any word
-#   per_cell             -- points per board cell the word used
-#   per_letter           -- points per letter in the word (rewards LONGER words)
-#   per_extra_gram_letter-- points per letter beyond the first in a cell
-#                           (rewards using LONGER grams)
-#   obstacle_cell_bonus  -- per starting-OBSTACLE cell the word cleared
-#   mission_cell_bonus   -- per starting-MISSION cell the word cleared
-#   sand_timer_cell_bonus-- per SAND-TIMER cell the word used (the double-points cells)
-#   fossil_reuse_bonus   -- per already-FOSSILIZED cell the word reused
-#                           (only the fossilize modes have these; fossil_word_use allow)
-#   new_word_bonus       -- word is NEW to the player's lifetime dictionary
-#   fill_board_bonus     -- whole board filled ONCE (what "filled" means is
-#                           mode-dependent; see the game_screen.fill_board rule)
-#   time_remaining_per_second -- per whole second left on the clock at game end
+# Points per cleared word; every weight is an independent tunable. [ref: scoring]
 scoring:
   enabled:                   true
   word_base:                 5
@@ -54,69 +39,32 @@ scoring:
   time_remaining_per_second: 1
 
 dictionary:
-  # Validation word list -- the "is this a valid word?" corpus the word-clearing
-  # rule checks against (models/word_dictionary.py). Swap between the curated
-  # headword list and the inflection-expanded list:
-  #   headwords_20k -- the 21.9k curated headwords, no inflections or compounds
-  #     (spellingDictionary20k-nocompound.txt). READ is valid, READING is not.
-  #   expanded      -- headwords + every inflected & British form + re-admitted
-  #     closed compounds (~60k; expandedAllowedWords.txt). READ and READING both
-  #     valid. Regenerate with dictionaries/build_expanded_dictionary.py (TECH.md).
+  # Validation word list: headwords_20k (21.9k, no inflections) vs expanded (~60k).
   # word_source: headwords_20k
   word_source: expanded
-
-  # Obscure tier: also accept the ~16k exclusively-rare 2of12-sourced words
-  # (expandedAllowedWords_obscure.txt, built disjoint from word_source above by
-  # dictionaries/build_obscure_dictionary.py). When on, is_word accepts both
-  # tiers; a word matched ONLY via this tier is "obscure" -- it earns the +2
-  # hint surcharge (spell_check.obscurity_extra_score) and shows orange in the
-  # collected-words pane the first time the player clears it.
+  # Also accept the ~16k obscure 2of12 tier (+2 hint surcharge, orange on collect).
   # include_obscure: false
   include_obscure: true
-
-  # TEMP (playtest): page the large mock word list so the A-Z tabs and sub-pages
-  # can be exercised before the player has collected thousands of words. Set
-  # use_mock_data to false to read the player's real player_dictionary.txt.
+  # Page the mock word list (A-Z tab exercise) vs read real player_dictionary.txt.
   # use_mock_data: true
   use_mock_data: false
   mock_data_path: tests/assets/mock_player_dictionary.txt
 
-# Note: game_screen.grid is a bundle:
-# (the chosen grid builder wires up its own movement + clear rules)
 rules:
-  # All length grams are beholden to auto-sizing
-  # gram.font_size:           rule_gram_font_scale_by_length
+  # Gram font sizing. [ref: gram.font_size]
+  # gram.font_size:         rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed
-  # Single letters take the 2-letter size; longer grams still autosize:
   gram.font_size:         rule_gram_font_scale_single_as_double
 
-  # Duplicate grams: one toggle for EVERY gram picker (player / obstacle /
-  # mission, square + hex; the initial formation and the piece queue). The
-  # no-duplicate rule avoids repeating any 2+-letter gram across a game (single
-  # letters and wild vowels are never deduped); it falls back to allowing repeats
-  # if the picker's corpus runs out of fresh multigrams.
+  # Dedup 2+-letter grams across a game (every picker). [ref: gram.dedup]
   gram.dedup:             rule_no_duplicate_multigrams
   # gram.dedup:           rule_allow_duplicate_grams
 
-  # Formation dedup (Piece pool not deduped)
-  # Duplicate single letters: a SEPARATE toggle from gram.dedup above (which
-  # governs multi-letter grams). The max-3 rule caps any one letter at 3 copies
-  # across the OPENING FORMATION only -- the piece pool is exempt, since 100+
-  # pieces can't fit under a 3-each cap of 26 letters. The nolimit rule lets
-  # single letters repeat freely (the original behavior). Both run on top of the
-  # gram.dedup multigram rule.
+  # Cap duplicate single letters in the OPENING FORMATION. [ref: gram.unigram_dedup]
   gram.unigram_dedup:     rule_max_3_duplicate_unigrams
   # gram.unigram_dedup:   rule_nolimit_duplicate_unigrams
 
-  # Skippable digrams: two MORE toggles for EVERY gram picker, alongside the dedup
-  # rules above. The skip rules re-roll digrams the player likely can't spell with:
-  #   double_consonant -- a DOUBLED consonant (GG, MM, LL, SS); an unequal pair
-  #     (RN, CK) and a doubled vowel (EE, that's the next rule) still pass.
-  #   only_vowel -- an ALL-VOWEL digram (EE, EA, IO ...). Two skip variants: the
-  #     plain one counts Y as a vowel (AY, YY also skipped); the _no_y one does not
-  #     (AY, YE, YY pass).
-  # Unigrams, trigram+, and wild vowels always pass. Best-effort: falls back to
-  # allowing a skipped digram if the picker can't produce a fresh one in budget.
+  # Re-roll hard-to-spell digrams (every picker). [ref: gram.double_consonant_digram]
   gram.double_consonant_digram: rule_skip_double_consonant_digrams
   # gram.double_consonant_digram: rule_allow_double_consonant_digrams
   gram.only_vowel_digram:       rule_skip_only_vowel_digrams
@@ -126,216 +74,77 @@ rules:
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
 
-  # Board sizing. grid_width is the number of columns (the grid area is a square,
-  # so cell size derives from it). piece_pool_size is how many player pieces the
-  # pool pre-builds for a game.
+  # Board columns (grid is square) + player piece-pool size. [ref: game_screen.grid_width]
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy runs.
-  # The mode owns how the moving phase presents its active element and turns one
-  # input into one committed action; the shared SELECT pipeline, word-finding,
-  # board and dictionary are mode-agnostic.
-  #   rule_mode_jigsaw -- MOVING_JIGSAWPUZZLE: one live piece at a time, free
-  #     movement, place anywhere (the original mode)
-  #   rule_mode_typewriter -- MOVING_TYPEWRITER: a single-cell cursor sweeps the
-  #     pre-filled board; each turn swaps/replaces/passes the cursor cell (WIP)
-  #   rule_mode_omniswap_vs_timer -- MOVING_OMNISWAP: a pre-filled board, no
-  #     cursor sweep or piece queue; the player freely swaps any two cells against
-  #     a countdown, then SELECT (timer-zero or spacebar). See the OMNISWAP PRESET.
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
   game_screen.mode:       rule_mode_omniswap_vs_timer
 
-  # Seconds the MOVING_OMNISWAP countdown starts at (only used by
-  # rule_mode_omniswap_vs_timer). Under rule_omniswap_timer_per_phase this is the
-  # per-phase budget, reset to full each time play returns to MOVING; under
-  # rule_omniswap_timer_race it is the single whole-game clock (try ~360).
+  # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
 
-  # SAND-TIMER settings (only used by rule_omniswap_timer_sand below). Instead of one
-  # global countdown, up to sand_timer_count board cells are "sand timers" at a time;
-  # a sand timer follows its gram when swapped. A cell's full life is a SILENT delay
-  # (sand_timer_delay_seconds -- no visible fill, but already the active/swappable sand
-  # cell) followed by the FILLING animation (sand_timer_seconds); it fossilizes when the
-  # fill completes, i.e. after delay + fill seconds total.
+  # SAND-TIMER settings (only rule_omniswap_timer_sand). [ref: game_screen.sand_timer_delay_seconds]
   game_screen.sand_timer_delay_seconds: 15
   game_screen.sand_timer_seconds:       30
   game_screen.sand_timer_count:          1
 
-  # MOVING_OMNISWAP timer + endgame variant (game_screen.omniswap_timer). All
-  # share the OMNISWAP PRESET below; they differ only in WHEN the clock runs and
-  # HOW the game ends:
-  #   rule_omniswap_timer_per_phase -- the countdown runs only while MOVING and
-  #     resets to full each time a submitted word returns play to MOVING. Timer-
-  #     zero forces a last-chance SELECT; leaving SELECT without submitting a word
-  #     ends the game (a "surrender", FINISHED). The original omniswap behavior.
-  #   rule_omniswap_timer_race -- one continuous clock counts down across BOTH
-  #     phases (visible in MOVING and SELECTING). The player toggles MOVING/SELECT
-  #     freely -- ENTER opens SELECT, Next piece returns to MOVING, neither ends
-  #     the game -- racing to form as many words as possible. The instant the
-  #     clock hits zero the game ends (FINISHED, no win check). Pair with a
-  #     shorter omniswap_timer_seconds (~360).
-  #   rule_omniswap_timer_sand -- no global clock. Up to game_screen.sand_timer_count
-  #     cells fill over game_screen.sand_timer_seconds each (see above). A sand cell
-  #     that fills before its gram is used in a word FOSSILIZES and a fresh non-
-  #     fossilized cell takes its place; using a sand cell's gram in a word fossilizes
-  #     it at once and frees the slot. The timer follows its gram on a swap. MOVING/
-  #     SELECT toggle freely (like race); the game ends when the WHOLE board is
-  #     fossilized (no cell left to time).
+  # OMNISWAP timer + endgame variant: per_phase / race / sand. [ref: game_screen.omniswap_timer]
   # game_screen.omniswap_timer:  rule_omniswap_timer_per_phase
   game_screen.omniswap_timer: rule_omniswap_timer_race
   # game_screen.omniswap_timer: rule_omniswap_timer_sand
 
-  # Order the MOVING_TYPEWRITER cursor visits cells (game_screen.cursor_path).
-  #   rule_cursor_typewriter -- top-left, left->right per line, carriage-return
-  #     down, ending bottom-right (jittery on the offset hex rows; fine for now)
+  # TYPEWRITER cursor visit order. [ref: game_screen.cursor_path]
   game_screen.cursor_path:  rule_cursor_typewriter
 
-  # On a MOVING_TYPEWRITER swap (cursor cell <-> another board cell), which cells
-  # count as "placed" this turn -- i.e. nucleation sites for word-finding. The
-  # other (non-placed) cell is treated as a settled board cell.
-  #   rule_swap_places_cursor_only -- only the cursor cell is placed; the swapped-
-  #     in cell settles (a word must nucleate around the cursor)
-  #   rule_swap_places_both -- both swapped cells are placed (original behavior)
+  # On a TYPEWRITER swap, which cells count as placed. [ref: game_screen.typewriter_swap]
   game_screen.typewriter_swap: rule_swap_places_cursor_only
   # game_screen.typewriter_swap: rule_swap_places_both
 
-  # TYPEWRITER PRESET -- to play MOVING_TYPEWRITER, set game_screen.mode above to
-  # rule_mode_typewriter and also flip these (so the board starts full, formed
-  # words freeze instead of clearing, there's no instant win, a pass always opens
-  # word entry, and every action is a select turn):
-  #   setup_formation     -> rule_formation_fill_player_diagonal
-  #   clear_action        -> rule_clear_fossilize
-  #   victory             -> rule_victory_none
-  #   skip_select_isolated -> rule_never_skip_select
-  #   select_trigger      -> rule_select_every_placement
-  #   word_nucleation     -> rule_nucleate_anywhere   (so words can form anywhere)
-  # (word_select stays rule_select_by_text_input.)
+  # PRESETS: to run a mode, flip a bundle of keys with it. [ref: TYPEWRITER PRESET / OMNISWAP PRESET]
 
-  # OMNISWAP PRESET -- to play MOVING_OMNISWAP, set game_screen.mode above to
-  # rule_mode_omniswap_vs_timer and flip these (board starts full and swappable,
-  # formed words freeze, no instant win, words can form anywhere with no placed
-  # piece, every commit is a select turn). Tune omniswap_timer_seconds for length
-  # and omniswap_timer (above) for the per-phase vs race timer/endgame variant;
-  # select_word_limit picks one-word-then-MOVING vs many-words-per-SELECT:
-  #   setup_formation      -> rule_formation_fill_player_diagonal
-  #   clear_action         -> rule_clear_fossilize
-  #   victory              -> rule_victory_none
-  #   skip_select_isolated -> rule_never_skip_select
-  #   select_trigger       -> rule_select_every_placement
-  #   word_nucleation      -> rule_nucleate_anywhere
-  #   select_word_limit    -> rule_one_word_per_select  (or rule_unlimited_words)
-  # (word_select stays rule_select_by_text_input.)
-
+  # Min word size. [ref: game_screen.word_length]
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
 
-  # Starting-coverage dictionary (debug/analysis): once at game start, before the
-  # opening reveal, enumerate EVERY dictionary word the initial board could spell
-  # (any arrangement -- ignores adjacency/nucleation/fit; respects word_length and
-  # no-cell-reuse; pools player+obstacle+mission grams; ignores wild vowels, the
-  # jigsaw pool, and gram-manipulation). Writes sessions/<id>.coverage.csv and logs
-  # how long it took. BLOCKING -- the player can't act until it finishes. Requires
-  # logging.enabled (the file lives beside the log). Off by default; 'on' slows the
-  # opening of every game.
+  # Enumerate every word the opening board could spell -> coverage.csv (BLOCKING, slow).
   # game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
   game_screen.starting_coverage_dictionary: rule_starting_coverage_on
 
+  # Allow clearing a word already cleared this game. [ref: game_screen.word_repeat]
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 
-  # Word trail: overlay a polyline along each cleared word's cell path (center to
-  # center) on top of the board. Trails accumulate for the whole game (cleared on
-  # a new game). Thickness is in pixels; opacity is a 0-1 fraction (0.5 = 50%).
+  # Cleared-word path overlay. [ref: game_screen.word_trail]
   game_screen.word_trail:           rule_word_trail_on
   # game_screen.word_trail:         rule_word_trail_off
   game_screen.word_trail_thickness: 8
   game_screen.word_trail_opacity:   0.5
 
-  # Disambiguation (game_screen.clear_disambiguation): when a submitted word can
-  # clear several ways on the board (multiple paths, or wild-vowel expansions),
-  # how the one to clear is chosen -- and whether a lone path still asks to
-  # confirm.
-  #   rule_disambig_auto_pick -- silently keep the fewest-cell spelling, ties
-  #     broken at random (original; fastest, good for timer-pressured modes); no
-  #     confirm step ever.
-  #   rule_disambig_cycle_two_or_more_choices -- draw every candidate as a
-  #     polyline on the board (light blue, the highlighted one dark blue), let the
-  #     player cycle with word_cycle_prev / word_cycle_next, then confirm with
-  #     word_submit. Only opens when 2+ ways exist; a lone path clears instantly.
-  #   rule_disambig_cycle_one_or_more_choices -- the same chooser, but it opens
-  #     for EVERY clearable word, a lone path included, so every valid submit gets
-  #     the blue-path preview + an explicit confirm (a second word_submit). Back
-  #     out (per disambig_cancel below) with Backspace / Escape / any letter to
-  #     hunt a different word instead.
+  # How multi-path words are chosen/confirmed. [ref: game_screen.clear_disambiguation]
   # game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
   game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
   # game_screen.clear_disambiguation: rule_disambig_auto_pick
-  # Line thickness (pixels): the highlighted candidate can read thicker than the
-  # rest so it stands out alongside its darker color.
   game_screen.disambig_line_thickness:          8
   game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
-  # Whether a back-out gesture (word_clear / Backspace / Escape / any letter)
-  # exits the chooser -- returning to the typed word -- or the player must commit
-  # to one candidate once a valid word is submitted.
+  # Whether a back-out gesture exits the candidate chooser.
   game_screen.disambig_cancel:         rule_disambig_cancel_on
   # game_screen.disambig_cancel:       rule_disambig_cancel_off
 
-  # How many word rows the right pane's scrolling cleared-word list shows. Fewer
-  # rows than the pane fits pack from the top (blank space below); more rows than
-  # fit shrink the font so they all stay inside the pane.
+  # Rows in the right-pane cleared-word list. [ref: moving_side_pane.wordlist_rows]
   moving_side_pane.wordlist_rows:   30
 
-  # Player-piece spawn: where each single live piece appears, one at a time.
+  # Where each live player piece spawns. [ref: game_screen.spawn]
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center
 
   game_screen.spawn_orientation: rule_orient_random
   # game_screen.spawn_orientation: rule_orient_default
 
-  # Starting formation: how the whole opening set of obstacle + mission pieces is
-  # laid out (built and placed before play). Separate from the per-piece player
-  # spawn above; the formation owns how many pieces of each it lays down.
-  #   rule_formation_scattered -- obstacle_count obstacles + mission_count
-  #     missions, each at a random non-overlapping spot (the original opening)
-  #   rule_formation_mission_center_obstacle_ring -- 1 mission on the center cell,
-  #     ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
-  #   rule_formation_fill_player_diagonal -- fill every board cell with a single-cell
-  #     player piece (no obstacles/missions). Board opens fully packed; pair with
-  #     game_screen.victory: rule_victory_none so it isn't an instant/blocked win. The
-  #     gram lengths form DIAGONAL LINES (the round-robin length cadence aliases into
-  #     diagonals), unless the length-controlled picker is inactive -- then row-major.
-  #     NOTE: the diagonal here is an aliasing artifact -- it only holds at certain
-  #     digram/trigram+ percentages; use rule_formation_fill_player_wood_grain below
-  #     for a formalized diagonal that survives any percentages.
-  #   rule_formation_fill_player_wood_grain -- the legacy diagonal grain, but PINNED to a
-  #     fixed length mix so it no longer breaks when you tune the percentages below. It
-  #     runs the round-robin 1/2/3+ cadence (the same thing that made the original grain)
-  #     mapped row-major, using a hard-coded uni/digram/trigram weighting baked into the
-  #     code (WOOD_GRAIN_LENGTH_WEIGHTS in game_screen, currently 50/30/20 -- recovered
-  #     from the session that produced the desired grain). So the GRAIN SHAPE is fixed for
-  #     a given board size regardless of gram_length.*_percent; those percentages still
-  #     drive every other draw (piece pool, other formations). Needs the length-controlled
-  #     picker (same as the diagonal fill).
-  #   rule_formation_fill_player_random -- same uniform fill, but the gram lengths are
-  #     SCATTERED to random cells (same uni/digram/3+ counts, no diagonal), unless the
-  #     length-controlled picker is inactive -- then row-major.
-  #   rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle -- like the
-  #     uniform fill, but laid out by gram TYPE: trigram+ PREFIX grams packed into the
-  #     far-LEFT edge, trigram+ MIDFIX/SUFFIX into the far-RIGHT edge, all DIGRAMS in
-  #     a rough CENTER circle (random *fix mix), and UNIGRAMS filling the gaps.
-  #   rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid -- same
-  #     trigram+ side panes, but the DIGRAMS form a TRIANGLE at the screen bottom
-  #     pointing up (widest along the bottom, narrowing upward); UNIGRAMS fill in.
-  #   rule_formation_fill_ideation_trigram_sidepanes -- same trigram+ side panes,
-  #     but with NO dedicated digram region: DIGRAMS and UNIGRAMS are mixed
-  #     RANDOMLY together across every non-pane cell.
-  #   The ideation layouts: how many of each length comes from gram_length.*; the
-  #   left/right trigram split from gram_ideation.trigramplus.* (prefix : midfix+suffix).
-  #   Force the length-controlled picker regardless of *_player.gram_pick; pair with
-  #   game_screen.victory: rule_victory_none.
+  # Opening obstacle/mission layout (or full-board player fill). [ref: game_screen.setup_formation]
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
   # game_screen.setup_formation: rule_formation_fill_player_diagonal
@@ -345,402 +154,154 @@ rules:
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
   game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
 
-  # How many obstacle / mission pieces rule_formation_scattered lays down. The
-  # ring formation derives its own counts from board geometry and ignores these.
-  # Also gate the obstacle/mission victory rules: a count of 0 means "the board
-  # never started with this kind", so that victory rule can't be satisfied.
+  # Counts for rule_formation_scattered (0 also gates that victory rule). [ref: game_screen.obstacle_count]
   game_screen.obstacle_count: 4
   game_screen.mission_count: 2
 
-  # Stage 1 (pathfind): how the search walks the board to find words. Grid-level
-  # because geometry differs -- the square board steps its 4 cardinals
-  # (hardcoded); the hex board's snake directions are configurable here.
+  # Stage 1 (pathfind): how the hex search snakes the board. [ref: hex_grid.word_pathfinding]
   # hex_grid.word_pathfinding: rule_snake_rightanddown_nosharptwist   #TODO retest these after refactor
   # hex_grid.word_pathfinding: rule_snake_rightanddown  #TODO retest these after refactor
   # hex_grid.word_pathfinding: rule_snake_straightline  #TODO retest these after refactor
   hex_grid.word_pathfinding: rule_snake_anydirection
 
-  # Stage 2a (nucleate): of every word found, which count for the moving phase
-  # just ended.
-  #   rule_adjacent_to_placed_pieces -- keep words bridging any piece placed this
-  #     phase (all of them are nucleation sites, not just the last) AND an
-  #     existing cell
-  #   rule_nucleate_anywhere -- every board word counts, wherever it sits (no tie
-  #     to a placed piece, so words can be built anywhere)
-  #   rule_nucleate_none -- nothing qualifies (clearing off)
+  # Stage 2a (nucleate): which found words count this phase. [ref: game_screen.word_nucleation]
   # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
   game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
 
-  # Stage 2b (placed-cell requirement): an independent filter on the nucleated
-  # words -- whether a word must include a cell from a piece placed this phase.
-  # Orthogonal to word_nucleation, so it composes: e.g. rule_nucleate_anywhere +
-  # rule_require_placed_cell keeps any board word that also touches a placed cell.
-  #   rule_require_placed_cell -- word must cover >=1 placed cell
-  #   rule_placed_cell_optional -- no such requirement
-  # (Optional by default; rule_adjacent_to_placed_pieces already needs a placed
-  # cell, so the current behavior is unchanged.)
+  # Stage 2b: independent "must touch a placed cell" filter. [ref: game_screen.placed_cell_requirement]
   game_screen.placed_cell_requirement: rule_placed_cell_optional
   # game_screen.placed_cell_requirement: rule_require_placed_cell
 
-  # Gram usage: whether a word must use all of a cell's gram, or may take part.
-  #   rule_gram_use_whole -- a word always consumes a cell's entire gram (orig)
-  #   rule_gram_use_partial -- a word may start inside a gram (a suffix of its
-  #     first cell) and end inside one (a prefix of its last cell); middle cells
-  #     stay whole. The unused letters stay on the board, re-rendered in place
-  #     (e.g. W + ING -> WIN leaves G; ING + OO + D -> GOOD leaves IN). In batch
-  #     mode (clear_at_phase_end) several words may take different bites of one
-  #     gram (H ING O -> HI + GO leaves N; W ING O -> WIN + GO clears it).
+  # Whole-gram vs partial-gram consumption. [ref: game_screen.gram_usage]
   game_screen.gram_usage: rule_gram_use_whole
   # game_screen.gram_usage: rule_gram_use_partial
 
-  # Fossil word use (game_screen.fossil_word_use): may a NEW word use fossilized cells
-  # (frozen formed words; only present under clear_action: rule_clear_fossilize).
-  #   rule_fossil_block -- fossils are walls: a word can't start on, pass through,
-  #     or end on one (original behavior).
-  #   rule_fossil_allow -- a word may use fossilized cells, but must include at
-  #     least one non-fossilized cell (never built purely from frozen ones).
+  # May a new word reuse fossilized cells. [ref: game_screen.fossil_word_use]
   # game_screen.fossil_word_use: rule_fossil_block
   game_screen.fossil_word_use: rule_fossil_allow
 
-  # Stage 3 (select): of the nucleated candidates, which to actually clear.
-  #   rule_select_mostwords_withoverlaps_withrepeats -- automatic, instant
-  #     (keep maximal paths: overlaps + repeats included, strict sub-words dropped)
-  #   rule_select_by_text_input -- interactive: player types the words to clear
-  #     in the right pane, then hits Next piece (the SELECTING phase)
+  # Stage 3 (select): auto-clear vs interactive text entry. [ref: game_screen.word_select]
   # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
   game_screen.word_select: rule_select_by_text_input
 
-  # When typed words clear during the interactive SELECT phase.
-  #   rule_clear_on_submit -- each submitted word clears from the board the
-  #     moment it is submitted (original behavior)
-  #   rule_clear_at_phase_end -- submitted words are held and their cells tinted
-  #     light green; the whole batch clears together when the phase ends, so
-  #     cells can be reused across words (overlaps + repeats -- a word may be
-  #     entered once per distinct path). The interactive twin of
-  #     rule_select_mostwords_withoverlaps_withrepeats.
+  # When typed words clear: per-submit vs batch at phase end. [ref: game_screen.clear_timing]
   game_screen.clear_timing: rule_clear_at_phase_end
   # game_screen.clear_timing: rule_clear_on_submit
 
-  # How many words the player may clear in one interactive SELECT phase before it
-  # ends and play returns to MOVING. Composes with clear_timing above.
-  #   rule_unlimited_words -- the phase stays open until the player hits Next piece
-  #     (or, in clear-on-submit mode, the placed piece is stranded). Original.
-  #   rule_one_word_per_select -- the first accepted word ends the phase at once
-  #     (in batch mode that one held word clears on the way out).
+  # Words allowed per SELECT phase. [ref: game_screen.select_word_limit]
   # game_screen.select_word_limit: rule_unlimited_words
   game_screen.select_word_limit: rule_one_word_per_select
 
-  # Auto-submit the carried word when ENTER opens the interactive SELECT phase
-  # with a word still sitting in the MOVING word-hunt field. On, opening SELECT
-  # goes straight to the blue-path confirm -- one ENTER to open, one to confirm --
-  # instead of a dead middle ENTER to submit the word already in the field. A
-  # junk / too-short hunt just rejects (ghost + reason) and the field clears for a
-  # fresh type. Off keeps the word pre-loaded but unsubmitted, so the player
-  # confirms or edits it first (the original anti-fat-finger behavior). Only bites
-  # under word_select: rule_select_by_text_input.
+  # Auto-submit the carried hunt word when ENTER opens SELECT. [ref: game_screen.select_autosubmit_hunt]
   game_screen.select_autosubmit_hunt: rule_select_autosubmit_on
   # game_screen.select_autosubmit_hunt: rule_select_autosubmit_off
 
+  # Run selection every placement vs every N. [ref: game_screen.select_trigger]
   game_screen.select_trigger: rule_select_every_placement
   # game_screen.select_trigger: rule_select_after_n_placements
-  # Placements between selection turns for rule_select_after_n_placements
   game_screen.select_trigger_count: 5
 
-  # Whether a placed piece touching nothing on the board skips the selection
-  # (If an isolated piece can't bridge into any word, auto-skip for UX flow)
-  #   rule_skip_select_if_isolated -- skip when the placed piece is isolated (orig)
-  #   rule_never_skip_select -- always run selection, isolated or not
+  # Skip selection when the placed piece is isolated. [ref: game_screen.skip_select_isolated]
   # game_screen.skip_select_isolated: rule_skip_select_if_isolated
   game_screen.skip_select_isolated: rule_never_skip_select
 
-  # What a left-click on a board cell does during the SELECTING phase.
-  #   rule_select_click_move_piece -- route the click to the active MOVING mode's
-  #     board handler, so the player can rearrange cells (omniswap swap, etc.)
-  #     without leaving word entry; the clearable words re-find after the edit.
-  #     Blurs the SELECTING/MOVING line for the free-choice modes.
-  #   rule_select_click_none -- board clicks do nothing while selecting (keep the
-  #     hard phase separation, e.g. for the timed transition modes)
-  # (The "Clear word" control is always shown, independent of this rule.)
+  # What a board left-click does during SELECTING. [ref: game_screen.select_click]
   game_screen.select_click: rule_select_click_move_piece
   # game_screen.select_click: rule_select_click_none
 
-  # After a REJECTED word submission during SELECTING (misspelled / not on the
-  # board), whether to echo the rejected word as a dim "You typed: ..." line above
-  # a CLEARED entry field -- so the player compares it to the spelling suggestion
-  # and retypes fresh, instead of unknowingly appending to the failed attempt.
-  # The echo persists while retyping and clears on the next accept / Clear word.
-  #   rule_reject_ghost_on  -- clear the field, show the ghost echo
-  #   rule_reject_ghost_off -- leave the failed word in the field (original)
+  # Echo a rejected word as a dim "You typed:" ghost. [ref: game_screen.reject_ghost]
   game_screen.reject_ghost: rule_reject_ghost_on
   # game_screen.reject_ghost: rule_reject_ghost_off
 
-  # Player word-piece: clicking a cleared word in the right pane during the
-  # MOVING phase swaps the live piece for a single-cell piece carrying that whole
-  # word as a multigram (usable to complete words like any other player piece).
-  # The displaced piece is set aside and returns as the next piece once the
-  # word-piece is placed. Only one swap per piece -- you can't click another word
-  # until the word-piece is placed and a fresh pre-selected piece appears.
-  #   rule_player_word_piece_enabled  -- allow the swap (clicks consume the word)
-  #   rule_player_word_piece_disabled -- right-pane clicks do nothing
+  # Right-pane word click swaps in a word-piece. [ref: game_screen.player_word_piece]
   game_screen.player_word_piece: rule_player_word_piece_enabled
   # game_screen.player_word_piece: rule_player_word_piece_disabled
 
-  # Cell gram-manipulation: a RIGHT-click on a board cell during the MOVING phase
-  # transforms the letters in that one cell (the controls.yaml mouse.gram_manipulate
-  # button; mode-agnostic, so it works in jigsaw / typewriter / omniswap). The rule
-  # is chosen by the gram's vowel/consonant SHAPE (unigram + five digram shapes +
-  # two trigram shapes + a catch-all), plus a slot for wild-vowel cells. Empty and
-  # fossilized cells are never affected. Every rule is the doubling primitive
-  # C -> CC (double a consonant) with its reverse CC -> C (a doubled consonant
-  # collapses on the next right-click); Y counts as a CONSONANT throughout (so ITY
-  # / ARY / PHY are NOT treated as VCV/CVK). Each slot's rule_rightclick_none
-  # option restores "right-click does nothing". (NOTE: by default controls.yaml
-  # leaves mouse.place_piece UNASSIGNED so RIGHT is free for this.)
-
-  # Unigram (1-letter cell): double the letter (O -> OO, B -> BB). Pairs with the
-  # CC slot below for the L <-> LL toggle.
-  game_screen.rightclick_unigram: rule_unigram_double
+  # RIGHT-click gram manipulation, one slot per gram shape (C->CC doubling / collapse;
+  # Y is a consonant). rule_rightclick_none disables a slot. [ref: game_screen.rightclick_*]
+  game_screen.rightclick_unigram: rule_unigram_double   # O->OO
   # game_screen.rightclick_unigram: rule_rightclick_none
-
-  # Digrams (2-letter cells), one slot per shape. The consonant-doubling slots
-  # grow the gram to 3 letters; a second right-click on that doubled 3-letter form
-  # collapses it back to the digram (handled by the same slot).
-
-  # CC (a doubled consonant, e.g. LL): collapse to the single letter (LL -> L).
-  # The forward L -> LL is the unigram slot, so the two make an L <-> LL toggle.
-  game_screen.rightclick_cc: rule_cc_collapse
+  game_screen.rightclick_cc: rule_cc_collapse           # LL->L
   # game_screen.rightclick_cc: rule_rightclick_none
-
-  # CV (consonant+vowel, e.g. BA): double the consonant (BA -> BBA), collapse back
-  # on the next click (BBA -> BA).
-  game_screen.rightclick_cv: rule_cv_double
+  game_screen.rightclick_cv: rule_cv_double             # BA->BBA
   # game_screen.rightclick_cv: rule_rightclick_none
-
-  # VC (vowel+consonant, e.g. AN): double the consonant (AN -> ANN), collapse back
-  # on the next click (ANN -> AN).
-  game_screen.rightclick_vc: rule_vc_double
+  game_screen.rightclick_vc: rule_vc_double             # AN->ANN
   # game_screen.rightclick_vc: rule_rightclick_none
-
-  # VV (two vowels, e.g. EE / EA): no consonant to double -> right-click does
-  # nothing. (Left as a no-op since we only double consonants.)
-  game_screen.rightclick_vv: rule_rightclick_none
-
-  # CK (two DISTINCT consonants, e.g. ST): double the FRONT consonant (ST -> SST),
-  # collapse back on the next click (SST -> ST). Front-ONLY by design: the corpus
-  # says the front double lands in real words for 32% of CK digrams (ly->lly,
-  # pr->ppr, pl->ppl, bl->bbl, tr->ttr) but the back double (STT) for 0/59 -- so
-  # the back double is dropped, and no alternation state is needed.
-  game_screen.rightclick_ck: rule_ck_double
+  game_screen.rightclick_vv: rule_rightclick_none       # EE: no consonant, no-op
+  game_screen.rightclick_ck: rule_ck_double             # ST->SST (front only)
   # game_screen.rightclick_ck: rule_rightclick_none
 
-  # Whether the gram-manipulate button (right-click) also works during the
-  # SELECTING phase, not just MOVING. The omniswap modes spend most of their play
-  # in SELECT, so MOVING-only leaves right-click feeling dead there.
-  #   rule_gram_manip_in_selecting_enabled  -- right-click doubles/collapses grams
-  #     in SELECTING too (the board cell is relabeled; the typed word field is
-  #     independent, so nothing desyncs)
-  #   rule_gram_manip_in_selecting_disabled -- right-click is inert in SELECTING
-  #     (gram-manip is MOVING-only; the original behavior)
+  # Also allow gram manipulation during SELECTING. [ref: game_screen.gram_manip_in_selecting]
   game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
   # game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_disabled
 
-  # Word hunt (MOVING phase): the player types a word in the moving side pane and
-  # the grams on the board involved in it light up (see views/hunt_highlight.py).
-  # Two independent toggles:
-  #   hunt_highlight -- WHICH grams/letters match the typed word:
-  #     rule_hunt_full_gram -- only a cell whose whole gram is a contiguous chunk
-  #       of the word (INDICATIVE lights "IVE", not "CU"/"EN"/"ING"); all its
-  #       letters color.
-  #     rule_hunt_full_gram_or_dedup -- like full_gram, but ALSO lights a gram
-  #       that is one right-click (a doubling/dedup collapse) from fitting: search
-  #       "LAMP", gram "MMP" lights its "MP" (collapse MMP -> MP), the redundant
-  #       doubled copy left dark. Accounts for the game_screen.rightclick_*
-  #       doubling rules. Doubling never adds a NEW match (a word with "BBA"
-  #       already has "BA"), so only the collapse direction is considered.
-  #     rule_hunt_single_letters -- every single letter that appears anywhere in
-  #       the word colors, even a partial / out-of-order cell (INDICATIVE lights
-  #       C of "CU", both of "EN", I+N of "ING").
-  #   hunt_highlight_style -- HOW a matched gram looks (the visual). Only the
-  #     text-recolor style exists today; rect-tint / outline would be siblings.
+  # Word-hunt highlight: which grams/letters light up. [ref: game_screen.hunt_highlight]
   # game_screen.hunt_highlight: rule_hunt_full_gram
   game_screen.hunt_highlight: rule_hunt_full_gram_or_dedup
   # game_screen.hunt_highlight: rule_hunt_single_letters
-  
   game_screen.hunt_highlight_style: rule_hunt_style_text_recolor
 
-  # Trigram right-click is routed by the gram's VOWEL/CONSONANT SHAPE, not just
-  # its length: two shapes (VCV, CVK) have their own rule slots below. Every OTHER
-  # 3+ shape (CKV like "tra", VCK like "ant", CKS like "str") is an unconfigured
-  # no-op -- the corpus showed doubling a consonant inside a real cluster almost
-  # never yields a spellable chunk (CKV useful ~16% and front-only; VCK ~0%; CKS
-  # exactly 0%), so there's no catch-all rule for them. Y counts as a CONSONANT
-  # throughout (so ITY / ARY / PHY are NOT treated as VCV/CVK). All doubling is the
-  # primitive C -> CC (double a consonant) with the reverse CC -> C (a doubled
-  # consonant collapses on the next right-click).
-
-  # VCV (vowel-consonant-vowel, e.g. ARE): double the single middle consonant
-  #   (ARE -> ARRE), and collapse it back on the next click (ARRE -> ARE).
-  #   Corpus-backed: the middle-consonant double lands in real words for ~73% of
-  #   VCV trigrams (ate->atte, ile->ille, ome->omme) -- the strongest of all the
-  #   shapes, so it's on by default.
-  game_screen.rightclick_vcv: rule_vcv_double
+  game_screen.rightclick_vcv: rule_vcv_double           # ARE->ARRE
   # game_screen.rightclick_vcv: rule_rightclick_none
-
-  # CVK (consonant-vowel-consonant, e.g. MER): double a consonant, ALTERNATING
-  #   which one across successive clicks so both forms are reachable --
-  #   MER -> MMER -> MER -> MERR -> MER. Each doubled form collapses back on the
-  #   next click. The alternation is tracked per board cell (starts on the 'back'
-  #   consonant, MER -> MERR, the corpus-favored double). Corpus-backed: ~46% of
-  #   CVK trigrams hit real words on the back double (cal->call, les->less), ~39%
-  #   on the front (com->comm, per->pper).
-  game_screen.rightclick_cvk: rule_cvk_double
+  game_screen.rightclick_cvk: rule_cvk_double           # MER->MMER/MERR (alternating)
   # game_screen.rightclick_cvk: rule_rightclick_none
+  game_screen.rightclick_vowelwild: rule_rightclick_none  # wild cell: TBD
 
-  # Wild-vowel cell (the rule_scrabble_with_allvowelswild emblem cells): no
-  # transform yet -- right-click does nothing. A wild cell holds no fixed letters,
-  # so a manipulation rule for it is still TBD.
-  game_screen.rightclick_vowelwild: rule_rightclick_none
-
-  # Whether the right pane shows the player's lifetime dictionary-size readout.
+  # Show the lifetime dictionary-size readout. [ref: game_screen.dictionary_count]
   # game_screen.dictionary_count: rule_show_dictionary_count
   game_screen.dictionary_count: rule_hide_dictionary_count
 
-  # Victory condition (only one active at a time):
+  # Victory condition (one active). [ref: game_screen.victory]
   # game_screen.victory: rule_victory_missions_cleared
   # game_screen.victory: rule_victory_missions_and_obstacles_cleared
   # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
-  # rule_victory_none -- no win condition at all; the game runs until the player
-  # quits (use with rule_formation_fill_player_diagonal, which has no missions/obstacles).
   game_screen.victory: rule_victory_none
 
-  # Whole-board fill bonus (game_screen.fill_board): awards scoring.fill_board_bonus
-  # ONCE per game the first time the board is entirely filled. What "filled" means
-  # is MODE-DEPENDENT, so pick the variant matching game_screen.mode / clear_action:
-  #   rule_fill_board_all_fossilized -- every board cell is FOSSILIZED (the fossilize
-  #     modes: omniswap / typewriter, clear_action: rule_clear_fossilize, where a
-  #     completed-word cell freezes in place until the whole board is frozen).
-  #   rule_fill_board_all_occupied -- every board cell is OCCUPIED by a settled piece
-  #     (the place/remove modes: jigsaw fills empty cells until none remain).
-  #   rule_fill_board_off -- no whole-board fill bonus.
+  # Whole-board fill bonus; match variant to the mode. [ref: game_screen.fill_board]
   game_screen.fill_board: rule_fill_board_all_fossilized
   # game_screen.fill_board: rule_fill_board_all_occupied
   # game_screen.fill_board: rule_fill_board_off
 
-  # Cell overlap: deciding whether a piece may be moved onto / placed over a type of occupied cell
-  
+  # May a piece move onto / place over an occupied cell, by cell type. [ref: game_screen.cell_overlap_*]
   # game_screen.cell_overlap_player: rule_block_moveandplace_over_player_cell
   game_screen.cell_overlap_player: rule_moveandplace_over_player_cell
-
   # game_screen.cell_overlap_obstacle: rule_moveandplace_over_obstacle_cell
   game_screen.cell_overlap_obstacle: rule_block_moveandplace_over_obstacle_cell
-
   # game_screen.cell_overlap_mission: rule_moveandplace_over_mission_cell
   game_screen.cell_overlap_mission: rule_block_moveandplace_over_mission_cell
-
   # game_screen.cell_overlap_fossilized: rule_moveandplace_over_fossilized_cell
   game_screen.cell_overlap_fossilized: rule_block_moveandplace_over_fossilized_cell
 
-  # Clear action (game_screen.clear_action): the fate of the cells a formed word
-  # covers when it is applied (clear-on-submit or the phase-end batch).
-  #   rule_clear_remove -- the consumed cells leave the board, partial-gram aware
-  #     (a word ending mid-gram leaves the leftover letters) -- the original
-  #   rule_clear_fossilize -- every cell on the word's path freezes in place: the
-  #     whole cell stays (letters intact) but goes dead -- un-swappable, skipped
-  #     by word-finding and the typewriter cursor, tinted stone grey
+  # Fate of a cleared word's cells: remove vs fossilize. [ref: game_screen.clear_action]
   # game_screen.clear_action: rule_clear_remove
   game_screen.clear_action: rule_clear_fossilize
 
-  # Cell overlap action: what happens to the "old" cells a placement covers.
-  # rule_old_cells_get_delete treats them as gone, so a covered starting
-  # obstacle (or mission) counts as cleared for the mission/obstacle victory
-  # rules (otherwise covering one strands that victory condition).
+  # Covered "old" cells are deleted (so covered obstacles/missions count cleared).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
 
-  # Length mix for rule_grams_greater_than_47_lengthcontrolled: how often that picker yields a
-  # unigram vs digram vs 3+-letter gram. Used ONLY when a *.gram_pick slot below
-  # is set to rule_grams_greater_than_47_lengthcontrolled (it draws from the same JPO corpus as
-  # rule_grams_greater_than_47, but these percentages override the corpus's own
-  # length skew). Treated as relative shares, so they need not sum to 100; setting
-  # one to 0 drops that length entirely. Within each length the corpus's frequency
-  # weights still apply.
-  # For the OPENING BOARD these shares are enforced as a quota -- the actual
-  # unigram/digram/3+ counts land within ~1 of the configured split, so a board
-  # can't come out trigram-heavy by luck. (The player piece pool just rolls them
-  # per piece; it self-averages over 100+ pieces.)
+  # Length mix for rule_grams_greater_than_47_lengthcontrolled (opening board = quota).
+  # Relative shares; a 0 drops that length. [ref: gram_length.*_percent]
   gram_length.unigram_percent:     50
   gram_length.digram_percent:      20
   gram_length.trigramplus_percent: 15
 
-  # Within the OPENING BOARD's unigrams, a second quota splits single letters into
-  # two bins (relative shares, same largest-remainder enforcement as above):
-  #   common glue    -- E I A T R N O S L C U
-  #   uncommon flavor -- P M D G H Y B F V K W Z X J QU
-  # ("QU" is the one digram counted as a unigram here, and the only way Q reaches
-  # the board.) Within a bin the corpus's own letter frequencies still apply, so
-  # glue draws lean E/I/A and flavor draws lean P/M/D over Z/X/J. Applies to the
-  # opening formation only; the piece pool rolls unigrams from the whole letter set.
+  # Opening-board unigram split: common glue vs uncommon flavor. [ref: gram_length.unigram_common_percent]
   gram_length.unigram_common_percent:   60
   gram_length.unigram_uncommon_percent: 40
 
-  # Guarantee coverage of certain letters among the opening formation's UNIGRAM cells.
-  # The picker draws unigrams normally (weighted, under the common/uncommon quota above)
-  # and only FORCES a still-missing required letter into the final unigram slots -- so a
-  # forced letter perturbs the distribution by at most the missing count (often zero, as
-  # A/E/I/O/U are common glue and usually appear on their own; Y is the typical force).
-  # A forced letter is tallied into its own common/uncommon bin so that quota stays honest.
-  # Needs the length-controlled picker + a fill formation (the same dependency as the
-  # length arrangements); a no-op otherwise.
-  #   rule_vowel_coverage_off -- no guarantee (the picker decides everything).
-  #   rule_vowel_coverage_each_unigram -- at least one of each vowel A E I O U Y.
+  # Force still-missing required letters into opening unigram slots. [ref: game_screen.formation_vowel_coverage]
   # game_screen.formation_vowel_coverage: rule_vowel_coverage_off
   game_screen.formation_vowel_coverage: rule_vowel_coverage_each_unigram
 
-  # NOTE: the diagonal-vs-random length arrangement of the uniform fill is no longer
-  # a separate key -- it is now picked via game_screen.setup_formation above
-  # (rule_formation_fill_player_diagonal = diagonal, rule_formation_fill_player_random =
-  # scattered). Both place the SAME unigram/digram/3+ counts (the gram_length.* quota
-  # above) and only differ in WHERE each length lands (which the fade-by-length reveal
-  # makes visible); both require the length-controlled picker to have lengths to arrange.
-
-  # How the opening reveal (LOADING fade-in) groups SETTLED board cells into fade
-  # categories. Special cells (mission / obstacle / fossilized) always fade by kind
-  # first; this only governs ordinary settled cells. Each scheme's category names have
-  # their own delay/duration slots in assets/loading_animation.yaml (tune timing there).
-  #   rule_loading_fade_by_length -- by gram length: settled_3plus / settled_2 /
-  #     settled_1 (the original reveal; pairs with the diagonal length arrangement).
-  #   rule_loading_fade_by_ideation_strength -- by cleaned3 strength: strong vs
-  #     not_strong (m/n/ungraded). Reveals the strong-ideation grams first/separately.
-  #   rule_loading_fade_by_ideation_fix -- by cleaned3 *fix: prefix / suffix / midfix /
-  #     no_fix (priority prefix>suffix>midfix). Pairs with the side-pane formations.
-  #   rule_loading_fade_by_ideation_length_strength_fix -- COMPOSITE: all three axes
-  #     nested, e.g. tri_strong_pre, tri_strong_mid, ... di_weak_suf, then uni. 16
-  #     multigram buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + uni; order them
-  #     via their delay slots in loading_animation.yaml.
+  # How the LOADING fade-in groups settled cells. [ref: game_screen.loading_fade_category]
   # game_screen.loading_fade_category: rule_loading_fade_by_length
   # game_screen.loading_fade_category: rule_loading_fade_by_ideation_strength
   # game_screen.loading_fade_category: rule_loading_fade_by_ideation_fix
   game_screen.loading_fade_category: rule_loading_fade_by_ideation_length_strength_fix
 
-  # Ideation-strength formation steering. When ON, the opening board's DIGRAM and
-  # TRIGRAM+ cells (the lengths the arrangement already placed) are steered toward
-  # the gram ideation profile graded in jpo_allGramsGreaterThan47InFreq_cleaned3.csv
-  # (the strong/prefix/midfix/suffix columns). Each percentage below is an
-  # INDEPENDENT target: the share of that length's cells whose gram is graded 'y'
-  # for that attribute.
-  # Only 'y' counts toward a percentage -- 'm' and 'n' are both treated as NOT
-  # having the attribute (so strong_percent: 50 means ~50% graded y-strong, and
-  # the other ~50% are the m's and n's lumped together, not just the n's).
-  # Targets OVERLAP and need not sum to 100 -- one gram can be
-  # strong AND prefix AND suffix. Steering is greedy (largest-remainder toward the
-  # most under-filled attribute each draw), so it approaches the targets but may
-  # overshoot an attribute that's naturally common in the corpus. Within a steered
-  # draw the corpus frequency weights still apply. Two separate rule sets, digram
-  # and trigram+; UNIGRAM cells are never steered. OFF = draw each length's gram by
-  # plain corpus frequency (the pre-ideation behavior).
-  # Requires the length-controlled picker (rule_grams_greater_than_47_lengthcontrolled)
-  # + rule_formation_fill_player_diagonal / _random; otherwise it has no effect.
+  # Steer opening digram/trigram+ cells toward the ideation profile. [ref: game_screen.ideation_formation]
   # game_screen.ideation_formation: rule_ideation_formation_off
   game_screen.ideation_formation: rule_ideation_formation_on
 
@@ -754,6 +315,7 @@ rules:
   gram_ideation.trigramplus.midfix_percent: 10
   gram_ideation.trigramplus.suffix_percent: 40
 
+  # Gram picker per cell class. [ref: *_player / *_obstacle / *_mission .gram_pick]
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
   square_player.gram_pick: rule_scrabble_distribution
   # square_player.gram_pick: rule_random_letters
@@ -764,15 +326,11 @@ rules:
   square_player.gram_pick: rule_mixed_scrabble_digram52
   # square_player.gram_pick: rule_digram52_distribution
   # square_player.gram_pick: rule_trigram_equalweight
-  # rule_scrabble_with_allvowelswild: scrabble weights, but vowels become wild cells
-  # rule_trigram_equalweight: every trigram in jpo_5.2.2_trigrams.csv, equal odds
 
   # square_player.piece_set:   rule_use_tetriminos
   square_player.piece_set: rule_use_dominos
   # square_player.piece_set: rule_use_unimos
 
-  # Starting obstacles for the square grid: own gram-pick + piece set, so they
-  # can differ from the playable pieces (e.g. unigram dominos as obstacles).
   # square_obstacle.gram_pick: rule_scrabble_distribution
   # square_obstacle.gram_pick: rule_random_letters
   # square_obstacle.gram_pick: rule_englishcorpus_random_unigram
@@ -787,8 +345,6 @@ rules:
   # square_obstacle.piece_set: rule_use_tetriminos
   # square_obstacle.piece_set: rule_use_unimos
 
-  # Starting missions for the square grid (the light-red goal pieces): own
-  # gram-pick + piece set, the direct parallel of square_obstacle.*.
   # square_mission.gram_pick: rule_scrabble_distribution
   # square_mission.gram_pick: rule_random_letters
   # square_mission.gram_pick: rule_englishcorpus_random_unigram
@@ -803,7 +359,7 @@ rules:
   # square_mission.piece_set: rule_use_tetriminos
   # square_mission.piece_set: rule_use_unimos
 
-  # Also governs the initial board formation cells
+  # hex_player.gram_pick also governs the initial board formation cells.
   # hex_player.gram_pick:    rule_grams_greater_than_47
   hex_player.gram_pick:      rule_grams_greater_than_47_lengthcontrolled
   # hex_player.gram_pick:    rule_random_letters
@@ -818,8 +374,6 @@ rules:
   hex_player.piece_set:    rule_use_hex_dominos
   # hex_player.piece_set:  rule_use_hex_unimos
 
-  # Starting obstacles for the hex grid: own gram-pick + piece set, so they can
-  # differ from the playable pieces.
   # hex_obstacle.gram_pick: rule_scrabble_distribution
   # hex_obstacle.gram_pick: rule_random_letters
   # hex_obstacle.gram_pick: rule_englishcorpus_random_unigram
@@ -833,8 +387,6 @@ rules:
   # hex_obstacle.piece_set: rule_use_hex_dominos
   hex_obstacle.piece_set: rule_use_hex_unimos
 
-  # Starting missions for the hex grid (the light-red goal pieces): own gram-pick
-  # + piece set, the direct parallel of hex_obstacle.*.
   # hex_mission.gram_pick: rule_scrabble_distribution
   # hex_mission.gram_pick: rule_random_letters
   # hex_mission.gram_pick: rule_englishcorpus_random_unigram
@@ -848,49 +400,33 @@ rules:
   # hex_mission.piece_set: rule_use_hex_dominos
   hex_mission.piece_set: rule_use_hex_unimos
 
-  # For piece sets that have multiple shapes, how to manage the distribution of shaped
+  # Multi-shape piece-pool distribution. [ref: piece_pool.order]
   piece_pool.order:         rule_create_shuffled_roundrobin
   # piece_pool.order:       rule_create_pure_random
   # piece_pool.order:       rule_create_fixed_roundrobin
   # piece_pool.order:       rule_create_random_even_distribution
 
-  # Spelling suggestions (game_screen.spell_suggest): which "did you mean?" engine
-  # runs when a submitted word is not in the dictionary. The constrained matcher
-  # (models/spell_check.py) only offers close, same-C/V-shape misspellings so the
-  # player can't farm it for unknown words; _constrained_morpheme ALSO offers
-  # wrong-affix words (models/morpheme_check.py, e.g. ABSOLUTIONIST -> ABSOLUTION),
-  # merged under the same max_suggestions cap; _off disables suggestions entirely.
-  # Tunables live in the top-level spell_check: and morpheme_check: blocks below.
+  # "Did you mean?" engine on a rejected word. [ref: game_screen.spell_suggest]
   game_screen.spell_suggest:   rule_spell_suggest_constrained_morpheme
   # game_screen.spell_suggest: rule_spell_suggest_constrained
   # game_screen.spell_suggest: rule_spell_suggest_off
 
-# Spelling-suggestion tunables for rule_spell_suggest_constrained. These are the
-# weights of the restricted edit-distance matcher (models/spell_check.py).
-#   exoticness = sum of the per-change weights below; used only to RANK results.
-#   edits      = the Damerau edit count; the only hard GATE, capped per word at
-#                max(base_distance, vowel_runs * distance_per_vowel_run).
+# Weights for the constrained edit-distance spell matcher. [ref: spell_check]
 spell_check:
-  min_word_length:        4   # only suggest for typed words this long or longer
-  max_suggestions:        2   # most "did you mean?" words to show
-  base_distance:          2   # edit-distance floor of the per-word cap
-  distance_per_vowel_run: 1   # +this to the cap for each vowel run in the word
-  max_transpositions:     1   # consonant+vowel letter swaps allowed (e.g. RE<->ER)
-  max_length_delta:       3   # scan pre-filter: skip dict words this much longer/shorter
-  # Exoticness added to a suggestion valid ONLY via the obscure tier
-  # (dictionary.include_obscure), so a rare "did you mean?" ranks below an
-  # equally-close common word. Applied to both the letter- and morpheme-level
-  # scans; 0 (or obscure tier off) means no surcharge. See obscurity_surcharge().
+  min_word_length:        4
+  max_suggestions:        2
+  base_distance:          2
+  distance_per_vowel_run: 1
+  max_transpositions:     1
+  max_length_delta:       3
   obscurity_extra_score:  2
-  # Vowel-run change weights (a wrong vowel / diphthong).
   vowel:
     single_to_diphthong:  1   # A  -> AU
     diphthong_to_single:  1   # AU -> A
     diphthong_swap_one:   1   # EA -> EE
     diphthong_reverse:    1   # IE -> EI
     single_swap:          2   # A  -> E
-    silent_e:             1   # WORD -> WORDE (add a silent E at the end)
-  # Consonant-run change weights.
+    silent_e:             1   # WORD -> WORDE
   consonant:
     csk_class:            2   # C / S / K / CK / SC
     gj_class:             3   # G / J
@@ -898,44 +434,26 @@ spell_check:
     zs_class:             2   # Z / S
     dup:                  1   # D  -> DD
     dedup:                1   # DD -> D
-    suffix_swap:          1   # T/S/C/SH confusion in a -TION/-SION/-OUS ending
-  # Adjacent consonant+vowel transposition weights.
+    suffix_swap:          1   # T/S/C/SH in a -TION/-SION/-OUS ending
   transposition:
-    end:                  1   # the final two letters (e.g. CENTRE -> CENTER)
-    elsewhere:            2   # anywhere else (e.g. PERscripsion -> PREscription)
-  # Morpheme tails (the part AFTER the confusable lead consonant) that license a
-  # cheap T/S/C/SH swap. Mined from the 20k dictionary; all end in the N or S
-  # families per the cV+n / cV+s design. Same tail covers TION/SION/CION etc.
+    end:                  1   # final two letters (CENTRE -> CENTER)
+    elsewhere:            2   # anywhere else (PERscripsion -> PREscription)
   suffix_tails: [ION, IOUS, IONAL, IAN, OUS, IENT, IONARY, IONIST, EOUS, IENCY, UOUS]
 
-# Morpheme-distance suggestions (models/morpheme_check.py). Catches MORPHEME-level
-# slips rather than letter slips: a real stem with the wrong / one-too-many affix
-# (ABSOLUTIONIST -> ABSOLUTION, ABSOLUTIST -> ABSOLUTISM, REVISIONIST -> REVISION).
-# A word is PREFIX* + stem + SUFFIX*; a correction takes at most ONE action per
-# SLOT (the prefix end and the suffix end): remove / add / swap an affix.
-#   morpheme_distance = how many slots acted (1 or 2); the hard GATE.
-#   exoticness        = summed action cost; RANKING only. Each action has a base
-#     score below, plus a CLASS surcharge per special morpheme it touches.
-# So UN-x -> DE-x is one prefix_swap (4); UN-x -> x-ENCE is a fix_remove (2) +
-# suffix_add (4) = 6, distance 2. Inventory mined from an old stemming pass.
+# Weights + affix inventory for morpheme-level "did you mean?". [ref: morpheme_check]
 morpheme_check:
-  max_morpheme_distance:  2   # most slots an action may touch (1 = one end only)
-  # Base action costs (which end + which action).
+  max_morpheme_distance:  2
   fix_remove_score:       2   # remove any affix, either end (UN-x -> x)
-  prefix_add_score:       5   # add a prefix        (x -> UN-x)
-  prefix_swap_score:      4   # swap prefix->prefix (UN-x -> DE-x)
-  suffix_add_score:       4   # add a suffix        (x -> x-MENT)
-  suffix_swap_score:      3   # swap suffix->suffix (x-ENCE -> x-MENT)
-  # Class surcharges, ADDED to the action cost for every special morpheme the
-  # action touches (a swap touches two). Heaviest class wins per morpheme:
-  #   common_inflection_comparative (7) > neoclassical (5) > compounding (3).
-  common_inflection_comparative_extra_score: 7  # -s/-ed/-ing/-er "did you mean a plural?"
-  compounding_class_extra_score:             3  # free-word affixes (super-, -woman)
-  neoclassical_class_extra_score:            5  # Greek/Latin combining forms (-graphy)
-  # The affix inventory + three surcharge bins. Hand-tune any bin by moving items
-  # in/out of it -- membership is all that matters. A binned affix must also stay
-  # in prefixes:/suffixes: (the bins only add a surcharge, they are not separate
-  # inventories).
+  prefix_add_score:       5   # x -> UN-x
+  prefix_swap_score:      4   # UN-x -> DE-x
+  suffix_add_score:       4   # x -> x-MENT
+  suffix_swap_score:      3   # x-ENCE -> x-MENT
+  # Class surcharges (heaviest wins): comparative(7) > neoclassical(5) > compounding(3).
+  common_inflection_comparative_extra_score: 7
+  compounding_class_extra_score:             3
+  neoclassical_class_extra_score:            5
+  # Affix inventory. The three bins below only ADD a surcharge -- a binned affix must
+  # also stay in prefixes:/suffixes:. Hand-tune by moving items in/out of a bin.
   prefixes: [dis, re, un, anti, non, mis, de, irr, im, ex, counter, contra, in,
              pro, be, en, pre, ante, post, over, under, out, upper, sub, hyper,
              inter, arch, step, grand, extra, super, ultra, multi, tri, bi, quad,
@@ -962,15 +480,11 @@ morpheme_check:
              phobic, philia, philiac, aholic, ectomy, metry, itis, meter, metric,
              scope, scopic, scopy, onomy, onomics, onomical, cracy, cratic, ium,
              ia, iac, sis, osis, cide, cidal, vore, vorous]
-  # Super-common inflections / comparatives -- +common_inflection_comparative_extra_score
-  # so "did you mean a plural?" swaps (ABSOLUTIST -> ABSOLUTES) sink to the bottom.
-  # NOTE: -er/-ers are dual-use (comparative BIGGER vs agent-noun BAKER); drop them
-  # from this bin if you want agent nouns to rank normally.
+  # -er/-ers are dual-use (comparative BIGGER vs agent-noun BAKER); drop them here to
+  # rank agent nouns normally. [ref: morpheme_check]
   common_inflection_comparative: [es, ies, ed, ied, ing, er, ers, est, ier, iest]
-  # Free-word affixes / near-compounds -- +compounding_class_extra_score.
   compounding: [counter, over, under, out, upper, super, step, grand, arch, extra,
                 man, men, woman, women, person, proof, free, like, some]
-  # Neoclassical combining forms -- +neoclassical_class_extra_score (heaviest).
   neoclassical: [centi, mega, kilo, giga, micro, macro, hypo, hetero, homo, aero, agro,
            anthro, astro, cyber, eco, electr, gastro, geo, hydro, physio, psych,
            pyro, tele, thermo, saurus, photo,

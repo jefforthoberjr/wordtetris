@@ -105,6 +105,19 @@ were correct but stopped being delivered). Open bugs and their evidence live in
 ONGOING_BUGS.md -- read it before chasing a focus/coordinate click bug.
 
 
+# CONFIG REFERENCE
+
+src/assets/config.yaml is the single edit point for playtest tuning, kept
+scannable: a flat wall of keys, the commented-out toggle alternatives, and a
+terse one-line label per knob. The FULL prose for every knob lives in
+CONFIG_REFERENCE.md, keyed by the same dotted name (e.g. game_screen.mode) --
+search that file for a key to get the details.
+
+When you add or change a rule: put the short label in config.yaml and the
+explanation in CONFIG_REFERENCE.md under a matching heading. Do NOT grow
+multi-paragraph comments back into config.yaml.
+
+
 # SCRIPTS FOR JUDGING WORD IDEATION
 
 Two offline scripts in gram_corpus/ (not game runtime):
