@@ -191,8 +191,9 @@ rules:
   game_screen.fossil_requirement: rule_require_fossil_cell
 
   # Waive the fossil requirement until the first word clears. [ref: game_screen.fossil_requirement_first_word]
-  game_screen.fossil_requirement_first_word: rule_fossil_skip_first_word
+  # game_screen.fossil_requirement_first_word: rule_fossil_skip_first_word
   # game_screen.fossil_requirement_first_word: rule_fossil_no_skip
+  game_screen.fossil_requirement_first_word: rule_fossil_seed_center
 
   # Whole-gram vs partial-gram consumption. [ref: game_screen.gram_usage]
   game_screen.gram_usage: rule_gram_use_whole
@@ -316,11 +317,12 @@ rules:
   # game_screen.formation_vowel_coverage: rule_vowel_coverage_off
   game_screen.formation_vowel_coverage: rule_vowel_coverage_each_unigram
 
-  # How the LOADING fade-in groups settled cells. [ref: game_screen.loading_fade_category]
-  # game_screen.loading_fade_category: rule_loading_fade_by_length
-  # game_screen.loading_fade_category: rule_loading_fade_by_ideation_strength
-  # game_screen.loading_fade_category: rule_loading_fade_by_ideation_fix
-  game_screen.loading_fade_category: rule_loading_fade_by_ideation_length_strength_fix
+  # How the LOADING fade-in groups each cell's GLYPH (letter). [ref: game_screen.loading_fade_glyphs_category]
+  # game_screen.loading_fade_glyphs_category: rule_loading_fade_by_length_glyph
+  # game_screen.loading_fade_glyphs_category: rule_loading_fade_by_ideation_strength_glyph
+  # game_screen.loading_fade_glyphs_category: rule_loading_fade_by_ideation_fix_glyph
+  game_screen.loading_fade_glyphs_category: rule_loading_fade_by_ideation_length_strength_fix_glyph
+  # game_screen.loading_fade_glyphs_category: rule_loading_fade_by_category_glyph
 
   # Steer opening digram/trigram+ cells toward the ideation profile. [ref: game_screen.ideation_formation]
   # game_screen.ideation_formation: rule_ideation_formation_off

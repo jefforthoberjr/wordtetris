@@ -336,3 +336,12 @@ def log_06003(piece):
     spec = ";".join(f"{x},{y}:{_gram_text(g)}" for (x, y, g) in cells)
     session_log.emit(6003, f"{_piece_type_name(piece.piece_type)} piece spawned",
                      type=_piece_type_name(piece.piece_type), cells=spec)
+
+
+def log_06005(cell):
+    """A cell fossilized at game start by the center-seed rule
+    (game_screen.fossil_requirement_first_word: rule_fossil_seed_center). `cell` is
+    the (x, y) drawn from the center + neighbors -- recorded so the opening fossil
+    is auditable in the log (a replay reproduces the same draw from the seed)."""
+    session_log.emit(6005, f"start fossil seeded at {cell[0]},{cell[1]}",
+                     x=cell[0], y=cell[1])

@@ -98,7 +98,7 @@ class LoadingAnimation:
     or WhiteFade wrapping one render object. Every category name must have a
     {delay, duration} slot in loading_animation.yaml. The map need only list the
     categories the active fade scheme actually produced this game (see
-    game_screen.loading_fade_category) -- categories NOT in the map don't run and
+    game_screen.loading_fade_glyphs_category) -- categories NOT in the map don't run and
     don't count toward the timeline, so swapping schemes (by length / strength /
     *fix) doesn't drag in the other schemes' slots as dead air. A listed category
     with an empty handle list still reserves its slot. Tick with update(dt);

@@ -1,4 +1,5 @@
 import math
+import random
 import time
 from collections import namedtuple, Counter, defaultdict
 from enum import Enum
@@ -655,20 +656,25 @@ class GameScreen:
             "game_screen.formation_vowel_coverage", vowel_coverage_rules
         )
 
-        # How the opening reveal (LOADING) buckets SETTLED formation cells into fade
-        # categories (game_screen.loading_fade_category). Special cells (mission /
-        # obstacle / fossilized) are always categorized by their kind first; this
-        # rule only governs the ordinary settled cells. Each scheme's category names
-        # must have a slot in loading_animation.yaml. See _rule_loading_fade_by_*.
-        loading_fade_category_rules = {
-            "rule_loading_fade_by_length": self._rule_loading_fade_by_length,
-            "rule_loading_fade_by_ideation_strength": self._rule_loading_fade_by_ideation_strength,
-            "rule_loading_fade_by_ideation_fix": self._rule_loading_fade_by_ideation_fix,
-            "rule_loading_fade_by_ideation_length_strength_fix":
-                self._rule_loading_fade_by_ideation_length_strength_fix,
+        # How the opening reveal (LOADING) buckets each cell's GLYPH (letter) into
+        # fade categories (game_screen.loading_fade_glyphs_category). This is the
+        # GLYPH axis: it governs every cell's letter, ordinary or special. A cell's
+        # kind (mission / obstacle / fossilized) instead drives its BACKGROUND fill
+        # (see _begin_loading) -- the two are independent axes, so a fossilized
+        # single letter fades on the glyph scheme's 'uni' bucket while its gray fill
+        # reveals on 'fossilized_background'. The 'by_category' scheme is the one
+        # that groups GLYPHS by kind. Each scheme's category names must have a slot
+        # in loading_animation.yaml. See _rule_loading_fade_*_glyph.
+        loading_fade_glyphs_category_rules = {
+            "rule_loading_fade_by_length_glyph": self._rule_loading_fade_by_length_glyph,
+            "rule_loading_fade_by_ideation_strength_glyph": self._rule_loading_fade_by_ideation_strength_glyph,
+            "rule_loading_fade_by_ideation_fix_glyph": self._rule_loading_fade_by_ideation_fix_glyph,
+            "rule_loading_fade_by_ideation_length_strength_fix_glyph":
+                self._rule_loading_fade_by_ideation_length_strength_fix_glyph,
+            "rule_loading_fade_by_category_glyph": self._rule_loading_fade_by_category_glyph,
         }
-        self._loading_fade_category_rule = select_rule(
-            "game_screen.loading_fade_category", loading_fade_category_rules
+        self._loading_fade_glyphs_category_rule = select_rule(
+            "game_screen.loading_fade_glyphs_category", loading_fade_glyphs_category_rules
         )
 
         # Spawn orientation rule (independent of position), chosen by the YAML
@@ -1027,13 +1033,29 @@ class GameScreen:
         # fossil requirement is waived while no word has cleared this game yet, so
         # the opening word can bootstrap the first fossils; disabled keeps the
         # requirement in force from the very first word (unplayable unless fossils
-        # already exist).
+        # already exist). A third variant, rule_fossil_seed_center, instead SEEDS a
+        # fossil near the board center at game start (see the seed registry below),
+        # so the requirement can hold from word one without waiving -- hence it maps
+        # to _rule_fossil_no_skip here (never waive; a fossil already exists).
         fossil_first_word_rules = {
             "rule_fossil_skip_first_word": self._rule_fossil_skip_first_word,
             "rule_fossil_no_skip": self._rule_fossil_no_skip,
+            "rule_fossil_seed_center": self._rule_fossil_no_skip,
         }
         self._fossil_first_word_rule = select_rule(
             "game_screen.fossil_requirement_first_word", fossil_first_word_rules
+        )
+        # Start-of-game fossil seeding, driven by the SAME knob so swapping the rule
+        # is a one-line edit. Only rule_fossil_seed_center seeds anything; the skip
+        # / no-skip variants seed nothing. Invoked once per game in _start_new_game
+        # (after the board is filled, before the opening reveal).
+        fossil_first_word_seed_rules = {
+            "rule_fossil_skip_first_word": self._rule_fossil_seed_none,
+            "rule_fossil_no_skip": self._rule_fossil_seed_none,
+            "rule_fossil_seed_center": self._rule_fossil_seed_center,
+        }
+        self._fossil_first_word_seed_rule = select_rule(
+            "game_screen.fossil_requirement_first_word", fossil_first_word_seed_rules
         )
 
         # Gram-usage rule (game_screen.gram_usage): may a word use only part of a
@@ -1169,6 +1191,13 @@ class GameScreen:
         self._setup_formation_rule()
         end_formation_gram_run()
 
+        # Seed any start-of-game fossils (game_screen.fossil_requirement_first_word:
+        # rule_fossil_seed_center). Runs after the formation has filled the board
+        # (so there are grams to fossilize) and before _begin_loading (so the seeded
+        # cell reveals in the fossilized fade category). A no-op for the other
+        # first-word variants.
+        self._fossil_first_word_seed_rule()
+
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,
             self._piece_class, self._player_piece_types,
@@ -1208,14 +1237,28 @@ class GameScreen:
             cell = self._board.get_cell(x, y)
             if cell is None:
                 continue
-            category = self._loading_category_for_cell((x, y), cell)
-            self._add_cell_fade_handles(handles[category], cell)
+            # GLYPH axis: every cell's letter fades on the active glyphs scheme's
+            # bucket (game_screen.loading_fade_glyphs_category) -- by length /
+            # ideation / kind. This is where the fossilized-vs-unigram precedence is
+            # settled: under an ideation scheme a fossil single letter fades as a
+            # plain 'uni', under 'by_category' it fades as 'fossilized_glyph'.
+            glyph_cat = self._loading_fade_glyphs_category_rule((x, y), cell)
+            self._add_cell_label_fade_handle(handles[glyph_cat], cell)
+            # BACKGROUND axis: a special kind fades its colored fill on its own
+            # "<kind>_background" dial, so e.g. a seeded fossil's gray fill can reveal
+            # last, apart from its letter. Plain cells have no separate background
+            # axis yet (their white fill just rides with the glyph); a full parallel
+            # loading_fade_backgrounds_category is deferred (see CONFIG_REFERENCE).
+            kind = self._cell_kind((x, y))
+            bg_cat = kind + "_background" if kind is not None else glyph_cat
+            self._add_cell_background_fade_handles(handles[bg_cat], cell)
         self._loading_anim = LoadingAnimation(dict(handles))
 
-    def _add_cell_fade_handles(self, into, cell):
-        """Append the fade handles for one placed cell to its category list. The
-        hex inner fill white-fades (held opaque, so it masks the black outer and
-        no gray bleeds through mid-fade); everything else alpha-fades."""
+    def _add_cell_background_fade_handles(self, into, cell):
+        """The cell's BACKGROUND (fill) fade handles. The hex inner fill white-fades
+        (held opaque, so it masks the black outer and no gray bleeds through
+        mid-fade); the square's single BorderedRectangle alpha-fades. Split out from
+        the glyph so a fossil's gray fill can reveal in its own (late) category."""
         square = cell.square
         if hasattr(square, "inner"):
             # Hex cell: two polygons. White-fade the opaque inner, alpha-fade the
@@ -1227,20 +1270,27 @@ class GameScreen:
             # Square cell: one BorderedRectangle. Its fill region stays white over
             # the white board at any opacity, so plain alpha-fade is gray-free.
             into.append(AlphaFade(square))
+
+    def _add_cell_label_fade_handle(self, into, cell):
+        """The cell's GLYPH fade handle (alpha ramp), if it has a label."""
         if cell.label is not None:
             into.append(AlphaFade(cell.label))
 
-    def _loading_category_for_cell(self, pos, cell):
-        """Which fade category a placed cell belongs to. Special cells go by their
-        kind (mission / obstacle / fossilized) first; every other settled cell is
-        bucketed by the active game_screen.loading_fade_category scheme."""
+    def _cell_kind(self, pos):
+        """The special kind of a placed cell for the opening reveal -- "fossilized"
+        / "mission" / "obstacle" -- or None for a plain settled cell. Fossilized
+        wins (it is the cell's permanent end state and its actual fill color; see
+        _cell_resting_color), then mission, then obstacle. A kind drives the cell's
+        BACKGROUND fill dial ("<kind>_background") and, under the by_category glyph
+        scheme, its glyph dial ("<kind>_glyph") too; see _begin_loading. Plain cells
+        (None) fall to the active loading_fade_glyphs_category scheme."""
+        if pos in self._fossilized_cells:
+            return "fossilized"
         if pos in self._mission_cells:
             return "mission"
         if pos in self._obstacle_cells:
             return "obstacle"
-        if pos in self._fossilized_cells:
-            return "fossilized"
-        return self._loading_fade_category_rule(pos, cell)
+        return None
 
     def _cell_primary_fix(self, pos, cell):
         """The gram's PRIMARY *fix for fade purposes: the *fix bin the formation
@@ -1262,36 +1312,42 @@ class GameScreen:
             return "midfix"
         return None
 
-    # --- loading-fade category schemes (game_screen.loading_fade_category) ---
-    # Each maps one SETTLED formation cell (pos, cell) to a fade-category name (which
-    # must have a slot in loading_animation.yaml). Swap which axis the reveal groups by.
-    def _rule_loading_fade_by_length(self, pos, cell):
-        """Bucket by gram length: settled_3plus / settled_2 / settled_1 (wild vowels
-        -- empty text -- fade with the singles). The original reveal grouping."""
+    # --- loading-fade GLYPH schemes (game_screen.loading_fade_glyphs_category) ---
+    # Each maps one placed cell (pos, cell) to a GLYPH fade-category name (which must
+    # have a slot in loading_animation.yaml). This is the glyph (letter) axis; the
+    # background fill axis is keyed off the cell's kind (see _begin_loading /
+    # _cell_kind). Swap which axis the letters group by. Category names carry a
+    # _glyph suffix to say which part of the cell they fade.
+    def _rule_loading_fade_by_length_glyph(self, pos, cell):
+        """Bucket by gram length: settled_3plus_glyph / settled_2_glyph /
+        settled_1_glyph (wild vowels -- empty text -- fade with the singles). The
+        original reveal grouping."""
         length = len(cell.gram) if cell.gram is not None else 1
         if length >= 3:
-            return "settled_3plus"
+            return "settled_3plus_glyph"
         if length == 2:
-            return "settled_2"
-        return "settled_1"
+            return "settled_2_glyph"
+        return "settled_1_glyph"
 
-    def _rule_loading_fade_by_ideation_strength(self, pos, cell):
-        """Bucket by ideation strength from the cleaned3 grades: 'strong' (graded
-        y-strong) vs 'not_strong' (m / n, or no grade, e.g. a scrabble letter)."""
+    def _rule_loading_fade_by_ideation_strength_glyph(self, pos, cell):
+        """Bucket by ideation strength from the cleaned3 grades: 'strong_glyph'
+        (graded y-strong) vs 'not_strong_glyph' (m / n, or no grade, e.g. a scrabble
+        letter)."""
         grade = ideation_grade(cell.gram.text) if cell.gram is not None else None
-        return "strong" if grade and grade["strong"] else "not_strong"
+        return "strong_glyph" if grade and grade["strong"] else "not_strong_glyph"
 
-    def _rule_loading_fade_by_ideation_fix(self, pos, cell):
-        """Bucket by *fix: 'prefix' / 'suffix' / 'midfix', else 'no_fix'. Uses the
-        gram's PRIMARY *fix (the bin the formation selected it for, else priority
-        prefix>suffix>midfix) -- see _cell_primary_fix."""
-        return self._cell_primary_fix(pos, cell) or "no_fix"
+    def _rule_loading_fade_by_ideation_fix_glyph(self, pos, cell):
+        """Bucket by *fix: 'prefix_glyph' / 'suffix_glyph' / 'midfix_glyph', else
+        'no_fix_glyph'. Uses the gram's PRIMARY *fix (the bin the formation selected
+        it for, else priority prefix>suffix>midfix) -- see _cell_primary_fix."""
+        fix = self._cell_primary_fix(pos, cell)
+        return fix + "_glyph" if fix else "no_fix_glyph"
 
-    def _rule_loading_fade_by_ideation_length_strength_fix(self, pos, cell):
-        """Composite reveal order: bucket each SETTLED cell by gram LENGTH x ideation
-        STRENGTH x *fix, e.g. 'tri_strong_pre'. Lets the opening reveal sweep through
-        tri_strong_pre, tri_strong_mid, ... di_weak_suf, uni in whatever order their
-        slots in loading_animation.yaml give them.
+    def _rule_loading_fade_by_ideation_length_strength_fix_glyph(self, pos, cell):
+        """Composite reveal order: bucket each cell's glyph by gram LENGTH x ideation
+        STRENGTH x *fix, e.g. 'tri_strong_pre_glyph'. Lets the opening reveal sweep
+        through tri_strong_pre_glyph, tri_strong_mid_glyph, ... di_weak_suf_glyph,
+        uni_glyph in whatever order their slots in loading_animation.yaml give them.
           length   -- tri (3+) / di (2); single letters are one 'uni' bucket (they
                       grade uniformly strong + all-fix, so splitting them is moot)
           strength -- strong (graded y) / weak (m / n / ungraded)
@@ -1300,13 +1356,22 @@ class GameScreen:
         gram = cell.gram
         length = len(gram) if gram is not None else 1
         if length == 1:
-            return "uni"
+            return "uni_glyph"
         size = "tri" if length >= 3 else "di"
         grade = ideation_grade(gram.text) if gram is not None else None
         strength = "strong" if (grade and grade["strong"]) else "weak"
         fix = self._cell_primary_fix(pos, cell)
         fix_part = {"prefix": "pre", "suffix": "suf", "midfix": "mid"}.get(fix, "nofix")
-        return "%s_%s_%s" % (size, strength, fix_part)
+        return "%s_%s_%s_glyph" % (size, strength, fix_part)
+
+    def _rule_loading_fade_by_category_glyph(self, pos, cell):
+        """Bucket the glyph by the cell's KIND: 'mission_glyph' / 'obstacle_glyph' /
+        'fossilized_glyph' for special cells (see _cell_kind), else 'settled_glyph'
+        for every plain letter. The one glyph scheme where a cell's kind drives its
+        letter -- so a seeded fossil's letter reveals on its own dial rather than
+        with the ideation sweep."""
+        kind = self._cell_kind(pos)
+        return kind + "_glyph" if kind is not None else "settled_glyph"
 
     def _finish_loading(self):
         """End LOADING: drop the animation, flip to MOVING, and start the active
@@ -3530,6 +3595,34 @@ class GameScreen:
     def _rule_fossil_no_skip(self):
         """Never waive: the fossil requirement holds from the very first word."""
         return False
+
+    # --- Fossil start-of-game seeding (game_screen.fossil_requirement_first_word)
+    # Companion to the waive predicate above, driven by the same knob: what (if
+    # anything) to fossilize at game start so the fossil requirement is satisfiable
+    # from word one without waiving it. Called once per game in _start_new_game.
+    def _rule_fossil_seed_none(self):
+        """No start-of-game fossil (the skip-first-word / no-skip variants)."""
+        pass
+
+    def _rule_fossil_seed_center(self):
+        """Fossilize one random occupied cell at, or edge-adjacent to, the board
+        center at game start. The candidate set is the center cell plus its
+        immediate neighbors (four on square, six on hex -- physical adjacency);
+        empty candidates are skipped so the seed always lands on a real gram. With
+        a fossil present from the start, the fossil requirement can hold from the
+        very first word (this variant pairs with rule_fossil_no_skip's never-waive
+        predicate). The draw uses the session RNG, so a replay reproduces the same
+        seeded cell. No-op if no candidate near the center carries a gram (e.g. an
+        empty opening board), leaving the requirement unsatisfiable until a fossil
+        appears -- a config combination the player owns."""
+        cx, cy = self._board.center_cell()
+        candidates = [(cx, cy)] + self._board.neighbors(cx, cy)
+        occupied = [c for c in candidates if self._board.gram_at(*c) is not None]
+        if not occupied:
+            return
+        cell = random.choice(occupied)
+        self._fossilize_cell(cell)
+        L.log_06005(cell)
 
     def _current_piece(self):
         # A live word-piece (game_screen.player_word_piece) overrides the pool's

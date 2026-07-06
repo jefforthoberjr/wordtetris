@@ -467,6 +467,14 @@ when `fossil_requirement` is `rule_fossil_cell_optional`.
   (default).
 - `rule_fossil_no_skip` — enforce it from the very first word (unplayable unless
   fossils already exist by some other means).
+- `rule_fossil_seed_center` — instead of waiving, fossilize one random occupied cell
+  at game start drawn from the board center cell plus its immediate neighbours (four
+  on square, six on hex — physical adjacency; empty candidates skipped). The
+  requirement then holds from word one without a skip, since a fossil already exists
+  to build the first word around. The draw uses the session RNG, so a replay
+  reproduces the same seeded cell (logged as `06005`). No-op if no cell near the
+  centre carries a gram (e.g. an empty opening board), which leaves the requirement
+  unsatisfiable until a fossil appears.
 
 ### game_screen.gram_usage
 Whether a word must use all of a cell's gram, or may take part.
@@ -737,21 +745,39 @@ separate key — it is picked via `game_screen.setup_formation`
 unigram/digram/3+ counts (the `gram_length.*` quota) and only differ in WHERE each
 length lands; both require the length-controlled picker to have lengths to arrange.
 
-### game_screen.loading_fade_category
-How the opening reveal (LOADING fade-in) groups SETTLED board cells into fade
-categories. Special cells (mission / obstacle / fossilized) always fade by kind first;
-this only governs ordinary settled cells. Each scheme's category names have their own
-delay/duration slots in `assets/loading_animation.yaml` (tune timing there).
-- `rule_loading_fade_by_length` — by gram length: settled_3plus / settled_2 /
-  settled_1 (the original reveal; pairs with the diagonal length arrangement).
-- `rule_loading_fade_by_ideation_strength` — by cleaned3 strength: strong vs not_strong
-  (m/n/ungraded). Reveals the strong-ideation grams first/separately.
-- `rule_loading_fade_by_ideation_fix` — by cleaned3 *fix: prefix / suffix / midfix /
-  no_fix (priority prefix > suffix > midfix). Pairs with the side-pane formations.
-- `rule_loading_fade_by_ideation_length_strength_fix` — COMPOSITE: all three axes
-  nested, e.g. tri_strong_pre, tri_strong_mid, … di_weak_suf, then uni. 16 multigram
-  buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + uni; order them via their
-  delay slots in `loading_animation.yaml`.
+### game_screen.loading_fade_glyphs_category
+How the opening reveal (LOADING fade-in) groups each cell's GLYPH (letter) into fade
+categories. This is the **glyph axis** — it governs EVERY cell's letter, ordinary or
+special. It is independent of the **background axis**: a cell's kind (mission /
+obstacle / fossilized) drives its FILL fade on a `<kind>_background` dial, not its
+letter. So a fossilized single letter fades on this scheme's `uni_glyph` bucket while
+its gray fill reveals separately (and can land last) on `fossilized_background`. This
+is where the fossilized-vs-unigram precedence is resolved: the glyph always follows
+the active glyph scheme; only `rule_loading_fade_by_category_glyph` makes the letter
+follow the cell's kind. Category names carry a `_glyph` suffix (the fill dials carry
+`_background`) so each dial states which part of the cell it fades. Each scheme's
+category names have their own delay/duration slots in `assets/loading_animation.yaml`
+(tune timing there).
+- `rule_loading_fade_by_length_glyph` — by gram length: settled_3plus_glyph /
+  settled_2_glyph / settled_1_glyph (the original reveal; pairs with the diagonal
+  length arrangement).
+- `rule_loading_fade_by_ideation_strength_glyph` — by cleaned3 strength: strong_glyph
+  vs not_strong_glyph (m/n/ungraded). Reveals the strong-ideation grams first/separately.
+- `rule_loading_fade_by_ideation_fix_glyph` — by cleaned3 *fix: prefix_glyph /
+  suffix_glyph / midfix_glyph / no_fix_glyph (priority prefix > suffix > midfix). Pairs
+  with the side-pane formations.
+- `rule_loading_fade_by_ideation_length_strength_fix_glyph` — COMPOSITE: all three axes
+  nested, e.g. tri_strong_pre_glyph, tri_strong_mid_glyph, … di_weak_suf_glyph, then
+  uni_glyph. 16 multigram buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + uni;
+  order them via their delay slots in `loading_animation.yaml`.
+- `rule_loading_fade_by_category_glyph` — by cell KIND: mission_glyph / obstacle_glyph
+  / fossilized_glyph for special cells, else a single settled_glyph for every plain
+  letter. The one scheme where a cell's kind times its letter.
+
+Note: only the special cells' BACKGROUND fills have their own dials today
+(`mission_background` / `obstacle_background` / `fossilized_background`); a plain cell's
+(white) fill just rides with its glyph. A full parallel `loading_fade_backgrounds_category`
+for every cell is deferred until it's needed.
 
 ### game_screen.ideation_formation (+ gram_ideation.*)
 Ideation-strength formation steering. When ON, the opening board's DIGRAM and TRIGRAM+
