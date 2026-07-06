@@ -98,10 +98,12 @@ stopped being delivered," which selects between the two candidate fixes above.
 
 ## BUG: "Have to click twice" — first click swallowed (macOS)
 
-**Status:** ROOT CAUSE FOUND (round 6, 2026-07-07) — pyglet stranded this non-M1
+**Status:** LIKELY FIXED (round 6, 2026-07-07) — pyglet stranded this non-M1
 Apple Silicon Mac on its own "broken" macOS event loop. Fix applied as the
-`window.osx_alt_loop` toggle (default on); awaiting playtest confirmation. See
-round 6 near the bottom of this section for the full mechanism.
+`window.osx_alt_loop` toggle (default on) and **confirmed in a first playtest**
+(no "click twice", no laggy red-X). Keeping status short of CLOSED until it holds
+across a few more full sessions. See round 6 near the bottom of this section for
+the full mechanism.
 
 ### Symptom
 Toward the end of a session, clicks feel like they need to be issued **twice** —
@@ -403,6 +405,18 @@ If they persist, set it `false` (back to stock selection = broken loop here) to 
 the symptom returns, which would prove the loop is the variable; if it does NOT return
 under `false` either, the loop wasn't the cause and we resume round-5 next-steps (mouse
 swap / CGEventTap).
+
+### Round 6 result — FIX HELD in first playtest (2026-07-07)
+Played with `window.osx_alt_loop: true`: the "click twice" drops and the laggy red-X
+were **gone** — no dropped clicks reported, including the end-of-session window where
+the symptom always hit before. First real-play confirmation that the broken
+`nextEventMatchingMask` pump was the cause. Left as "likely fixed" (not closed) pending
+a few more full sessions to be sure it holds. If it ever recurs, the clean
+counter-test is still available: flip to `window.osx_alt_loop: false` (an explicit
+commented alternate now sits under the knob in `config.yaml`) and see whether the
+symptom returns. The diagnostic probes (`logging.first_mouse_probe` → `[00013]`/
+`[00014]`, `logging.perf_metrics` → `[00015]`) can be retired once it's held for a
+while, but leave them on for now so any recurrence is still captured.
 
 ---
 

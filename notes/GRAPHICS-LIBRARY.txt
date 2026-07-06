@@ -926,3 +926,14 @@ Keypress handling
 Text
 
 	Text is implemented as textures, from 1 texture atlas
+
+
+====
+
+Vsync
+
+Your monitor doesn't update continuously — it redraws the whole screen at a fixed cadence, e.g. 60 times per second (60 Hz), top to bottom. Meanwhile your game draws frames into memory on its own schedule.
+
+If the game swaps in a new frame while the monitor is halfway through reading the old one, the top of the screen shows the old frame and the bottom shows the new one — a visible horizontal seam that jumps around. That artifact is called screen tearing.
+
+Vsync (vertical sync) prevents it with a simple rule: only swap to a new frame during the tiny gap between the monitor's refreshes (the "vertical blank," or vblank). That way the monitor always reads one complete, consistent frame. It's on by default in most game frameworks, pyglet included, because tear-free is the safe default.
