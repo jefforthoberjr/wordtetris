@@ -634,6 +634,8 @@ class GameScreen:
                 self._rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid,
             "rule_formation_fill_ideation_trigram_sidepanes":
                 self._rule_formation_fill_ideation_trigram_sidepanes,
+            "rule_formation_fill_ideation_trigram_sidepanes_zigzag":
+                self._rule_formation_fill_ideation_trigram_sidepanes_zigzag,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -1585,16 +1587,32 @@ class GameScreen:
         dedicated digram region: DIGRAMS and UNIGRAMS are mixed RANDOMLY together
         across every non-pane cell. Same trigram panes, counts, forced picker and
         no obstacle/mission pieces as the *_digram_centercircle/bottompyramid
-        siblings -- see _fill_ideation_sidepanes."""
+        siblings -- see _fill_ideation_sidepanes. The trigram panes pack a single
+        STRAIGHT edge column each (see _split_sidepane_trigrams)."""
+        self._fill_ideation_trigram_sidepanes_mixed(self._split_sidepane_trigrams)
+
+    def _rule_formation_fill_ideation_trigram_sidepanes_zigzag(self):
+        """Like rule_formation_fill_ideation_trigram_sidepanes, but each trigram+
+        pane ZIGZAGS down its two outermost columns -- alternating outer/inner
+        column every row -- instead of packing one straight edge column, so the
+        multigrams spread across two columns on either side. Same counts, random
+        digram/unigram mix, forced picker and no obstacle/mission pieces. See
+        _split_sidepane_trigrams_zigzag."""
+        self._fill_ideation_trigram_sidepanes_mixed(self._split_sidepane_trigrams_zigzag)
+
+    def _fill_ideation_trigram_sidepanes_mixed(self, split_rule):
+        """Shared body of the no-digram-region side-pane formations: `split_rule`
+        carves the trigram+ cells off the two edges (straight column vs zigzag), then
+        the inner (non-pane) cells are shuffled and split into a random digram/unigram
+        mix. Only the trigram pane SHAPE changes with `split_rule`; counts, mix and
+        placement are identical."""
         cells = [(x, y)
                  for y in range(self._board.height)
                  for x in range(self._board.width)
                  if self._board.is_valid(x, y)]
         n_uni, n_di, n_tri = self._region_length_counts(len(cells))
 
-        # No digram region: the trigram panes carve off the edges, then the inner
-        # (non-pane) cells are shuffled and split into a random digram/unigram mix.
-        tri_left, tri_right, inner = self._split_sidepane_trigrams(cells, n_tri)
+        tri_left, tri_right, inner = split_rule(cells, n_tri)
         rand().shuffle(inner)
         n_di = min(n_di, len(inner))
         digrams, unigrams = inner[:n_di], inner[n_di:]
@@ -1669,6 +1687,68 @@ class GameScreen:
         tri_right = right[:n_tri_right]
         inner = left[n_tri_left:] + right[n_tri_right:]
         return tri_left, tri_right, inner
+
+    def _split_sidepane_trigrams_zigzag(self, cells, n_tri):
+        """Zigzag twin of _split_sidepane_trigrams: same left/right split and same
+        prefix:(midfix+suffix) budget (so the left/right counts are identical), but
+        each side's trigram+ cells ZIGZAG down its two outermost columns -- outer
+        column on even rows, inner column on odd rows, one cell per row (see
+        _zigzag_pick) -- instead of packing a single straight edge column. `inner`
+        is every leftover (non-trigram) cell."""
+        cx = self._board.cell_center(*self._board.center_cell())[0]
+        left = [c for c in cells if self._board.cell_center(c[0], c[1])[0] < cx]
+        right = [c for c in cells if self._board.cell_center(c[0], c[1])[0] >= cx]
+
+        pre = CONFIG["rules"]["gram_ideation.trigramplus.prefix_percent"]
+        mid = CONFIG["rules"]["gram_ideation.trigramplus.midfix_percent"]
+        suf = CONFIG["rules"]["gram_ideation.trigramplus.suffix_percent"]
+        denom = pre + mid + suf
+        left_share = (pre / denom) if denom else 0.5
+        n_tri_left = min(round(n_tri * left_share), len(left))
+        n_tri_right = min(n_tri - n_tri_left, len(right))
+
+        tri_left = self._zigzag_pick(left, n_tri_left, "left")
+        tri_right = self._zigzag_pick(right, n_tri_right, "right")
+        chosen = set(tri_left) | set(tri_right)
+        inner = [c for c in cells if c not in chosen]
+        return tri_left, tri_right, inner
+
+    def _zigzag_pick(self, cells, n, side):
+        """Return `n` of `cells` forming a two-column ZIGZAG down the given `side`'s
+        edge: the two outermost columns are threaded together so the outer column
+        supplies even rows and the inner column supplies odd rows (top->down), one
+        cell per row -- a single-width line that alternates left/right as it
+        descends. `side` is "left" (outer = smallest px) or "right" (outer =
+        largest px). If `n` exceeds what the two-column zigzag holds, the surplus
+        falls back to the remaining cells by edge extremity. Deterministic
+        (replay-safe): geometry only, no rand()."""
+        if n <= 0:
+            return []
+        centers = {c: self._board.cell_center(c[0], c[1]) for c in cells}
+        sign = 1 if side == "left" else -1   # order columns from the edge inward
+        col_px = sorted({round(centers[c][0]) for c in cells}, key=lambda px: sign * px)
+        outer_px = col_px[0]
+        inner_px = col_px[1] if len(col_px) > 1 else col_px[0]
+        # each column top->down (py desc; pyglet y-up so max py is the top of screen)
+        outer_col = sorted([c for c in cells if round(centers[c][0]) == outer_px],
+                           key=lambda c: -centers[c][1])
+        inner_col = sorted([c for c in cells if round(centers[c][0]) == inner_px],
+                           key=lambda c: -centers[c][1])
+        result, used = [], set()
+        for i in range(max(len(outer_col), len(inner_col))):
+            col = outer_col if i % 2 == 0 else inner_col   # outer on even rows
+            alt = inner_col if i % 2 == 0 else outer_col   # borrow if the row is missing
+            cell = col[i] if i < len(col) else (alt[i] if i < len(alt) else None)
+            if cell is not None and cell not in used:
+                result.append(cell)
+                used.add(cell)
+            if len(result) >= n:
+                return result
+        # More trigrams than the two-column zigzag holds: fill inward by extremity.
+        rest = sorted([c for c in cells if c not in used],
+                      key=lambda c: (sign * centers[c][0], -centers[c][1]))
+        result.extend(rest[:n - len(result)])
+        return result
 
     def _digram_region_centercircle(self, cells, n_di):
         """The n_di cells nearest board center (a rough disc)."""

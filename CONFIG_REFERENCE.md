@@ -316,6 +316,12 @@ many pieces of each it lays down.
 - `rule_formation_fill_ideation_trigram_sidepanes` — same trigram+ side panes, but
   with NO dedicated digram region: DIGRAMS and UNIGRAMS are mixed RANDOMLY together
   across every non-pane cell.
+- `rule_formation_fill_ideation_trigram_sidepanes_zigzag` — same as
+  `rule_formation_fill_ideation_trigram_sidepanes` (no digram region, random
+  digram/unigram mix), but each trigram+ pane ZIGZAGS down its two outermost columns
+  — outer column on even rows, inner column on odd rows, one cell per row — so the
+  multigrams alternate left/right as they descend instead of packing one straight
+  edge column. Same counts and left/right split.
 
 The ideation layouts: how many of each length comes from `gram_length.*`; the
 left/right trigram split from `gram_ideation.trigramplus.*` (prefix : midfix+suffix).

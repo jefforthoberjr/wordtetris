@@ -152,7 +152,8 @@ rules:
   # game_screen.setup_formation: rule_formation_fill_player_random
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_centercircle
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
-  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
+  # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
+  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
 
   # Counts for rule_formation_scattered (0 also gates that victory rule). [ref: game_screen.obstacle_count]
   game_screen.obstacle_count: 4
