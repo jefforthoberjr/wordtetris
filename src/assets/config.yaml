@@ -56,6 +56,10 @@ rules:
   # gram.font_size:         rule_gram_font_fixed
   gram.font_size:         rule_gram_font_scale_single_as_double
 
+  # Cell glyph color hint by potential score. [ref: board.cell_text_color]
+  # board.cell_text_color:  rule_cell_text_plain
+  board.cell_text_color:  rule_cell_text_score_gradient
+
   # Dedup 2+-letter grams across a game (every picker). [ref: gram.dedup]
   gram.dedup:             rule_no_duplicate_multigrams
   # gram.dedup:           rule_allow_duplicate_grams

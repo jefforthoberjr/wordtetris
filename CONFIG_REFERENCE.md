@@ -89,6 +89,25 @@ How gram text is auto-sized. All length grams are beholden to auto-sizing.
 - `rule_gram_font_scale_single_as_double` — single letters take the 2-letter size;
   longer grams still autosize.
 
+### board.cell_text_color
+Recolors each cell's gram GLYPHS to hint its potential point value. The per-gram
+value reuses the `scoring:` weights (`per_letter` + `per_extra_gram_letter`), so
+the hint tracks the knobs that actually award points; the constant `per_cell` /
+`word_base` terms are excluded (they'd shift every cell equally). Colors come from
+`board.cell_text_low_value` (low) and `board.cell_text_high_value` (high) in
+colors.yaml. Applies to every gram label (settled cells and the live piece).
+Cell-KIND bonuses
+(obstacle / mission / sand / fossil) aren't reflected — this first idea grades by
+the gram alone. See `models/gram_text_color.py`.
+- `rule_cell_text_plain` — no hint: every gram uses the flat `board.cell_text`
+  color (the original behavior).
+- `rule_cell_text_score_gradient` — grade the glyph color from
+  `board.cell_text_low_value` (a unigram) toward `board.cell_text_high_value`
+  (a full quadgram) by potential points
+  — black → dark gold by default, so longer / higher-scoring grams read richer.
+  Collapses to the plain color when scoring is off or the weights make length
+  irrelevant.
+
 ### gram.dedup
 Duplicate grams: one toggle for EVERY gram picker (player / obstacle / mission,
 square + hex; the initial formation and the piece queue).

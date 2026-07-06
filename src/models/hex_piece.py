@@ -18,6 +18,7 @@ from models.hex_grid import SQRT3, flattop_cell_center, flattop_vertices
 from views.shaders import get_shape_shader
 from views.textures import wild_vowel_image
 from views.hunt_highlight import make_hunt_overlay
+from models.gram_text_color import cell_text_color
 from config import select_rule, get_color
 
 
@@ -161,7 +162,6 @@ class HexPiece:
         if cell_color is None:
             cell_color = get_color("board.settled_cell_fill")
         border_color = get_color("board.cell_border")
-        text_color = get_color("board.cell_text")
 
         shape_shader = get_shape_shader()
         # Base font for a single letter, sized to the hex height (sqrt(3)*size)
@@ -227,7 +227,7 @@ class HexPiece:
                     gram.text,
                     font_size=gram_font,
                     weight='bold',
-                    color=text_color,
+                    color=cell_text_color(gram),
                     anchor_x="center",
                     anchor_y="center",
                     batch=batch

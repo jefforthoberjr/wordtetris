@@ -11,7 +11,9 @@ board:
   fossilized_fill:  [165, 165, 165]   # stone grey: a fossilized cell (formed word, frozen + dead)
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
-  cell_text:        [0, 0, 0, 255]    # gram/letter glyphs
+  cell_text:        [0, 0, 0, 255]    # gram/letter glyphs (flat default; plain rule + preview)
+  cell_text_low_value:  [0, 0, 0, 255]      # low end of the board.cell_text_color score gradient
+  cell_text_high_value: [184, 134, 11, 255]  # dark gold: high end of the board.cell_text_color score gradient
   hunt_highlight:   [220, 20, 20, 255]  # MOVING-phase word-hunt: letters of the typed search word, recolored on top of cell_text
   obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
   mission_fill:     [255, 153, 153]   # light red: pre-placed mission cells (the goal to clear)
