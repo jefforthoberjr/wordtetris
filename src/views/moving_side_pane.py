@@ -22,6 +22,7 @@ class MovingSidePane:
     COUNT_COLOR = get_color("moving_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("moving_side_pane.phase_label")
     SCORE_LABEL_COLOR = get_color("moving_side_pane.score_label")
+    BUTTON_COLOR = get_color("moving_side_pane.button_text")
     HUNT_PROMPT_COLOR = get_color("moving_side_pane.hunt_prompt")
     HUNT_INPUT_COLOR = get_color("moving_side_pane.hunt_input")
     HUNT_PLACEHOLDER_COLOR = get_color("moving_side_pane.hunt_placeholder")
@@ -83,6 +84,16 @@ class MovingSidePane:
             color=self.SCORE_LABEL_COLOR, batch=self._batch,
         )
 
+        # A clickable "Select words" label (the SelectingSidePane button idiom:
+        # a plain Label bounds-checked in on_mouse_press, no hover styling) that
+        # jumps straight to the SELECTING phase, one line under the score.
+        select_btn_y = score_label_y - line_h
+        self._select_btn = pyglet.text.Label(
+            get_string("select_words"), font_size=base, x=x + margin, y=select_btn_y,
+            anchor_x="left", anchor_y="top",
+            color=self.BUTTON_COLOR, batch=self._batch,
+        )
+
         # Player's lifetime dictionary size, pinned to the very bottom edge.
         count_y = y + margin
         self._count = pyglet.text.Label(
@@ -92,8 +103,8 @@ class MovingSidePane:
         )
 
         # The cleared-word list fills the pane between the count label (bottom)
-        # and the score label (top), reserving one line for each.
-        list_top = score_label_y - line_h
+        # and the Select button (top), reserving one line for each.
+        list_top = select_btn_y - line_h
         list_bottom = count_y + line_h
         list_height = max(line_h, list_top - list_bottom)
         self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
@@ -122,6 +133,20 @@ class MovingSidePane:
         if x < self._x or x > self._x + self._width:
             return None
         return self._word_list.word_at(x, y)
+
+    def hit_select(self, x, y):
+        """Whether (x, y) is on the "Select words" button -- lets GameScreen route
+        a MOVING-phase click on it to the phase transition into SELECTING."""
+        return self._hit(self._select_btn, x, y)
+
+    def _hit(self, label, x, y):
+        # Labels are anchored top-left, so the content box runs right/down from
+        # (label.x, label.y). Mirrors SelectingSidePane._hit.
+        left = label.x
+        right = label.x + label.content_width
+        top = label.y
+        bottom = label.y - label.content_height
+        return left <= x <= right and bottom <= y <= top
 
     def set_word_count(self, count):
         """Show the player's lifetime dictionary size along the bottom edge."""

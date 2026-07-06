@@ -88,6 +88,14 @@ class MovingMode:
     def on_mouse_press(self, x, y, button):
         pass
 
+    def request_select(self):
+        """The player asked to open the SELECT phase now (the moving pane's
+        Select button). Default: commit an empty placed set, so a word may
+        nucleate anywhere on the current board -- the same as the omniswap
+        ENTER/timer-zero path. Modes with live-piece bookkeeping may override
+        (e.g. to first place or set aside the piece in hand)."""
+        self._gs._begin_selection([])
+
     def update(self, dt):
         """Per-tick hook, called by GameScreen.update only while MOVING. Most
         modes are event-driven and ignore it; the timed modes count down here."""
@@ -622,6 +630,12 @@ class OmniswapVsTimerMode(MovingMode):
         if self._sand is not None:
             self._sand.on_swap(source, cell)
         L.log_20005("swapped", cell, source)
+
+    def request_select(self):
+        """The moving pane's Select button: identical to the ENTER/timer-zero
+        route into SELECT (drop the pick cursor, nucleate anywhere, keep the
+        race clock painted on the selecting pane)."""
+        self._enter_select()
 
     # --- phase / timer helpers -------------------------------------------
     def _enter_select(self):

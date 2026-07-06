@@ -2568,6 +2568,13 @@ class GameScreen:
         """Board clicks do nothing while selecting (piece-moving disabled)."""
         pass
 
+    def _request_select(self):
+        """The player asked to open SELECTING now (the moving pane's Select
+        button). Delegates to the active mode's request_select hook so each mode
+        decides how to leave MOVING -- the default commits an empty placed set
+        (nucleate anywhere), omniswap reuses its ENTER/timer path."""
+        self._moving_mode.request_select()
+
     def _begin_selection(self, placed_positions):
         """Called after each placement. Add the new piece to the accumulated
         placed set (kept lit in the placed tint), recompute the move's
@@ -3962,6 +3969,13 @@ class GameScreen:
         # (which owns piece/cursor input). _try_gram_manipulate keeps an UNASSIGNED
         # gram_manipulate (None) from swallowing clicks.
         if self._phase == Phase.MOVING:
+            # The moving pane's "Select words" button jumps straight to SELECTING,
+            # the click-equivalent of the omniswap ENTER route. Handled before the
+            # mode so a click on it never reads as a board move / gram-manip.
+            if (button == self._buttons["move_primary"]
+                    and self._moving_side_pane.hit_select(x, y)):
+                self._request_select()
+                return
             if not self._try_gram_manipulate(x, y, button):
                 self._moving_mode.on_mouse_press(x, y, button)
 

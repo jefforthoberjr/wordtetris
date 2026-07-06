@@ -33,6 +33,8 @@ en:
   clear_word:            "Clear word"
   submit_word:           "Submit word"
   next_piece:            "Next piece"
+  # MOVING-pane button that jumps straight to the SELECTING phase.
+  select_words:          "Select words"
   disambig_prompt:       "Select which one:"
   # Shown in the chooser when a submitted word has a SINGLE clear path (the
   # always-confirm variant): Enter commits, or edit to hunt a different word.
@@ -82,6 +84,7 @@ es:
   clear_word:            "Borrar palabra"
   submit_word:           "Enviar palabra"
   next_piece:            "Siguiente pieza"
+  select_words:          "Elegir palabras"
   disambig_prompt:       "Elige cuál:"
   disambig_confirm_prompt: "Enter para confirmar, o edita para cambiar"
   you_typed:             "Escribiste: {word}"

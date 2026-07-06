@@ -180,12 +180,13 @@ rules:
   game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
 
-  # Stage 2b: independent "must touch a placed cell" filter. [ref: game_screen.placed_cell_requirement]
+  # Stage 2b: independent "must include a placed cell" filter. [ref: game_screen.placed_cell_requirement]
+  # (related to word nucleation)
   game_screen.placed_cell_requirement: rule_placed_cell_optional
   # game_screen.placed_cell_requirement: rule_require_placed_cell
 
-  # Stage 2c: independent "must touch a fossilized cell" filter. [ref: game_screen.fossil_requirement]
-  # A fossilized cell for nucleation
+  # Stage 2c: independent "must include a fossilized cell" filter. [ref: game_screen.fossil_requirement]
+  # (related to word nucleation)
   # game_screen.fossil_requirement: rule_fossil_cell_optional
   game_screen.fossil_requirement: rule_require_fossil_cell
 

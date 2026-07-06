@@ -37,6 +37,7 @@ moving_side_pane:
   word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
   phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
   score_label:      [40, 90, 60, 255]  # running point total, shown under the timer/pieces label
+  button_text:      [40, 90, 170, 255] # clickable "Select words" label (matches selecting pane buttons)
   hunt_prompt:      [120, 120, 120, 255] # "Hunt a word:" prompt above the hunt field
   hunt_input:       [30, 30, 30, 255]    # the word being typed to hunt grams on the board
   hunt_placeholder: [180, 180, 180, 255] # faint caret when the hunt field is empty
