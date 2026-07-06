@@ -22,6 +22,7 @@ audio:
 # Capture a play session to sessions/<id>.log for replay/analysis.
 logging:
   enabled: true
+  first_mouse_probe: true   # macOS: log OS-swallowed "click twice" clicks [ref: logging.first_mouse_probe]
 
 # Points per cleared word; every weight is an independent tunable. [ref: scoring]
 scoring:

@@ -8,6 +8,7 @@ from config import CONFIG
 from controls import control_keys
 import debug_panel
 import log_codes as L
+import macos_first_mouse_probe
 import session_log
 from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
@@ -22,6 +23,11 @@ window = pyglet.window.Window(
 )
 
 ram_overhead.measure("after_window")
+
+# macOS "click twice" diagnostic: logs OS-swallowed first-mouse clicks that never
+# reach on_mouse_press (ONGOING_BUGS.md). Behavior-preserving; no-op off macOS or
+# when logging.first_mouse_probe is off. Installed once the Cocoa window exists.
+macos_first_mouse_probe.install(CONFIG)
 
 screen_manager = ScreenManager()
 title_screen = TitleScreen(window, screen_manager, ScreenType.MAIN_MENU)

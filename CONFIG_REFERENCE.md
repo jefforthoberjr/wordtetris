@@ -30,6 +30,19 @@ Session logging: capture a full play session to `sessions/<id>.log` for later
 analysis and replay (see `src/session_log.py`, `src/log_codes.py`). Toggle off for
 quick playtests where you don't want a file written.
 
+### logging.first_mouse_probe
+macOS-only diagnostic for the "have to click twice" bug (see `ONGOING_BUGS.md`).
+Cocoa asks a view `acceptsFirstMouse:` ONLY when a mouseDown lands on a window
+that isn't the active window; the default answer (NO) makes that first click get
+swallowed to activate the window, so it never reaches the app as a click and is
+invisible in the log. When on, `src/macos_first_mouse_probe.py` adds that selector
+to pyglet's Cocoa view, still answering NO (**behavior-preserving** — identical to
+the current default, changes nothing), and logs each call as a `log_00013`
+first-mouse probe. Each line is one otherwise-invisible swallowed click; correlate
+its timestamps with the player's "click twice" moments and the `log_00010` focus
+timeline. No-op off macOS. Flipping the probe's answer to YES would be the actual
+fix, held back until the logs confirm the swallow.
+
 ### scoring
 Points the player earns for each cleared word, summed into a running total shown
 near the timer in the right pane (see `models/scoring.py`). Every weight is an

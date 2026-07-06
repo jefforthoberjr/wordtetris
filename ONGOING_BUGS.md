@@ -93,3 +93,72 @@ Grab the new session log and check: (1) is there an END footer? (2) when does th
 last `[00012]` heartbeat land relative to the last input and the last `[00010]`
 focus line? That single comparison decides between "loop froze" and "events
 stopped being delivered," which selects between the two candidate fixes above.
+
+---
+
+## BUG: "Have to click twice" — first click swallowed (macOS)
+
+**Status:** open. Root cause identified with strong circumstantial evidence; a
+behavior-preserving instrumentation step is proposed to PROVE it before any
+(macOS-only) fix is applied.
+
+### Symptom
+Toward the end of a session, clicks feel like they need to be issued **twice** —
+the first click does nothing, the second one lands. Distinct from the alt-tab
+freeze above: the game keeps running normally, it's just that individual clicks
+are intermittently dropped. Reported with no alt-tabbing that the player noticed.
+
+### Evidence — session `2026-07-06T19-10-18_8127`
+(`rule_mode_omniswap_vs_timer`, race timer)
+
+- The session **ended cleanly**: a `# ===== END (FINISHED) =====` footer is
+  present, the end came from the race timer (`[40002] timer expired
+  (ended_game)` → `[10001] MOVING->VICTORY` → `[50001] FINISHED: 15 words, 645
+  points`), NOT a force-kill. So this is **not** the freeze bug.
+- The `[00012]` heartbeat ran the **entire** session — 183 beats at a steady ~2s
+  cadence right to the end. The main loop never stalled.
+- **Every** logged click did something: all 120 `[20003]` click lines are each
+  followed by a real `[20005]` omniswap action. There are **zero** dead clicks in
+  the log.
+- `game_screen.on_mouse_press` logs its `[20003]` line **unconditionally, as its
+  first statement** (before any phase/state check). So any click the app receives
+  is always logged. The player's dead first-clicks produced **no** `[20003]`
+  line → they never reached the app. Delivery was dropped **below** the app, in
+  the OS / pyglet event layer.
+- **Zero** `[00010]` focus lines this whole session — pyglet did not even log
+  clean window-key transitions (consistent with the botched-handshake behavior
+  noted in the freeze bug above).
+
+### CONFIRMED
+- Not a freeze (loop alive, clean END footer) and not a coordinate/game-logic bug
+  (every delivered click logged and acted correctly).
+- The dropped clicks never reached the app — an OS/pyglet event-delivery drop.
+
+### Leading hypothesis
+macOS **first-mouse swallow**. pyglet 2.1.14's Cocoa view
+(`pyglet/window/cocoa/pyglet_view.py`, class `PygletView` : `NSView`) does **not**
+override `acceptsFirstMouse:`, and `NSView`'s default return is **NO**. When the
+window is not the *active* window, macOS consumes the first click merely to
+activate the window and does not deliver it to the view as `mouseDown_`; the
+second click gets through. The app is easily made non-active without a full
+alt-tab: notification banner, menu bar / clock, Spotlight, a Space / Mission
+Control nudge, or a click onto another display.
+
+### Candidate fix — NOT yet applied (macOS-only; hold until proven)
+Override `acceptsFirstMouse:` on `PygletView` to return `YES` (via a small ObjC
+monkeypatch at startup, behind a `config.yaml` toggle — we don't edit the venv's
+pyglet source). This is the standard macOS remedy for "click twice." Deferred by
+request: it's a macOS-specific change, so we want direct proof the swallow is
+actually happening before applying it.
+
+### Instrumentation proposed to PROVE it (behavior-preserving)
+Override `acceptsFirstMouse:` but keep returning **NO** (no behavior change — the
+swallow still happens exactly as today) and **log every invocation**. macOS calls
+`acceptsFirstMouse:` on the view precisely when a mouseDown lands on an
+*inactive* window — so each log line is a direct, timestamped record of one
+otherwise-invisible swallowed click. Correlate its timestamps with the player's
+"click twice" moments. Complement with app-active-state logging
+(`applicationDidBecomeActive/resignActive`, window `becomeMain/resignMain`) for
+the surrounding timeline, since our current `[00010]` key-status logging isn't
+catching these transitions. Only after this confirms the swallow do we flip the
+return to `YES` (the fix).

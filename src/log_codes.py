@@ -70,6 +70,22 @@ def log_00012(count):
     session_log.emit(12, "heartbeat", count=count)
 
 
+# macOS "have to click twice" probe (ONGOING_BUGS.md). Cocoa sends the view
+# acceptsFirstMouse: ONLY when a mouseDown lands on a NON-active window; the
+# default answer NO swallows that click to activate the window, so it never
+# reaches on_mouse_press and produces no log_20003 -- the swallowed click is
+# otherwise invisible. src/macos_first_mouse_probe.py adds the selector (still
+# answering NO, so behavior is unchanged) purely to emit this line. Each one is a
+# swallowed click; line up its timestamp with the log_00010 focus timeline and the
+# player's "click twice" report. Only fires on macOS with logging.first_mouse_probe.
+def log_00013(x, y, app_active):
+    """A swallowed first-mouse click: `x,y` is the event's window-point location,
+    `app_active` is NSApp.isActive() at that instant (was the app already active
+    but the window not key, or the whole app inactive?)."""
+    session_log.emit(13, f"first-mouse probe ({x},{y}) app_active={app_active}",
+                     x=x, y=y, app_active=app_active)
+
+
 # --- 1xxxx  phase transitions ------------------------------------------------
 def _phase_name(phase):
     return getattr(phase, "name", "NONE")
