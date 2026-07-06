@@ -151,6 +151,57 @@ pyglet source). This is the standard macOS remedy for "click twice." Deferred by
 request: it's a macOS-specific change, so we want direct proof the swallow is
 actually happening before applying it.
 
+### Round 2 — probe was live and caught NOTHING (session `2026-07-06T19-40-28_de16`)
+Player reproduced the "click twice" in the **last ~30s** again (a 360s race game;
+symptom hit ~330–360s). The `first_mouse_probe` was confirmed active (the `.meta`
+config snapshot shows `first_mouse_probe: true`, so `install()` ran on macOS).
+Result:
+- **Zero `[00013]`** first-mouse lines the whole session.
+- **Zero `[00010]`** focus lines — *including at startup*, so pyglet's
+  `on_activate`/`on_deactivate` are simply not firing in this environment; their
+  absence is not evidence either way.
+- Every logged click in the final 30s worked perfectly (picks/swaps clean, words
+  ROD @352s and SON @360s played), heartbeats dead-steady at 2.0s to the end.
+- The `PygletTextView` subview is zero-frame (`init` with no `setFrame`), so board
+  clicks hit-test to `PygletView` — the class we DID patch. So this is not a
+  simple "wrong view" coverage gap.
+
+What this tells us: the swallowed clicks (if that's the mechanism) do **not** pass
+through `PygletView.acceptsFirstMouse:`. Combined with "reproduces near the ~6-min
+mark both times, no end-game escalation exists in the code," the common factor is
+**session duration**, not a specific final-seconds mechanic. `acceptsFirstMouse:`
+returning YES is therefore **not confirmed** as the fix — do not apply it yet.
+
+### Definitive probe — window-level `sendEvent:` (APPLIED 2026-07-06)
+pyglet pumps its OWN Cocoa loop (`CocoaWindow._poll_app_events` /
+`dispatch_events` in `pyglet/window/cocoa/__init__.py`): every event is pulled via
+`NSApp.nextEventMatchingMask_...` and handed to `NSApp.sendEvent_(event)`, which
+routes to the window's `sendEvent:`. That is the ONE chokepoint every mouse-down
+crosses, regardless of which view hit-tests or whether it gets swallowed.
+`PygletWindow` (`pyglet/window/cocoa/pyglet_window.py`) does NOT override
+`sendEvent:`, so `src/macos_first_mouse_probe.py` now adds one: it logs every
+left-mouse-down as `log_00014` (window-point x,y + `isKeyWindow` + `NSApp.isActive`)
+then calls `send_super` — no ObjC blocks, no behavior change. Gated on the same
+`logging.first_mouse_probe` flag as the `[00013]` probe. Verified: it fires on a
+left-mouse-down, ignores non-mouse events, and forwards to super so the window
+keeps working.
+
+Reading the NEXT reproduction (compare `[00014]` against the app-level `[20003]`;
+join on TIMESTAMP, since `[00014]` is window points and `[20003]` is backing
+pixels — the numbers differ by the Retina scale):
+- A dead click **appears** as `[00014]` but yields no `[20003]` → the OS delivered
+  it; pyglet's view dispatch dropped it → an in-app/pyglet bug, fixable without a
+  macOS-only hack.
+- A click you KNOW you made with **no `[00014]` at all** → `nextEventMatchingMask`
+  never returned it → the OS never delivered it to the app → genuinely OS-level
+  (then `acceptsFirstMouse:`→YES and/or a focus-reassert are the right class of
+  fix). This branch is an *absence*, so it leans on your report plus the
+  surrounding `[00014]`/`[20003]`/`[00012]` timestamps to bracket when.
+- Also check the flags on the `[00014]` lines that DO appear near the trouble:
+  `key_window=False` or `app_active=False` would be the first positive sign the
+  window/app was losing focus around then (the `[00010]` focus log is dead in this
+  environment, so these flags are our focus signal now).
+
 ### Instrumentation proposed to PROVE it (behavior-preserving)
 Override `acceptsFirstMouse:` but keep returning **NO** (no behavior change — the
 swallow still happens exactly as today) and **log every invocation**. macOS calls

@@ -86,6 +86,29 @@ def log_00013(x, y, app_active):
                      x=x, y=y, app_active=app_active)
 
 
+# macOS window-level input probe (ONGOING_BUGS.md "click twice", round 2). pyglet
+# pumps its own Cocoa loop and routes EVERY event through the window's sendEvent:,
+# so this fires for every left-mouse-down that reaches the app -- the one
+# chokepoint independent of which view hit-tests or whether the click is swallowed
+# (unlike log_00013, which only fires on the acceptsFirstMouse: path and missed
+# the real swallow). Read it against log_20003 (the app-level click):
+#   * [00014] present, no matching [20003] after it -> the OS delivered the click
+#     but pyglet's view dispatch dropped it (an in-app bug, no macOS-only fix).
+#   * a click you KNOW you made with NO [00014] at all -> the OS never delivered it
+#     to the app -> genuinely OS-level (an absence, so it leans on your report +
+#     the surrounding [20003]/[00012] timestamps to bracket when).
+# Coords are window POINTS (bottom-left origin), NOT the backing-pixel board coords
+# log_20003 records -- they differ by the Retina scale, so correlate on TIMESTAMP,
+# not on x,y. Only fires on macOS with logging.first_mouse_probe.
+def log_00014(x, y, key_window, app_active):
+    """A left-mouse-down reached the window's sendEvent:. `x,y` = window-point
+    location; `key_window` = was this the key window; `app_active` = NSApp.isActive
+    at that instant (distinguishes app-inactive from window-not-key)."""
+    session_log.emit(14, f"window mouse-down ({x},{y}) key_window={key_window} "
+                         f"app_active={app_active}",
+                     x=x, y=y, key_window=key_window, app_active=app_active)
+
+
 # --- 1xxxx  phase transitions ------------------------------------------------
 def _phase_name(phase):
     return getattr(phase, "name", "NONE")
