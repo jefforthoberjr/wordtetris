@@ -7,6 +7,9 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Game mode, where at least 1 cell needs to be from the connected "pile" (instead of just disparate clusters of asteroids.
+
+
 A UI for the admnin config
 With little pictures or animations, showing the effect of each option
 

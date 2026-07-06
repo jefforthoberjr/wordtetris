@@ -184,6 +184,15 @@ rules:
   game_screen.placed_cell_requirement: rule_placed_cell_optional
   # game_screen.placed_cell_requirement: rule_require_placed_cell
 
+  # Stage 2c: independent "must touch a fossilized cell" filter. [ref: game_screen.fossil_requirement]
+  # A fossilized cell for nucleation
+  # game_screen.fossil_requirement: rule_fossil_cell_optional
+  game_screen.fossil_requirement: rule_require_fossil_cell
+
+  # Waive the fossil requirement until the first word clears. [ref: game_screen.fossil_requirement_first_word]
+  game_screen.fossil_requirement_first_word: rule_fossil_skip_first_word
+  # game_screen.fossil_requirement_first_word: rule_fossil_no_skip
+
   # Whole-gram vs partial-gram consumption. [ref: game_screen.gram_usage]
   game_screen.gram_usage: rule_gram_use_whole
   # game_screen.gram_usage: rule_gram_use_partial

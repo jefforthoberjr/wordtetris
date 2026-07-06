@@ -965,6 +965,10 @@ class GameScreen:
         # that meet the length minimum.
         self._board_words_any = set()
         self._length_ok_words = set()
+        # Words passing every stage-2 filter except the fossil requirement (see
+        # _recompute_candidates), read by _submission_error to word a fossil-only
+        # rejection.
+        self._pre_fossil_words = set()
         # Cells of EVERY piece placed since the last selection turn -- the
         # accumulated nucleation set for the moving phase. With the multi-
         # placement select trigger several pieces land before selection opens, so
@@ -1002,6 +1006,34 @@ class GameScreen:
         }
         self._placed_cell_rule = select_rule(
             "game_screen.placed_cell_requirement", placed_cell_rules
+        )
+
+        # Fossil requirement, chosen by game_screen.fossil_requirement. A third
+        # independent stage-2 filter (2c), applied after the placed-cell filter:
+        # whether a word must include at least one fossilized cell. Fossils only
+        # appear once a word has cleared under a fossilize clear-action (see
+        # _is_fossilized), so on its own this makes the very first word of a game
+        # unclearable -- pair with the first-word-skip rule below to bootstrap.
+        # Default optional, so existing configs are unchanged.
+        fossil_req_rules = {
+            "rule_require_fossil_cell": self._rule_require_fossil_cell,
+            "rule_fossil_cell_optional": self._rule_fossil_cell_optional,
+        }
+        self._fossil_requirement_rule = select_rule(
+            "game_screen.fossil_requirement", fossil_req_rules
+        )
+        # First-word skip (game_screen.fossil_requirement_first_word): an
+        # enable/disable knob read by rule_require_fossil_cell. When enabled, the
+        # fossil requirement is waived while no word has cleared this game yet, so
+        # the opening word can bootstrap the first fossils; disabled keeps the
+        # requirement in force from the very first word (unplayable unless fossils
+        # already exist).
+        fossil_first_word_rules = {
+            "rule_fossil_skip_first_word": self._rule_fossil_skip_first_word,
+            "rule_fossil_no_skip": self._rule_fossil_no_skip,
+        }
+        self._fossil_first_word_rule = select_rule(
+            "game_screen.fossil_requirement_first_word", fossil_first_word_rules
         )
 
         # Gram-usage rule (game_screen.gram_usage): may a word use only part of a
@@ -1095,6 +1127,10 @@ class GameScreen:
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
+        # Fresh per game: how many words have cleared so far. Drives the
+        # first-word skip for the fossil requirement (rule_fossil_skip_first_word);
+        # 0 means the opening word hasn't landed yet.
+        self._words_cleared_this_game = 0
         # Fresh per game: the whole-board fill bonus fires at most once (see
         # _check_board_fill / game_screen.fill_board).
         self._fill_board_awarded = False
@@ -2616,9 +2652,16 @@ class GameScreen:
         self._board_words_any = {fw.word for fw in found_any}
         found = [fw for fw in found_any if self._word_length_rule(fw.word, fw.path)]
         self._length_ok_words = {fw.word for fw in found}
-        # Stage 2: nucleate, then apply the independent placed-cell requirement.
+        # Stage 2: nucleate, then apply the independent placed-cell requirement,
+        # then the independent fossil requirement.
         nucleated = self._nucleation_rule(found, live_placed)
-        self._candidates = self._placed_cell_rule(nucleated, live_placed)
+        placed_ok = self._placed_cell_rule(nucleated, live_placed)
+        # Words that clear the pipeline up to (but not counting) the fossil
+        # requirement, so _submission_error can tell a fossil-only rejection apart
+        # from a placed-piece one (equal to the candidate set when the fossil
+        # requirement is optional).
+        self._pre_fossil_words = {fw.word for fw in placed_ok}
+        self._candidates = self._fossil_requirement_rule(placed_ok)
         # Of several ways to spell the same word (different paths, or different
         # wild-vowel expansions), keep the one covering the fewest cells, so a
         # typed word makes the most compact clear -- e.g. a single wild as "OA"
@@ -2731,6 +2774,10 @@ class GameScreen:
         self._mission_cells.difference_update(fully_cleared)
         for word in cleared_words:
             self._cleared_word_history.add(word)
+        # Count every cleared word (repeats included) so the fossil requirement's
+        # first-word skip knows the opening word has landed (see
+        # _rule_fossil_skip_first_word).
+        self._words_cleared_this_game += len(cleared_words)
         if cleared_words:
             # Record each word + its gram grouping in the player's lifetime
             # dictionary (instant autosave). add() returns True only for words
@@ -3160,7 +3207,8 @@ class GameScreen:
         """The single most specific reason `word` can't be cleared right now,
         walking the pipeline from the typed word inward: a non-word, a word not
         on the board at all, a board word too short to clear, a board word that
-        doesn't touch the placed piece, or one already cleared this game. Logs the
+        doesn't touch the placed piece, one that touches no fossilized cell (when
+        the fossil requirement is on), or one already cleared this game. Logs the
         stable reason key, then returns the localized message string."""
         if not is_word(word):
             reason = "not_in_dictionary"
@@ -3169,7 +3217,9 @@ class GameScreen:
         elif word not in self._length_ok_words:
             reason = "too_short"
         elif word not in self._candidate_words:
-            reason = "not_involved"
+            # A word that clears every stage-2 filter but the fossil requirement
+            # gets its own reason; anything else here failed placement/nucleation.
+            reason = "not_fossil" if word in self._pre_fossil_words else "not_involved"
         else:
             reason = "already_cleared"
         L.log_30003(word, reason)
@@ -3442,6 +3492,37 @@ class GameScreen:
     def _rule_placed_cell_optional(self, candidates, placed_positions):
         """No placed-cell requirement: pass the nucleated words through as-is."""
         return candidates
+
+    # --- Fossil requirement rules (game_screen.fossil_requirement) ----------
+    # Stage 2c: an independent filter on the placed-cell-filtered words -- whether
+    # a word must cover at least one fossilized cell. Composes with the nucleation
+    # and placed-cell rules above. The first-word-skip knob
+    # (game_screen.fossil_requirement_first_word) can waive it until the opening
+    # word clears, so the game can bootstrap its first fossils.
+    def _rule_require_fossil_cell(self, candidates):
+        """Keep only words covering at least one fossilized cell -- unless the
+        first-word-skip rule waives the requirement (no word cleared yet)."""
+        if self._fossil_first_word_rule():
+            return candidates
+        return [
+            fw for fw in candidates
+            if any(self._is_fossilized(cell) for cell in fw.path)
+        ]
+
+    def _rule_fossil_cell_optional(self, candidates):
+        """No fossil requirement: pass the words through as-is."""
+        return candidates
+
+    # --- Fossil first-word-skip rules (game_screen.fossil_requirement_first_word)
+    # Enable/disable knob read by _rule_require_fossil_cell: whether to waive the
+    # fossil requirement while the opening word of the game hasn't cleared yet.
+    def _rule_fossil_skip_first_word(self):
+        """Waive the fossil requirement until the first word clears this game."""
+        return self._words_cleared_this_game == 0
+
+    def _rule_fossil_no_skip(self):
+        """Never waive: the fossil requirement holds from the very first word."""
+        return False
 
     def _current_piece(self):
         # A live word-piece (game_screen.player_word_piece) overrides the pool's

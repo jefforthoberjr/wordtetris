@@ -440,6 +440,34 @@ whether a word must include a cell from a piece placed this phase. Orthogonal to
 (Optional by default; `rule_adjacent_to_placed_pieces` already needs a placed cell,
 so the current behavior is unchanged.)
 
+### game_screen.fossil_requirement
+Stage 2c (fossil requirement): a third independent filter on the words that pass the
+placed-cell stage — whether a word must cover at least one fossilized cell. Composes
+with `word_nucleation` and `placed_cell_requirement`. Fossils only exist once a word
+has cleared under a fossilize clear-action (see `game_screen.clear_action` /
+`fossil_word_use`), so on its own `rule_require_fossil_cell` makes the opening word of
+a game unclearable — pair it with `fossil_requirement_first_word` below to bootstrap.
+A word rejected solely for missing a fossil cell reports `err_not_fossil` (log reason
+`not_fossil`).
+- `rule_require_fossil_cell` — word must cover ≥1 fossilized cell (subject to the
+  first-word skip below).
+- `rule_fossil_cell_optional` — no such requirement (default; existing configs
+  unchanged).
+
+Depends on `game_screen.fossil_word_use: rule_fossil_allow` to be meaningful: under
+`rule_fossil_block` fossilized cells are walls the word-finder never walks, so no word
+can contain one and `rule_require_fossil_cell` would reject everything.
+
+### game_screen.fossil_requirement_first_word
+Enable/disable knob read by `rule_require_fossil_cell`: whether to waive the fossil
+requirement while no word has cleared this game yet. Lets the opening word (which can
+never touch a fossil, since none exist yet) land and create the first fossils. Inert
+when `fossil_requirement` is `rule_fossil_cell_optional`.
+- `rule_fossil_skip_first_word` — waive the requirement until the first word clears
+  (default).
+- `rule_fossil_no_skip` — enforce it from the very first word (unplayable unless
+  fossils already exist by some other means).
+
 ### game_screen.gram_usage
 Whether a word must use all of a cell's gram, or may take part.
 - `rule_gram_use_whole` — a word always consumes a cell's entire gram (original).

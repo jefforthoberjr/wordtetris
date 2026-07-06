@@ -267,6 +267,12 @@ def _game(board, interactive=True, history=None):
     # Independent placed-cell filter (stage 2b); optional preserves the original
     # adjacent-only behavior the existing tests assert.
     g._placed_cell_rule = g._rule_placed_cell_optional
+    # Independent fossil filter (stage 2c); optional preserves the original
+    # behavior. The first-word-skip knob and the game-wide cleared-word counter
+    # it reads are wired here too (0 => opening word hasn't landed).
+    g._fossil_requirement_rule = g._rule_fossil_cell_optional
+    g._fossil_first_word_rule = g._rule_fossil_skip_first_word
+    g._words_cleared_this_game = 0
     # Phase-transition rules at their originals: every placement is a selection
     # turn, and an isolated placement skips selection. So _begin_selection
     # behaves as it did before the multi-placement trigger, which is what these
@@ -673,6 +679,70 @@ def test_anywhere_plus_require_placed_cell_composes():
     g._recompute_candidates()
     assert "CAT" not in g._candidate_words   # no placed cell -> filtered out
     assert "CARD" in g._candidate_words      # touches the placed D -> kept
+
+
+# --- fossil requirement (game_screen.fossil_requirement) --------------------
+
+def test_require_fossil_cell_filters_to_touching_words():
+    # With the first word already down (skip inactive), only words covering a
+    # fossilized cell survive.
+    g = _game(FakeBoard({}))
+    g._fossilized_cells = {(3, 0)}
+    g._words_cleared_this_game = 1
+    fw_touch = gs.FoundWord([(2, 0), (3, 0)], ["A", "B"], "AB")
+    fw_far = gs.FoundWord([(7, 7), (8, 7)], ["C", "D"], "CD")
+    assert g._rule_require_fossil_cell([fw_touch, fw_far]) == [fw_touch]
+
+
+def test_fossil_cell_optional_passes_all_through():
+    g = _game(FakeBoard({}))
+    g._words_cleared_this_game = 5   # ignored by the optional rule
+    fws = [gs.FoundWord([(7, 7)], ["C"], "C")]
+    assert g._rule_fossil_cell_optional(fws) == fws
+
+
+def test_fossil_skip_first_word_waives_until_first_clear():
+    # No word cleared yet -> the requirement is waived, so a fossil-free word
+    # passes; once a word has cleared, the same word is filtered out.
+    g = _game(FakeBoard({}))
+    g._fossilized_cells = {(3, 0)}
+    fw_far = gs.FoundWord([(7, 7), (8, 7)], ["C", "D"], "CD")
+    g._words_cleared_this_game = 0
+    assert g._rule_require_fossil_cell([fw_far]) == [fw_far]
+    g._words_cleared_this_game = 1
+    assert g._rule_require_fossil_cell([fw_far]) == []
+
+
+def test_fossil_no_skip_enforces_from_first_word():
+    # With the skip disabled, a fossil-free word is filtered even before any
+    # word has cleared.
+    g = _game(FakeBoard({}))
+    g._fossil_first_word_rule = g._rule_fossil_no_skip
+    g._words_cleared_this_game = 0
+    fw_far = gs.FoundWord([(7, 7)], ["C"], "C")
+    assert g._rule_require_fossil_cell([fw_far]) == []
+
+
+def test_require_fossil_cell_composes_and_diagnoses():
+    # CAT (row 0) is purely old; CARD (row 2) touches fossilized D. With the
+    # fossil requirement on and a word already cleared, only CARD is a candidate,
+    # and CAT's rejection is diagnosed as the fossil-specific reason.
+    g = _game(
+        FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T",
+                   (0, 2): "C", (1, 2): "A", (2, 2): "R", (3, 2): "D"})
+    )
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    g._fossilized_cells = {(3, 2)}       # the D is fossilized
+    g._words_cleared_this_game = 1       # skip inactive
+    # Fossils must be walkable for a word to contain one, so the requirement is
+    # only meaningful paired with fossil_word_use: rule_fossil_allow.
+    g._fossil_is_wall_rule = g._rule_fossil_allow_is_wall
+    g._fossil_word_ok_rule = g._rule_fossil_allow_word_ok
+    g._fossil_requirement_rule = g._rule_require_fossil_cell
+    g._recompute_candidates()
+    assert "CARD" in g._candidate_words      # covers the fossilized D -> kept
+    assert "CAT" not in g._candidate_words   # no fossil cell -> filtered out
+    assert g._submission_error("CAT") == gs.get_string("err_not_fossil")
 
 
 # --- partial gram usage (game_screen.gram_usage) ----------------------------

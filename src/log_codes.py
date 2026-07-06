@@ -229,7 +229,7 @@ def log_30002(word, path, variation, is_new, is_obscure=False, points=0):
 
 def log_30003(word, reason):
     """A submission was rejected. `reason` is a stable key (not_in_dictionary /
-    not_on_board / too_short / not_involved / already_cleared /
+    not_on_board / too_short / not_involved / not_fossil / already_cleared /
     already_selected_one_way / every_way_selected) -- the incorrect-submission
     signal for analysis."""
     session_log.emit(30003, f"rejected {word}", word=word, reason=reason)
