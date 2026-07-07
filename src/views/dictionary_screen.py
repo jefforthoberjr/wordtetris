@@ -207,11 +207,40 @@ class DictionaryScreen:
             )
             self._tab_labels.append(letter_label)
 
+        # --- sort-mode toggle button --------------------------------------
+        # Flips the whole view between A-Z sort (with the letter tabs below) and
+        # high-score sort (highest composition score first, no tabs -- arrow-key
+        # paging only). Default A-Z; the button label shows the CURRENT sort. The
+        # rect lives in its own always-drawn batch; its label rides the main batch
+        # (drawn after, so it lands on top), mirroring the tab square/glyph split.
+        self._sort_mode = "alpha"
+        self._button_batch = pyglet.graphics.Batch()
+        btn_w = math.floor(window.width / 4)
+        btn_h = math.floor(window.height / 16)
+        btn_x = math.floor(window.width / 20)
+        btn_y = window.height - math.floor(window.height / 14) - btn_h
+        self._sort_button = pyglet.shapes.BorderedRectangle(
+            btn_x, btn_y, btn_w, btn_h,
+            border=max(1, math.floor(btn_h / 14)),
+            color=tab_inactive, border_color=tab_border,
+            batch=self._button_batch,
+        )
+        self._sort_button_label = pyglet.text.Label(
+            get_string("dictionary_sort_alpha"),
+            font_size=math.floor(btn_h * 0.4),
+            x=btn_x + math.floor(btn_w / 2),
+            y=btn_y + math.floor(btn_h / 2),
+            anchor_x="center", anchor_y="center",
+            color=tab_text, batch=self._batch,
+        )
+
     # --- paging rules (swap point) ---------------------------------------
-    # The page-grouping strategy is the one configurable knob here. Today it is
-    # the A-Z letter scheme; a numeric pager (fixed N words per page) could swap
-    # in by pointing _build_pages at a different rule, with no other changes.
+    # The page-grouping strategy is the swappable knob here: _build_pages picks
+    # by the current sort mode -- the A-Z letter scheme, or high-score order. A
+    # numeric pager could slot in the same way with no other changes.
     def _build_pages(self, words):
+        if self._sort_mode == "score":
+            return self._rule_build_pages_by_score(words)
         return self._rule_build_pages_by_letter(words)
 
     # --- scoring rule (composition only) ---------------------------------
@@ -263,6 +292,23 @@ class DictionaryScreen:
                     start = start + self._capacity
         return pages, letter_first_page
 
+    def _rule_build_pages_by_score(self, words):
+        """High-score paging: order every word by DESCENDING composition score,
+        alphabetical as the tie-breaker, then chunk into fixed pages of at most
+        `capacity`. No letter buckets -- score pages carry letter None (the A-Z
+        tab strip is hidden in this mode, so paging is by the arrow keys alone).
+        Returns the same (pages, letter_first_page) shape as the A-Z rule, with an
+        empty letter_first_page (there is nothing to jump to)."""
+        ordered = sorted(words, key=lambda w: (-self._word_scores.get(w, 0), w))
+        pages = []
+        start = 0
+        while start < len(ordered):
+            pages.append({"letter": None, "words": ordered[start:start + self._capacity]})
+            start = start + self._capacity
+        if not pages:
+            pages.append({"letter": None, "words": []})
+        return pages, {}
+
     def _render_page(self, index):
         """Show the page at `index`: lay out its words and light up its letter
         tab. An empty letter's page renders as a fully blank grid."""
@@ -282,6 +328,27 @@ class DictionaryScreen:
                 self._tab_shapes[i].color = active
             else:
                 self._tab_shapes[i].color = inactive
+
+    # --- sort-mode toggle ------------------------------------------------
+    def _toggle_sort_mode(self):
+        """Flip between A-Z and high-score sort: swap the button label to the new
+        current sort, show/hide the letter tab strip, rebuild the pages under the
+        new order, and reopen on the first page."""
+        self._sort_mode = "score" if self._sort_mode == "alpha" else "alpha"
+        self._sort_button_label.text = get_string(
+            "dictionary_sort_score" if self._sort_mode == "score"
+            else "dictionary_sort_alpha")
+        self._set_tab_strip_visible(self._sort_mode == "alpha")
+        self._pages, self._letter_first_page = self._build_pages(self._words)
+        self._render_page(0)
+
+    def _set_tab_strip_visible(self, visible):
+        """Show/hide the A-Z tab strip (high-score sort has no letters). The
+        squares are skipped in draw() by sort mode; the letter glyphs share the
+        main batch, so blank their text here and restore it when the strip
+        returns."""
+        for i, letter in enumerate(self.LETTERS):
+            self._tab_labels[i].text = letter.upper() if visible else ""
 
     def _render_words(self, page_words):
         """Fill the cell grid from `page_words` (already sliced to at most
@@ -361,8 +428,13 @@ class DictionaryScreen:
         self._window.clear()
         pyglet.gl.glClearColor(win_bg[0] / 255, win_bg[1] / 255, win_bg[2] / 255, 1)
 
-        # Tab squares first, then everything else (word grid, count, tab letters).
-        self._tab_batch.draw()
+        # Sort button first (its label rides the main batch, drawn after, on top),
+        # then the tab squares -- but only in A-Z sort; high-score sort hides the
+        # strip (its letter glyphs are blanked in _set_tab_strip_visible). Then
+        # everything else (word grid, count, score, button label, tab letters).
+        self._button_batch.draw()
+        if self._sort_mode == "alpha":
+            self._tab_batch.draw()
         self._batch.draw()
         # The hovered-word preview sits on top of the word grid, occluding the
         # word's text Label with its re-rendered cells.
@@ -411,9 +483,18 @@ class DictionaryScreen:
         self._jump_to_letter(text.lower())
 
     def on_mouse_press(self, x, y, button, modifiers):
-        # Clicking a letter tab jumps to that letter's first page. Tab geometry
-        # is read straight off the shapes; mouse coords share the window units
-        # the tabs were laid out in (same convention as the menu screens).
+        # The sort toggle is always live; check it first.
+        btn = self._sort_button
+        if (btn.x <= x <= btn.x + btn.width and
+                btn.y <= y <= btn.y + btn.height):
+            self._toggle_sort_mode()
+            return
+        # Clicking a letter tab jumps to that letter's first page -- A-Z sort only
+        # (high-score sort hides the strip). Tab geometry is read straight off the
+        # shapes; mouse coords share the window units the tabs were laid out in
+        # (same convention as the menu screens).
+        if self._sort_mode != "alpha":
+            return
         hit = None
         for i, shape in enumerate(self._tab_shapes):
             if (shape.x <= x <= shape.x + shape.width and
