@@ -31,6 +31,7 @@ class Scorer:
         self._new_word_bonus = cfg.get("new_word_bonus", 0)
         self._fill_board_bonus = cfg.get("fill_board_bonus", 0)
         self._time_remaining_per_second = cfg.get("time_remaining_per_second", 0)
+        self._word_score_display = cfg.get("word_score_display", "sum")
         self._total = 0
 
     @property
@@ -42,33 +43,57 @@ class Scorer:
         """Zero the total for a new game."""
         self._total = 0
 
-    def word_points_rule(self, word_length, gram_lengths, obstacle_cells,
-                         mission_cells, sand_cells, fossil_reuse_cells, is_new):
-        """Points for one cleared word, WITHOUT touching the running total (a pure
-        computation). Returns 0 when scoring is disabled.
+    def word_points_breakdown_rule(self, word_length, gram_lengths, obstacle_cells,
+                                   mission_cells, sand_cells, fossil_reuse_cells, is_new):
+        """One cleared word's points split into the three DISPLAY groups, as a list
+        of subtotals: [basic cell sum, cell-type bonuses, new-word bonus]. Their
+        sum is the word's total (word_points_rule builds on this), so the readout
+        and the running total can never disagree. All zeros when scoring is
+        disabled.
 
         `gram_lengths` is the letters-taken count per cell -- so len() is the
         cell count and each entry drives the longer-gram bonus (letters beyond
         the first in a cell). The *_cells args are how many of the word's cells
-        are that kind; `is_new` is newness to the player's lifetime dictionary.
+        are that kind; `is_new` is newness to the player's lifetime dictionary."""
+        if not self._enabled:
+            return [0, 0, 0]
+        # 1) Basic cell sum: base + per-cell + per-letter + longer-gram (every
+        #    letter beyond the first in each cell).
+        basic = (self._word_base
+                 + self._per_cell * len(gram_lengths)
+                 + self._per_letter * word_length
+                 + self._per_extra_gram_letter * sum(max(0, n - 1) for n in gram_lengths))
+        # 2) Cell-type bonuses: obstacle / mission / sand-timer / fossil reuse.
+        cell_type = (self._obstacle_cell_bonus * obstacle_cells
+                     + self._mission_cell_bonus * mission_cells
+                     + self._sand_timer_cell_bonus * sand_cells
+                     + self._fossil_reuse_bonus * fossil_reuse_cells)
+        # 3) New-word bonus (first time the player has ever collected the word).
+        new_word = self._new_word_bonus if is_new else 0
+        return [basic, cell_type, new_word]
+
+    def word_points_rule(self, **facts):
+        """Points for one cleared word, WITHOUT touching the running total (a pure
+        computation summing word_points_breakdown_rule's groups). Returns 0 when
+        scoring is disabled. `facts` are word_points_breakdown_rule's keyword args.
 
         Split from score_word_rule so a word's points can be PREVIEWED for
         display (the SELECTING pane lists a word before the phase-end batch
         actually scores it) without double-counting into the total."""
-        if not self._enabled:
-            return 0
-        points = self._word_base
-        points += self._per_cell * len(gram_lengths)
-        points += self._per_letter * word_length
-        # Longer grams: every letter beyond the first in each cell.
-        points += self._per_extra_gram_letter * sum(max(0, n - 1) for n in gram_lengths)
-        points += self._obstacle_cell_bonus * obstacle_cells
-        points += self._mission_cell_bonus * mission_cells
-        points += self._sand_timer_cell_bonus * sand_cells
-        points += self._fossil_reuse_bonus * fossil_reuse_cells
-        if is_new:
-            points += self._new_word_bonus
-        return points
+        return sum(self.word_points_breakdown_rule(**facts))
+
+    def word_score_display_rule(self, **facts):
+        """What the word list shows beside a cleared word, per
+        scoring.word_score_display: 'sum' -> the int total (+NN); 'breakdown' ->
+        the non-zero display groups as a list (basic cell sum, cell-type bonuses,
+        new-word bonus), rendered "+A +B +C". Zeros are dropped so an ordinary
+        word shows just its base and bonus values appear only when earned. Pure,
+        and built from the same breakdown as the total -- the numbers always
+        agree. `facts` are word_points_breakdown_rule's keyword args."""
+        breakdown = self.word_points_breakdown_rule(**facts)
+        if self._word_score_display == "breakdown":
+            return [p for p in breakdown if p]
+        return sum(breakdown)
 
     def score_word_rule(self, **facts):
         """Compute a cleared word's points (word_points_rule) AND add them to the

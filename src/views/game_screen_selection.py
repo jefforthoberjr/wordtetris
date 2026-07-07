@@ -248,9 +248,11 @@ class SelectionMixin:
                 new_flags.append(is_new)
                 obscure_flags.append(word_obscure)
                 # Score the word into the running total (facts were captured above,
-                # pre-clear); its points also list beside the word.
+                # pre-clear); its points also list beside the word. The total/log
+                # use the int total; the pane gets the display value (a "+A +B +C"
+                # breakdown or the same int, per scoring.word_score_display).
                 points = self._scorer.score_word_rule(is_new=is_new, **facts)
-                word_scores.append(points)
+                word_scores.append(self._scorer.word_score_display_rule(is_new=is_new, **facts))
                 # Single sink for every clear (interactive / batch / auto).
                 L.log_30002(fw.word, fw.path, variation, is_new, word_obscure, points)
             self._moving_side_pane.add_cleared_words(
@@ -423,7 +425,7 @@ class SelectionMixin:
         # Preview the word's points for the entry list BEFORE _clear_paths runs
         # (which is where they're really scored into the total) -- the facts must
         # be read pre-clear, and the same pure rule guarantees the same number.
-        points = self._scorer.word_points_rule(is_new=is_new, **self._word_score_facts(found))
+        display = self._scorer.word_score_display_rule(is_new=is_new, **self._word_score_facts(found))
         self._clear_paths([found])
         # Constellation turnover: refill or leave empty the cells this word vacated
         # (game_screen.constellation_turnover). Runs before the recompute/victory
@@ -431,7 +433,7 @@ class SelectionMixin:
         if self._constellation:
             self._constellation_turnover_rule(found.path)
         self._words_submitted_this_select += 1
-        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), points)
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), display)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
         self._recompute_candidates()
         # This clear may have won the game immediately (e.g. it removed the last
@@ -482,11 +484,11 @@ class SelectionMixin:
         # Preview the word's points for the entry list. Deferred words score in
         # the phase-end batch (_clear_paths); the board is unchanged until then,
         # so these facts and the same pure rule yield the batch's number.
-        points = self._scorer.word_points_rule(is_new=is_new, **self._word_score_facts(found))
+        display = self._scorer.word_score_display_rule(is_new=is_new, **self._word_score_facts(found))
         self._pending.append(found)
         self._words_submitted_this_select += 1
         self._highlight_pending_cells(found.path)
-        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), points)
+        self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), display)
         # One-word-per-select ends the phase now; _end_selection clears the single
         # held word on the way out (game_screen.select_word_limit).
         if self._select_word_limit_rule():

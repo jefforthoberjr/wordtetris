@@ -43,6 +43,8 @@ scoring:
   new_word_bonus:            15
   fill_board_bonus:          100
   time_remaining_per_second: 1
+  word_score_display:        breakdown   # sum | breakdown -- per-word score readout [ref: scoring.word_score_display]
+  # word_score_display:        sum         # sum | breakdown -- per-word score readout [ref: scoring.word_score_display]
 
 dictionary:
   # Validation word list: headwords_20k (21.9k, no inflections) vs expanded (~60k).

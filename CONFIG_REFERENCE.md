@@ -111,6 +111,21 @@ digram+trigram word ~33, an 8-letter new word over an obstacle ~75).
 | `fill_board_bonus` | whole board filled ONCE (what "filled" means is mode-dependent; see `game_screen.fill_board`) |
 | `time_remaining_per_second` | per whole second left on the clock at game end |
 
+#### scoring.word_score_display
+How each cleared word's points read in the word list (right of the word) — the
+running total at the top is unaffected either way, and the number(s) are always
+the same points, just formatted differently:
+- `sum` — one figure, the word's whole score (`+33`). The original behavior.
+- `breakdown` — the score split into its three DISPLAY groups, listed
+  `+A +B +C`: **(1)** the basic cell sum (`word_base` + `per_cell` +
+  `per_letter` + `per_extra_gram_letter`), **(2)** the cell-type bonuses
+  (`obstacle` + `mission` + `sand_timer` + `fossil_reuse`), **(3)**
+  `new_word_bonus`. Groups worth 0 are DROPPED, so an ordinary word shows just
+  its base (`+13`) and the extra values appear only on words that earned them
+  (`+13 +15 +10`). The three groups always sum to the `sum`-mode figure.
+  The score column is widened to fit the list, so on bonus-heavy rows it can
+  crowd the word text — a playtest trade-off.
+
 ### dictionary.word_source
 Validation word list — the "is this a valid word?" corpus the word-clearing rule
 checks against (`models/word_dictionary.py`). Swap between the curated headword

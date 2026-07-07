@@ -29,6 +29,9 @@ class ScrollingWordList:
     # width so its glyph (vertex) count stays constant across scrolls, the same
     # buffer-warming trick PAD_LEN does for the word (covers up to "+9999").
     SCORE_PAD = 5
+    # Breakdown mode (scoring.word_score_display) lists several group values
+    # ("+A +B +C") in the same right column, so it needs a wider fixed field.
+    BREAKDOWN_SCORE_PAD = 15
     TEXT_COLOR = get_color("moving_side_pane.wordlist_text")
     # A word the player has never collected before shows green instead.
     NEW_TEXT_COLOR = get_color("moving_side_pane.wordlist_new_text")
@@ -43,6 +46,14 @@ class ScrollingWordList:
 
     def __init__(self, x, y, width, height):
         self._batch = pyglet.graphics.Batch()
+
+        # Fixed width of the right-hand score field: wider in breakdown mode so
+        # the "+A +B +C" group list fits (see _score_text). Fixed per instance,
+        # so every row still rjusts to the same char count (the buffer-warming
+        # invariant PAD_LEN relies on holds).
+        display = CONFIG.get("scoring", {}).get("word_score_display", "sum")
+        self._score_pad = (self.BREAKDOWN_SCORE_PAD if display == "breakdown"
+                           else self.SCORE_PAD)
 
         margin = width // 16
         text_x = x + margin
@@ -77,7 +88,7 @@ class ScrollingWordList:
             )
             self._labels.append(label)
             score_label = pyglet.text.Label(
-                " " * self.SCORE_PAD,
+                " " * self._score_pad,
                 font_size=font_size,
                 x=score_x, y=row_y,
                 anchor_x="right", anchor_y="top",
@@ -99,12 +110,19 @@ class ScrollingWordList:
         return self.TEXT_COLOR
 
     def _score_text(self, score):
-        """The right-column text for a word's points: "+NN" right-justified to
-        SCORE_PAD (constant glyph count), or all blanks when there's no score
-        (None, or 0 / disabled scoring -- nothing worth showing)."""
+        """The right-column text for a word's points, right-justified to the score
+        field (constant glyph count), or all blanks when there's nothing to show
+        (None, 0, or an empty breakdown list -- disabled scoring / no points).
+        `score` is an int in sum mode ("+NN"); in breakdown mode it's a list of
+        the non-zero group subtotals, rendered "+A +B +C" (see
+        scoring.word_score_display)."""
         if not score:
-            return " " * self.SCORE_PAD
-        return ("+" + str(score)).rjust(self.SCORE_PAD)
+            return " " * self._score_pad
+        if isinstance(score, (list, tuple)):
+            text = " ".join("+" + str(p) for p in score)
+        else:
+            text = "+" + str(score)
+        return text.rjust(self._score_pad)
 
     def add_word(self, word, is_new=False, is_obscure=False, score=None):
         """Push one word onto the top; everything below slides down one row and
@@ -165,7 +183,7 @@ class ScrollingWordList:
             label.text = " " * self.PAD_LEN
             label.color = self.TEXT_COLOR
             label.y = row_y
-            self._score_labels[r].text = " " * self.SCORE_PAD
+            self._score_labels[r].text = " " * self._score_pad
             self._score_labels[r].y = row_y
 
     def draw(self):

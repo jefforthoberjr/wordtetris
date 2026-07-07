@@ -7,6 +7,19 @@ GAME NAMES
 * catalyst cata LIST
 
 
+TITRATE wasn't in the dictionary... not even the obscure one
+pop quiz for obscure or super obscure words
+
+
+Little symbols for the different error types, instead of the words?
+(to hard to read the errors quickly, they all look the same with fast eyes)
+
+Surface menu items items in the game, to play the different game modes
+-maybe have different copies of the config files, to have a different configs set aside for each game mode
+-Of maybe even have a couple copies for the same game mode
+-A configuration of configuration files
+
+
 Keep track of total player score with the dictionary
 
 
