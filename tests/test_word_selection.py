@@ -989,3 +989,83 @@ def test_instant_mode_routes_through_chooser():
     assert g._disambiguating()
     assert g._board.cells != {}                             # nothing cleared yet
     assert g._selecting_side_pane.accepted == []
+
+
+# --- Constellation mode (game_screen.mode: rule_mode_constellation) ----------
+# The typed word is assembled from grams anywhere on the board (no adjacency, no
+# nucleation); _options_for / _submission_error route through the matcher when
+# g._constellation is on. These reuse the _game harness with the flag flipped.
+
+def _constellation_game(board):
+    g = _game(board)
+    g._constellation = True
+    g._constellation_max_paths = 24
+    g._constellation_turnover_rule = g._rule_constellation_no_replenish
+    g._phase = gs.Phase.SELECTING
+    return g
+
+
+def test_constellation_clears_word_from_scattered_cells():
+    # C, A, T sit apart on the board; typing CAT clears all three (no adjacency).
+    g = _constellation_game(FakeBoard({(0, 0): "C", (5, 5): "A", (2, 7): "T",
+                                       (9, 1): "Z"}))
+    g._on_submit_word("cat")
+    assert "CAT" in g._cleared_word_history
+    assert g._board.cells == {(9, 1): "Z"}                 # only the unused cell left
+    assert g._selecting_side_pane.accepted == ["CAT"]
+
+
+def test_constellation_stays_in_select_after_a_word():
+    # No placed piece + board doesn't shrink under the typist => SELECT stays open
+    # (unlimited words), unlike the adjacency modes' auto-close.
+    g = _constellation_game(FakeBoard({(0, 0): "C", (5, 5): "A", (2, 7): "T",
+                                       (1, 1): "D", (3, 3): "O", (7, 7): "G"}))
+    g._on_submit_word("cat")
+    assert g._phase is gs.Phase.SELECTING                  # did not end selection
+    g._on_submit_word("dog")
+    assert "DOG" in g._cleared_word_history
+
+
+def test_constellation_rejects_word_not_on_board():
+    g = _constellation_game(FakeBoard({(0, 0): "C", (1, 0): "A", (2, 0): "T"}))
+    g._on_submit_word("dog")                               # a word, but no D/O/G
+    assert g._cleared_word_history == set()
+    assert g._board.cells == {(0, 0): "C", (1, 0): "A", (2, 0): "T"}
+
+
+def test_constellation_rejects_non_word():
+    g = _constellation_game(FakeBoard({(0, 0): "X", (1, 0): "Q", (2, 0): "Z"}))
+    g._on_submit_word("xqz")                               # assembles, but not a word
+    assert g._cleared_word_history == set()
+
+
+def test_constellation_replenish_refills_only_vacated_empty_cells():
+    # rule_constellation_replenish refills each cell the clear emptied (and only
+    # those); _fill_one_player_cell needs the real piece machinery, so stub it to
+    # record which cells it would refill and drop a placeholder gram in.
+    g = _constellation_game(FakeBoard({(0, 0): "C", (5, 5): "A", (2, 7): "T",
+                                       (9, 1): "Z"}))
+    g._constellation_turnover_rule = g._rule_constellation_replenish
+    refilled = []
+
+    def fake_fill(x, y):
+        refilled.append((x, y))
+        g._board.cells[(x, y)] = "Q"        # a fresh gram lands here
+
+    g._fill_one_player_cell = fake_fill
+    g._on_submit_word("cat")
+    # The three vacated cells refilled; the untouched Z cell was not.
+    assert set(refilled) == {(0, 0), (5, 5), (2, 7)}
+    assert (9, 1) not in refilled
+    assert g._board.gram_at(9, 1).text == "Z"
+    # Board never emptied: every cell holds a gram again.
+    assert all(g._board.gram_at(x, y) is not None for (x, y) in g._board.cells)
+
+
+def test_constellation_no_replenish_leaves_cells_empty():
+    g = _constellation_game(FakeBoard({(0, 0): "C", (5, 5): "A", (2, 7): "T"}))
+    called = []
+    g._fill_one_player_cell = lambda x, y: called.append((x, y))
+    g._on_submit_word("cat")
+    assert called == []                      # no-replenish never refills
+    assert g._board.cells == {}

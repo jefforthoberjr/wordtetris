@@ -217,6 +217,33 @@ mode-agnostic.
 - `rule_mode_omniswap_vs_timer` — MOVING_OMNISWAP: a pre-filled board, no cursor
   sweep or piece queue; the player freely swaps any two cells against a countdown,
   then SELECT (timer-zero or spacebar). See the OMNISWAP PRESET.
+- `rule_mode_constellation` — MOVING_CONSTELLATION: a pre-filled board the player
+  never rearranges (no piece/cursor/timer/swap). The trivial MOVING phase is just
+  the doorway into SELECT (ENTER); there the player types word after word. A word
+  is accepted when its letters can be assembled from grams sitting ANYWHERE on the
+  board — each cell used once, whole grams only, no adjacency, no nucleation. The
+  used cells clear or fossilize and a word_trail "constellation" is drawn through
+  them. See the CONSTELLATION PRESET.
+
+### game_screen.constellation_max_paths
+Constellation only: the maximum number of distinct cell-assemblies the on-submit
+matcher returns for one typed word. A scattered board can spell a word many ways;
+this caps how many the disambiguation chooser cycles (the auto-pick rule still keeps
+the fewest-cell one, which the longest-gram-first search surfaces early, so a low
+cap is safe). Ignored by every other mode.
+
+### game_screen.constellation_turnover
+Constellation only: after a submitted word clears, what happens to the cells it
+vacated.
+- `rule_constellation_no_replenish` — vacated cells stay empty, so the board shrinks
+  toward the whole-board-cleared endgame (pair with `rule_clear_remove` +
+  `rule_victory_grid_empty`). With `rule_clear_fossilize` the cells aren't empty
+  anyway, so this is the natural choice there too (board freezes toward
+  `rule_victory_grid_fossilized`).
+- `rule_constellation_replenish` — each now-empty vacated cell refills with a fresh
+  gram from the configured player picker, so the board never empties (an endless
+  constellation; no grid-empty win). Only refills cells the clear-action actually
+  emptied, so it's a no-op under `rule_clear_fossilize`.
 
 ### game_screen.omniswap_timer_seconds
 Seconds the MOVING_OMNISWAP countdown starts at (only used by
@@ -292,6 +319,31 @@ variant; `select_word_limit` picks one-word-then-MOVING vs many-words-per-SELECT
 - `game_screen.word_nucleation` → `rule_nucleate_anywhere`
 - `game_screen.select_word_limit` → `rule_one_word_per_select` (or `rule_unlimited_words`)
 
+(`game_screen.word_select` stays `rule_select_by_text_input`.)
+
+### CONSTELLATION PRESET
+To play MOVING_CONSTELLATION, set `game_screen.mode` to `rule_mode_constellation` and
+flip these (board starts full, no placed piece so words form anywhere, every action
+opens word entry, and SELECT stays open so many words clear per visit):
+- `game_screen.setup_formation` → a fill formation (e.g. `rule_formation_fill_player_diagonal`
+  or one of the ideation fills — every cell must carry a gram)
+- `game_screen.word_nucleation` → `rule_nucleate_anywhere`
+- `game_screen.skip_select_isolated` → `rule_never_skip_select`
+- `game_screen.select_trigger` → `rule_select_every_placement`
+- `game_screen.clear_timing` → `rule_clear_on_submit`
+- `game_screen.select_word_limit` → `rule_unlimited_words` (keep typing without leaving SELECT)
+- `game_screen.word_trail` → `rule_word_trail_on` (draw the constellation line)
+- `game_screen.clear_action` + `game_screen.victory` — pick a matching pair:
+  - `rule_clear_fossilize` + `rule_victory_grid_fossilized` (freeze cells; win when all frozen), or
+  - `rule_clear_remove` + `rule_victory_grid_empty` (remove cells; win when board empty),
+  - or `rule_victory_none` for an endless board.
+- `game_screen.constellation_turnover` → `rule_constellation_no_replenish` (board shrinks
+  toward the win) or `rule_constellation_replenish` (vacated cells refill; endless board —
+  use with `rule_victory_none`).
+
+The auto-pick vs blue-line chooser for which constellation clears is the existing
+`game_screen.clear_disambiguation` (`rule_disambig_auto_pick` = fewest-cell, no
+choice; `rule_disambig_cycle_*` = cycle the star patterns with the blue lines).
 (`game_screen.word_select` stays `rule_select_by_text_input`.)
 
 ### game_screen.word_length
@@ -657,7 +709,10 @@ Victory condition (only one active at a time):
 - `rule_victory_missions_cleared`
 - `rule_victory_missions_and_obstacles_cleared`
 - `rule_victory_obstacles_cleared`
-- `rule_victory_grid_empty`
+- `rule_victory_grid_empty` — win when the board holds no cells (the whole-board-
+  cleared endgame; pair with `rule_clear_remove`, e.g. constellation without replenish).
+- `rule_victory_grid_fossilized` — win when every board cell is fossilized (the whole-
+  board-frozen endgame; pair with `rule_clear_fossilize`, e.g. constellation/omniswap).
 - `rule_victory_none` — no win condition at all; the game runs until the player quits
   (use with `rule_formation_fill_player_diagonal`, which has no missions/obstacles).
 

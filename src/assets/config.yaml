@@ -88,10 +88,19 @@ rules:
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase strategy: jigsaw / typewriter / omniswap. [ref: game_screen.mode]
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
-  game_screen.mode:       rule_mode_omniswap_vs_timer
+  # game_screen.mode:       rule_mode_omniswap_vs_timer
+  game_screen.mode:       rule_mode_constellation
+
+  # CONSTELLATION: max distinct cell-assemblies the matcher returns per word (the
+  # chooser cycles them; auto-pick keeps fewest-cell). [ref: game_screen.constellation_max_paths]
+  game_screen.constellation_max_paths: 24
+
+  # CONSTELLATION: do vacated cells refill or stay empty. [ref: game_screen.constellation_turnover]
+  game_screen.constellation_turnover: rule_constellation_no_replenish
+  # game_screen.constellation_turnover: rule_constellation_replenish
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
@@ -128,15 +137,15 @@ rules:
   # game_screen.word_repeat: rule_repeat_allow
 
   # Cleared-word path overlay. [ref: game_screen.word_trail]
-  game_screen.word_trail:           rule_word_trail_on
-  # game_screen.word_trail:         rule_word_trail_off
+  # game_screen.word_trail:           rule_word_trail_on
+  game_screen.word_trail:         rule_word_trail_off
   game_screen.word_trail_thickness: 8
   game_screen.word_trail_opacity:   0.5
 
   # How multi-path words are chosen/confirmed. [ref: game_screen.clear_disambiguation]
   # game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
-  game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
-  # game_screen.clear_disambiguation: rule_disambig_auto_pick
+  # game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
   game_screen.disambig_line_thickness:          8
   game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
@@ -187,21 +196,21 @@ rules:
 
   # Stage 2c: independent "must include a fossilized cell" filter. [ref: game_screen.fossil_requirement]
   # (related to word nucleation)
-  # game_screen.fossil_requirement: rule_fossil_cell_optional
-  game_screen.fossil_requirement: rule_require_fossil_cell
+  game_screen.fossil_requirement: rule_fossil_cell_optional
+  # game_screen.fossil_requirement: rule_require_fossil_cell
 
   # Waive the fossil requirement until the first word clears. [ref: game_screen.fossil_requirement_first_word]
   # game_screen.fossil_requirement_first_word: rule_fossil_skip_first_word
-  # game_screen.fossil_requirement_first_word: rule_fossil_no_skip
-  game_screen.fossil_requirement_first_word: rule_fossil_seed_center
+  game_screen.fossil_requirement_first_word: rule_fossil_no_skip
+  # game_screen.fossil_requirement_first_word: rule_fossil_seed_center
 
   # Whole-gram vs partial-gram consumption. [ref: game_screen.gram_usage]
   game_screen.gram_usage: rule_gram_use_whole
   # game_screen.gram_usage: rule_gram_use_partial
 
   # May a new word reuse fossilized cells. [ref: game_screen.fossil_word_use]
-  # game_screen.fossil_word_use: rule_fossil_block
-  game_screen.fossil_word_use: rule_fossil_allow
+  game_screen.fossil_word_use: rule_fossil_block
+  # game_screen.fossil_word_use: rule_fossil_allow
 
   # Stage 3 (select): auto-clear vs interactive text entry. [ref: game_screen.word_select]
   # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
@@ -297,8 +306,8 @@ rules:
   game_screen.cell_overlap_fossilized: rule_block_moveandplace_over_fossilized_cell
 
   # Fate of a cleared word's cells: remove vs fossilize. [ref: game_screen.clear_action]
-  # game_screen.clear_action: rule_clear_remove
-  game_screen.clear_action: rule_clear_fossilize
+  game_screen.clear_action: rule_clear_remove
+  # game_screen.clear_action: rule_clear_fossilize
 
   # Covered "old" cells are deleted (so covered obstacles/missions count cleared).
   game_screen.cell_overlap_action: rule_old_cells_get_delete

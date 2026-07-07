@@ -76,6 +76,12 @@ class MovingMode:
     occupies (for hover hiding and the word-piece swap).
     """
 
+    # Whether this mode replaces stage-1 adjacency word-finding with the
+    # constellation on-submit matcher (a typed word assembled from grams anywhere
+    # on the board). The engine reads it to route the SELECT pipeline; only
+    # ConstellationMode flips it True.
+    finds_words_by_constellation = False
+
     def __init__(self, game_screen):
         self._gs = game_screen
 
@@ -691,3 +697,51 @@ class OmniswapVsTimerMode(MovingMode):
         if self._gs._moving_side_pane.hunt_text():
             self._gs._refresh_hunt_highlight()
 
+
+
+class ConstellationMode(MovingMode):
+    """MOVING_CONSTELLATION -- a pre-filled board the player never rearranges.
+    There is no live piece, cursor, timer or swap: the whole game is typing words.
+    The trivial MOVING phase is only the doorway into SELECT (ENTER, or the moving
+    pane's Select button); once there, the player types word after word. A word is
+    accepted when its letters can be assembled from grams sitting ANYWHERE on the
+    board -- each cell used once, whole grams only -- with no adjacency and no
+    nucleation (see GameScreen._constellation_match). The used cells then clear or
+    fossilize (game_screen.clear_action) and a word_trail 'constellation' is drawn
+    through them in spelled order (a jagged line, but the star analogy holds).
+
+    Because there is no placed piece and the board never shrinks under the typist,
+    the SELECT phase does NOT auto-close after a word (the piece-adjacency end-check
+    is skipped for constellation); the player keeps typing until they press Next to
+    return to MOVING, or an endgame victory rule fires (rule_victory_grid_fossilized
+    with fossilize / rule_victory_grid_empty with remove).
+
+    Pairs with the CONSTELLATION preset: a fill formation (every cell a gram),
+    rule_nucleate_anywhere, rule_never_skip_select, rule_select_every_placement,
+    rule_word_trail_on, rule_clear_on_submit + rule_unlimited_words (so many words
+    clear in one SELECT visit), and a clear_action + matching victory rule."""
+
+    finds_words_by_constellation = True
+
+    def start(self):
+        # Nothing to set up: the starting formation already filled the board and
+        # there is no piece/cursor/timer to initialize.
+        pass
+
+    def advance(self):
+        # One SELECT turn resolved back to MOVING. The board is the whole game
+        # state -- nothing to reset, no next piece to spawn.
+        pass
+
+    def on_key_press(self, symbol, modifiers):
+        # ENTER opens SELECT (the doorway to typing); SELECT keeps ENTER as its
+        # submit key. No other MOVING input exists in this mode.
+        if symbol in self._gs._keys["select_open"]:
+            self._gs._begin_selection([])
+            return True
+        return False
+
+    def request_select(self):
+        """The moving pane's Select button: same as ENTER -- open SELECT with an
+        empty placed set (a word may assemble anywhere)."""
+        self._gs._begin_selection([])
