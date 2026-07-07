@@ -4,7 +4,12 @@ grams, counted combinatorially (C(m, k) for k slots of a gram the board has m of
 These exercise the pure algorithm only -- building the gram multiset from a live
 board, and the blocking game-start wiring, are left to in-app playtesting.
 """
-from starting_coverage import coverage_for_word, rules_allow_spellable, write_coverage_csv
+from starting_coverage import (
+    any_word_formable,
+    coverage_for_word,
+    rules_allow_spellable,
+    write_coverage_csv,
+)
 
 # The configured word-length rule (rule_word_min3letters_min2cells) reduced to the
 # only two things it reads: word length and cell count.
@@ -65,6 +70,33 @@ def test_csv_includes_zero_coverage_words(tmp_path):
     # so do_rules_allow_spellable is false (and it's of course not present).
     assert lines[3] == "to,2,false,false,0,"
     assert stats == {"words": 3, "covered": 1, "combos": 1}
+
+
+def test_any_word_formable_finds_a_word():
+    # CAT is in the word list and the grams spell it -> formable (early-exit True).
+    assert any_word_formable(["dog", "cat"], {"C": 1, "A": 1, "T": 1}, ACCEPT) is True
+
+
+def test_any_word_formable_none_when_grams_exhausted():
+    # No listed word can be cut from a lone Q -> the auto-end trigger.
+    assert any_word_formable(["cat", "dog"], {"Q": 1}, ACCEPT) is False
+
+
+def test_any_word_formable_respects_length_rule():
+    # AT is the only spellable word but rule_word_min3letters_min2cells forbids it,
+    # so the board counts as having no formable word.
+    assert any_word_formable(["at"], {"A": 1, "T": 1}, ACCEPT) is False
+
+
+def test_any_word_formable_empty_grams():
+    assert any_word_formable(["cat"], {}, ACCEPT) is False
+
+
+def test_any_word_formable_needs_whole_grams():
+    # HAT's letters are present, but only as the whole gram "HA" plus "T": HAT is
+    # cut into HA+T (formable). ART shares no gram cut -> not formable from these.
+    assert any_word_formable(["hat"], {"HA": 1, "T": 1}, ACCEPT) is True
+    assert any_word_formable(["art"], {"HA": 1, "T": 1}, ACCEPT) is False
 
 
 def test_rules_allow_spellable_respects_length_rule():

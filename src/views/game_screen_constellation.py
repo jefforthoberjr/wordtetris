@@ -14,8 +14,11 @@ a partial gram. Wild-vowel cells are skipped for now (the constellation fill
 formations don't use wilds); revisit if a wild formation is ever paired with this
 mode."""
 
+from collections import Counter
+
 from views.found_word import FoundWord
-from models.word_dictionary import is_word
+from models.word_dictionary import is_word, all_words
+from starting_coverage import any_word_formable
 import log_codes as L
 from config import get_string
 
@@ -88,6 +91,55 @@ class ConstellationMixin:
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
                 self._fill_one_player_cell(x, y)
+
+    # --- auto-end rules (game_screen.constellation_auto_end) -------------------
+    # After a constellation word clears, decide whether the game should finish on
+    # its own because the remaining grams can no longer spell ANY word. Consulted
+    # only in constellation mode (see _commit_clear_now); the off rule is the
+    # default so nothing new is revealed unless the option is turned on. Note this
+    # trades against the no-availability-hints rule: an auto-finish tells the
+    # player the board is exhausted, so it is opt-in.
+    def _rule_constellation_auto_end_off(self, *_):
+        """Never auto-end: the player finishes by hand (the End game button, or a
+        configured victory rule). The default."""
+        return False
+
+    def _rule_constellation_auto_end_on(self, *_):
+        """End the game the moment no dictionary word can still be assembled from
+        the board's remaining usable grams: finish (FINISHED) and return True so
+        the caller stops. Meaningful only with a shrinking board -- under
+        rule_constellation_replenish fresh grams keep arriving, so this rarely (if
+        ever) fires."""
+        if self._constellation_any_word_formable():
+            return False
+        self._enter_endgame()
+        return True
+
+    def _constellation_any_word_formable(self):
+        """Whether ANY dictionary word can still be assembled from the board's
+        remaining usable grams -- occupied, non-wild, non-fossil-wall cells,
+        pooled by text -- under the active word-length rule. The end-detection
+        twin of _constellation_match: same cell gathering, but existence-only over
+        the whole dictionary with an early exit on the first formable word (so a
+        board that can still spell something is cheap). Fossil handling matches
+        the block case exactly (walled cells are excluded); an allow-fossil
+        formation is not the constellation preset and is left to the End game
+        button, so a word spellable only from fossil cells is not special-cased."""
+        grams = Counter()
+        for cell in self._board.occupied_cells():
+            if self._fossil_is_wall_rule(cell):
+                continue
+            gram = self._board.gram_at(*cell)
+            if gram is None or gram.is_wild or not gram.text:
+                continue
+            grams[gram.text] += 1
+        if not grams:
+            return False
+        # The word-length rule reads only len(text) and len(path), so feed it a
+        # placeholder path of the grouping's cell count -- the same shim the
+        # starting-coverage pass uses.
+        accept = lambda word, n_cells: self._word_length_rule(word, [None] * n_cells)
+        return any_word_formable(all_words(), grams, accept)
 
     def _constellation_match(self, word, limit):
         """Every way to assemble `word` from distinct board cells' whole grams,

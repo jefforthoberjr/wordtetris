@@ -97,6 +97,28 @@ def rules_allow_spellable(word, accept):
     return any(accept(word.upper(), n) for n in range(1, len(word) + 1))
 
 
+def any_word_formable(words, grams, accept):
+    """True as soon as SOME word in `words` can be formed from the gram multiset
+    `grams` (text -> cell count) under `accept` -- the existence-only, early-exit
+    companion to coverage_for_word, for "can the player still make ANY word?"
+    end-detection (see the constellation auto-end rule).
+
+    Iterates the dictionary and returns on the first formable word, so a board
+    that can still spell something is cheap; only a truly exhausted board pays a
+    full scan (and that happens once, on the clear that empties it). `grams` keys
+    are upper-cased to match the dictionary; an empty multiset yields False."""
+    grams = {g.upper(): c for g, c in grams.items()}
+    if not grams:
+        return False
+    max_len = max(len(g) for g in grams)
+    for word in words:
+        w = word.upper()
+        for seg in _segmentations(w, grams, max_len):
+            if accept(w, len(seg)) and _ways(seg, grams) > 0:
+                return True
+    return False
+
+
 def write_coverage_csv(path, words, grams, accept, sep):
     """Write the starting-coverage CSV: one line per dictionary word (sorted,
     INCLUDING zero-coverage words), columns

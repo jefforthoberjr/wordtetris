@@ -828,6 +828,17 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_turnover_rule = select_rule(
             "game_screen.constellation_turnover", constellation_turnover_rules)
+        # Constellation auto-end (game_screen.constellation_auto_end): after a word
+        # clears, optionally finish the game once the remaining grams can spell no
+        # dictionary word. Off by default (an auto-finish reveals board exhaustion,
+        # against the no-hints rule). Only consulted in constellation mode; see
+        # _commit_clear_now.
+        constellation_auto_end_rules = {
+            "rule_constellation_auto_end_off": self._rule_constellation_auto_end_off,
+            "rule_constellation_auto_end_on": self._rule_constellation_auto_end_on,
+        }
+        self._constellation_auto_end_rule = select_rule(
+            "game_screen.constellation_auto_end", constellation_auto_end_rules)
         # Seconds the MOVING_OMNISWAP countdown starts at (game_screen.mode:
         # rule_mode_omniswap_vs_timer); ignored by the other modes.
         self._omniswap_timer_seconds = CONFIG["rules"]["game_screen.omniswap_timer_seconds"]

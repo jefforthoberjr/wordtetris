@@ -440,6 +440,13 @@ class SelectionMixin:
         # obstacle/mission cell); if so, stop here rather than ending selection.
         if self._check_victory():
             return
+        # Constellation auto-end (game_screen.constellation_auto_end): if the board
+        # can no longer spell any word, finish the game. After the victory check
+        # (a win outranks a plain finish) and after the recompute/turnover above,
+        # so it reads the settled board. Off by default and inert in every other
+        # mode; the rule ends the game itself and returns True when it fires.
+        if self._constellation and self._constellation_auto_end_rule():
+            return
         # One-word-per-select ends the phase right after this first clear,
         # regardless of adjacency (game_screen.select_word_limit).
         if self._select_word_limit_rule():

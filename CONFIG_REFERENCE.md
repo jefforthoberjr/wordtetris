@@ -281,6 +281,22 @@ vacated.
   constellation; no grid-empty win). Only refills cells the clear-action actually
   emptied, so it's a no-op under `rule_clear_fossilize`.
 
+### game_screen.constellation_auto_end
+Constellation only: after each word clears, whether the game finishes on its own
+once the remaining grams can no longer spell ANY dictionary word (the existence
+check reuses `starting_coverage.any_word_formable`, honoring the active
+`game_screen.word_length` rule; each occupied, non-wild, non-fossil-wall cell is
+one usable gram). Ends as FINISHED, the same end-state as the manual End game
+button, running the final score tally. Pairs naturally with
+`rule_constellation_no_replenish` (a shrinking board eventually runs dry); under
+`rule_constellation_replenish` fresh grams keep arriving so it rarely, if ever,
+fires.
+- `rule_constellation_auto_end_off` — never auto-end (the default); the player
+  finishes by hand (the End game button) or a configured victory rule fires.
+- `rule_constellation_auto_end_on` — auto-finish the moment no word is formable.
+  Note this cuts against the no-word-availability-hints principle: an auto-finish
+  tells the player the board is exhausted. Opt in deliberately.
+
 ### game_screen.omniswap_timer_seconds
 Seconds the MOVING_OMNISWAP countdown starts at (only used by
 `rule_mode_omniswap_vs_timer`). Under `rule_omniswap_timer_per_phase` this is the

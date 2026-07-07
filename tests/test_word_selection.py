@@ -1001,6 +1001,7 @@ def _constellation_game(board):
     g._constellation = True
     g._constellation_max_paths = 24
     g._constellation_turnover_rule = g._rule_constellation_no_replenish
+    g._constellation_auto_end_rule = g._rule_constellation_auto_end_off
     g._phase = gs.Phase.SELECTING
     return g
 

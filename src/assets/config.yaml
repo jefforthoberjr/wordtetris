@@ -110,6 +110,10 @@ rules:
   # game_screen.constellation_turnover: rule_constellation_no_replenish
   game_screen.constellation_turnover: rule_constellation_replenish
 
+  # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
+  # game_screen.constellation_auto_end: rule_constellation_auto_end_off
+  game_screen.constellation_auto_end: rule_constellation_auto_end_on
+
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
 
