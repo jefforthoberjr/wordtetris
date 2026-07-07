@@ -6,8 +6,13 @@ GAME NAMES
 
 * catalyst cata LIST
 
-INTRANET did you mean UNTRAINED (a little far...)
 
+Different palyer dictionaries for different modes?
+
+VELOCIRAPTOR not in the dictionr??
+
+INTRANET did you mean UNTRAINED (a little far...)
+CRAN did you mean CRAYON (maybe ok...)
 
 TITRATE wasn't in the dictionary... not even the obscure one
 pop quiz for obscure or super obscure words
@@ -16,10 +21,13 @@ pop quiz for obscure or super obscure words
 Little symbols for the different error types, instead of the words?
 (to hard to read the errors quickly, they all look the same with fast eyes)
 
-Surface menu items items in the game, to play the different game modes
--maybe have different copies of the config files, to have a different configs set aside for each game mode
--Of maybe even have a couple copies for the same game mode
--A configuration of configuration files
+Currently, when I want to try out different game modes, I manually edit the config.yaml file between plays. But instead of me finding the 1 best game mode, I'm discovering that I like a few different game mode / rule combos. I want players to be able to select from multiple different game modes.
+
+Surface menu items in the game, to play the different game modes.
+
+-maybe have different copies of the config files, to have a different configs set aside for each game mode. I would still manually tune these files individually
+-Give me the ability to assign a displayed label/name for each game mode (maybe the very first line in the config.yaml file is the label
+-So now maybe a folder of config files
 
 
 Keep track of total player score with the dictionary

@@ -14,7 +14,10 @@ class SelectingSidePane:
     Manual throughout, matching the in-game menu idiom: the text field is a
     Label showing the typed word with a faux caret, and Clear/Submit/Next are
     plain clickable Labels (bounds-checked in on_mouse_press) -- no hover/click
-    styling. Validation lives in GameScreen; this pane only captures input and
+    styling. An optional End game control (show_end) sits below Next: a manual
+    finish for modes with no natural close -- constellation, where a piece never
+    shrinks the board and (in the endless preset) no victory rule fires, so the
+    player would otherwise be stuck typing forever. Validation lives in GameScreen; this pane only captures input and
     shows results via the on_submit / on_next callbacks plus accept_word /
     reject / show_errors. On a rejected submit, reject() echoes the typed word
     as a dim "You typed: ..." ghost in the prompt slot above a cleared field, so
@@ -46,10 +49,14 @@ class SelectingSidePane:
     # config.get_string); the header is the SELECTING twin of the moving pane's
     # "Pieces: N" countdown label (both pinned to the very top of the right pane).
 
-    def __init__(self, x, y, width, height, on_submit, on_next):
+    def __init__(self, x, y, width, height, on_submit, on_next,
+                 on_end=None, show_end=False):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
+        # on_end(): the End game label, present only when show_end (constellation);
+        # None everywhere else, so the button is neither built nor clickable.
         self._on_submit = on_submit
         self._on_next = on_next
+        self._on_end = on_end
         self._typed = ""
         # Echo of the last rejected word, shown dim in the prompt slot until the
         # player accepts a word or clears the field (see reject / clear_ghost).
@@ -135,6 +142,22 @@ class SelectingSidePane:
             color=self.BUTTON_COLOR, batch=self._batch,
         )
 
+        # Optional End game control, one line under Next -- built only when the
+        # host mode asks for it (constellation). Its line is the word list's new
+        # top when present, so the list never rides up under the button; absent,
+        # the list starts under Next exactly as before (other modes unchanged).
+        if show_end:
+            end_y = next_y - line_h
+            self._end_btn = pyglet.text.Label(
+                get_string("end_game"), font_size=base, x=left, y=end_y,
+                anchor_x="left", anchor_y="top",
+                color=self.BUTTON_COLOR, batch=self._batch,
+            )
+            controls_bottom = end_y
+        else:
+            self._end_btn = None
+            controls_bottom = next_y
+
         # Player's lifetime dictionary size, pinned to the very bottom edge.
         count_y = y + margin
         self._count = pyglet.text.Label(
@@ -145,7 +168,7 @@ class SelectingSidePane:
 
         # This-phase accepted-word list fills the space between the controls and
         # the count label, reserving one line for the latter at the bottom.
-        list_top = next_y - line_h
+        list_top = controls_bottom - line_h
         list_bottom = count_y + line_h
         list_height = max(line_h, list_top - list_bottom)
         self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
@@ -236,6 +259,8 @@ class SelectingSidePane:
             self._on_submit(self._typed)
         elif self._hit(self._next_btn, x, y):
             self._on_next()
+        elif self._end_btn is not None and self._hit(self._end_btn, x, y):
+            self._on_end()
 
     # --- feedback from GameScreen -----------------------------------------
     def accept_word(self, word, is_new=False, is_obscure=False, points=None):

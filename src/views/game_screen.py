@@ -121,7 +121,8 @@ class AutoSelect:
                     chosen.append(c)
         return chosen
 
-    def create_ui(self, x, y, width, height, on_submit, on_next):
+    def create_ui(self, x, y, width, height, on_submit, on_next,
+                  on_end=None, show_end=False):
         return None
 
 
@@ -131,8 +132,10 @@ class TextInputSelect:
     a SelectingSidePane in the right-pane region."""
     interactive = True
 
-    def create_ui(self, x, y, width, height, on_submit, on_next):
-        return SelectingSidePane(x, y, width, height, on_submit, on_next)
+    def create_ui(self, x, y, width, height, on_submit, on_next,
+                  on_end=None, show_end=False):
+        return SelectingSidePane(x, y, width, height, on_submit, on_next,
+                                 on_end=on_end, show_end=show_end)
 
 
 # Control key bindings now live in assets/controls.yaml (loaded via controls.py).
@@ -970,9 +973,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
 
         # Interactive selectors build their UI in the right-pane region (same
         # spot as the side pane; shown only while SELECTING).
+        # Constellation has no piece to shrink the board and (endless preset) no
+        # victory rule, so surface a manual End game button in its SELECT pane;
+        # every other mode closes on its own and hides it.
         self._selecting_side_pane = self._selector.create_ui(
             self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
             on_submit=self._on_submit_word, on_next=self._end_selection,
+            on_end=self._enter_endgame, show_end=self._constellation,
         )
         self._set_phase(Phase.MOVING)
         # Candidate word-paths for the move being selected (interactive only):
@@ -1932,7 +1939,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             # A left-click on the board (left of the pane) types that cell's gram
             # into the entry field, per the select-click rule. The pane handles
             # its own right-side button clicks above; this drives the board side.
-            if button == self._buttons["select_primary"]:
+            # Skip it if the pane click just ended the game (End game -> VICTORY):
+            # the select-click rule would recompute candidates on a finished board.
+            if (button == self._buttons["select_primary"]
+                    and self._phase == Phase.SELECTING):
                 self._select_click_rule(x, y)
             # Stop here: the pane click may have ended selection (Next piece),
             # flipping the phase to MOVING. Without this return, the same click
