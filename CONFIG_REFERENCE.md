@@ -386,10 +386,24 @@ still asks to confirm.
   blue-path preview + an explicit confirm (a second `word_submit`). Back out (per
   `disambig_cancel`) with Backspace / Escape / any letter to hunt a different word.
 
-Line styling:
+Line styling (only under `disambig_display: rule_disambig_display_lines`):
 - `disambig_line_thickness` / `disambig_line_thickness_selected` (pixels) — the
   highlighted candidate can read thicker so it stands out alongside its darker color.
 - `disambig_line_opacity` — 0–1.
+
+### game_screen.disambig_display
+HOW an open chooser is drawn — orthogonal to the `clear_disambiguation` cycle rules
+above, which only decide WHEN it opens. Both modes cycle with `word_cycle_prev` /
+`word_cycle_next` and confirm with `word_submit` identically.
+- `rule_disambig_display_lines` — the original blue polylines (see the line-styling
+  keys above and the `board.disambig_line[_selected]` colors).
+- `rule_disambig_display_highlight` — no lines. Every cell that ANY candidate would
+  clear has its whole gram lit in the hunt-highlight color (the `board.hunt_highlight`
+  green, reusing the word-hunt overlays), and the CURRENTLY-selected candidate's cells
+  get a pale-lime background fill (`board.disambig_highlight_fill`); cycling moves the
+  fill from one spelling to the next. Each tinted cell's prior color is restored on
+  confirm / cancel, so the fill layers cleanly over settled / obstacle / mission /
+  fossil / pending cells.
 
 ### game_screen.disambig_cancel
 Whether a back-out gesture (`word_clear` / Backspace / Escape / any letter) exits the

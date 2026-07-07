@@ -563,12 +563,28 @@ class SelectionMixin:
         self._render_disambiguation()
 
     def _render_disambiguation(self):
-        """Redraw the candidate polylines with the current highlight."""
+        """Redraw the open chooser with the current selection, via the active
+        display rule (blue lines vs cell highlight -- game_screen.disambig_display).
+        Called on open and on every cycle."""
+        self._disambig_display_rule(self._disambig_options, self._disambig_index)
+
+    # --- disambiguation display rules (game_screen.disambig_display) --------
+    # HOW an open chooser is drawn, orthogonal to the clear_disambiguation cycle
+    # rules that decide WHEN it opens. Each takes the ordered options + selected
+    # index and renders; _end_disambiguation tears both views down regardless.
+    def _rule_disambig_display_lines(self, options, selected):
+        """Original: one blue polyline per candidate, the selected one dark on top
+        (views.disambiguation_lines)."""
         paths = [
             [self._board.cell_center(x, y) for (x, y) in fw.path]
-            for fw in self._disambig_options
+            for fw in options
         ]
-        self._disambig_lines.show(paths, self._disambig_index)
+        self._disambig_lines.show(paths, selected)
+
+    def _rule_disambig_display_highlight(self, options, selected):
+        """Alternate: light every candidate cell's text (hunt color) and tint the
+        selected candidate's cells lime (views.disambiguation_highlight)."""
+        self._disambig_highlight.show(options, selected, self._board)
 
     def _cycle_disambiguation(self, delta):
         """Move the highlight to the next/previous candidate, wrapping around."""
@@ -609,7 +625,9 @@ class SelectionMixin:
         self._disambig_index = 0
         self._disambig_word = None
         self._disambig_commit = None
+        # Tear down whichever display was active; the inactive one no-ops.
         self._disambig_lines.clear()
+        self._disambig_highlight.clear()
         self._selecting_side_pane.hide_prompt()
 
     def _rule_endphase_clear_none(self):

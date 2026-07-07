@@ -19,6 +19,7 @@ from views.load_side_pane import LoadSidePane
 from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from views.word_trail import WordTrail
 from views.disambiguation_lines import DisambiguationLines
+from views.disambiguation_highlight import DisambiguationHighlight
 from views.victory_overlay import VictoryOverlay
 from views.hunt_highlight import (
     get_hunt_highlight_batch, reset_hunt_highlight, get_hunt_match_rule,
@@ -487,6 +488,17 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # submitted word with several clearable paths is being resolved.
         # See views/disambiguation_lines.py and _begin_disambiguation.
         self._disambig_lines = DisambiguationLines()
+        # Alternate chooser visual: cell text-highlight + lime fill instead of the
+        # blue lines. Which one an open chooser uses is game_screen.disambig_display
+        # (_rule_disambig_display_lines / _highlight); the unused view stays inert.
+        self._disambig_highlight = DisambiguationHighlight()
+        self._disambig_display_rule = select_rule(
+            "game_screen.disambig_display",
+            {
+                "rule_disambig_display_lines": self._rule_disambig_display_lines,
+                "rule_disambig_display_highlight": self._rule_disambig_display_highlight,
+            },
+        )
 
         # The player's lifetime word collection, persisted across every game.
         # Words cleared for the first time ever are shown green and autosaved.

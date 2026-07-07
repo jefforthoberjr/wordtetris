@@ -7,8 +7,14 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Keep track of total player score with the dictionary
+
+
+When highlighting words, if I've already got the headword before, and this is just a morpheme, inflections, make it a different color (and maybe less points to?)
+
 Game mode, where at least 1 cell needs to be from the connected "pile" (instead of just disparate clusters of asteroids.
 
+avoid spelling corrections like TENTION -> TEN (too big of a drop)
 
 A UI for the admnin config
 With little pictures or animations, showing the effect of each option

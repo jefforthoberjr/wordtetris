@@ -23,6 +23,7 @@ board:
   word_trail:       [0, 0, 0]         # cleared-word path trail (drawn at game_screen.word_trail_opacity)
   disambig_line:          [135, 206, 250]   # light blue: unselected candidate paths in the "select which one" chooser
   disambig_line_selected: [0, 0, 180]       # dark blue: the currently-highlighted candidate path
+  disambig_highlight_fill: [204, 255, 204]  # pale lime: background of the cells the selected candidate would clear (highlight display mode)
   background:       [255, 255, 255]   # game board window background
 
 window:

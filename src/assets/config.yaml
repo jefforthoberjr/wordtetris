@@ -99,8 +99,8 @@ rules:
   game_screen.constellation_max_paths: 24
 
   # CONSTELLATION: do vacated cells refill or stay empty. [ref: game_screen.constellation_turnover]
-  game_screen.constellation_turnover: rule_constellation_no_replenish
-  # game_screen.constellation_turnover: rule_constellation_replenish
+  # game_screen.constellation_turnover: rule_constellation_no_replenish
+  game_screen.constellation_turnover: rule_constellation_replenish
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
@@ -143,12 +143,15 @@ rules:
   game_screen.word_trail_opacity:   0.5
 
   # How multi-path words are chosen/confirmed. [ref: game_screen.clear_disambiguation]
-  # game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
+  game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
   # game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
-  game_screen.clear_disambiguation: rule_disambig_auto_pick
+  # game_screen.clear_disambiguation: rule_disambig_auto_pick
   game_screen.disambig_line_thickness:          8
   game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
+  # How an open chooser is drawn: blue lines vs cell text-highlight + lime fill. [ref: game_screen.disambig_display]
+  # game_screen.disambig_display:        rule_disambig_display_lines
+  game_screen.disambig_display:      rule_disambig_display_highlight
   # Whether a back-out gesture exits the candidate chooser.
   game_screen.disambig_cancel:         rule_disambig_cancel_on
   # game_screen.disambig_cancel:       rule_disambig_cancel_off
