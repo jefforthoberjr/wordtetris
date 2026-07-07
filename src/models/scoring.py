@@ -72,6 +72,21 @@ class Scorer:
         new_word = self._new_word_bonus if is_new else 0
         return [basic, cell_type, new_word]
 
+    def composition_points_rule(self, word_length, gram_lengths):
+        """Points for a word from its CELL/GRAM COMPOSITION only -- the "basic
+        cell sum" group of word_points_breakdown_rule (word_base + per_cell +
+        per_letter + per_extra_gram_letter), with every cell-type bonus and the
+        new-word bonus deliberately ignored. The dictionary screen scores a
+        collected word this way: it has no board context (no obstacle / mission /
+        sand / fossil / newness facts), so only the composition counts, and it
+        keeps the best such score across the word's stored gram groupings.
+        Returns 0 when scoring is disabled. `gram_lengths` is the letters-per-cell
+        list (so len() is the cell count); `word_length` its total letters."""
+        return self.word_points_breakdown_rule(
+            word_length=word_length, gram_lengths=gram_lengths,
+            obstacle_cells=0, mission_cells=0, sand_cells=0,
+            fossil_reuse_cells=0, is_new=False)[0]
+
     def word_points_rule(self, **facts):
         """Points for one cleared word, WITHOUT touching the running total (a pure
         computation summing word_points_breakdown_rule's groups). Returns 0 when

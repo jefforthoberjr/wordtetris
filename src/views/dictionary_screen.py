@@ -6,7 +6,8 @@ from config import CONFIG, get_color, get_string
 from controls import control_keys
 from controllers.screen_manager import ScreenType
 from models.player_dictionary import PlayerDictionary
-from views.gram_preview import GramPreview
+from models.scoring import Scorer
+from views.gram_preview import GramPreview, parse_variation
 
 
 # Repo root, for resolving the config-relative mock dictionary path below.
@@ -55,6 +56,29 @@ class DictionaryScreen:
             color=title_color,
             batch=self._batch,
         )
+        # Total dictionary score, one line under the word count. The player's
+        # whole collection scored by cell/gram COMPOSITION only (see
+        # _word_score_rule); computed once per visit in on_enter.
+        self._score_label = pyglet.text.Label(
+            "",
+            font_size=math.floor(window.height / 34),
+            x=math.floor(window.width / 2),
+            y=window.height - math.floor(window.height / 8),
+            anchor_x="center",
+            anchor_y="center",
+            color=title_color,
+            batch=self._batch,
+        )
+        # Composition scorer for the readouts, plus this visit's per-word scores
+        # (word -> best composition score), cached so paging never recomputes.
+        # dictionary.show_word_scores lists each word's score beside it.
+        self._scorer = Scorer()
+        self._word_scores = {}
+        dict_cfg = CONFIG.get("dictionary", {})
+        # Two independent readouts: list the score beside EVERY word always, and/or
+        # reveal it only while a word is hovered (the moment its cell render shows).
+        self._show_word_scores = dict_cfg.get("show_word_scores", False)
+        self._show_word_scores_on_hover = dict_cfg.get("show_word_scores_on_hover", False)
 
         # --- 3-column word grid -------------------------------------------
         # All geometry is derived from the window size (no raw pixel constants),
@@ -97,6 +121,31 @@ class DictionaryScreen:
                 batch=self._batch,
             )
             self._cells.append(cell)
+
+        # Per-word score labels (dictionary.show_word_scores): a parallel
+        # column-major set, one per grid cell, each RIGHT-justified at its
+        # column's right edge and about HALF the word font -- so the scores line
+        # up in a tidy right-hand column and read as secondary to the words. Kept
+        # as their OWN Labels (not appended to the word text) so the hover preview,
+        # which occludes only the word's Label, leaves the score showing.
+        score_font = max(1, math.floor(font_size / 2))
+        score_inset = math.floor(col_width / 30)
+        self._score_cells = []
+        for i in range(self._capacity):
+            col = math.floor(i / self._rows)
+            row = i - col * self._rows
+            score_cell = pyglet.text.Label(
+                "",
+                font_size=score_font,
+                x=margin_x + col * col_width + col_width - score_inset,
+                # Vertically centered on the (taller) word text of the same row.
+                y=grid_top - row * self._row_height - math.floor(font_size / 2),
+                anchor_x="right",
+                anchor_y="center",
+                color=word_color,
+                batch=self._batch,
+            )
+            self._score_cells.append(score_cell)
 
         self._font_size = font_size
 
@@ -165,6 +214,22 @@ class DictionaryScreen:
     def _build_pages(self, words):
         return self._rule_build_pages_by_letter(words)
 
+    # --- scoring rule (composition only) ---------------------------------
+    def _word_score_rule(self, word):
+        """One collected word's dictionary score: the BEST cell/gram COMPOSITION
+        score across the gram groupings it has been cleared with (a word cleared
+        several ways keeps its highest-scoring spelling). Composition only -- no
+        obstacle / mission / sand / fossil / new-word bonuses, since a stored word
+        has no board context (see Scorer.composition_points_rule). 0 for a word
+        with no stored grouping (legacy data), which can't be composed into cells."""
+        best = 0
+        for variation in self._dict.variations(word):
+            _shape, grams = parse_variation(variation)
+            gram_lengths = [len(text) for (text, *_rest) in grams]
+            word_length = sum(gram_lengths)
+            best = max(best, self._scorer.composition_points_rule(word_length, gram_lengths))
+        return best
+
     def _rule_build_pages_by_letter(self, words):
         """Group alphabetically-sorted `words` into one bucket per A-Z letter,
         then split each bucket into sub-pages of at most `capacity` words. Every
@@ -230,8 +295,24 @@ class DictionaryScreen:
         for i, cell in enumerate(self._cells):
             if i < len(page_words):
                 cell.text = page_words[i]
+                self._score_cells[i].text = self._score_text_rule(page_words[i])
             else:
                 cell.text = ""
+                self._score_cells[i].text = ""
+
+    def _score_text_rule(self, word, hovered=False):
+        """The right-column score text for `word` ("+N"), or "" for none. Two
+        independent config knobs decide when it shows: dictionary.show_word_scores
+        lists it beside EVERY word always; dictionary.show_word_scores_on_hover
+        reveals it only while the word is hovered (`hovered` -- the same moment its
+        cell render pops up). Either or both may be on; a 0-scoring word (or legacy
+        word with no grouping) shows nothing. Its own right-justified Label (see
+        __init__) sits clear of the hover preview that occludes the word itself."""
+        if self._show_word_scores or (self._show_word_scores_on_hover and hovered):
+            score = self._word_scores.get(word, 0)
+            if score:
+                return f"+{score}"
+        return ""
 
     def _word_source_path(self):
         # TEMP (playtest): config.yaml dictionary.use_mock_data swaps in the
@@ -258,6 +339,11 @@ class DictionaryScreen:
         self._preview.hide()
         self._hover_index = None
         self._count_label.text = get_string("words_collected", count=len(self._words))
+        # Score the whole collection once (composition only), cache each word's
+        # best score for the per-word readout, and sum them into the total.
+        self._word_scores = {word: self._word_score_rule(word) for word in self._words}
+        self._score_label.text = get_string(
+            "dictionary_total_score", count=sum(self._word_scores.values()))
         # Build the A-Z page model and open on the first page (letter "a").
         self._pages, self._letter_first_page = self._build_pages(self._words)
         self._render_page(0)
@@ -350,12 +436,19 @@ class DictionaryScreen:
             bottom = cell.y - self._row_height
             if left <= x <= right and bottom <= y <= top:
                 hit = i
+        # Only (re)build when the hovered word changes, so the random variation
+        # pick stays put while the cursor moves within one word.
+        if hit == self._hover_index:
+            return
+        # Target changed: restore the previously hovered word's score to its
+        # non-hover text before moving the preview (and hover score) onto `hit`.
+        if self._hover_index is not None and self._hover_index < len(self._visible_words):
+            self._score_cells[self._hover_index].text = self._score_text_rule(
+                self._visible_words[self._hover_index])
         if hit is None:
             self._preview.hide()
             self._hover_index = None
-        elif hit != self._hover_index:
-            # Only (re)build when the hovered word changes, so the random variation
-            # pick stays put while the cursor moves within one word.
+        else:
             self._show_preview_for(hit)
 
     def _show_preview_for(self, index):
@@ -364,6 +457,8 @@ class DictionaryScreen:
         (e.g. legacy data) just clears any existing preview."""
         self._hover_index = index
         word = self._visible_words[index]
+        # In hover-score mode, reveal this word's score beside its cell render.
+        self._score_cells[index].text = self._score_text_rule(word, hovered=True)
         variations = self._dict.variations(word)
         if not variations:
             self._preview.hide()

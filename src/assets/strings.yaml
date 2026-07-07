@@ -48,6 +48,7 @@ en:
   finished:              "FINISHED"
   # My Dictionary screen
   words_collected:       "{count} words collected"
+  dictionary_total_score: "Total Score: {count}"
   # Word-submission errors
   err_not_in_dictionary: "Word is not in the dictionary"
   err_not_on_board:      "Word isn't on the board"
@@ -94,6 +95,7 @@ es:
   finished:              "FIN"
   # My Dictionary screen
   words_collected:       "{count} palabras recopiladas"
+  dictionary_total_score: "Puntuación total: {count}"
   # Word-submission errors
   err_not_in_dictionary: "La palabra no está en el diccionario"
   err_not_on_board:      "La palabra no está en el tablero"

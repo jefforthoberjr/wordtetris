@@ -57,6 +57,12 @@ dictionary:
   # use_mock_data: true
   use_mock_data: false
   mock_data_path: tests/assets/mock_player_dictionary.txt
+  # Dictionary screen: show each word's best composition score beside it. [ref: dictionary.show_word_scores]
+  # show_word_scores: true
+  show_word_scores: false
+  # Dictionary screen: reveal a word's score only while hovered, with its cell render. [ref: dictionary.show_word_scores_on_hover]
+  show_word_scores_on_hover: true
+  # show_word_scores_on_hover: false
 
 rules:
   # Gram font sizing. [ref: gram.font_size]

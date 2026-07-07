@@ -149,6 +149,27 @@ TEMP (playtest): page the large mock word list so the A–Z tabs and sub-pages c
 exercised before the player has collected thousands of words. Set `use_mock_data`
 to false to read the player's real `player_dictionary.txt`.
 
+### dictionary.show_word_scores
+My Dictionary screen: when true, each word shows its score (`+N`) beside it. The
+score is COMPOSITION-only — the "basic cell sum" (`word_base` + `per_cell` +
+`per_letter` + `per_extra_gram_letter`); the board bonuses (obstacle / mission /
+sand / fossil) and the new-word bonus are ignored, since a collected word carries
+no board context. A word cleared several ways keeps its BEST-scoring grouping.
+The same per-word scores are summed into the "Total Score" readout at the top of
+the screen — that total is always shown; this toggle only controls the per-word
+figures. Off hides the per-word scores (the total stays). Uses
+`Scorer.composition_points_rule`; a word stored without any gram grouping (legacy
+data) scores 0.
+
+### dictionary.show_word_scores_on_hover
+Same per-word composition score as `dictionary.show_word_scores`, but shown ONLY
+while a word is hovered — the same moment its cell render (gram grouping) pops up
+over the word. Independent of `show_word_scores`: either or both may be on (with
+both on, the always-listed score simply stays put through the hover). The score
+sits in its own right-justified Label clear of the hover preview, so it reads
+alongside the revealed cells. The "Total Score" readout at the top is unaffected
+(always shown).
+
 ---
 
 ## rules
