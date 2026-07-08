@@ -1,3 +1,4 @@
+import copy
 import yaml
 from pathlib import Path
 
@@ -9,6 +10,77 @@ def load_config():
 
 
 CONFIG = load_config()
+
+# Game modes: each file in assets/game_modes/ is a PARTIAL config -- a shared base
+# config.yaml deep-merged with a per-mode override so only the keys that define the
+# mode live in the mode file (see AGENTS.md / the menu "Start" submenu). The mode
+# is applied at runtime by mutating CONFIG in place (below) so every
+# `from config import CONFIG` holder sees the swap without reimporting.
+_GAME_MODES_DIR = Path(__file__).parent / "assets" / "game_modes"
+
+# (slug, label, path) of the mode last applied via apply_game_mode, or None while
+# the game runs on the bare base config.yaml (e.g. before any menu pick).
+_active_mode = None
+
+
+def _load_yaml(path):
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _deep_merge(base, override):
+    """Return a new dict: `override` deep-merged onto `base`. Nested dicts merge
+    key-by-key (so a mode file can override a single `rules:` knob without
+    restating the block); every other value -- scalars and lists -- from override
+    replaces base wholesale. Neither input is mutated."""
+    result = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(result.get(key), dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
+def list_game_modes():
+    """Scan assets/game_modes/*.yaml -> [(slug, label, path), ...] sorted by label.
+    `slug` is the filename stem (also used in the session filename); `label` is the
+    file's top-level `mode_label:` (falling back to the slug). Reads only the label
+    key here -- the full merge happens in apply_game_mode when a mode is chosen."""
+    modes = []
+    if not _GAME_MODES_DIR.is_dir():
+        return modes
+    for path in sorted(_GAME_MODES_DIR.glob("*.yaml")):
+        data = _load_yaml(path)
+        label = data.get("mode_label") or path.stem
+        modes.append((path.stem, label, path))
+    modes.sort(key=lambda mode: mode[1].lower())
+    return modes
+
+
+def apply_game_mode(path):
+    """Load a FRESH base config.yaml, deep-merge the game-mode override at `path`
+    on top, and replace CONFIG's contents in place (clear + update -- the dict
+    object is never rebound, so all holders track the swap). Reloading the base
+    each call means repeated mode switches always merge onto a clean base, never
+    onto an already-merged CONFIG. `mode_label` is menu metadata, not a game knob,
+    so it's stripped before the merge. Records + returns (slug, label)."""
+    global _active_mode
+    path = Path(path)
+    override = _load_yaml(path)
+    label = override.pop("mode_label", None) or path.stem
+    merged = _deep_merge(load_config(), override)
+    CONFIG.clear()
+    CONFIG.update(merged)
+    _active_mode = (path.stem, label, path)
+    return path.stem, label
+
+
+def active_mode():
+    """The (slug, label, path) of the last-applied game mode, or None if the game
+    is still on the bare base config.yaml. Used by session logging to stamp which
+    mode a recorded session was played under."""
+    return _active_mode
 
 
 def load_colors():

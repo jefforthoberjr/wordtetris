@@ -1738,6 +1738,15 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         if session_log.is_open():
             L.log_00002("left_screen")
             session_log.close(reason="left_screen")
+
+    def dispose(self):
+        """Detach this screen's window handlers so it can be dropped for GC. Called
+        when switching game modes rebuilds a fresh GameScreen (see main.start_game_mode):
+        __init__ pushes _key_state onto the window, so without this the old screen's
+        handler would keep firing (and leak) alongside the new one's. Closes any
+        session still open, the same as on_exit."""
+        self.on_exit()
+        self._window.remove_handlers(self._key_state)
     
     def draw(self):
         # glClearColor wants 0-1 floats, but colors.yaml stores 0-255 channels,

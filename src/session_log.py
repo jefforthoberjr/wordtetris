@@ -30,7 +30,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from config import CONFIG
+import yaml
+
+from config import CONFIG, active_mode
 
 # sessions/ lives at the repo root (this file is src/session_log.py).
 _SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
@@ -126,6 +128,9 @@ def _write_meta_file(session_id, now, window):
     block + verbatim embedded YAML. Static, so it's written once and closed here;
     the body lines go to the separate <id>.log. Lines are '#'-prefixed so the
     whole file reads as comments."""
+    mode = active_mode()
+    mode_slug = mode[0] if mode else "base"
+    mode_label = mode[1] if mode else "(base config)"
     meta = [
         "# ===== WORDTETRIS SESSION =====",
         f"# session_id : {session_id}",
@@ -135,12 +140,23 @@ def _write_meta_file(session_id, now, window):
         # both so a replay renders at the same physical size.
         f"# window     : {window.width}x{window.height} (physical)",
         f"# rng_seed   : {_seed}",
+        # Which game mode this session was played under (assets/game_modes/<slug>.yaml).
+        f"# game_mode  : {mode_label} [{mode_slug}]",
     ]
     with open(_SESSIONS_DIR / f"{session_id}.meta", "w", encoding="utf-8") as f:
         for line in meta:
             f.write(line + "\n")
         for name in _EMBED_FILES:
             f.write(f"# ----- {name} -----\n")
+            if name == "config.yaml":
+                # Embed the EFFECTIVE merged config (base + active game-mode
+                # override), not the base file verbatim -- config.apply_game_mode
+                # merged the mode into CONFIG, and replay reloads THIS block into
+                # config.CONFIG, so it must be the exact rule set that was played.
+                dumped = yaml.dump(CONFIG, sort_keys=False, default_flow_style=False)
+                for line in dumped.splitlines():
+                    f.write(f"# {line}\n")
+                continue
             path = _ASSETS_DIR / name
             try:
                 for raw in path.read_text(encoding="utf-8").splitlines():
@@ -155,7 +171,12 @@ def _write_meta_file(session_id, now, window):
 
 
 def _session_id(now):
-    return now.strftime("%Y-%m-%dT%H-%M-%S") + f"_{_seed & 0xFFFF:04x}"
+    # Fold the active game-mode slug into the id so each mode's sessions are
+    # greppable/groupable by filename (e.g. ..._constellation_1a2b.log). "base"
+    # when no mode was applied. The slug is a *.yaml file stem, so filename-safe.
+    mode = active_mode()
+    slug = mode[0] if mode else "base"
+    return now.strftime("%Y-%m-%dT%H-%M-%S") + f"_{slug}_{_seed & 0xFFFF:04x}"
 
 
 def start_session(window):

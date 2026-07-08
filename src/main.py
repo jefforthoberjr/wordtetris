@@ -4,7 +4,7 @@ ram_overhead.measure("after_psutil")
 import pyglet
 ram_overhead.measure("after_pyglet")
 
-from config import CONFIG
+from config import CONFIG, apply_game_mode
 
 # CRITICAL: this must run BEFORE anything imports pyglet.app -- pyglet.window below
 # and every view import transitively do, and pyglet locks in its macOS event-loop
@@ -25,6 +25,7 @@ import session_log
 from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
 from views.main_menu_screen import MainMenuScreen
+from views.mode_select_screen import ModeSelectScreen
 from views.game_screen import GameScreen
 from views.dictionary_screen import DictionaryScreen
 
@@ -50,14 +51,38 @@ ram_overhead.measure("after_window")
 macos_first_mouse_probe.install(CONFIG)
 
 screen_manager = ScreenManager()
+
+
+# A game mode is chosen in the mode-select submenu; picking one applies its config
+# override (config.apply_game_mode mutates CONFIG in place) and then rebuilds the
+# game screen from scratch. The rebuild is required because GameScreen snapshots
+# most rule-derived state (the MOVING-phase mode strategy, right-click rules, side
+# panes) at construction -- reusing the old instance would keep the previous mode.
+# The old screen is disposed first so its pushed window handler doesn't leak.
+def _build_game_screen():
+    gs = GameScreen(window, screen_manager)
+    screen_manager.register(ScreenType.GAME, gs)
+    return gs
+
+
+def start_game_mode(mode_path):
+    global game_screen
+    apply_game_mode(mode_path)
+    game_screen.dispose()
+    game_screen = _build_game_screen()
+    screen_manager.switch_to(ScreenType.GAME)
+
+
 title_screen = TitleScreen(window, screen_manager, ScreenType.MAIN_MENU)
-main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.GAME,
+main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.MODE_SELECT,
                                   ScreenType.DICTIONARY)
-game_screen = GameScreen(window, screen_manager)
+mode_select_screen = ModeSelectScreen(window, screen_manager,
+                                      ScreenType.MAIN_MENU, start_game_mode)
+game_screen = _build_game_screen()
 dictionary_screen = DictionaryScreen(window, screen_manager)
 screen_manager.register(ScreenType.TITLE, title_screen)
 screen_manager.register(ScreenType.MAIN_MENU, main_menu_screen)
-screen_manager.register(ScreenType.GAME, game_screen)
+screen_manager.register(ScreenType.MODE_SELECT, mode_select_screen)
 screen_manager.register(ScreenType.DICTIONARY, dictionary_screen)
 screen_manager.switch_to(ScreenType.TITLE)
 

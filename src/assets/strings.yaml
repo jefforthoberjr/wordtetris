@@ -14,6 +14,9 @@ en:
   menu_start:            "Start Game"
   menu_dictionary:       "My Dictionary"
   menu_exit:             "Exit"
+  # Mode-select submenu (opened by "Start Game")
+  menu_mode_select_title: "Select Mode"
+  menu_back:             "Back"
   # In-game (pause) menu
   ingame_main_menu:      "Main Menu"
   ingame_exit:           "Exit"
@@ -74,6 +77,8 @@ es:
   menu_start:            "Comenzar Juego"
   menu_dictionary:       "Mi Diccionario"
   menu_exit:             "Salir"
+  menu_mode_select_title: "Seleccionar Modo"
+  menu_back:             "Atrás"
   # In-game (pause) menu
   ingame_main_menu:      "Menú Principal"
   ingame_exit:           "Salir"

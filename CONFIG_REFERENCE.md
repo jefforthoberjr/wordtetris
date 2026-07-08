@@ -15,6 +15,41 @@ bindings).
 
 ---
 
+## Game modes (`assets/game_modes/`)
+
+Instead of hand-editing `config.yaml` between plays, each playable configuration
+lives in its own file under `src/assets/game_modes/*.yaml`, surfaced in-game by the
+**Start Game → Select Mode** submenu. `config.yaml` remains the **shared base**; a
+mode file is a *partial* config that is deep-merged on top of a freshly-loaded base
+when the mode is picked (`config.apply_game_mode`), replacing the live `CONFIG`
+dict's contents in place so every module sees the swap without a restart.
+
+A mode file:
+- Starts with `mode_label: "..."` — the menu display name (stripped before merge;
+  not a game knob). Modes are listed sorted by label.
+- Lists **only the keys that define the mode** (typically the `rules:` block: the
+  MOVING-phase `game_screen.mode` and its preset flips). Everything it omits —
+  window size, scoring, dictionary, gram picks, `spell_check`, the affix lists —
+  comes from the base file, so those are tuned once. The seeded starters list the
+  full mode-signature key set so each stays self-contained even if base is retuned.
+
+Deep-merge rule: nested dicts merge key-by-key; scalars and **lists replace
+wholesale** (a mode's `suffix_tails:` overrides the base list entirely, not appends).
+
+Switching modes rebuilds the game screen from scratch (GameScreen snapshots most
+rule-derived state at construction) and always starts a fresh game. Window-level
+settings (`window.*`, `game.ups`) are locked in at process start and are **not**
+re-applied per mode — keep those in the base file only.
+
+Each session records its mode: `sessions/<id>.meta` carries a `# game_mode :` header
+and embeds the **effective merged** config (so `replay.py` reloads the exact rule
+set), and the mode slug is folded into the session filename
+(`<timestamp>_<slug>_<seed>`) so a mode's sessions group together. Seeded starters:
+`constellation.yaml`, `typewriter.yaml`, `omniswap.yaml` (see the *PRESET* sections
+below for what each flips).
+
+---
+
 ## Top-level blocks
 
 ### window / game / audio

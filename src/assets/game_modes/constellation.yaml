@@ -1,0 +1,23 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
+# scoring, dictionary, gram picks, spell_check ...) comes from the base file.
+# mode_label is the menu display name, stripped before merge -- not a game knob.
+mode_label: "Constellation — type anywhere"
+
+rules:
+  # MOVING-phase strategy + its signature knobs (mirrors the base config today).
+  game_screen.mode:                     rule_mode_constellation
+  game_screen.constellation_max_paths:  24
+  game_screen.constellation_turnover:   rule_constellation_replenish
+  game_screen.constellation_auto_end:   rule_constellation_auto_end_on
+
+  # Board starts full, words form anywhere, every action opens word entry.
+  game_screen.setup_formation:      rule_formation_fill_ideation_trigram_sidepanes_zigzag
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.clear_timing:         rule_clear_at_phase_end
+  game_screen.select_word_limit:    rule_one_word_per_select
+  game_screen.clear_action:         rule_clear_remove
+  game_screen.victory:              rule_victory_none
+  game_screen.word_trail:           rule_word_trail_off

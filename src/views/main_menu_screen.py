@@ -5,11 +5,13 @@ from controls import control_keys
 
 
 class MainMenuScreen:
-    def __init__(self, window, screen_manager, game_screen_type,
+    def __init__(self, window, screen_manager, mode_select_screen_type,
                  dictionary_screen_type):
         self._window = window
         self._screen_manager = screen_manager
-        self._game_screen_type = game_screen_type
+        # "Start Game" now opens the mode-select submenu (pick a game mode),
+        # rather than jumping straight into a game on the base config.
+        self._mode_select_screen_type = mode_select_screen_type
         self._dictionary_screen_type = dictionary_screen_type
         self._batch = pyglet.graphics.Batch()
 
@@ -49,7 +51,7 @@ class MainMenuScreen:
     
     def _select_current(self):
         if self._selected_index == 0:
-            self._screen_manager.switch_to(self._game_screen_type)
+            self._screen_manager.switch_to(self._mode_select_screen_type)
         elif self._selected_index == 1:
             self._screen_manager.switch_to(self._dictionary_screen_type)
         elif self._selected_index == 2:
