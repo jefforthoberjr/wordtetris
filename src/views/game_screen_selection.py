@@ -262,6 +262,12 @@ class SelectionMixin:
         # This clear may have filled the board (the last cell fossilized, or --
         # under remove -- an overlap-placement completed it); award the fill bonus.
         self._check_board_fill()
+        # Any clear changes the board, so the debug panel's formable-word sample
+        # ("Board words") is stale; recomputed lazily on the next update tick while
+        # the panel is visible (see _update_debug_word_samples). Set here -- the
+        # single sink for every clear path (auto-select, clear-on-submit, phase-end
+        # batch) -- so no call site can forget it. Cheap: a hidden panel ignores it.
+        self._dbg_words_dirty = True
         return cleared_words
 
     # --- clear-action rules (game_screen.clear_action) ---------------------
@@ -432,10 +438,6 @@ class SelectionMixin:
         # checks below so a replenished board isn't read as empty.
         if self._constellation:
             self._constellation_turnover_rule(found.path)
-            # The board changed, so the debug panel's formable-word sample is stale
-            # (recomputed lazily, only while the panel is visible). See
-            # _update_debug_word_samples.
-            self._dbg_words_dirty = True
         self._words_submitted_this_select += 1
         self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), display)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
@@ -665,9 +667,6 @@ class SelectionMixin:
             # preset's timing). Inert in every other mode.
             if self._constellation:
                 self._constellation_turnover_rule(pending_cells)
-                # The board changed, so the debug panel's formable-word sample is
-                # stale (recomputed lazily; see _update_debug_word_samples).
-                self._dbg_words_dirty = True
         self._pending = []
 
     # --- select word-limit rules (game_screen.select_word_limit) -----------

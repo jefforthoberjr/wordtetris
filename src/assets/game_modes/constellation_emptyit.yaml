@@ -4,11 +4,16 @@
 # mode_label is the menu display name, stripped before merge -- not a game knob.
 mode_label: "Constellation — empty the board"
 
+# MINDSET
+# time and strategy needed choose which cells to clear
+# to make the end game easier
+
 rules:
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
-  game_screen.mode:                     rule_mode_constellation
+  game_screen.mode: rule_mode_constellation
+  
   game_screen.constellation_max_paths:  24
-  game_screen.constellation_turnover:   rule_constellation_replenish
+  game_screen.constellation_turnover: rule_constellation_no_replenish
   game_screen.constellation_auto_end:   rule_constellation_auto_end_on
 
   game_screen.gram_usage: rule_gram_use_whole
@@ -33,4 +38,4 @@ rules:
   game_screen.clear_action:         rule_clear_remove
   game_screen.victory:              rule_victory_none
   game_screen.word_trail:           rule_word_trail_off
-  game_screen.constellation_auto_end: rule_constellation_auto_end_on
+  game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices

@@ -6,7 +6,16 @@ GAME NAMES
 
 * catalyst cata LIST
 
-Maybe undo button
+When a word isn't on the board, players are asking the question, what piece wasn't there? I could add some highlighting, for which letters were missing? Or list what was missing?
+
+Fade in for pieces during a replenish
+
+Different loading animations for each game mode
+
+If I clear a word while the debug pane is up, refersh the word list "board words"
+
+
+Maybe an undo button?
 
 INTETION (did you mean TEEN)...
 
