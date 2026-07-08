@@ -35,6 +35,17 @@ _log_draw_times = []
 _log_update_times = []
 _log_busy_ms = 0.0
 
+# Whether the panel is currently shown (F3 toggles it; see main.py). Held here,
+# not in main.py, so the game can cheaply check it before doing panel-only work --
+# e.g. GameScreen only recomputes its formable-word samples while the panel is up.
+visible = False
+
+# Example words the board can currently spell, pushed by the active game
+# (GameScreen.set_debug_word_samples) while the panel is visible; None means "no
+# game has reported any" (non-constellation modes never set it), which hides the
+# section entirely. A short SAMPLE, never a count -- see sample_formable_words.
+_word_samples = None
+
 batch = None
 panel = None
 label = None
@@ -114,9 +125,30 @@ def init(window, ram_deltas=None):
     )
 
 
+def set_word_samples(words):
+    """Record the example words the board can currently spell (a short list), or
+    None to hide the section. Rendered as the '-- Board words --' block. Pushed by
+    the game only while the panel is visible, so it stays fresh without any
+    per-frame work here."""
+    global _word_samples
+    _word_samples = words
+
+
+def _word_samples_section():
+    """The '-- Board words --' block, or '' when no game has reported samples.
+    An empty list (a spellable-out board) reads '(none)'."""
+    if _word_samples is None:
+        return ""
+    if _word_samples:
+        body = "".join(f"  {w}\n" for w in _word_samples)
+    else:
+        body = "  (none)\n"
+    return f"-- Board words --\n{body}"
+
+
 def prepare():
     calc_stat_avgs()
-    
+
     if vram_type == "integrated":
         vram_section = (
             f"-- VRAM ({vram_type}) --\n"
@@ -131,6 +163,7 @@ def prepare():
         )
     
     label.text = (
+        f"{_word_samples_section()}"
         f"Uptime: {uptime_seconds} s\n"
         f"Idle: {idle_percent:.0f}%\n"
         f"-- Draw (FPS: {fps}) --\n"

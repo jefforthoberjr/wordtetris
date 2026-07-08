@@ -839,6 +839,15 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_auto_end_rule = select_rule(
             "game_screen.constellation_auto_end", constellation_auto_end_rules)
+        # Debug panel (F3): example words the board can currently spell. Recomputed
+        # only while the panel is visible and the board changed (_dbg_words_dirty),
+        # so hidden play pays nothing; a rising edge of visibility re-dirties so the
+        # samples appear as soon as the panel opens. See _refresh_debug_word_samples.
+        self._dbg_words_dirty = True
+        self._dbg_panel_was_visible = False
+        # How many example words to sample (a short list, never a count -- see the
+        # no-word-availability-hints rule; a count is a stronger hint).
+        self._dbg_word_sample_count = 5
         # Seconds the MOVING_OMNISWAP countdown starts at (game_screen.mode:
         # rule_mode_omniswap_vs_timer); ignored by the other modes.
         self._omniswap_timer_seconds = CONFIG["rules"]["game_screen.omniswap_timer_seconds"]
@@ -1775,6 +1784,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             self._ingame_menu.draw()
     
     def update(self, dt):
+        # Debug panel (F3) formable-word samples: recompute only while the panel is
+        # visible and something changed, so normal (hidden) play does no dictionary
+        # work. Opening the panel counts as a change, so the samples show at once.
+        self._update_debug_word_samples()
         # During the opening reveal, drive the fade-in (paused while the menu is
         # open, like the moving timer below); when it finishes, hand off to the
         # active mode. No piece spawns and no timer runs until then.

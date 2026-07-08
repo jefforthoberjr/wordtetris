@@ -18,7 +18,8 @@ from collections import Counter
 
 from views.found_word import FoundWord
 from models.word_dictionary import is_word, all_words
-from starting_coverage import any_word_formable
+from starting_coverage import any_word_formable, sample_formable_words
+import debug_panel
 import log_codes as L
 from config import get_string
 
@@ -115,16 +116,14 @@ class ConstellationMixin:
         self._enter_endgame()
         return True
 
-    def _constellation_any_word_formable(self):
-        """Whether ANY dictionary word can still be assembled from the board's
-        remaining usable grams -- occupied, non-wild, non-fossil-wall cells,
-        pooled by text -- under the active word-length rule. The end-detection
-        twin of _constellation_match: same cell gathering, but existence-only over
-        the whole dictionary with an early exit on the first formable word (so a
-        board that can still spell something is cheap). Fossil handling matches
-        the block case exactly (walled cells are excluded); an allow-fossil
-        formation is not the constellation preset and is left to the End game
-        button, so a word spellable only from fossil cells is not special-cased."""
+    def _constellation_usable_grams(self):
+        """The multiset {gram text -> cell count} of the board's currently usable
+        grams: occupied, non-wild, non-fossil-wall cells, pooled by text. The raw
+        material for both end-detection and the debug sample -- the same cells
+        _constellation_match can draw on. Fossil handling matches the block case
+        exactly (walled cells excluded); an allow-fossil formation isn't the
+        constellation preset, so a word spellable only from fossil cells isn't
+        special-cased here."""
         grams = Counter()
         for cell in self._board.occupied_cells():
             if self._fossil_is_wall_rule(cell):
@@ -133,13 +132,56 @@ class ConstellationMixin:
             if gram is None or gram.is_wild or not gram.text:
                 continue
             grams[gram.text] += 1
+        return grams
+
+    def _constellation_accept(self):
+        """The word-length rule as an (word, n_cells) predicate for the coverage
+        helpers. The rule reads only len(text) and len(path), so a placeholder path
+        of the grouping's cell count suffices -- the same shim the starting-coverage
+        pass uses."""
+        return lambda word, n_cells: self._word_length_rule(word, [None] * n_cells)
+
+    def _constellation_any_word_formable(self):
+        """Whether ANY dictionary word can still be assembled from the board's
+        remaining usable grams under the active word-length rule -- the
+        end-detection twin of _constellation_match. Existence-only over the whole
+        dictionary with an early exit on the first formable word, so a board that
+        can still spell something is cheap."""
+        grams = self._constellation_usable_grams()
         if not grams:
             return False
-        # The word-length rule reads only len(text) and len(path), so feed it a
-        # placeholder path of the grouping's cell count -- the same shim the
-        # starting-coverage pass uses.
-        accept = lambda word, n_cells: self._word_length_rule(word, [None] * n_cells)
-        return any_word_formable(all_words(), grams, accept)
+        return any_word_formable(all_words(), grams, self._constellation_accept())
+
+    # --- debug-panel word samples (F3) -----------------------------------------
+    def _update_debug_word_samples(self):
+        """Keep the debug panel's example-word list current, doing dictionary work
+        ONLY while the panel is visible and something changed. Called every tick
+        from GameScreen.update. A rising edge of visibility re-dirties, so the
+        samples appear the instant the panel opens; otherwise a hidden panel (normal
+        play) costs nothing. Non-constellation modes clear the section."""
+        visible = debug_panel.visible
+        if visible and not self._dbg_panel_was_visible:
+            self._dbg_words_dirty = True     # opening the panel is a change
+        self._dbg_panel_was_visible = visible
+        if not visible or not self._dbg_words_dirty:
+            return
+        self._dbg_words_dirty = False
+        if self._constellation:
+            debug_panel.set_word_samples(
+                self._constellation_word_samples(self._dbg_word_sample_count))
+        else:
+            debug_panel.set_word_samples(None)   # section hidden outside constellation
+
+    def _constellation_word_samples(self, limit):
+        """Up to `limit` example words the board can currently spell (the F3 debug
+        sample). Reuses the usable-gram gathering and feeds sample_formable_words,
+        which early-exits at `limit` -- so this is cheap unless the board is nearly
+        unspellable. A short SAMPLE, never a count (a count is a stronger hint --
+        see the no-word-availability-hints rule)."""
+        grams = self._constellation_usable_grams()
+        if not grams:
+            return []
+        return sample_formable_words(all_words(), grams, self._constellation_accept(), limit)
 
     def _constellation_match(self, word, limit):
         """Every way to assemble `word` from distinct board cells' whole grams,

@@ -61,7 +61,8 @@ screen_manager.register(ScreenType.GAME, game_screen)
 screen_manager.register(ScreenType.DICTIONARY, dictionary_screen)
 screen_manager.switch_to(ScreenType.TITLE)
 
-debug_visible = False
+# Panel visibility now lives in debug_panel.visible (F3 toggles it below), so the
+# game can check it before doing panel-only work (formable-word sampling).
 debug_panel.init(window, ram_overhead.get_deltas())
 
 
@@ -71,19 +72,18 @@ def on_draw():
     debug_panel.start_draw()
     
     screen_manager.draw()
-    
-    if debug_visible:
+
+    if debug_panel.visible:
         debug_panel.draw()
-    
+
     debug_panel.end_draw()
 
 
 def on_key_press(symbol, modifiers):
-    global debug_visible
     debug_panel.start_event()
-    
+
     if symbol in control_keys("global.debug_panel_toggle"):
-        debug_visible = not debug_visible
+        debug_panel.visible = not debug_panel.visible
         result = True
     else:
         result = screen_manager.on_key_press(symbol, modifiers)

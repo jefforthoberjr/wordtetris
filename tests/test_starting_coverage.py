@@ -8,6 +8,7 @@ from starting_coverage import (
     any_word_formable,
     coverage_for_word,
     rules_allow_spellable,
+    sample_formable_words,
     write_coverage_csv,
 )
 
@@ -97,6 +98,30 @@ def test_any_word_formable_needs_whole_grams():
     # cut into HA+T (formable). ART shares no gram cut -> not formable from these.
     assert any_word_formable(["hat"], {"HA": 1, "T": 1}, ACCEPT) is True
     assert any_word_formable(["art"], {"HA": 1, "T": 1}, ACCEPT) is False
+
+
+def test_sample_formable_words_stops_at_limit():
+    # Three formable words available, but limit 2 -> at most 2 returned (early exit).
+    got = sample_formable_words(["cat", "dog", "pig", "zzz"],
+                                {"C": 1, "A": 1, "T": 1, "D": 1, "O": 1, "G": 1,
+                                 "P": 1, "I": 1}, ACCEPT, 2)
+    assert len(got) == 2
+    assert set(got) <= {"CAT", "DOG", "PIG"}
+    assert "ZZZ" not in got                       # not a formable pick
+
+
+def test_sample_formable_words_returns_all_when_fewer_than_limit():
+    got = sample_formable_words(["cat", "dog"], {"C": 1, "A": 1, "T": 1}, ACCEPT, 5)
+    assert got == ["CAT"]                          # only CAT is formable
+
+
+def test_sample_formable_words_empty_when_none_formable():
+    assert sample_formable_words(["cat"], {"Q": 1}, ACCEPT, 5) == []
+
+
+def test_sample_formable_words_empty_grams_or_zero_limit():
+    assert sample_formable_words(["cat"], {}, ACCEPT, 5) == []
+    assert sample_formable_words(["cat"], {"C": 1, "A": 1, "T": 1}, ACCEPT, 0) == []
 
 
 def test_rules_allow_spellable_respects_length_rule():

@@ -432,6 +432,10 @@ class SelectionMixin:
         # checks below so a replenished board isn't read as empty.
         if self._constellation:
             self._constellation_turnover_rule(found.path)
+            # The board changed, so the debug panel's formable-word sample is stale
+            # (recomputed lazily, only while the panel is visible). See
+            # _update_debug_word_samples.
+            self._dbg_words_dirty = True
         self._words_submitted_this_select += 1
         self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), display)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
