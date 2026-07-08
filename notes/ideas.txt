@@ -6,6 +6,12 @@ GAME NAMES
 
 * catalyst cata LIST
 
+Different auto end behavior when there are fewer tiles left
+(do a full word scan analysis)
+(sort into bin of "common words" and "obscure words")
+If only obscure left, have some sort of indicator to the user? ("give up yet"?)
+
+
 When a word isn't on the board, players are asking the question, what piece wasn't there? I could add some highlighting, for which letters were missing? Or list what was missing?
 
 Fade in for pieces during a replenish
