@@ -274,7 +274,8 @@ rules:
   # game_screen.rightclick_cv: rule_rightclick_none
   game_screen.rightclick_vc: rule_vc_double             # AN->ANN
   # game_screen.rightclick_vc: rule_rightclick_none
-  game_screen.rightclick_vv: rule_rightclick_none       # EE: no consonant, no-op
+  game_screen.rightclick_vv: rule_vv_collapse           # EE->E (pairs with unigram E->EE)
+  # game_screen.rightclick_vv: rule_rightclick_none       # EE: no consonant, no-op
   game_screen.rightclick_ck: rule_ck_double             # ST->SST (front only)
   # game_screen.rightclick_ck: rule_rightclick_none
 

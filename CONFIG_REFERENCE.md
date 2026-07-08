@@ -743,8 +743,11 @@ a CONSONANT throughout** (so ITY / ARY / PHY are NOT treated as VCV/CVK). Each s
   (BA → BBA), collapse back on the next click (BBA → BA).
 - `rightclick_vc` (vowel+consonant, e.g. AN) — `rule_vc_double`: double the consonant
   (AN → ANN), collapse back (ANN → AN).
-- `rightclick_vv` (two vowels, e.g. EE / EA) — `rule_rightclick_none`: no consonant to
-  double, so right-click does nothing.
+- `rightclick_vv` (two vowels, e.g. EE / EA) — `rule_vv_collapse`: collapse a doubled
+  vowel to the single letter (EE → E), the vowel mirror of `rule_cc_collapse`. Pairs with
+  `rightclick_unigram`'s `rule_unigram_double` (E → EE) to make the E ↔ EE toggle. Distinct
+  vowels (EA) have nothing to dedup, so it's a no-op there. The `rule_rightclick_none`
+  option restores the old "no consonant to double, right-click does nothing" behavior.
 - `rightclick_ck` (two DISTINCT consonants, e.g. ST) — `rule_ck_double`: double the
   FRONT consonant (ST → SST), collapse back (SST → ST). Front-ONLY by design: the
   corpus says the front double lands in real words for 32% of CK digrams (ly→lly,

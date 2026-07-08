@@ -653,7 +653,21 @@ class SelectionMixin:
         ends. Overlapping cells (shared across held words) clear once; each held
         word still records its own gram grouping (see _encode_variation)."""
         if self._pending:
+            # Union of the held words' cells, captured BEFORE _clear_paths removes
+            # them, so constellation turnover can refill exactly what emptied. The
+            # replenish rule only fills cells that actually went empty, so passing
+            # overlapping / duplicate cells is safe.
+            pending_cells = [cell for fw in self._pending for cell in fw.path]
             self._clear_paths(self._pending)
+            # Constellation turnover: refill (or, under no-replenish, leave empty)
+            # the vacated cells -- the batch-mode twin of the _commit_clear_now call,
+            # so replenish works under rule_clear_at_phase_end too (the constellation
+            # preset's timing). Inert in every other mode.
+            if self._constellation:
+                self._constellation_turnover_rule(pending_cells)
+                # The board changed, so the debug panel's formable-word sample is
+                # stale (recomputed lazily; see _update_debug_word_samples).
+                self._dbg_words_dirty = True
         self._pending = []
 
     # --- select word-limit rules (game_screen.select_word_limit) -----------
@@ -825,5 +839,13 @@ class SelectionMixin:
         board color."""
         self._endphase_clear_rule()
         self._settle_placed_cells()
+        # Constellation auto-end (game_screen.constellation_auto_end): after the batch
+        # clears + replenishes above, finish the game if the board can no longer spell
+        # any word -- the batch-mode twin of the _commit_clear_now check, so auto-end
+        # works under rule_clear_at_phase_end too. The rule ends the game itself and
+        # returns True when it fires; stop here rather than returning to MOVING /
+        # spawning the next piece. Off by default and inert in every other mode.
+        if self._constellation and self._constellation_auto_end_rule():
+            return
         self._set_phase(Phase.MOVING)
         self._moving_mode.advance()

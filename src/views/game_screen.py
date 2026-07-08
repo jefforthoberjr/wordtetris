@@ -215,6 +215,16 @@ def rule_cc_collapse(text):
         return text[0]                 # LL -> L
     return None
 
+def rule_vv_collapse(text):
+    """VV digram (a doubled vowel, EE): collapse to the single letter, VV -> V
+    (EE -> E). The forward V -> VV lives in the unigram slot
+    (rule_unigram_double), so the two together make the E <-> EE toggle -- the
+    vowel mirror of rule_cc_collapse. Distinct vowels (EA) have nothing to dedup,
+    so it returns None and the cell is left untouched."""
+    if len(text) == 2 and text[0] == text[1]:
+        return text[0]                 # EE -> E
+    return None
+
 def rule_cv_double(text):
     """CV digram (consonant+vowel, BA): double the consonant, C -> CC
     (BA -> BBA); the 3-letter CCV form collapses back, CC -> C (BBA -> BA).
@@ -288,6 +298,7 @@ def rule_rightclick_none(text):
 _GRAM_MANIP_RULES = {
     "rule_unigram_double": rule_unigram_double,
     "rule_cc_collapse": rule_cc_collapse,
+    "rule_vv_collapse": rule_vv_collapse,
     "rule_cv_double": rule_cv_double,
     "rule_vc_double": rule_vc_double,
     "rule_ck_double": rule_ck_double,

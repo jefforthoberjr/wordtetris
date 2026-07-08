@@ -2,7 +2,7 @@
 # apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
 # scoring, dictionary, gram picks, spell_check ...) comes from the base file.
 # mode_label is the menu display name, stripped before merge -- not a game knob.
-mode_label: "Constellation — type anywhere"
+mode_label: "Constellation — empty the board"
 
 rules:
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
@@ -11,13 +11,26 @@ rules:
   game_screen.constellation_turnover:   rule_constellation_replenish
   game_screen.constellation_auto_end:   rule_constellation_auto_end_on
 
+  game_screen.gram_usage: rule_gram_use_whole
+  game_screen.hunt_highlight: rule_hunt_full_gram
+  game_screen.rightclick_unigram: rule_rightclick_none # O->OO
+  game_screen.rightclick_cc: rule_rightclick_none # LL->L
+  game_screen.rightclick_cv: rule_rightclick_none # BA->BBA
+  game_screen.rightclick_vc: rule_rightclick_none # AN->ANN
+  game_screen.rightclick_vv: rule_rightclick_none
+  game_screen.rightclick_ck: rule_rightclick_none # ST->SST (front only)
+  game_screen.rightclick_vcv: rule_rightclick_none # ARE->ARRE
+  game_screen.rightclick_cvk: rule_rightclick_none # MER->MMER/MERR (alternating)
+
   # Board starts full, words form anywhere, every action opens word entry.
   game_screen.setup_formation:      rule_formation_fill_ideation_trigram_sidepanes_zigzag
   game_screen.word_nucleation:      rule_nucleate_anywhere
   game_screen.skip_select_isolated: rule_never_skip_select
   game_screen.select_trigger:       rule_select_every_placement
+  game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
   game_screen.clear_timing:         rule_clear_at_phase_end
   game_screen.select_word_limit:    rule_one_word_per_select
   game_screen.clear_action:         rule_clear_remove
   game_screen.victory:              rule_victory_none
   game_screen.word_trail:           rule_word_trail_off
+  game_screen.constellation_auto_end: rule_constellation_auto_end_on
