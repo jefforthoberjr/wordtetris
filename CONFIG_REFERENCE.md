@@ -1071,6 +1071,9 @@ entirely. Tunables live in the top-level `spell_check:` and `morpheme_check:` bl
 
 ## spell_check (tunables)
 
+Live in `assets/spell_check.yaml` (folded into CONFIG by `config.py`), not
+`config.yaml`; only the `game_screen.spell_suggest` enable/disable knob stays there.
+
 Spelling-suggestion weights for `rule_spell_suggest_constrained` — the restricted
 edit-distance matcher (`models/spell_check.py`).
 - `exoticness` = sum of the per-change weights below; used only to RANK results.

@@ -6,7 +6,19 @@ from pathlib import Path
 def load_config():
     config_path = Path(__file__).parent / "assets" / "config.yaml"
     with open(config_path) as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+    # Spell-hint score tuning lives in its own file (assets/spell_check.yaml) to
+    # keep config.yaml scannable; fold its top-level blocks (spell_check /
+    # morpheme_check) back in so readers see CONFIG["spell_check"] unchanged. The
+    # feature's enable/disable + engine choice stays in config.yaml as the rules
+    # knob game_screen.spell_suggest. Folding it in here (rather than at import)
+    # means every apply_game_mode reload re-includes it, so a mode can still
+    # deep-merge a spell_check override onto it.
+    spell_path = Path(__file__).parent / "assets" / "spell_check.yaml"
+    with open(spell_path, encoding="utf-8") as f:
+        spell_config = yaml.safe_load(f) or {}
+    config.update(spell_config)
+    return config
 
 
 CONFIG = load_config()
