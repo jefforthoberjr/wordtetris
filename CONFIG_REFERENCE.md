@@ -52,6 +52,27 @@ below for what each flips).
 
 ## Top-level blocks
 
+### assets.colors / assets.loading_animation
+Which styling / animation file to load, named by bare filename under its assets/
+subdir (`assets/colors/`, `assets/loading_animation/`). Both live in the `rules:`
+block so a game mode can swap the whole file through the same deep-merged override
+that carries every other knob — the base `config.yaml` names the default, a mode
+override names its own.
+- `assets.colors` — the colors table `get_color` resolves against (channels 0–255).
+  Default `default_colors.yaml`. NOTE: many color constants are resolved at import
+  time (class-level), before any mode is applied, so a mode that overrides
+  `assets.colors` only affects colors resolved after the swap — the split is wired,
+  but a fully per-mode palette needs those constants made instance-resolved.
+- `assets.loading_animation` — the opening-reveal fade timeline `get_loading_anim`
+  resolves against. Default `default_loading_animation.yaml`. Read per game at
+  construction (after the mode is applied), so it fully tracks the selected file —
+  e.g. `constellation_emptyit.yaml` selects a copy with every delay + duration
+  halved, so its reveal plays 2× as fast.
+
+Both globals reload when a game mode is applied (`config.apply_game_mode`), and the
+session log embeds the mode-selected file so replays stay faithful. `controls.yaml`
+is deliberately NOT split — still one file.
+
 ### window / game / audio
 - `window.width` / `window.height` — logical window size. On a Retina display
   `window.width` reports the physical framebuffer size (see TECH.md → PYGLET STYLE).

@@ -32,14 +32,24 @@ from pathlib import Path
 
 import yaml
 
-from config import CONFIG, active_mode
+from config import CONFIG, active_mode, colors_path, loading_anim_path
 
 # sessions/ lives at the repo root (this file is src/session_log.py).
 _SESSIONS_DIR = Path(__file__).resolve().parent.parent / "sessions"
 _ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 # Asset YAMLs embedded verbatim into each header so a log reproduces the exact
 # rule set it was played under, with no dependency on what the files say later.
+# The embed name is the LOGICAL label replay maps back to a config global (see
+# replay._EMBED_TO_GLOBAL); the actual file read is resolved below, since colors
+# and loading_animation are now per-mode (assets.colors / assets.loading_animation).
 _EMBED_FILES = ("config.yaml", "colors.yaml", "strings.yaml", "loading_animation.yaml")
+# Logical embed name -> a callable giving the file to actually read for it. The
+# two split assets resolve to whichever file the active mode selected.
+_EMBED_PATHS = {
+    "colors.yaml": colors_path,
+    "loading_animation.yaml": loading_anim_path,
+    "strings.yaml": lambda: _ASSETS_DIR / "strings.yaml",
+}
 # The player's lifetime word collection, snapshotted beside each log at session
 # start so replay sees the dictionary as it was then (matching "new word"
 # highlighting), not the since-grown live file. Same path PlayerDictionary uses.
@@ -157,7 +167,7 @@ def _write_meta_file(session_id, now, window):
                 for line in dumped.splitlines():
                     f.write(f"# {line}\n")
                 continue
-            path = _ASSETS_DIR / name
+            path = _EMBED_PATHS[name]()
             try:
                 for raw in path.read_text(encoding="utf-8").splitlines():
                     # Trim full-line comments and blank lines: keep only the active

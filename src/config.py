@@ -65,13 +65,24 @@ def apply_game_mode(path):
     each call means repeated mode switches always merge onto a clean base, never
     onto an already-merged CONFIG. `mode_label` is menu metadata, not a game knob,
     so it's stripped before the merge. Records + returns (slug, label)."""
-    global _active_mode
+    global _active_mode, COLORS, LOADING_ANIM
     path = Path(path)
     override = _load_yaml(path)
     label = override.pop("mode_label", None) or path.stem
     merged = _deep_merge(load_config(), override)
     CONFIG.clear()
     CONFIG.update(merged)
+    # The colors / loading-animation files are per-mode (assets.colors /
+    # assets.loading_animation), so reload them now that CONFIG holds the merged
+    # rules. Reassigning the module globals suffices: every reader goes through
+    # get_color / get_loading_anim (which read these names at call time), and
+    # nothing imports the tables directly. NOTE: class-level color constants
+    # resolved at import time (before any mode is applied) keep the default file's
+    # values -- a mode that overrides assets.colors only affects colors resolved
+    # after the swap. Loading-animation timing is read per game (at construction,
+    # after the mode is applied), so it always tracks the selected file.
+    COLORS = load_colors()
+    LOADING_ANIM = load_loading_anim()
     _active_mode = (path.stem, label, path)
     return path.stem, label
 
@@ -83,9 +94,23 @@ def active_mode():
     return _active_mode
 
 
+def _asset_path(rule_key, subdir, default):
+    """The asset file selected by CONFIG['rules'][rule_key] (a bare filename) under
+    assets/<subdir>/, falling back to `default` when the rule is absent. Lets a game
+    mode swap a whole styling/animation file (assets.colors / assets.loading_animation)
+    through the same deep-merged rules block that carries every other knob -- the base
+    config.yaml names the default file, a mode override names its own."""
+    name = CONFIG.get("rules", {}).get(rule_key, default)
+    return Path(__file__).parent / "assets" / subdir / name
+
+
+def colors_path():
+    """Resolved path of the active colors file (assets.colors)."""
+    return _asset_path("assets.colors", "colors", "default_colors.yaml")
+
+
 def load_colors():
-    colors_path = Path(__file__).parent / "assets" / "colors.yaml"
-    with open(colors_path) as f:
+    with open(colors_path(), encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -102,9 +127,15 @@ def load_strings():
 STRINGS = load_strings()
 
 
+def loading_anim_path():
+    """Resolved path of the active loading-animation file (assets.loading_animation)."""
+    return _asset_path(
+        "assets.loading_animation", "loading_animation", "default_loading_animation.yaml"
+    )
+
+
 def load_loading_anim():
-    loading_path = Path(__file__).parent / "assets" / "loading_animation.yaml"
-    with open(loading_path) as f:
+    with open(loading_anim_path(), encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -120,9 +151,9 @@ def select_rule(slot, registry):
 
 
 def get_color(path):
-    """Resolve a dotted color name (e.g. "board.settled_cell_fill") from colors.yaml to
-    an (r, g, b) or (r, g, b, a) tuple. colors.yaml is the single edit point for
-    styling; channels are 0-255."""
+    """Resolve a dotted color name (e.g. "board.settled_cell_fill") from the active
+    colors file (assets.colors, default assets/colors/default_colors.yaml) to an
+    (r, g, b) or (r, g, b, a) tuple; channels are 0-255."""
     node = COLORS
     for key in path.split("."):
         node = node[key]
@@ -130,8 +161,9 @@ def get_color(path):
 
 
 def get_loading_anim(path):
-    """Resolve a dotted key (e.g. "categories.mission") from loading_animation.yaml.
-    Single edit point for the LOADING fade-in timeline."""
+    """Resolve a dotted key (e.g. "categories.mission") from the active loading
+    file (assets.loading_animation, default default_loading_animation.yaml) -- the
+    LOADING fade-in timeline, per game mode."""
     node = LOADING_ANIM
     for key in path.split("."):
         node = node[key]

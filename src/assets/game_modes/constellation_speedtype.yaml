@@ -12,6 +12,8 @@ rules:
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
   game_screen.mode: rule_mode_constellation
 
+  assets.loading_animation: fast_loading_animation.yaml
+
   # game_screen.phase_model: rule_two_phase
   # game_screen.select_autosubmit_hunt: rule_select_autosubmit_on
 

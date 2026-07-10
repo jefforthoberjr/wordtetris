@@ -65,6 +65,12 @@ dictionary:
   # show_word_scores_on_hover: false
 
 rules:
+  # Which styling / animation file to load, by bare filename under its assets/
+  # subdir. A game mode can swap the whole file via these rules. [ref: assets.colors]
+  assets.colors:             default_colors.yaml
+  # [ref: assets.loading_animation]
+  assets.loading_animation:  default_loading_animation.yaml
+
   # Gram font sizing. [ref: gram.font_size]
   # gram.font_size:         rule_gram_font_scale_by_length
   # gram.font_size:         rule_gram_font_fixed

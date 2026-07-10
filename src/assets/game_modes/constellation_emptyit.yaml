@@ -9,6 +9,8 @@ mode_label: "Constellation — empty the board"
 # to make the end game easier
 
 rules:
+  assets.loading_animation: fast_loading_animation.yaml
+
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
   game_screen.mode: rule_mode_constellation
 
