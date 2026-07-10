@@ -886,6 +886,21 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         variant = select_rule("game_screen.omniswap_timer", omniswap_timer_variants)
         self._omniswap_timer_race = variant == "race"
         self._omniswap_timer_sand = variant == "sand"
+        # Whole-game countdown (game_screen.game_timer on/off + game_timer_seconds
+        # for its length): a single wall clock owned by GameScreen -- not by any
+        # one mode -- that runs across MOVING and SELECTING alike and ends the game
+        # (FINISHED, no win check) at zero. Mode-agnostic sibling of the omniswap timer above:
+        # that clock lives inside OmniswapVsTimerMode, this one lets ANY mode be
+        # time-boxed (e.g. a constellation speed-type). Started in _finish_loading,
+        # ticked in update(), painted + expired in _tick_game_timer (boardrules).
+        # Do not pair with an omniswap timer variant -- they share the pane label
+        # and both end at zero. See CONFIG_REFERENCE.md.
+        self._game_timer_on = select_rule(
+            "game_screen.game_timer",
+            {"rule_game_timer_off": False, "rule_game_timer_on": True})
+        self._game_timer_seconds = CONFIG["rules"]["game_screen.game_timer_seconds"]
+        self._game_timer_remaining = float(self._game_timer_seconds)
+        self._game_timer_last_shown = None
         # Sand-timer settings (rule_omniswap_timer_sand only); see SandTimerField.
         # A cell's life is a silent delay then the filling animation.
         self._sand_timer_delay_seconds = CONFIG["rules"]["game_screen.sand_timer_delay_seconds"]
@@ -1850,6 +1865,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # play phase (a two-phase clear replenishes in SELECTING, then hands back to
         # MOVING mid-fade), paused with the menu like the timer above.
         self._update_replenish_fades(dt)
+        # Whole-game countdown (game_screen.game_timer_seconds): one clock spanning
+        # both play phases, owned here so it is mode-agnostic. A no-op when off.
+        # Ticked before the mode so an expiry ends the game this frame.
+        self._tick_game_timer(dt)
         if self._phase == Phase.MOVING:
             self._moving_mode.update(dt)
         elif self._phase == Phase.SELECTING:

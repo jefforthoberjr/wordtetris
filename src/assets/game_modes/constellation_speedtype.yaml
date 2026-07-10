@@ -19,6 +19,8 @@ rules:
 
   game_screen.phase_model: rule_single_phase
   
+  game_screen.game_timer: rule_game_timer_on
+
   game_screen.constellation_max_paths:  24
   game_screen.constellation_turnover:   rule_constellation_replenish
   game_screen.constellation_auto_end: rule_constellation_auto_end_off

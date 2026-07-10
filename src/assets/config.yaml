@@ -136,6 +136,12 @@ rules:
   game_screen.omniswap_timer: rule_omniswap_timer_race
   # game_screen.omniswap_timer: rule_omniswap_timer_sand
 
+  # Whole-game countdown, any mode: on/off. [ref: game_screen.game_timer]
+  game_screen.game_timer: rule_game_timer_off
+  # game_screen.game_timer: rule_game_timer_on
+  # Whole-game countdown length in seconds (when on). [ref: game_screen.game_timer_seconds]
+  game_screen.game_timer_seconds: 120
+
   # TYPEWRITER cursor visit order. [ref: game_screen.cursor_path]
   game_screen.cursor_path:  rule_cursor_typewriter
 

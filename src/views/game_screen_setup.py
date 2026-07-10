@@ -202,6 +202,10 @@ class BoardSetupMixin:
         self._loading_anim = None
         self._set_phase(Phase.MOVING)
         self._moving_mode.start()
+        # Start the whole-game countdown (if on) now that play has begun, so the
+        # opening reveal doesn't burn clock time. A no-op when off / in a mode that
+        # runs its own timer instead.
+        self._start_game_timer()
 
     # --- starting-coverage rules (game_screen.starting_coverage_dictionary) -
     # Optionally enumerate EVERY word the opening board could spell, once, before

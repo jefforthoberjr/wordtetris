@@ -1,5 +1,7 @@
 """Board, victory, phase-transition and select-gating rules extracted from GameScreen. A mixin -- every method runs with GameScreen's self. Holds the victory / fill-board / cell-overlap rules, the phase-change + end-state machine (_set_phase, _check_victory, _enter_*), and the select-trigger / typewriter-swap / isolated-skip / select-click rules. Kept out of game_screen.py to bound its size (see AGENTS.md)."""
 
+import math
+
 from views.game_phase import Phase
 from config import select_rule, get_color, get_string, CONFIG
 import session_log
@@ -158,6 +160,55 @@ class BoardRulesMixin:
         self._obstacle_cells.difference_update(overlapped)
         self._mission_cells.difference_update(overlapped)
 
+    # --- whole-game countdown (game_screen.game_timer_seconds) ------------
+    # A single wall clock owned by GameScreen (not any one mode), so ANY mode can
+    # be time-boxed -- the mode-agnostic sibling of the omniswap timer, which lives
+    # inside OmniswapVsTimerMode. Runs across MOVING and SELECTING alike and ends
+    # the game (FINISHED, no win check) at zero. Off (a no-op) when the config is 0.
+    def _start_game_timer(self):
+        """Arm the countdown to its full length as play begins (_finish_loading).
+        No-op when the timer is off; harmless in modes that run their own clock."""
+        if not self._game_timer_on:
+            return
+        self._game_timer_remaining = float(self._game_timer_seconds)
+        self._game_timer_last_shown = None
+        L.log_40001(int(self._game_timer_remaining))
+        self._show_game_timer()
+
+    def _tick_game_timer(self, dt):
+        """Decrement the whole-game clock once per play frame (called from update()
+        during MOVING and SELECTING; the menu-open / LOADING guards there pause it).
+        At zero, end the game outright, like the omniswap race clock. Only ticks in
+        the two play phases -- update() still runs in VICTORY (to draw the end
+        panel), so without this the expired clock would re-fire _enter_endgame every
+        frame and the FINISHED overlay could never be dismissed."""
+        if not self._game_timer_on:
+            return
+        if self._phase not in (Phase.MOVING, Phase.SELECTING):
+            return
+        self._game_timer_remaining -= dt
+        if self._game_timer_remaining <= 0:
+            self._game_timer_remaining = 0
+            self._show_game_timer()
+            L.log_40002("game_timer", "ended_game")
+            self._enter_endgame()
+            return
+        self._show_game_timer()
+
+    def _show_game_timer(self):
+        """Paint the whole seconds left onto whichever side pane is showing. Both
+        panes are painted (in single-phase they are the same merged pane); a phase
+        switch may have just overwritten the label, so _set_phase clears the cache
+        to force a repaint next tick. Only pushes on a whole-second change."""
+        secs = int(math.ceil(self._game_timer_remaining))
+        if secs == self._game_timer_last_shown:
+            return
+        self._game_timer_last_shown = secs
+        self._moving_side_pane.set_time_label(secs)
+        if (self._selecting_side_pane is not None
+                and self._selecting_side_pane is not self._moving_side_pane):
+            self._selecting_side_pane.set_time_label(secs)
+
     def _set_phase(self, new_phase):
         """Single point for phase changes: log the transition (log_10001) then
         switch. Every `self._phase` assignment routes through here so the session
@@ -168,6 +219,11 @@ class BoardRulesMixin:
         self._phase = new_phase
         if old is not new_phase:
             L.log_10001(old, new_phase)
+            # A running whole-game timer paints the pane's top label; the phase
+            # switch may have just rewritten that label (e.g. the pieces count on
+            # entering MOVING), so force a repaint on the next tick.
+            if getattr(self, "_game_timer_on", False):
+                self._game_timer_last_shown = None
             # Leaving SELECT with the "select which one" chooser still open (e.g.
             # a timer forced the phase out from under it): drop its overlay +
             # prompt so no candidate lines linger into MOVING.
@@ -211,11 +267,15 @@ class BoardRulesMixin:
         self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
         # End-of-game bonus for time left on the clock (per whole second). Read
-        # the countdown mode's remaining seconds (0 in modes with no clock, and
-        # ~0 for the race variant that ends AT zero -- so this rewards finishing a
-        # victory early, not the clock running out). Refresh the readout so the
-        # bonus shows before the end panel freezes.
-        remaining = getattr(self._moving_mode, "_remaining", 0) or 0
+        # whichever clock is active -- the whole-game timer (owned here) if on, else
+        # the countdown mode's remaining seconds (0 in modes with no clock, and ~0
+        # for a clock that ends AT zero -- so this rewards finishing a victory
+        # early, not the clock running out). Refresh the readout so the bonus shows
+        # before the end panel freezes.
+        if getattr(self, "_game_timer_on", False):
+            remaining = self._game_timer_remaining
+        else:
+            remaining = getattr(self._moving_mode, "_remaining", 0) or 0
         self._scorer.time_bonus_rule(remaining)
         self._refresh_score()
         # Close out the session: the final tally, then the session-end line, then

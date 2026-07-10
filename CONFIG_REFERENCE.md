@@ -370,6 +370,26 @@ Seconds the MOVING_OMNISWAP countdown starts at (only used by
 per-phase budget, reset to full each time play returns to MOVING; under
 `rule_omniswap_timer_race` it is the single whole-game clock (try ~360).
 
+### game_screen.game_timer
+A whole-game countdown that works in ANY mode. `rule_game_timer_off` (the default)
+disables it; `rule_game_timer_on` arms it for `game_timer_seconds`. When on,
+GameScreen — not the moving mode — runs one wall clock that starts as play begins
+(when the opening reveal ends) and counts down continuously across both MOVING and
+SELECTING (paused only by the menu, like every other clock). The instant it reaches
+zero the game ends as FINISHED (no win check), exactly like the omniswap race clock.
+The seconds-left are painted on whichever side pane is showing (top-edge label, in
+place of the pieces-until-select count). This is the mode-agnostic sibling of the
+omniswap timer: that clock lives inside `OmniswapVsTimerMode` and only exists in the
+omniswap modes, whereas this one is owned by GameScreen so a constellation speed-type
+(or any mode) can be time-boxed. Do NOT combine it with an omniswap timer variant in
+the same mode — pick one clock, since both paint the same label and both end the game
+at zero. Any victory rule still wins the game before the clock runs out (the time-left
+score bonus reads this clock when it is the active one).
+
+### game_screen.game_timer_seconds
+Length of the `game_screen.game_timer` countdown, in seconds. Only read when the
+timer is `rule_game_timer_on`. Try ~120 for a fast speed-type.
+
 ### game_screen.sand_timer_delay_seconds / sand_timer_seconds / sand_timer_count
 SAND-TIMER settings (only used by `rule_omniswap_timer_sand`). Instead of one global
 countdown, up to `sand_timer_count` board cells are "sand timers" at a time; a sand
