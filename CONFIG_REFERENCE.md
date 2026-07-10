@@ -348,6 +348,18 @@ LOADING reveal. `0` restores the instant pop. Paused while the in-game menu is
 open, like the mode timer. A purely visual knob — the refill itself (the placed
 gram, logging, scoring) is unchanged, so replay reproduces the same board.
 
+### game_screen.constellation_replenish_delay_seconds
+Constellation + `rule_constellation_replenish` only: how many seconds a vacated
+cell stays visibly empty before its fresh gram is picked and placed on the board.
+Unlike `constellation_replenish_fade_seconds` (which controls the fade-in *after*
+the gram exists), this delays the placement itself — the cell holds no gram, and
+none can be typed from it, until the wait elapses. Pending waits are counted down
+each play tick in `_update_pending_replenishes` and paused while the in-game menu
+is open, like the mode timer; once a wait fires the gram is placed and then fades
+in per `constellation_replenish_fade_seconds`. `0` fills instantly (the original
+behavior). Note this defers when the new gram becomes usable, so it slightly
+lengthens the window in which `constellation_auto_end` sees a smaller board.
+
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own
 once the remaining grams can no longer spell ANY dictionary word (the existence

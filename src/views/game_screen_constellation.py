@@ -89,11 +89,55 @@ class ConstellationMixin:
         cell still occupied -- e.g. fossilized by the clear-action -- is left
         untouched; the new gram gets the picker's score-gradient glyph color for
         free (built through _fill_one_player_cell's piece). A replenished cell
-        under an active hunt re-lights via the caller's recompute."""
+        under an active hunt re-lights via the caller's recompute.
+
+        The placement is not necessarily immediate: it's routed through
+        _schedule_replenish, which honors game_screen.constellation_replenish_delay_seconds
+        (an empty-cell pause before the fresh gram appears)."""
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
-                self._fill_one_player_cell(x, y)
-                self._begin_replenish_fade(x, y)
+                self._schedule_replenish(x, y)
+
+    def _schedule_replenish(self, x, y):
+        """Queue the just-vacated cell (x, y) to refill after
+        game_screen.constellation_replenish_delay_seconds, leaving it visibly empty
+        in the meantime. A zero (or negative) delay fills right away -- the original
+        behavior -- so the knob turns the wait off without a separate rule. Live
+        waits live in _pending_replenishes and are counted down by
+        _update_pending_replenishes."""
+        if self._constellation_replenish_delay_seconds <= 0:
+            self._replenish_cell_now(x, y)
+        else:
+            self._pending_replenishes.append(
+                [x, y, self._constellation_replenish_delay_seconds])
+            L.log_06006(x, y, self._constellation_replenish_delay_seconds)
+
+    def _replenish_cell_now(self, x, y):
+        """Put a fresh gram in the (still-empty) vacated cell and start its fade-in.
+        Split out of the turnover rule so the immediate path and the delayed timer
+        share one placement. Re-checks the cell is still valid and empty first: a
+        delayed wait could in principle outlive the cell's usable state."""
+        if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
+            self._fill_one_player_cell(x, y)
+            self._begin_replenish_fade(x, y)
+
+    def _update_pending_replenishes(self, dt):
+        """Count down each queued replenish and fill its cell when the wait elapses,
+        then re-light an active hunt via a recompute (matching the ordering the
+        immediate path got for free -- fill before the caller's recompute). Called
+        each play tick from GameScreen.update (paused with the menu). Cheap no-op
+        when nothing is waiting, i.e. all non-replenish or zero-delay play."""
+        if not self._pending_replenishes:
+            return
+        fired = False
+        for pending in self._pending_replenishes:
+            pending[2] -= dt
+            if pending[2] <= 0:
+                self._replenish_cell_now(pending[0], pending[1])
+                fired = True
+        self._pending_replenishes = [p for p in self._pending_replenishes if p[2] > 0]
+        if fired:
+            self._recompute_candidates()
 
     def _begin_replenish_fade(self, x, y):
         """Start a fade-in for the cell just replenished at (x, y): instead of the

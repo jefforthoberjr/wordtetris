@@ -64,6 +64,8 @@ We want it so when I swap out the rules later, I only have to update one place. 
 
 Try to keep functions with rule selection in them toward the top of the .py files.
 
+Anytime we add something new to config.yaml, also update the core code logic to use it.
+
 # SESSIONS AND REPLAY FEATURE
 We capture logs as sessions, which I can use later to replay a previous session.
 The session uses/shares the logic of the main game.

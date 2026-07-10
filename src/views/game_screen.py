@@ -842,6 +842,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._constellation_replenish_fade_seconds = CONFIG["rules"][
             "game_screen.constellation_replenish_fade_seconds"]
         self._replenish_fades = []
+        # Seconds a vacated cell stays empty before its replenishment gram is
+        # placed (rule_constellation_replenish only); 0 = fill instantly. Pending
+        # waits tracked in _pending_replenishes, counted down in update and queued
+        # by _schedule_replenish. See constellation_replenish_delay_seconds.
+        self._constellation_replenish_delay_seconds = CONFIG["rules"][
+            "game_screen.constellation_replenish_delay_seconds"]
+        self._pending_replenishes = []
         # Constellation auto-end (game_screen.constellation_auto_end): after a word
         # clears, optionally finish the game once the remaining grams can spell no
         # dictionary word. Off by default (an auto-finish reveals board exhaustion,
@@ -1861,9 +1868,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # omniswap race variant); every other mode leaves it a no-op.
         if self._menu_open:
             return
-        # Bloom in any cells replenished this game (constellation). Runs in every
-        # play phase (a two-phase clear replenishes in SELECTING, then hands back to
-        # MOVING mid-fade), paused with the menu like the timer above.
+        # Fill in any cells whose empty-cell replenish delay has elapsed
+        # (constellation), then bloom in any cells replenished this game. Both run
+        # in every play phase (a two-phase clear replenishes in SELECTING, then
+        # hands back to MOVING mid-wait/fade), paused with the menu like the timer.
+        self._update_pending_replenishes(dt)
         self._update_replenish_fades(dt)
         # Whole-game countdown (game_screen.game_timer_seconds): one clock spanning
         # both play phases, owned here so it is mode-agnostic. A no-op when off.

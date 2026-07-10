@@ -338,6 +338,17 @@ def log_06003(piece):
                      type=_piece_type_name(piece.piece_type), cells=spec)
 
 
+def log_06006(x, y, delay):
+    """A vacated constellation cell was queued to replenish after an empty-cell
+    wait (game_screen.constellation_replenish_delay_seconds > 0): the cell stays
+    empty for `delay` seconds, then a fresh gram is placed there and recorded as
+    the matching log_06002 'fill'. Logged so a replay reproduces the empty-then-fill
+    timing instead of snapping the gram in at clear time. The instant path
+    (delay <= 0) skips this and logs only the fill."""
+    session_log.emit(6006, f"replenish scheduled at {x},{y} in {delay:.2f}s",
+                     x=x, y=y, delay=round(delay, 3))
+
+
 def log_06005(cell):
     """A cell fossilized at game start by the center-seed rule
     (game_screen.fossil_requirement_first_word: rule_fossil_seed_center). `cell` is
