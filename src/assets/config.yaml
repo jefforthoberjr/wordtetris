@@ -227,6 +227,11 @@ rules:
   game_screen.fossil_word_use: rule_fossil_block
   # game_screen.fossil_word_use: rule_fossil_allow
 
+  # Two phases (MOVING -> SELECTING) vs one merged MOVING_AND_SELECTING pane.
+  # Single-phase is for pre-filled-board modes only. [ref: game_screen.phase_model]
+  game_screen.phase_model: rule_two_phase
+  # game_screen.phase_model: rule_single_phase
+
   # Stage 3 (select): auto-clear vs interactive text entry. [ref: game_screen.word_select]
   # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
   game_screen.word_select: rule_select_by_text_input
@@ -261,8 +266,8 @@ rules:
   # game_screen.reject_ghost: rule_reject_ghost_off
 
   # Right-pane word click swaps in a word-piece. [ref: game_screen.player_word_piece]
-  game_screen.player_word_piece: rule_player_word_piece_enabled
-  # game_screen.player_word_piece: rule_player_word_piece_disabled
+  # game_screen.player_word_piece: rule_player_word_piece_enabled
+  game_screen.player_word_piece: rule_player_word_piece_disabled
 
   # RIGHT-click gram manipulation, one slot per gram shape (C->CC doubling / collapse;
   # Y is a consonant). rule_rightclick_none disables a slot. [ref: game_screen.rightclick_*]

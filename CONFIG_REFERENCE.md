@@ -647,6 +647,23 @@ May a NEW word use fossilized cells (frozen formed words; only present under
 - `rule_fossil_allow` — a word may use fossilized cells, but must include at least one
   non-fossilized cell (never built purely from frozen ones).
 
+### game_screen.phase_model
+Whether the game runs two distinct phases or one merged phase. The two-phase machine
+(MOVING to place/rearrange, then a separate SELECTING phase to type/submit words) is the
+original; single-phase collapses both into one MOVING_AND_SELECTING pane where the player
+rearranges the board and submits words at the same time, with no modal transition.
+- `rule_two_phase` — MOVING then SELECTING, each with its own right pane (original).
+- `rule_single_phase` — one merged right pane; the game never leaves MOVING and words are
+  submitted inline. Intended for the pre-filled-board modes only (constellation, omniswap,
+  typewriter), which have no piece-spawn cycle that needs a SELECT gate. Pairs with an
+  interactive `word_select` (`rule_select_by_text_input`); ignored by the auto selector.
+  With no phase boundary, single-phase FORCES `clear_timing` to clear-on-submit regardless
+  of the configured value (a phase-end batch would never flush -- its cells would tint green
+  forever and never clear or list), and `select_word_limit` is inert (nothing ends the
+  never-ending phase). So set `clear_timing: rule_clear_on_submit` + `select_word_limit:
+  rule_unlimited_words` to match what actually runs. The disambiguation cycle chooser works
+  here too (routed in MOVING).
+
 ### game_screen.word_select
 Stage 3 (select): of the nucleated candidates, which to actually clear.
 - `rule_select_mostwords_withoverlaps_withrepeats` — automatic, instant (keep maximal

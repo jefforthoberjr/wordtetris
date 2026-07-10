@@ -1,0 +1,33 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else comes
+# from the base file. mode_label is the menu name, stripped before merge.
+#
+# Single-phase (MOVING_AND_SELECTING) omniswap: swap cells AND submit words in one
+# merged pane against the race clock, with no MOVING -> SELECTING transition. The
+# whole-game timer keeps running (it used to span both phases; now there is only
+# MOVING). See game_screen.phase_model in CONFIG_REFERENCE.md.
+mode_label: "Omniswap — single phase"
+
+rules:
+  game_screen.mode:                 rule_mode_omniswap_vs_timer
+  # Board starts full and swappable; formed words freeze; no instant win; words
+  # form anywhere.
+  game_screen.setup_formation:      rule_formation_fill_player_diagonal
+  game_screen.clear_action:         rule_clear_fossilize
+  game_screen.victory:              rule_victory_none
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  # Whole-game race clock; tune the countdown length.
+  game_screen.omniswap_timer:         rule_omniswap_timer_race
+  game_screen.omniswap_timer_seconds: 360
+
+  # Single-phase essentials: one merged pane, clear-on-submit (no phase-end
+  # batch), no per-select word cap (keep swapping + typing). The disambiguation
+  # cycle chooser is routed in MOVING too, so a submit opens the board chooser for
+  # a confirm -- the player controls which path clears (omniswap's two-phase
+  # default), all without leaving MOVING.
+  game_screen.phase_model:          rule_single_phase
+  game_screen.clear_timing:         rule_clear_on_submit
+  game_screen.select_word_limit:    rule_unlimited_words
+  game_screen.clear_disambiguation: rule_disambig_cycle_one_or_more_choices

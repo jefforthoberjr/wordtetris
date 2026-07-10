@@ -379,6 +379,12 @@ class SelectionMixin:
         word = typed.strip().upper()
         if not word:
             return
+        # Single-phase (MOVING_AND_SELECTING): no _begin_selection ran to snapshot
+        # the board's candidates, and the board may have changed via swaps since the
+        # last submit, so recompute now at submit time. Constellation matches on
+        # demand and takes the cheap clear-only branch, so this is near-free there.
+        if self._single_phase:
+            self._recompute_candidates()
         L.log_30001(word)
         self._submit_clear_rule(word)
 
@@ -396,6 +402,18 @@ class SelectionMixin:
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
     # Paired per timing: a submit rule (what one submit does) and a phase-end
     # rule (what ending the phase does). See the registries in __init__.
+    def _force_single_phase_clear_timing(self):
+        """Single-phase (MOVING_AND_SELECTING) has no phase boundary, so the
+        clear-at-phase-end batch would never flush: submitted words would tint
+        green forever and never clear or list. Deferring only makes sense with a
+        phase end, so single-phase always clears on submit regardless of the
+        configured clear_timing -- a mode invariant, not a player-tunable knob.
+        Applied over the resolved clear-timing rules in __init__; a no-op in
+        two-phase, so the player's clear_timing choice stands there."""
+        if self._single_phase:
+            self._submit_clear_rule = self._rule_submit_clears_now
+            self._endphase_clear_rule = self._rule_endphase_clear_none
+
     def _options_for(self, word):
         """The clearable FoundWord spellings of a submitted `word` (or None). The
         pipeline seam between word-finding strategies: adjacency modes read the
@@ -836,6 +854,12 @@ class SelectionMixin:
         selection together (it may win the game, caught by _advance_piece) -- then
         settles the placed piece's remaining cells from light blue back to the
         board color."""
+        # Single-phase never leaves MOVING: there is no selection phase to end.
+        # It runs clear-on-submit (no held batch to flush) and has no placed piece
+        # to settle, so every auto-end trigger (word limit, piece-adjacency) is a
+        # no-op here.
+        if self._single_phase:
+            return
         self._endphase_clear_rule()
         self._settle_placed_cells()
         # Constellation auto-end (game_screen.constellation_auto_end): after the batch

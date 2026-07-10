@@ -12,7 +12,17 @@ In this game, players are spelling out words. The player manipulate 'pieces' and
 
 The game_screen.py transitions between "phases" (e.g. MOVING and SELECTING). The game_screen has some major ways in which its gameplay is configured (see config.yaml), including "grid" square vs. hex grid (game_screen.grid), and different game "modes" (game_screen.mode). The different game modes defines about roughly half of the logic, UI and player's controls that get used at runtime. These are the biggest aspects of the game to clarify/specify when adding new rules to the game.
 
-As we experiment with adding more rules, I playtest, commenting in/out different rule combinations in config.yaml.
+
+# CONFIG FILES
+YOU CAN EDIT config.yaml
+config.yaml represents a master list of all the possible rules we've developed
+
+YOU CANNOT EDIT the subconfiguration yaml files in game_modes/ dir
+These files represent the hand-picked variations I am experimenting with.
+
+After you've created a new rule/config (and have just added it to config.yaml), you can output a suggestion for which subconfig files the new rule should be added to, and display some copy/paste text, otherwise it's an important exercise for me as the human to do the copy and paste. This is a forced moment for me to reflect and learn about the newly created option, and forces me to re-audit how a newly added feature may/maynot be used in the various modes.
+
+As we experiment with adding more rules, I will playtest, commenting in/out different rule combinations at the root config.yaml (for things I believe should apply to all game modes).
 
 To keep config.yaml scannable, its knobs carry only a terse one-line label; the full explanation for each lives in CONFIG_REFERENCE.md (keyed by the same dotted name). When you add or change a rule, put the short label in config.yaml and the prose in CONFIG_REFERENCE.md -- do NOT grow multi-paragraph comments back into config.yaml. See TECH.md.
 
@@ -38,13 +48,15 @@ Do not automatically update a library/dependency version unless you ask first.
 
 ## REFACTOR CODE - RULES ENGINE
 When we first implement a feature, it will be usualy be very basic (e.g. low animation, low physics, low logic). 
-Then, as we refactor code, to add more complexity to the feature, I was to preserver the more primative version of the feature in the code (in case I want to uncomment it / restore it in the future). 
+Then, as we refactor code, to add more complexity to the feature, I was to preserve the more primative version of the feature in the code (in case I want to uncomment it / restore it in the future). 
 
 When refactoring code, keep the old version of the feature in the code, but disabled (or in an uncalled function).
 
 When I ask you to refactor a feature, in a major way, ask me to confirm if I want to stash existing logic, as a commented out rule in config.yaml, a copy of the old way in the code. I will be rare that I want to completely abandon an old feature.
 
 Thus, our overall coding style will end up with many objects or logic rules in the game will be swappable/configurable. The code will be a lot like a 'rules engine' format.
+
+The resulting core code is thus heavily feature flagged.
 
 Functions we extract as configurable features should have the word "rule" in it.
 
@@ -56,6 +68,7 @@ Try to keep functions with rule selection in them toward the top of the .py file
 We capture logs as sessions, which I can use later to replay a previous session.
 The session uses/shares the logic of the main game.
 Anytime you make a change or feature add to the main game, make sure there is sufficient logging etc. to see the new feature in the replay.
+I'll often refer to this as "see my most recent play session" for you to look in the sessions dir and read the logs.
 
 ## WE BOTH EDIT THE CODE
 Sometimes, between your edits of code, I will manually make some small changes. For example, add a line of commenting. Since you may not see these edits in your context, please re-read files that have an updated timestamp newer than when you touched them last.

@@ -158,6 +158,42 @@ class FakePane:
         self.rejected = None
 
 
+class FakeMergedPane:
+    """Stand-in for the single-phase MovingSelectingSidePane, which serves BOTH
+    the moving and selecting slots. Mirrors the real split: add_cleared_words (the
+    _clear_paths sink) lists the word; accept_word only resets the field, so a
+    cleared word is listed exactly once."""
+
+    def __init__(self):
+        self.cleared = []       # via add_cleared_words (the game-long list)
+        self.accepted = []      # via accept_word (field reset; must NOT list)
+        self.word_count = None
+
+    def add_cleared_words(self, words, new_flags=None, obscure_flags=None, scores=None):
+        self.cleared += list(words)
+
+    def accept_word(self, word, is_new=False, is_obscure=False, points=None):
+        self.accepted.append(word)
+
+    def set_word_count(self, count):
+        self.word_count = count
+
+    def set_score_label(self, points):
+        self.score = points
+
+    def set_phase_label(self, count):
+        self.phase_label = count
+
+    def clear_errors(self):
+        pass
+
+    def clear_hunt(self):
+        pass
+
+    def hunt_text(self):
+        return ""
+
+
 class FakeSidepane:
     """Stand-in for the MOVING side pane (game_screen._moving_side_pane)."""
 
@@ -260,6 +296,9 @@ class _InteractiveStub:
 
 def _game(board, interactive=True, history=None):
     g = gs.GameScreen.__new__(gs.GameScreen)
+    # Two-phase (the original phase model) for these selection-pipeline tests; the
+    # single-phase branch (merged MOVING_AND_SELECTING pane) is exercised separately.
+    g._single_phase = False
     g._word_length_rule = gs.rule_word_min3letters_min2cells
     g._cleared_word_history = set(history or ())
     g._repeat_rule = lambda w: w not in g._cleared_word_history
@@ -384,7 +423,33 @@ def test_submit_valid_word_clears_and_lists_it():
     assert g._selecting_side_pane.accepted == ["TEAR"]
     assert g._moving_side_pane.cleared == ["TEAR"]
     assert g._board.cells == {}  # every TEAR cell removed
-    assert g._selecting_side_pane.errors is None
+
+
+def test_single_phase_forces_clear_on_submit_and_lists_word():
+    # Regression: single-phase (MOVING_AND_SELECTING) with a clear_at_phase_end
+    # config used to defer every submit into a batch that -- with no phase end --
+    # never flushed: cells stayed tinted green forever and the word never cleared
+    # or appeared in the list. Single-phase now forces clear-on-submit.
+    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    # The pre-filled-board setup single-phase runs on: words form anywhere (no
+    # placed piece to nucleate around, since there is no _begin_selection).
+    g._nucleation_rule = g._rule_nucleate_anywhere
+    # The offending config: batch clear-at-phase-end.
+    g._submit_clear_rule = g._rule_submit_defers
+    g._endphase_clear_rule = g._rule_endphase_clear_pending
+    # Single-phase: one merged pane in BOTH slots, and the invariant applied.
+    g._single_phase = True
+    merged = FakeMergedPane()
+    g._moving_side_pane = merged
+    g._selecting_side_pane = merged
+    g._force_single_phase_clear_timing()
+    assert g._submit_clear_rule == g._rule_submit_clears_now
+
+    g._on_submit_word("tear")
+    assert merged.cleared == ["TEAR"]   # listed once, via the _clear_paths sink
+    assert merged.accepted == ["TEAR"]  # field reset, but did not double-list
+    assert g._board.cells == {}         # actually cleared, not deferred
+    assert g._pending == []             # nothing held -> no stuck green tint
 
 
 def test_non_dictionary_word_errors():

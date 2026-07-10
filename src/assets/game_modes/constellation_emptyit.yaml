@@ -11,7 +11,12 @@ mode_label: "Constellation — empty the board"
 rules:
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
   game_screen.mode: rule_mode_constellation
-  
+
+  # game_screen.phase_model: rule_two_phase
+  # game_screen.select_autosubmit_hunt: rule_select_autosubmit_on
+
+  game_screen.phase_model: rule_single_phase
+
   game_screen.constellation_max_paths:  24
   game_screen.constellation_turnover: rule_constellation_no_replenish
   game_screen.constellation_auto_end:   rule_constellation_auto_end_on

@@ -6,6 +6,11 @@ GAME NAMES
 
 * catalyst cata LIST
 
+
+For 
+
+
+
 Different auto end behavior when there are fewer tiles left
 (do a full word scan analysis)
 (sort into bin of "common words" and "obscure words")
