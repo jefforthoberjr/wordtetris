@@ -17,6 +17,7 @@ mode."""
 from collections import Counter
 
 from views.found_word import FoundWord
+from views.loading_animation import TimedFade
 from models.word_dictionary import is_word, all_words
 from starting_coverage import any_word_formable, sample_formable_words
 import debug_panel
@@ -92,6 +93,36 @@ class ConstellationMixin:
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
                 self._fill_one_player_cell(x, y)
+                self._begin_replenish_fade(x, y)
+
+    def _begin_replenish_fade(self, x, y):
+        """Start a fade-in for the cell just replenished at (x, y): instead of the
+        fresh gram popping in at full opacity, bloom it up from transparent over
+        game_screen.constellation_replenish_fade_seconds. Reuses the opening
+        reveal's fade handles (the glyph's alpha ramp + the background's hex
+        white-fade / square alpha-fade) and registers a one-shot TimedFade that
+        update() ticks. A zero duration reveals instantly (the old pop), so the
+        knob switches the effect off without a separate rule; an empty cell (no
+        gram placed) or a handle-less cell is skipped."""
+        cell = self._board.get_cell(x, y)
+        if cell is None:
+            return
+        handles = []
+        self._add_cell_label_fade_handle(handles, cell)
+        self._add_cell_background_fade_handles(handles, cell)
+        if handles:
+            self._replenish_fades.append(
+                TimedFade(handles, self._constellation_replenish_fade_seconds))
+
+    def _update_replenish_fades(self, dt):
+        """Advance every live replenish fade and drop the finished ones. Called each
+        play tick from GameScreen.update (paused with the menu). Cheap no-op when no
+        cell is currently fading, i.e. all non-replenish play."""
+        if not self._replenish_fades:
+            return
+        for fade in self._replenish_fades:
+            fade.update(dt)
+        self._replenish_fades = [f for f in self._replenish_fades if not f.done]
 
     # --- auto-end rules (game_screen.constellation_auto_end) -------------------
     # After a constellation word clears, decide whether the game should finish on

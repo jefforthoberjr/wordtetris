@@ -9,6 +9,12 @@ GAME NAMES
 
 For 
 
+WISPER should suggest WHISPER (silent H)
+
+Add sand timers to the super speed mode
+If you clear the sand timer then it doesn't fosillize
+(or maybe another cell cetagory type called blocked) (since you cannot build words off of it)
+A solidified
 
 
 Different auto end behavior when there are fewer tiles left

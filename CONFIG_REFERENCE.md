@@ -337,6 +337,17 @@ vacated.
   constellation; no grid-empty win). Only refills cells the clear-action actually
   emptied, so it's a no-op under `rule_clear_fossilize`.
 
+### game_screen.constellation_replenish_fade_seconds
+Constellation + `rule_constellation_replenish` only: how many seconds a
+just-replenished cell takes to fade in from transparent to its resting color,
+instead of popping in at full opacity the instant the vacated cell refills. The
+fade reuses the opening reveal's handles (glyph alpha-ramp; hex inner white-fade /
+square alpha-fade) and easing (`loading_animation.yaml` `easing`), but on its own
+lightweight one-shot timeline per cell (see `TimedFade`), independent of the
+LOADING reveal. `0` restores the instant pop. Paused while the in-game menu is
+open, like the mode timer. A purely visual knob — the refill itself (the placed
+gram, logging, scoring) is unchanged, so replay reproduces the same board.
+
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own
 once the remaining grams can no longer spell ANY dictionary word (the existence

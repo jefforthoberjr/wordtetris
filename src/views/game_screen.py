@@ -836,6 +836,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_turnover_rule = select_rule(
             "game_screen.constellation_turnover", constellation_turnover_rules)
+        # Seconds a replenished cell fades in (rule_constellation_replenish only);
+        # 0 = instant pop. Live fades tracked in _replenish_fades, ticked in update
+        # and built by _begin_replenish_fade. See constellation_replenish_fade_seconds.
+        self._constellation_replenish_fade_seconds = CONFIG["rules"][
+            "game_screen.constellation_replenish_fade_seconds"]
+        self._replenish_fades = []
         # Constellation auto-end (game_screen.constellation_auto_end): after a word
         # clears, optionally finish the game once the remaining grams can spell no
         # dictionary word. Off by default (an auto-finish reveals board exhaustion,
@@ -1840,6 +1846,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # omniswap race variant); every other mode leaves it a no-op.
         if self._menu_open:
             return
+        # Bloom in any cells replenished this game (constellation). Runs in every
+        # play phase (a two-phase clear replenishes in SELECTING, then hands back to
+        # MOVING mid-fade), paused with the menu like the timer above.
+        self._update_replenish_fades(dt)
         if self._phase == Phase.MOVING:
             self._moving_mode.update(dt)
         elif self._phase == Phase.SELECTING:

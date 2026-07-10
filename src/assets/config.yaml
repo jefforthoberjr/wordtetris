@@ -116,6 +116,9 @@ rules:
   # game_screen.constellation_turnover: rule_constellation_no_replenish
   game_screen.constellation_turnover: rule_constellation_replenish
 
+  # CONSTELLATION: seconds a replenished cell fades in (0 = instant pop). [ref: game_screen.constellation_replenish_fade_seconds]
+  game_screen.constellation_replenish_fade_seconds: 2.0
+
   # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
   # game_screen.constellation_auto_end: rule_constellation_auto_end_off
   game_screen.constellation_auto_end: rule_constellation_auto_end_on

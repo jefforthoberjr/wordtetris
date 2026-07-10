@@ -89,6 +89,46 @@ class _FadeGroup:
             handle.set_progress(frac)
 
 
+class TimedFade:
+    """A single one-shot fade: ramp a group of fade handles (AlphaFade / WhiteFade)
+    from transparent to revealed over `duration` seconds, using the same easing
+    curve as the opening reveal.
+
+    Where LoadingAnimation drives the whole board on an absolute, multi-category
+    timeline for the game-start reveal, this is the lightweight tool for a handful
+    of cells that appear DURING play -- e.g. a constellation-replenished cell -- so
+    a freshly refilled cell blooms in instead of popping. Construct with the cell's
+    handles and a duration, tick with update(dt), and drop it once `done`. A zero
+    (or negative) duration reveals instantly on the first apply."""
+
+    def __init__(self, handles, duration):
+        self._easing = _select_fade_easing()
+        self._handles = handles
+        self._duration = duration
+        self._clock = 0.0
+        self._apply()
+
+    @property
+    def done(self):
+        return self._clock >= self._duration
+
+    def update(self, dt):
+        if self.done:
+            return
+        self._clock += dt
+        self._apply()
+
+    def _apply(self):
+        if self._duration <= 0:
+            frac = self._easing(1.0)
+        else:
+            p = self._clock / self._duration
+            p = 0.0 if p < 0.0 else (1.0 if p > 1.0 else p)
+            frac = self._easing(p)
+        for handle in self._handles:
+            handle.set_progress(frac)
+
+
 class LoadingAnimation:
     """Drives the opening reveal (the LOADING phase): fades each category's
     cells/glyphs -- and the grid lines -- up from transparent on an absolute
