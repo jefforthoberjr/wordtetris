@@ -1,6 +1,7 @@
 import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
+from views.textures import error_icon_image
 from config import get_color, get_string
 from controls import control_keys
 
@@ -50,13 +51,22 @@ class SelectingSidePane:
     # "Pieces: N" countdown label (both pinned to the very top of the right pane).
 
     def __init__(self, x, y, width, height, on_submit, on_next,
-                 on_end=None, show_end=False):
+                 on_end=None, show_end=False, show_clear=True,
+                 show_submit=True, show_next=True, error_display="text"):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
         # on_end(): the End game label, present only when show_end (constellation);
         # None everywhere else, so the button is neither built nor clickable.
+        # show_clear / show_submit / show_next (game_screen.show_*_button): drop a
+        # button's clickable label independently; a hidden button takes no vertical
+        # slot and is skipped in on_mouse_press. The keyboard route stays live.
         self._on_submit = on_submit
         self._on_next = on_next
         self._on_end = on_end
+        # "text" shows the rejection reason as words; "icon" shows a reason icon in
+        # the same slot (game_screen.error_display). See show_errors / _set_error_icon.
+        self._error_display = error_display
+        # Live error-icon sprite (icon mode only), or None when the slot shows text.
+        self._error_sprite = None
         self._typed = ""
         # Echo of the last rejected word, shown dim in the prompt slot until the
         # player accepts a word or clears the field (see reject / clear_ghost).
@@ -120,43 +130,30 @@ class SelectingSidePane:
             anchor_x="left", anchor_y="top",
             color=self.ERROR_COLOR, batch=self._batch,
         )
+        # Center + max box of the error area, reused as the error-icon slot: fit an
+        # icon inside the same space the text messages would occupy (icon mode).
+        self._err_box_w = width - 2 * margin
+        self._err_box_h = self.MAX_ERRORS * error_step
+        self._err_box_cx = left + self._err_box_w / 2
+        self._err_box_cy = error_top - self._err_box_h / 2
 
-        # Controls (clickable labels). Clear word empties the field; it is always
-        # shown, independent of the board click-to-type rule.
+        # Controls (clickable labels), stacked top-to-bottom in the fixed order
+        # Clear / Submit / Next / End. Each is built only when its show flag is set;
+        # a hidden button takes no vertical slot (the stack closes up) and stays out
+        # of on_mouse_press. controls_bottom tracks the last built button so the
+        # word list starts one line under it -- if all are hidden it sits just below
+        # the error area. See _add_button.
         controls_top = error_top - self.MAX_ERRORS * error_step - line_h * 0.3
-        self._clear_btn = pyglet.text.Label(
-            get_string("clear_word"), font_size=base, x=left, y=controls_top,
-            anchor_x="left", anchor_y="top",
-            color=self.BUTTON_COLOR, batch=self._batch,
-        )
-        submit_y = controls_top - line_h
-        self._submit_btn = pyglet.text.Label(
-            get_string("submit_word"), font_size=base, x=left, y=submit_y,
-            anchor_x="left", anchor_y="top",
-            color=self.BUTTON_COLOR, batch=self._batch,
-        )
-        next_y = submit_y - line_h
-        self._next_btn = pyglet.text.Label(
-            get_string("next_piece"), font_size=base, x=left, y=next_y,
-            anchor_x="left", anchor_y="top",
-            color=self.BUTTON_COLOR, batch=self._batch,
-        )
-
-        # Optional End game control, one line under Next -- built only when the
-        # host mode asks for it (constellation). Its line is the word list's new
-        # top when present, so the list never rides up under the button; absent,
-        # the list starts under Next exactly as before (other modes unchanged).
-        if show_end:
-            end_y = next_y - line_h
-            self._end_btn = pyglet.text.Label(
-                get_string("end_game"), font_size=base, x=left, y=end_y,
-                anchor_x="left", anchor_y="top",
-                color=self.BUTTON_COLOR, batch=self._batch,
-            )
-            controls_bottom = end_y
-        else:
-            self._end_btn = None
-            controls_bottom = next_y
+        self._line_h = line_h
+        self._base = base
+        self._left = left
+        self._btn_y = controls_top
+        self._controls_bottom = controls_top
+        self._clear_btn = self._add_button("clear_word") if show_clear else None
+        self._submit_btn = self._add_button("submit_word") if show_submit else None
+        self._next_btn = self._add_button("next_piece") if show_next else None
+        self._end_btn = self._add_button("end_game") if show_end else None
+        controls_bottom = self._controls_bottom
 
         # Player's lifetime dictionary size, pinned to the very bottom edge.
         count_y = y + margin
@@ -217,7 +214,7 @@ class SelectingSidePane:
         # Swallow every key while selecting (there is no active piece to drive).
         return True
 
-    def reject(self, word, messages):
+    def reject(self, word, messages, reason=None):
         """A submitted word was rejected (misspelled / not on the board): echo it
         as a dim "You typed: WORD" ghost in the prompt slot, CLEAR the input, and
         show the reason(s). The empty field means the player's corrective typing
@@ -229,7 +226,7 @@ class SelectingSidePane:
         self._typed = ""
         self._render_prompt()
         self._render_input()
-        self.show_errors(messages)
+        self.show_errors(messages, reason)
 
     def clear_ghost(self):
         """Drop the rejected-word echo and restore the plain prompt (e.g. once a
@@ -253,11 +250,11 @@ class SelectingSidePane:
         return self._typed == ""
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if self._hit(self._clear_btn, x, y):
+        if self._clear_btn is not None and self._hit(self._clear_btn, x, y):
             self.clear_word()
-        elif self._hit(self._submit_btn, x, y):
+        elif self._submit_btn is not None and self._hit(self._submit_btn, x, y):
             self._on_submit(self._typed)
-        elif self._hit(self._next_btn, x, y):
+        elif self._next_btn is not None and self._hit(self._next_btn, x, y):
             self._on_next()
         elif self._end_btn is not None and self._hit(self._end_btn, x, y):
             self._on_end()
@@ -289,20 +286,50 @@ class SelectingSidePane:
         """Show the running point total, one line under the header/timer."""
         self._score.text = get_string("score_count", count=points)
 
-    def show_errors(self, messages):
-        # One message at a time today; join defensively if several are passed.
+    def show_errors(self, messages, reason=None):
+        # Icon mode: show the reason's icon in place of the text (and drop any
+        # extra lines like the "did you mean?" suggestion). Reasons with no icon
+        # fall through to the text message. One message at a time today; join
+        # defensively if several are passed.
+        if self._error_display == "icon" and self._set_error_icon(reason):
+            self._error.text = ""
+            return
+        self._clear_error_icon()
         self._error.color = self.ERROR_COLOR
         self._error.text = "\n".join(messages)
 
     def clear_errors(self):
+        self._clear_error_icon()
         self._error.color = self.ERROR_COLOR
         self._error.text = ""
+
+    def _set_error_icon(self, reason):
+        """Show the error icon for `reason`, scaled to fit the error slot. Returns
+        False (and shows nothing) when the reason has no icon, so the caller falls
+        back to text."""
+        image = error_icon_image(reason, self._err_box_w)
+        if image is None:
+            return False
+        self._clear_error_icon()
+        sprite = pyglet.sprite.Sprite(image, batch=self._batch)
+        sprite.scale = min(self._err_box_w / image.width,
+                           self._err_box_h / image.height)
+        sprite.x = self._err_box_cx
+        sprite.y = self._err_box_cy
+        self._error_sprite = sprite
+        return True
+
+    def _clear_error_icon(self):
+        if self._error_sprite is not None:
+            self._error_sprite.delete()
+            self._error_sprite = None
 
     def show_prompt(self, text):
         """Show a neutral prompt in the message slot (not an error): the
         "Select which one:" cue while the disambiguation chooser is open. Reuses
         the error Label's reserved space, tinted the prompt color so it doesn't
         read as a rejection."""
+        self._clear_error_icon()
         self._error.color = self.PROMPT_COLOR
         self._error.text = text
 
@@ -313,12 +340,13 @@ class SelectingSidePane:
     def hit_submit(self, x, y):
         """Whether (x, y) is on the Submit label -- lets GameScreen route a
         Submit click to 'confirm the highlighted candidate' while the chooser is
-        open, instead of re-submitting the typed word."""
-        return self._hit(self._submit_btn, x, y)
+        open, instead of re-submitting the typed word. False when Submit is hidden."""
+        return self._submit_btn is not None and self._hit(self._submit_btn, x, y)
 
     def hit_clear(self, x, y):
-        """Whether (x, y) is on the Clear label (the chooser's back-out click)."""
-        return self._hit(self._clear_btn, x, y)
+        """Whether (x, y) is on the Clear label (the chooser's back-out click).
+        False when Clear is hidden."""
+        return self._clear_btn is not None and self._hit(self._clear_btn, x, y)
 
     # --- internals ---------------------------------------------------------
     def _render_prompt(self):
@@ -340,6 +368,19 @@ class SelectingSidePane:
         else:
             self._input.text = "_"
             self._input.color = self.PLACEHOLDER_COLOR
+
+    def _add_button(self, text_key):
+        # Build one control label at the running stack cursor, advance the cursor
+        # down one line, and record its line as the current controls_bottom. Only
+        # called for buttons whose show flag is set, so hidden ones close the gap.
+        btn = pyglet.text.Label(
+            get_string(text_key), font_size=self._base, x=self._left, y=self._btn_y,
+            anchor_x="left", anchor_y="top",
+            color=self.BUTTON_COLOR, batch=self._batch,
+        )
+        self._controls_bottom = self._btn_y
+        self._btn_y -= self._line_h
+        return btn
 
     def _hit(self, label, x, y):
         # Labels are anchored top-left, so the content box runs right/down from

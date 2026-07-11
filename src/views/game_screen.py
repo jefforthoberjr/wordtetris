@@ -118,7 +118,8 @@ class AutoSelect:
         return chosen
 
     def create_ui(self, x, y, width, height, on_submit, on_next,
-                  on_end=None, show_end=False):
+                  on_end=None, show_end=False, show_clear=True,
+                  show_submit=True, show_next=True, error_display="text"):
         return None
 
 
@@ -129,9 +130,12 @@ class TextInputSelect:
     interactive = True
 
     def create_ui(self, x, y, width, height, on_submit, on_next,
-                  on_end=None, show_end=False):
+                  on_end=None, show_end=False, show_clear=True,
+                  show_submit=True, show_next=True, error_display="text"):
         return SelectingSidePane(x, y, width, height, on_submit, on_next,
-                                 on_end=on_end, show_end=show_end)
+                                 on_end=on_end, show_end=show_end,
+                                 show_clear=show_clear, show_submit=show_submit,
+                                 show_next=show_next, error_display=error_display)
 
 
 # Control key bindings now live in assets/controls.yaml (loaded via controls.py).
@@ -816,6 +820,34 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "game_screen.phase_model",
             {"rule_two_phase": False, "rule_single_phase": True},
         )
+        # Right-pane control-button visibility (game_screen.show_*_button): each
+        # button label on the SELECT / merged pane is built only when its flag is
+        # set. Hiding a button drops just the clickable label -- the keyboard route
+        # (ENTER submits, the selection_end / word_clear keys) is untouched.
+        self._show_clear_btn = select_rule(
+            "game_screen.show_clear_button",
+            {"rule_show_clear_button": True, "rule_hide_clear_button": False},
+        )
+        self._show_submit_btn = select_rule(
+            "game_screen.show_submit_button",
+            {"rule_show_submit_button": True, "rule_hide_submit_button": False},
+        )
+        self._show_next_btn = select_rule(
+            "game_screen.show_next_button",
+            {"rule_show_next_button": True, "rule_hide_next_button": False},
+        )
+        # End game: "auto" keeps its historical behavior -- shown only for
+        # constellation, which has no piece to shrink the board and (endless preset)
+        # no victory rule to close on -- or force it always on / off.
+        _end_btn_mode = select_rule(
+            "game_screen.show_end_button",
+            {"rule_end_button_auto": "auto",
+             "rule_show_end_button": True,
+             "rule_hide_end_button": False},
+        )
+        self._show_end_btn = (
+            self._constellation if _end_btn_mode == "auto" else _end_btn_mode
+        )
         # Cap on how many distinct cell-assemblies the constellation matcher
         # returns per submitted word (the disambiguation chooser cycles them;
         # auto-pick keeps the fewest-cell one). Ignored by the other modes.
@@ -994,6 +1026,18 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "game_screen.reject_ghost",
             {"rule_reject_ghost_on": True, "rule_reject_ghost_off": False},
         )
+        # How a rejected submit surfaces its reason in the right pane
+        # (game_screen.error_display): the text message (default), or a reason
+        # icon in place of the text. Passed to the SELECT / merged pane, which maps
+        # the reason key (_last_reject_reason) to an icon; reasons with no icon
+        # fall back to text. See _reject_submission and the panes' show_errors.
+        self._error_display = select_rule(
+            "game_screen.error_display",
+            {"rule_error_text": "text", "rule_error_icon": "icon"},
+        )
+        # Stable reason key of the most recent rejection (set by the _*_error
+        # functions right before they log it); read by _reject_submission.
+        self._last_reject_reason = None
         # Whether ENTER-into-SELECT auto-submits the carried word-hunt word
         # (game_screen.select_autosubmit_hunt), skipping the dead middle ENTER;
         # see the interactive branch of _begin_selection.
@@ -1038,7 +1082,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             merged = MovingSelectingSidePane(
                 self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
                 on_submit=self._on_submit_word, on_change=self._on_hunt_change,
-                on_end=self._enter_endgame, show_end=self._constellation,
+                on_end=self._enter_endgame, show_end=self._show_end_btn,
+                show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
+                error_display=self._error_display,
             )
             self._moving_side_pane = merged
             self._selecting_side_pane = merged
@@ -1048,7 +1094,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             self._selecting_side_pane = self._selector.create_ui(
                 self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
                 on_submit=self._on_submit_word, on_next=self._end_selection,
-                on_end=self._enter_endgame, show_end=self._constellation,
+                on_end=self._enter_endgame, show_end=self._show_end_btn,
+                show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
+                show_next=self._show_next_btn, error_display=self._error_display,
             )
         self._set_phase(Phase.MOVING)
         # Candidate word-paths for the move being selected (interactive only):

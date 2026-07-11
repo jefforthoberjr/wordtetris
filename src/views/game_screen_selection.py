@@ -394,10 +394,14 @@ class SelectionMixin:
         (so corrective typing starts fresh, not appended to the failed attempt);
         under _off, leave the failed word in the field and just show the reason
         (original behavior)."""
+        # _last_reject_reason is the stable key the error functions just logged;
+        # the pane uses it to pick an error icon under game_screen.error_display =
+        # rule_error_icon (ignored under the text default).
+        reason = self._last_reject_reason
         if self._reject_ghost:
-            self._selecting_side_pane.reject(word, messages)
+            self._selecting_side_pane.reject(word, messages, reason)
         else:
-            self._selecting_side_pane.show_errors(messages)
+            self._selecting_side_pane.show_errors(messages, reason)
 
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
     # Paired per timing: a submit rule (what one submit does) and a phase-end
@@ -726,6 +730,7 @@ class SelectionMixin:
         spell it here is already held: distinct wording by how many ways exist."""
         total = len(self._options_for(word) or [])
         reason = "already_selected_one_way" if total <= 1 else "every_way_selected"
+        self._last_reject_reason = reason
         L.log_30003(word, reason)
         return get_string(f"err_{reason}")
 
@@ -759,6 +764,7 @@ class SelectionMixin:
             reason = "not_fossil" if word in self._pre_fossil_words else "not_involved"
         else:
             reason = "already_cleared"
+        self._last_reject_reason = reason
         L.log_30003(word, reason)
         return get_string(f"err_{reason}")
 

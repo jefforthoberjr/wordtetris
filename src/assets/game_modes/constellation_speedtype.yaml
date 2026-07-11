@@ -22,6 +22,9 @@ rules:
   game_screen.game_timer: rule_game_timer_on
   game_screen.constellation_auto_end: rule_constellation_auto_end_off
 
+  
+  board.cell_text_color:  rule_cell_text_plain #no scoring gradient
+
   game_screen.constellation_max_paths:  24
   game_screen.constellation_turnover:   rule_constellation_replenish
   game_screen.constellation_replenish_delay_seconds: 5.0
@@ -37,6 +40,13 @@ rules:
   game_screen.rightclick_vcv: rule_rightclick_none # ARE->ARRE
   game_screen.rightclick_cvk: rule_rightclick_none # MER->MMER/MERR (alternating)
 
+  game_screen.spell_suggest: rule_spell_suggest_off
+
+  game_screen.show_clear_button: rule_hide_clear_button
+  game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button: rule_hide_next_button
+  game_screen.show_end_button:  rule_hide_end_button
+
   # Board starts full, words form anywhere, every action opens word entry.
   game_screen.setup_formation:      rule_formation_fill_ideation_trigram_sidepanes_zigzag
   game_screen.word_nucleation:      rule_nucleate_anywhere
@@ -50,7 +60,4 @@ rules:
   game_screen.word_trail:           rule_word_trail_off
   game_screen.clear_disambiguation: rule_disambig_auto_pick
 
-  game_screen.spell_suggest: rule_spell_suggest_off
-
-  #no scoring gradient
-  board.cell_text_color:  rule_cell_text_plain
+  

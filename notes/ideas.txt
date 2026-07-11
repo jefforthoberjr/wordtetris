@@ -7,9 +7,26 @@ GAME NAMES
 * catalyst cata LIST
 
 
-For 
+diaphram should have spell hinted diaphragm
+diphragm should have spell hinted diaphragm
+diafram should have spell hinted diaphragm
 
-INABLE did you mean IN , ABLE ?
+gifs instead of icons (for duplicate words for example)
+
+PERSERVERE
+
+
+INPERFECT should suggest IMPERFECT (N -> M swaps)
+
+ostridge (I would have liked it to suggest ostrich
+
+
+Game mode where cells popping in from replenish, the board starts half full. and the game ends if it fills up?
+And mission cells pop in sometimes?
+
+
+
+INABLE did you mean IN , ABLE ? (should have recommended ENABLE
 
 MISHMASH recommends SMASHING (i don't like that)
 

@@ -71,6 +71,7 @@ class ConstellationMixin:
             reason = "too_short"
         else:
             reason = "already_cleared"
+        self._last_reject_reason = reason
         L.log_30003(word, reason)
         return get_string(f"err_{reason}")
 

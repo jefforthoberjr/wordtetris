@@ -793,6 +793,39 @@ retyping and clears on the next accept / Clear word.
 - `rule_reject_ghost_on` — clear the field, show the ghost echo.
 - `rule_reject_ghost_off` — leave the failed word in the field (original).
 
+### game_screen.error_display
+How a rejected submission surfaces its reason in the right pane's error slot. The
+stable reason key that the submission-error logic already logs (`not_in_dictionary`,
+`not_on_board`, `already_cleared`, …) is passed to the SELECT / merged pane, which
+maps it to an icon under icon mode.
+- `rule_error_text` — show the worded reason message (original), plus the
+  "Did you mean: …?" spelling suggestion under a not-a-word rejection.
+- `rule_error_icon` — show a reason icon in place of the text, scaled to fit the
+  same slot. Three icons exist: not-in-dictionary, not-on-board, and duplicate
+  (shared by `already_cleared` / `already_selected_one_way` / `every_way_selected`).
+  Reasons with no icon (`too_short`, `not_involved`, `not_fossil`) fall back to the
+  text message; the spelling suggestion line is dropped (the icon replaces the text).
+
+### game_screen.show_clear_button / show_submit_button / show_next_button / show_end_button
+Whether each control label in the right pane is drawn. The pane stacks its controls
+top-to-bottom in the fixed order Clear word / Submit word / Next piece / End game;
+a hidden button takes **no vertical slot** (the buttons below it close the gap) and
+is skipped in click hit-testing. Hiding a button removes only the mouse affordance —
+the keyboard route is untouched: ENTER still submits, the `selection_end` key still
+ends the SELECT phase, and the `word_clear` key still empties the field. These apply
+to both the two-phase SELECT pane (`SelectingSidePane`, all four buttons) and the
+single-phase merged pane (`MovingSelectingSidePane`, which has no Next piece button
+regardless — there is no phase to leave, so `show_next_button` is ignored there).
+- `game_screen.show_clear_button`: `rule_show_clear_button` / `rule_hide_clear_button`.
+- `game_screen.show_submit_button`: `rule_show_submit_button` / `rule_hide_submit_button`.
+- `game_screen.show_next_button`: `rule_show_next_button` / `rule_hide_next_button`.
+- `game_screen.show_end_button`:
+  - `rule_end_button_auto` — historical behavior: shown only for constellation, which
+    has no piece to shrink the board and (endless preset) no victory rule to close on;
+    hidden in every mode that ends on its own.
+  - `rule_show_end_button` — always shown.
+  - `rule_hide_end_button` — never shown.
+
 ### game_screen.player_word_piece
 Player word-piece: clicking a cleared word in the right pane during the MOVING phase
 swaps the live piece for a single-cell piece carrying that whole word as a multigram

@@ -283,6 +283,24 @@ rules:
   game_screen.reject_ghost: rule_reject_ghost_on
   # game_screen.reject_ghost: rule_reject_ghost_off
 
+  # Rejection feedback: text message vs a reason icon. [ref: game_screen.error_display]
+  # game_screen.error_display: rule_error_text
+  game_screen.error_display: rule_error_icon
+
+  # Right-pane control buttons: show/hide each label independently (keyboard route
+  # is untouched). [ref: game_screen.show_clear_button / show_submit_button / show_next_button / show_end_button]
+  game_screen.show_clear_button:  rule_show_clear_button
+  # game_screen.show_clear_button: rule_hide_clear_button
+  game_screen.show_submit_button: rule_show_submit_button
+  # game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button:   rule_show_next_button
+  # game_screen.show_next_button: rule_hide_next_button
+  # End game button: auto = shown only where no victory rule closes the game
+  # (constellation); or force always / never.
+  game_screen.show_end_button:    rule_end_button_auto
+  # game_screen.show_end_button:  rule_show_end_button
+  # game_screen.show_end_button:  rule_hide_end_button
+
   # Right-pane word click swaps in a word-piece. [ref: game_screen.player_word_piece]
   # game_screen.player_word_piece: rule_player_word_piece_enabled
   game_screen.player_word_piece: rule_player_word_piece_disabled
