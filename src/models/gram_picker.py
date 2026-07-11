@@ -198,7 +198,11 @@ _GRAM_DEDUP_RULES = {
     "rule_allow_duplicate_grams": rule_allow_duplicate_grams,
     "rule_no_duplicate_multigrams": rule_no_duplicate_multigrams,
 }
-_gram_dedup_rule = select_rule("gram.dedup", _GRAM_DEDUP_RULES)
+# NOTE: the four gram-filter rules below (gram.dedup, gram.unigram_dedup,
+# gram.double_consonant_digram, gram.only_vowel_digram) are resolved per call in
+# pick_grams, NOT cached at module level: this module is imported before
+# apply_game_mode swaps CONFIG, so an import-time binding would freeze the base
+# config's rule and ignore a game mode's override (see apply_game_mode).
 
 
 # --- duplicate-unigram rule (gram.unigram_dedup) -----------------------
@@ -252,7 +256,6 @@ _UNIGRAM_DEDUP_RULES = {
     "rule_nolimit_duplicate_unigrams": rule_nolimit_duplicate_unigrams,
     "rule_max_3_duplicate_unigrams": rule_max_3_duplicate_unigrams,
 }
-_unigram_dedup_rule = select_rule("gram.unigram_dedup", _UNIGRAM_DEDUP_RULES)
 
 
 # --- digram-skip rules (gram.double_consonant_digram / gram.only_vowel_digram) -
@@ -353,16 +356,12 @@ _DOUBLE_CONSONANT_DIGRAM_RULES = {
     "rule_allow_double_consonant_digrams": rule_allow_double_consonant_digrams,
     "rule_skip_double_consonant_digrams": rule_skip_double_consonant_digrams,
 }
-_double_consonant_digram_rule = select_rule(
-    "gram.double_consonant_digram", _DOUBLE_CONSONANT_DIGRAM_RULES)
 
 _ONLY_VOWEL_DIGRAM_RULES = {
     "rule_allow_only_vowel_digrams": rule_allow_only_vowel_digrams,
     "rule_skip_only_vowel_digrams": rule_skip_only_vowel_digrams,
     "rule_skip_only_vowel_digrams_no_y": rule_skip_only_vowel_digrams_no_y,
 }
-_only_vowel_digram_rule = select_rule(
-    "gram.only_vowel_digram", _ONLY_VOWEL_DIGRAM_RULES)
 
 
 def pick_grams(rule, count):
@@ -382,10 +381,15 @@ def pick_grams(rule, count):
     to the plain deduped draw."""
     # Innermost: filter skippable digrams first, so the dedup layers on top only
     # ever see (and count) grams that survived the filters.
-    vowel_filtered = lambda n: _only_vowel_digram_rule(rule, n)
-    digram_filtered = lambda n: _double_consonant_digram_rule(vowel_filtered, n)
-    multigram_deduped = lambda n: _gram_dedup_rule(digram_filtered, n)
-    deduped = lambda n: _unigram_dedup_rule(multigram_deduped, n)
+    only_vowel_digram_rule = select_rule("gram.only_vowel_digram", _ONLY_VOWEL_DIGRAM_RULES)
+    double_consonant_digram_rule = select_rule(
+        "gram.double_consonant_digram", _DOUBLE_CONSONANT_DIGRAM_RULES)
+    gram_dedup_rule = select_rule("gram.dedup", _GRAM_DEDUP_RULES)
+    unigram_dedup_rule = select_rule("gram.unigram_dedup", _UNIGRAM_DEDUP_RULES)
+    vowel_filtered = lambda n: only_vowel_digram_rule(rule, n)
+    digram_filtered = lambda n: double_consonant_digram_rule(vowel_filtered, n)
+    multigram_deduped = lambda n: gram_dedup_rule(digram_filtered, n)
+    deduped = lambda n: unigram_dedup_rule(multigram_deduped, n)
     if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
         # Region formation pinned this cell's exact length+pool -> draw it straight.
         if _forced_explicit:

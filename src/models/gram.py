@@ -31,7 +31,7 @@ class Gram:
 # --- font sizing rules -------------------------------------------------
 # A multi-letter gram must shrink to stay inside one cell. `base_size` is the
 # font a single letter uses in that cell, so length 1 always keeps it. Swap the
-# active rule on the _gram_font_size_rule line below.
+# active rule via the YAML key gram.font_size (registered in _GRAM_FONT_SIZE_RULES).
 
 def rule_gram_font_fixed(base_size, gram):
     """No resize: every gram keeps the cell's single-letter font (the original
@@ -63,10 +63,10 @@ _GRAM_FONT_SIZE_RULES = {
     "rule_gram_font_scale_by_length": rule_gram_font_scale_by_length,
     "rule_gram_font_scale_single_as_double": rule_gram_font_scale_single_as_double,
 }
-_gram_font_size_rule = select_rule("gram.font_size", _GRAM_FONT_SIZE_RULES)
-
-
 def gram_font_size(base_size, gram):
     """Font size for `gram` in a cell whose single-letter font is `base_size`,
-    via the active sizing rule. One place to swap how grams resize."""
-    return _gram_font_size_rule(base_size, gram)
+    via the active sizing rule. One place to swap how grams resize. The rule is
+    resolved per call (not cached at import) so a game mode's gram.font_size
+    override takes effect -- this module is imported before apply_game_mode swaps
+    CONFIG, so an import-time binding would freeze the base config's rule."""
+    return select_rule("gram.font_size", _GRAM_FONT_SIZE_RULES)(base_size, gram)

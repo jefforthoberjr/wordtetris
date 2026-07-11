@@ -73,16 +73,19 @@ def rule_hunt_style_text_recolor(text, font_size, bold):
 _HUNT_STYLE_RULES = {
     "rule_hunt_style_text_recolor": rule_hunt_style_text_recolor,
 }
-_hunt_style_rule = select_rule("game_screen.hunt_highlight_style", _HUNT_STYLE_RULES)
 
 
 def make_hunt_overlay(text, font_size, bold=True):
     """Build the overlay for one gram cell via the active style rule, or None for
     empty text (a wild vowel has no letters to highlight -- it renders as a sprite,
-    not a label, and hunts ignore wilds). Called from the piece constructors."""
+    not a label, and hunts ignore wilds). Called from the piece constructors. The
+    rule is resolved per call (not cached at import) so a game mode's
+    game_screen.hunt_highlight_style override takes effect -- this module is
+    imported before apply_game_mode swaps CONFIG, so an import-time binding would
+    freeze the base config's rule."""
     if not text:
         return None
-    return _hunt_style_rule(text, font_size, bold)
+    return select_rule("game_screen.hunt_highlight_style", _HUNT_STYLE_RULES)(text, font_size, bold)
 
 
 # --- match rule (game_screen.hunt_highlight) ---------------------------------

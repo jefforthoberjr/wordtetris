@@ -67,11 +67,13 @@ _CELL_TEXT_COLOR_RULES = {
     "rule_cell_text_plain": rule_cell_text_plain,
     "rule_cell_text_score_gradient": rule_cell_text_score_gradient,
 }
-_cell_text_color_rule = select_rule("board.cell_text_color", _CELL_TEXT_COLOR_RULES)
 
 
 def cell_text_color(gram):
     """Glyph color for `gram`'s cell via the active board.cell_text_color rule.
     The single place both the square and hex pieces call, so the hint stays
-    swappable from one YAML key."""
-    return _cell_text_color_rule(gram)
+    swappable from one YAML key. The rule is resolved per call (not cached at
+    import) so a game mode's board.cell_text_color override takes effect: this
+    module is imported before apply_game_mode swaps CONFIG, so an import-time
+    binding would freeze the base config's rule -- see apply_game_mode."""
+    return select_rule("board.cell_text_color", _CELL_TEXT_COLOR_RULES)(gram)

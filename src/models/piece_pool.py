@@ -1,4 +1,4 @@
-from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES
+from models.square_piece import SquarePiece, player_piece_types
 from config import select_rule
 # Pool ordering draws route through the swappable Source seam (see source.py) so
 # a replay reproduces the same piece queue.
@@ -17,7 +17,7 @@ class PiecePool:
         # geometry rule in GameScreen). Defaults keep the square behavior.
         self._piece_class = piece_class
         if piece_types is None:
-            piece_types = PLAYER_PIECE_TYPES
+            piece_types = player_piece_types()
         self._piece_types = piece_types
         # Injected so an obstacle pool can pick grams by a different rule than
         # the main pool. None lets each piece fall back to its configured default.

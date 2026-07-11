@@ -12,7 +12,7 @@ rules:
   # MOVING-phase strategy + its signature knobs (mirrors the base config today).
   game_screen.mode: rule_mode_constellation
 
-  assets.loading_animation: fast_loading_animation.yaml
+  assets.loading_animation: superfast_loading_animation.yaml
 
   # game_screen.phase_model: rule_two_phase
   # game_screen.select_autosubmit_hunt: rule_select_autosubmit_on
@@ -20,10 +20,11 @@ rules:
   game_screen.phase_model: rule_single_phase
   
   game_screen.game_timer: rule_game_timer_on
+  game_screen.constellation_auto_end: rule_constellation_auto_end_off
 
   game_screen.constellation_max_paths:  24
   game_screen.constellation_turnover:   rule_constellation_replenish
-  game_screen.constellation_auto_end: rule_constellation_auto_end_off
+  game_screen.constellation_replenish_delay_seconds: 5.0
 
   game_screen.gram_usage: rule_gram_use_whole
   game_screen.hunt_highlight: rule_hunt_full_gram
@@ -48,3 +49,8 @@ rules:
   game_screen.victory:              rule_victory_none
   game_screen.word_trail:           rule_word_trail_off
   game_screen.clear_disambiguation: rule_disambig_auto_pick
+
+  game_screen.spell_suggest: rule_spell_suggest_off
+
+  #no scoring gradient
+  board.cell_text_color:  rule_cell_text_plain

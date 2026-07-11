@@ -41,11 +41,25 @@ _PIECE_SET_RULES = {
     "rule_use_dominos": _rule_use_dominos,
     "rule_use_unimos": _rule_use_unimos,
 }
-PLAYER_PIECE_TYPES, PLAYER_PIECE_ROTATIONS = select_rule("square_player.piece_set", _PIECE_SET_RULES)()
-OBSTACLE_PIECE_TYPES, _OBSTACLE_PIECE_ROTATIONS = select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()
-# Mission pieces (the light-red goal pieces) get their own piece set too, the
-# direct parallel of the obstacles above.
-MISSION_PIECE_TYPES, _MISSION_PIECE_ROTATIONS = select_rule("square_mission.piece_set", _PIECE_SET_RULES)()
+# Resolved per call (not cached at import) so a game mode's *.piece_set override
+# takes effect: this module is imported before apply_game_mode swaps CONFIG, so an
+# import-time binding would freeze the base config's rule (see apply_game_mode).
+# Only the type enum is used downstream (rotations come from ALL_PIECE_ROTATIONS
+# below), so each accessor returns just the [0] type table.
+def player_piece_types():
+    """Player piece-type enum for the active square_player.piece_set."""
+    return select_rule("square_player.piece_set", _PIECE_SET_RULES)()[0]
+
+
+def obstacle_piece_types():
+    """Obstacle piece-type enum for the active square_obstacle.piece_set."""
+    return select_rule("square_obstacle.piece_set", _PIECE_SET_RULES)()[0]
+
+
+def mission_piece_types():
+    """Mission piece-type enum (the light-red goal pieces) for the active
+    square_mission.piece_set -- the direct parallel of the obstacles above."""
+    return select_rule("square_mission.piece_set", _PIECE_SET_RULES)()[0]
 
 # A piece looks up its rotations by piece_type alone. Merging every set's table
 # (the type enums are distinct, so keys never collide) means one SquarePiece
@@ -69,9 +83,20 @@ _GRAM_PICK_RULES = {
     "rule_trigram_equalweight": rule_trigram_equalweight,
     "rule_scrabble_with_allvowelswild": rule_scrabble_with_allvowelswild,
 }
-_gram_pick_rule = select_rule("square_player.gram_pick", _GRAM_PICK_RULES)
-OBSTACLE_GRAM_PICK_RULE = select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
-MISSION_GRAM_PICK_RULE = select_rule("square_mission.gram_pick", _GRAM_PICK_RULES)
+# Resolved per call, same reason as the piece-set accessors above.
+def player_gram_pick_rule():
+    """Active square_player.gram_pick rule function (the SquarePiece default)."""
+    return select_rule("square_player.gram_pick", _GRAM_PICK_RULES)
+
+
+def obstacle_gram_pick_rule():
+    """Active square_obstacle.gram_pick rule function."""
+    return select_rule("square_obstacle.gram_pick", _GRAM_PICK_RULES)
+
+
+def mission_gram_pick_rule():
+    """Active square_mission.gram_pick rule function."""
+    return select_rule("square_mission.gram_pick", _GRAM_PICK_RULES)
 
 
 class SquarePiece:
@@ -90,7 +115,7 @@ class SquarePiece:
         # Pools inject a gram-pick rule so obstacles can pick grams differently
         # from the main pieces; falling back to the configured default.
         if gram_pick_rule is None:
-            gram_pick_rule = _gram_pick_rule
+            gram_pick_rule = player_gram_pick_rule()
         # Through pick_grams so the active gram.dedup rule (no-duplicate-multigram
         # toggle) applies to every piece, here and in the pools/formation.
         # dedup_grams=False bypasses it for player-chosen pieces (the word-piece

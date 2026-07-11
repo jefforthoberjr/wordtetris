@@ -26,7 +26,7 @@ def test_list_game_modes_returns_labels_sorted():
     modes = config.list_game_modes()
     slugs = {slug for slug, _label, _path in modes}
     # The three seeded starters ship with the repo.
-    assert {"constellation", "typewriter", "omniswap"} <= slugs
+    assert {"constellation_speedtype", "typewriter", "omniswap"} <= slugs
     # Every mode carries a human label (never a bare slug for the seeded files).
     labels = [label for _slug, label, _path in modes]
     assert all(labels)
@@ -54,7 +54,7 @@ def test_apply_game_mode_reloads_clean_base_each_switch():
     # a key set only by mode A does not bleed into mode B.
     config.apply_game_mode(config._GAME_MODES_DIR / "omniswap.yaml")
     assert config.CONFIG["rules"]["game_screen.mode"] == "rule_mode_omniswap_vs_timer"
-    config.apply_game_mode(config._GAME_MODES_DIR / "constellation.yaml")
+    config.apply_game_mode(config._GAME_MODES_DIR / "constellation_speedtype.yaml")
     assert config.CONFIG["rules"]["game_screen.mode"] == "rule_mode_constellation"
     # Restore the base so import-order test side effects don't leak.
     config.CONFIG.clear()

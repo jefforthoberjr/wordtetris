@@ -1,0 +1,105 @@
+# CONSTELLATION_EMPTYIT variant: a copy of default_loading_animation.yaml with
+# every delay + duration HALVED, so the whole opening reveal plays 2x as fast.
+# Selected via assets.loading_animation in game_modes/constellation_emptyit.yaml.
+# Loading-phase fade-in animation (the opening reveal). Each category fades its
+# cells -- fill + glyph -- (and grid_lines fades the board outline) from fully
+# transparent up to opaque over `duration` seconds, starting at `delay` seconds.
+#
+# `delay` is ABSOLUTE: measured from the start of the whole loading screen, with
+# no dependency between categories. Empty categories (no such cells this game)
+# simply leave dead air on the timeline -- there is no fast-forward yet. The
+# whole LOADING phase ends once the last (delay + duration) elapses; only then
+# does the live piece spawn / the mode timer start. All times are seconds.
+#
+# Category names carry a suffix saying WHICH PART of the cell they fade: "*_glyph"
+# is the letter, "*_background" is the fill (colored square). These are two
+# independent axes -- the GLYPH scheme (game_screen.loading_fade_glyphs_category)
+# times every cell's letter, while a special cell's kind times its background fill
+# on "<kind>_background". So a fossilized single letter can fade with the ordinary
+# 'uni_glyph' letters while its gray fill reveals LAST on 'fossilized_background'.
+# Reveal order encodes UX importance: missions/obstacles, then the settled board,
+# then the grid lines; a seeded fossil's fill last.
+
+# Easing rule for the alpha ramp -- how opacity moves 0 -> 255 across `duration`.
+#   rule_fade_linear -- constant-rate ramp (ease-in-out can be added later)
+easing: rule_fade_linear
+
+# idea 1  (historical; predates the glyph/background axis split, so its bucket names
+#          lack the _glyph/_background suffixes the code now expects -- kept only as
+#          a timing sketch, NOT usable as-is)
+# categories:
+#   mission:       { delay: 0,  duration: 3 }   # goal pieces
+#   fossilized:    { delay: 0,  duration: 3 }   # frozen cells
+#   obstacle:      { delay: 3,  duration: 3 }   # obstacle pieces
+#   settled_3plus: { delay: 6,  duration: 3 }   # settled formation cells, 3+ letter grams
+#   settled_2:     { delay: 9,  duration: 3 }   # settled formation cells, 2-letter grams
+#   settled_1:     { delay: 12, duration: 3 }   # settled formation cells, single letters
+#   grid_lines:    { delay: 15, duration: 3 }   # hex/square outline, fills the gaps last
+
+# idea 2
+categories:
+  # Category names say WHICH PART of the cell they fade: "*_glyph" is the letter,
+  # "*_background" is the fill (colored square). Two independent axes:
+  #   GLYPH  -- every cell's letter, bucketed by game_screen.loading_fade_glyphs_category
+  #             (by length / ideation / kind). Only the ACTIVE scheme's buckets get
+  #             cells; the rest stay empty and add no time, so switching schemes
+  #             doesn't drag in the others.
+  #   BACKGROUND -- a special cell's fill fades on its "<kind>_background" dial (plain
+  #             cells have a white fill that just rides with the glyph -- no separate
+  #             dial yet; a full loading_fade_backgrounds_category is deferred).
+  # Pair a "<kind>_glyph"/"<kind>_background" equal to reveal the whole cell together,
+  # or stagger them -- e.g. the seeded start fossil shows its letter with the board
+  # (fossilized_glyph) but its gray fill LAST (fossilized_background).
+
+  # Special-cell BACKGROUND fills (one per kind).
+  mission_background:    { delay: 0,  duration: 0 }   # mission fill
+  obstacle_background:   { delay: 0,  duration: 0 }   # obstacle fill
+  fossilized_background: { delay: 4,  duration: 1 }   # seeded start fossil fill -- LAST, after its glyph
+
+  # rule_loading_fade_by_category_glyph -- GLYPHS bucketed by cell kind. mission /
+  # obstacle / fossilized letters get their own dial; every plain letter -> settled_glyph.
+  mission_glyph:     { delay: 0,  duration: 0 }   # mission letter
+  obstacle_glyph:    { delay: 0,  duration: 0 }   # obstacle letter
+  fossilized_glyph:  { delay: 0,  duration: 1.5 }   # seeded start fossil letter -- reveals with the board
+  settled_glyph:     { delay: 0,  duration: 1.5 }   # every plain letter, one bucket
+
+  # rule_loading_fade_by_length_glyph (default) -- plain letters by gram length
+  settled_3plus_glyph: { delay: 0,  duration: 0.5 }   # 3+ letter grams
+  settled_2_glyph:     { delay: 1.5,  duration: 1 }   # 2-letter grams
+  settled_1_glyph:     { delay: 3.5,  duration: 2.5 }   # single letters
+
+  # rule_loading_fade_by_ideation_strength_glyph -- plain letters by ideation strength (cleaned3)
+  strong_glyph:        { delay: 0,  duration: 1 }   # graded y-strong
+  not_strong_glyph:    { delay: 1.5,  duration: 2.5 }   # m / n / ungraded (e.g. scrabble letters)
+
+  # rule_loading_fade_by_ideation_fix_glyph -- plain letters by *fix (cleaned3); priority prefix>suffix>midfix
+  prefix_glyph:        { delay: 0,  duration: 1 }
+  suffix_glyph:        { delay: 1.5,  duration: 1 }
+  midfix_glyph:        { delay: 3,  duration: 1 }
+  no_fix_glyph:        { delay: 4,  duration: 1.5 }
+
+  # rule_loading_fade_by_ideation_length_strength_fix_glyph -- composite: length x strength x *fix.
+  # 16 multigram buckets ({tri|di}_{strong|weak}_{pre|mid|suf|nofix}) + a single uni bucket.
+  # The delays below give the nested sweep tri->di, strong->weak, pre->mid->suf->nofix; set
+  # several to the same delay to fade them together, or compress the whole thing. (nofix =
+  # graded n on all *fix, or ungraded.) Unused buckets get no cells and add no time.
+  tri_strong_pre_glyph:   { delay: 0,  duration: 1 }
+  tri_weak_pre_glyph:     { delay: 0,  duration: 1 }
+
+  tri_strong_mid_glyph:   { delay: 0,  duration: 1 }
+  tri_weak_mid_glyph:     { delay: 0,  duration: 1 }
+  tri_strong_nofix_glyph: { delay: 0,  duration: 1 }
+  tri_weak_nofix_glyph:   { delay: 0,  duration: 1 }
+  tri_strong_suf_glyph:   { delay: 0,  duration: 1 }
+  tri_weak_suf_glyph:     { delay: 0,  duration: 1 }
+
+  di_strong_pre_glyph:    { delay: 0,  duration: 1 }
+  di_weak_pre_glyph:      { delay: 0, duration: 1 }
+  di_strong_mid_glyph:    { delay: 0,  duration: 1 }
+  di_weak_mid_glyph:      { delay: 0, duration: 1 }
+  di_strong_nofix_glyph:  { delay: 0, duration: 1 }
+  di_weak_nofix_glyph:    { delay: 0, duration: 1 }
+  di_strong_suf_glyph:    { delay: 0, duration: 1 }
+  di_weak_suf_glyph:      { delay: 0, duration: 1 }
+  uni_glyph:              { delay: 0, duration: 1 }   # all single letters
+  grid_lines:    { delay: 0, duration: 1 }   # hex/square outline, fills the gaps last

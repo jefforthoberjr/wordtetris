@@ -28,16 +28,10 @@ from views.hunt_highlight import (
 )
 from controllers.screen_manager import ScreenType
 from models.piece_pool import PiecePool
-from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES as SQUARE_PLAYER_PIECE_TYPES
-from models.square_piece import OBSTACLE_PIECE_TYPES as SQUARE_OBSTACLE_PIECE_TYPES
-from models.square_piece import OBSTACLE_GRAM_PICK_RULE as SQUARE_OBSTACLE_GRAM_PICK_RULE
-from models.square_piece import MISSION_PIECE_TYPES as SQUARE_MISSION_PIECE_TYPES
-from models.square_piece import MISSION_GRAM_PICK_RULE as SQUARE_MISSION_GRAM_PICK_RULE
-from models.hex_piece import HexPiece, PLAYER_PIECE_TYPES as HEX_PLAYER_PIECE_TYPES
-from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
-from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
-from models.hex_piece import MISSION_PIECE_TYPES as HEX_MISSION_PIECE_TYPES
-from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RULE
+# NOTE: the piece-set / gram-pick rules are resolved at board-build time in
+# game_screen_setup._rule_use_*_grid via the square_piece / hex_piece accessors,
+# so a game mode's *.piece_set / *.gram_pick override takes effect. They used to be
+# imported here as import-time constants (frozen before apply_game_mode) -- removed.
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
 from models.gram import Gram

@@ -6,16 +6,25 @@ from collections import Counter, defaultdict
 from views.game_phase import Phase
 from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from models.piece_pool import PiecePool
-from models.square_piece import SquarePiece, PLAYER_PIECE_TYPES as SQUARE_PLAYER_PIECE_TYPES
-from models.square_piece import OBSTACLE_PIECE_TYPES as SQUARE_OBSTACLE_PIECE_TYPES
-from models.square_piece import OBSTACLE_GRAM_PICK_RULE as SQUARE_OBSTACLE_GRAM_PICK_RULE
-from models.square_piece import MISSION_PIECE_TYPES as SQUARE_MISSION_PIECE_TYPES
-from models.square_piece import MISSION_GRAM_PICK_RULE as SQUARE_MISSION_GRAM_PICK_RULE
-from models.hex_piece import HexPiece, PLAYER_PIECE_TYPES as HEX_PLAYER_PIECE_TYPES
-from models.hex_piece import OBSTACLE_PIECE_TYPES as HEX_OBSTACLE_PIECE_TYPES
-from models.hex_piece import OBSTACLE_GRAM_PICK_RULE as HEX_OBSTACLE_GRAM_PICK_RULE
-from models.hex_piece import MISSION_PIECE_TYPES as HEX_MISSION_PIECE_TYPES
-from models.hex_piece import MISSION_GRAM_PICK_RULE as HEX_MISSION_GRAM_PICK_RULE
+# Piece-set / gram-pick accessors, resolved per call so a game mode's *.piece_set /
+# *.gram_pick override takes effect (these modules import before apply_game_mode
+# swaps CONFIG). Called at board-build time in _rule_use_square_grid / _rule_use_hex_grid.
+from models.square_piece import (
+    SquarePiece,
+    player_piece_types as square_player_piece_types,
+    obstacle_piece_types as square_obstacle_piece_types,
+    obstacle_gram_pick_rule as square_obstacle_gram_pick_rule,
+    mission_piece_types as square_mission_piece_types,
+    mission_gram_pick_rule as square_mission_gram_pick_rule,
+)
+from models.hex_piece import (
+    HexPiece,
+    player_piece_types as hex_player_piece_types,
+    obstacle_piece_types as hex_obstacle_piece_types,
+    obstacle_gram_pick_rule as hex_obstacle_gram_pick_rule,
+    mission_piece_types as hex_mission_piece_types,
+    mission_gram_pick_rule as hex_mission_gram_pick_rule,
+)
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
 from models.gram_picker import (
@@ -826,17 +835,17 @@ class BoardSetupMixin:
         self._cell_size = math.floor(self._grid_area_size / self.GRID_WIDTH)
         self._board_height = math.floor(self._grid_area_size / self._cell_size)
         self._piece_class = SquarePiece
-        self._player_piece_types = SQUARE_PLAYER_PIECE_TYPES
+        self._player_piece_types = square_player_piece_types()
         # Single-cell shape a clicked-word piece uses on this grid (see
         # _swap_to_word_piece / game_screen.player_word_piece).
         self._unimo_type = SquareUnimoType.SINGLE
         # Obstacles get their own piece set + gram-pick (square_obstacle.* keys),
         # so they can differ from the playable pieces.
-        self._obstacle_piece_types = SQUARE_OBSTACLE_PIECE_TYPES
-        self._obstacle_gram_pick_rule = SQUARE_OBSTACLE_GRAM_PICK_RULE
+        self._obstacle_piece_types = square_obstacle_piece_types()
+        self._obstacle_gram_pick_rule = square_obstacle_gram_pick_rule()
         # Missions: the obstacles' twin, own piece set + gram-pick (square_mission.*).
-        self._mission_piece_types = SQUARE_MISSION_PIECE_TYPES
-        self._mission_gram_pick_rule = SQUARE_MISSION_GRAM_PICK_RULE
+        self._mission_piece_types = square_mission_piece_types()
+        self._mission_gram_pick_rule = square_mission_gram_pick_rule()
         self._movement_rule = self._rule_square_movement
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "|" marks a word formed on the square grid.
@@ -863,17 +872,17 @@ class BoardSetupMixin:
         self._cell_size = hex_size
         self._board_height = board.height
         self._piece_class = HexPiece
-        self._player_piece_types = HEX_PLAYER_PIECE_TYPES
+        self._player_piece_types = hex_player_piece_types()
         # Single-cell shape a clicked-word piece uses on this grid (see
         # _swap_to_word_piece / game_screen.player_word_piece).
         self._unimo_type = HexUnimoType.SINGLE
         # Obstacles get their own gram-pick (hex_obstacle.gram_pick); the hex set
         # has a single piece type, so obstacle types match the main set.
-        self._obstacle_piece_types = HEX_OBSTACLE_PIECE_TYPES
-        self._obstacle_gram_pick_rule = HEX_OBSTACLE_GRAM_PICK_RULE
+        self._obstacle_piece_types = hex_obstacle_piece_types()
+        self._obstacle_gram_pick_rule = hex_obstacle_gram_pick_rule()
         # Missions: the obstacles' twin, own piece set + gram-pick (hex_mission.*).
-        self._mission_piece_types = HEX_MISSION_PIECE_TYPES
-        self._mission_gram_pick_rule = HEX_MISSION_GRAM_PICK_RULE
+        self._mission_piece_types = hex_mission_piece_types()
+        self._mission_gram_pick_rule = hex_mission_gram_pick_rule()
 
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows

@@ -338,6 +338,12 @@ def _game(board, interactive=True, history=None):
     g._disambig_word = None
     g._disambig_commit = None
     g._disambig_lines = FakeDisambigLines()
+    # Chooser display at its original "lines" renderer (one blue polyline per
+    # candidate); reads _disambig_lines + the board's cell_center, both faked here.
+    g._disambig_display_rule = g._rule_disambig_display_lines
+    # _end_disambiguation tears down BOTH display views regardless of the active
+    # rule, so the highlight view needs a stub too (only its clear() is called here).
+    g._disambig_highlight = FakeDisambigLines()
     # Gram usage at its original: a word consumes a cell's whole gram. Partial
     # tests below flip this to rule_gram_use_partial.
     g._gram_usage_rule = g._rule_gram_use_whole
@@ -1067,6 +1073,13 @@ def _constellation_game(board):
     g._constellation_max_paths = 24
     g._constellation_turnover_rule = g._rule_constellation_no_replenish
     g._constellation_auto_end_rule = g._rule_constellation_auto_end_off
+    # Replenish at its original "instant" timing: a vacated cell refills in the same
+    # turn (delay 0 => _schedule_replenish fills now, no _pending_replenishes queue),
+    # which is what the replenish test asserts. The fade-in is a render-only effect
+    # (like _fill_one_player_cell), so stub it -- the fake cells carry no label/quad.
+    g._constellation_replenish_delay_seconds = 0
+    g._pending_replenishes = []
+    g._begin_replenish_fade = lambda x, y: None
     g._phase = gs.Phase.SELECTING
     return g
 
