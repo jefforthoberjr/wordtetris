@@ -806,6 +806,18 @@ maps it to an icon under icon mode.
   Reasons with no icon (`too_short`, `not_involved`, `not_fossil`) fall back to the
   text message; the spelling suggestion line is dropped (the icon replaces the text).
 
+### game_screen.missing_letter_highlight
+On a NOT-ON-BOARD rejection, redden the letters of the "You typed: WORD" ghost that
+don't exist anywhere on the board — a quick "that letter isn't here" cue. Deliberately
+a pure letter-existence check: the board's occupied grams are pooled into a set of
+letters (a wild cell counts as every vowel) and any typed letter absent from that set
+is reddened. NO tiling / arrangement awareness — a letter that is physically present
+but awkward to use is never flagged. Rides on the ghost, so it needs
+`game_screen.reject_ghost = rule_reject_ghost_on`; the color is
+`selecting_side_pane.missing_letter`.
+- `rule_missing_letter_highlight_off` — draw the ghost in one dim color (original).
+- `rule_missing_letter_highlight_on` — redden the absent letters.
+
 ### game_screen.show_clear_button / show_submit_button / show_next_button / show_end_button
 Whether each control label in the right pane is drawn. The pane stacks its controls
 top-to-bottom in the fixed order Clear word / Submit word / Next piece / End game;
@@ -903,6 +915,9 @@ grams on the board involved in it light up (see `views/hunt_highlight.py`). Two
 independent toggles.
 
 `hunt_highlight` — WHICH grams/letters match the typed word:
+- `rule_hunt_none` — off: nothing lights. The typed field and submit still work; only
+  the on-board green paint is suppressed, for a bare typing surface (constellation
+  speed type).
 - `rule_hunt_full_gram` — only a cell whose whole gram is a contiguous chunk of the
   word (INDICATIVE lights "IVE", not "CU"/"EN"/"ING"); all its letters color.
 - `rule_hunt_full_gram_or_dedup` — like full_gram, but ALSO lights a gram that is one

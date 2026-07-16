@@ -287,6 +287,11 @@ rules:
   # game_screen.error_display: rule_error_text
   game_screen.error_display: rule_error_icon
 
+  # On a NOT-ON-BOARD reject, redden the "You typed:" letters absent from the board.
+  # [ref: game_screen.missing_letter_highlight]
+  # game_screen.missing_letter_highlight: rule_missing_letter_highlight_off
+  game_screen.missing_letter_highlight: rule_missing_letter_highlight_on
+
   # Right-pane control buttons: show/hide each label independently (keyboard route
   # is untouched). [ref: game_screen.show_clear_button / show_submit_button / show_next_button / show_end_button]
   game_screen.show_clear_button:  rule_show_clear_button
@@ -325,6 +330,7 @@ rules:
   # game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_disabled
 
   # Word-hunt highlight: which grams/letters light up. [ref: game_screen.hunt_highlight]
+  # game_screen.hunt_highlight: rule_hunt_none          # off -- no green paint
   # game_screen.hunt_highlight: rule_hunt_full_gram
   game_screen.hunt_highlight: rule_hunt_full_gram_or_dedup
   # game_screen.hunt_highlight: rule_hunt_single_letters

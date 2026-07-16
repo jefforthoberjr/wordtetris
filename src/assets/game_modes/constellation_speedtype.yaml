@@ -42,6 +42,8 @@ rules:
 
   game_screen.spell_suggest: rule_spell_suggest_off
 
+  game_screen.hunt_highlight: rule_hunt_none
+
   game_screen.show_clear_button: rule_hide_clear_button
   game_screen.show_submit_button: rule_hide_submit_button
   game_screen.show_next_button: rule_hide_next_button

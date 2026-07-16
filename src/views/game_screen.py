@@ -1038,6 +1038,14 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # Stable reason key of the most recent rejection (set by the _*_error
         # functions right before they log it); read by _reject_submission.
         self._last_reject_reason = None
+        # On a NOT-ON-BOARD reject, whether to redden the "You typed:" ghost letters
+        # that don't exist anywhere on the board (game_screen.missing_letter_highlight);
+        # a pure letter-existence hint, no tiling. See _missing_letters.
+        self._missing_letter_highlight = select_rule(
+            "game_screen.missing_letter_highlight",
+            {"rule_missing_letter_highlight_on": True,
+             "rule_missing_letter_highlight_off": False},
+        )
         # Whether ENTER-into-SELECT auto-submits the carried word-hunt word
         # (game_screen.select_autosubmit_hunt), skipping the dead middle ENTER;
         # see the interactive branch of _begin_selection.

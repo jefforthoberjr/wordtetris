@@ -94,6 +94,13 @@ def make_hunt_overlay(text, font_size, bold=True):
 # per letter of the gram -- exactly the shape the overlay's set_matched wants.
 # Swapped from one place (config.yaml).
 
+def rule_hunt_none(gram_text, search):
+    """Light nothing -- the hunt highlight is off. Typing / hunt matching still
+    drive the field and submit; only the on-board green paint is suppressed. Used
+    by modes that want a bare typing surface (constellation speed type)."""
+    return [False] * len(gram_text)
+
+
 def rule_hunt_full_gram(gram_text, search):
     """Light a cell only if its WHOLE gram is a contiguous chunk of the search word
     (INDICATIVE lights 'IVE', not 'CU' / 'EN' / 'ING'); then all its letters
@@ -159,6 +166,7 @@ def rule_hunt_full_gram_or_dedup(gram_text, search):
 
 
 _HUNT_MATCH_RULES = {
+    "rule_hunt_none": rule_hunt_none,
     "rule_hunt_full_gram": rule_hunt_full_gram,
     "rule_hunt_single_letters": rule_hunt_single_letters,
     "rule_hunt_full_gram_or_dedup": rule_hunt_full_gram_or_dedup,

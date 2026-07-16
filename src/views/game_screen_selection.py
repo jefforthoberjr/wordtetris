@@ -398,10 +398,41 @@ class SelectionMixin:
         # the pane uses it to pick an error icon under game_screen.error_display =
         # rule_error_icon (ignored under the text default).
         reason = self._last_reject_reason
+        # For a not-on-board reject, which of the typed letters don't exist on the
+        # board at all (reddened in the ghost). Only meaningful with the ghost.
+        missing = self._missing_letters(word) if reason == "not_on_board" else None
         if self._reject_ghost:
-            self._selecting_side_pane.reject(word, messages, reason)
+            self._selecting_side_pane.reject(word, messages, reason, missing)
         else:
             self._selecting_side_pane.show_errors(messages, reason)
+
+    # --- not-on-board missing-letter hint (game_screen.missing_letter_highlight) -
+    _VOWELS = set("AEIOU")
+
+    def _board_letter_set(self):
+        """The set of letters that appear anywhere in the board's occupied grams
+        (a wild cell contributes every vowel). Supply-only -- no gram-boundary or
+        tiling awareness -- so a letter that is physically present but awkward to
+        arrange is still counted present and never reddened."""
+        letters = set()
+        for cell in self._board.occupied_cells():
+            gram = self._board.gram_at(*cell)
+            if gram is None:
+                continue
+            if gram.is_wild:
+                letters |= self._VOWELS
+            else:
+                letters.update(gram.text)
+        return letters
+
+    def _missing_letters(self, word):
+        """One bool per letter of `word`: True where that letter exists NOWHERE on
+        the board -- the not-on-board "that letter doesn't exist" hint. None when
+        the highlight rule is off (so the pane draws the ghost plain)."""
+        if not self._missing_letter_highlight:
+            return None
+        present = self._board_letter_set()
+        return [ch not in present for ch in word.upper()]
 
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
     # Paired per timing: a submit rule (what one submit does) and a phase-end

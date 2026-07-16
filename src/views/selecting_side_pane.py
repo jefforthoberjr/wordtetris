@@ -37,6 +37,7 @@ class SelectingSidePane:
     PLACEHOLDER_COLOR = get_color("selecting_side_pane.placeholder")
     BUTTON_COLOR = get_color("selecting_side_pane.button_text")
     ERROR_COLOR = get_color("selecting_side_pane.error_text")
+    MISSING_COLOR = get_color("selecting_side_pane.missing_letter")
     COUNT_COLOR = get_color("selecting_side_pane.word_count")
     PHASE_LABEL_COLOR = get_color("selecting_side_pane.phase_label")
     SCORE_LABEL_COLOR = get_color("selecting_side_pane.score_label")
@@ -105,12 +106,17 @@ class SelectingSidePane:
         )
         top = top - line_h
 
-        # Prompt + typed-word field.
-        self._prompt = pyglet.text.Label(
-            get_string("type_a_word"), font_size=base * 0.7, x=left, y=top,
-            anchor_x="left", anchor_y="top",
-            color=self.PROMPT_COLOR, batch=self._batch,
+        # Prompt + typed-word field. The prompt is a FormattedDocument label (not a
+        # plain Label) so the "You typed: WORD" ghost can redden individual missing
+        # letters per _render_prompt; a plain Label paints one color for all text.
+        self._prompt_font = base * 0.7
+        self._ghost_missing = None
+        self._prompt_doc = pyglet.text.document.FormattedDocument("")
+        self._prompt = pyglet.text.DocumentLabel(
+            document=self._prompt_doc, x=left, y=top,
+            anchor_x="left", anchor_y="top", batch=self._batch,
         )
+        self._render_prompt()
         input_y = top - line_h
         self._input = pyglet.text.Label(
             "", font_size=base, x=left, y=input_y,
@@ -214,15 +220,17 @@ class SelectingSidePane:
         # Swallow every key while selecting (there is no active piece to drive).
         return True
 
-    def reject(self, word, messages, reason=None):
+    def reject(self, word, messages, reason=None, missing=None):
         """A submitted word was rejected (misspelled / not on the board): echo it
         as a dim "You typed: WORD" ghost in the prompt slot, CLEAR the input, and
         show the reason(s). The empty field means the player's corrective typing
         starts fresh instead of appending to the failed attempt, while the ghost
         stays up (through retyping) for a side-by-side compare with any spelling
         suggestion. Cleared on the next accept_word / clear_word / begin, or
-        replaced by the next rejection."""
+        replaced by the next rejection. `missing` (one bool per letter, or None)
+        reddens the ghost letters that don't exist on the board."""
         self._ghost = word.upper()
+        self._ghost_missing = missing
         self._typed = ""
         self._render_prompt()
         self._render_input()
@@ -354,11 +362,28 @@ class SelectingSidePane:
         # it reads "You typed: WORD" dim (placeholder color); otherwise the plain
         # "Type a word:" cue in the normal prompt color.
         if self._ghost:
-            self._prompt.text = get_string("you_typed", word=self._ghost)
-            self._prompt.color = self.PLACEHOLDER_COLOR
+            self._set_prompt(get_string("you_typed", word=self._ghost),
+                             self.PLACEHOLDER_COLOR,
+                             word=self._ghost, missing=self._ghost_missing)
         else:
-            self._prompt.text = get_string("type_a_word")
-            self._prompt.color = self.PROMPT_COLOR
+            self._set_prompt(get_string("type_a_word"), self.PROMPT_COLOR)
+
+    def _set_prompt(self, text, base_color, word=None, missing=None):
+        # Paint the whole prompt in base_color, then (ghost only) redden the
+        # letters flagged in `missing` -- located by finding `word` inside the
+        # rendered "You typed: WORD" string, so a template change moves with it.
+        self._prompt_doc.text = text
+        self._prompt_doc.set_style(0, len(text), {
+            "font_size": self._prompt_font,
+            "color": base_color,
+        })
+        if word and missing:
+            start = text.rfind(word)
+            if start >= 0:
+                for i, gone in enumerate(missing):
+                    if gone:
+                        self._prompt_doc.set_style(
+                            start + i, start + i + 1, {"color": self.MISSING_COLOR})
 
     def _render_input(self):
         # Faux caret: a trailing underscore. Faint when nothing's typed yet.
