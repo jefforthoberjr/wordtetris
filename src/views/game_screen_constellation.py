@@ -59,13 +59,14 @@ class ConstellationMixin:
 
     def _constellation_submission_error(self, word):
         """The single most specific reason a constellation `word` can't clear,
-        walking inward: not a dictionary word, not assemblable from the board at
-        all, assemblable but too short, else already cleared this game. Reuses the
-        same err_* strings/log as the pathfinder path (_submission_error)."""
+        walking inward: not a dictionary word, not assemblable from the board at all
+        (split by _not_on_board_reason into missing-letter vs gram-mismatch),
+        assemblable but too short, else already cleared this game. Reuses the same
+        err_* strings/log as the pathfinder path (_submission_error)."""
         if not is_word(word):
             reason = "not_in_dictionary"
         elif not self._constellation_match(word, 1):
-            reason = "not_on_board"
+            reason = self._not_on_board_reason(word)
         elif not [fw for fw in self._constellation_match(word, self._constellation_max_paths)
                   if self._word_length_rule(fw.word, fw.path)]:
             reason = "too_short"

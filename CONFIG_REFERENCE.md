@@ -801,10 +801,15 @@ maps it to an icon under icon mode.
 - `rule_error_text` — show the worded reason message (original), plus the
   "Did you mean: …?" spelling suggestion under a not-a-word rejection.
 - `rule_error_icon` — show a reason icon in place of the text, scaled to fit the
-  same slot. Three icons exist: not-in-dictionary, not-on-board, and duplicate
-  (shared by `already_cleared` / `already_selected_one_way` / `every_way_selected`).
-  Reasons with no icon (`too_short`, `not_involved`, `not_fossil`) fall back to the
-  text message; the spelling suggestion line is dropped (the icon replaces the text).
+  same slot. Icons exist for: `not_in_dictionary`; `too_short`; the duplicate family
+  (`already_cleared` / `already_selected_one_way` / `every_way_selected`); and the
+  two not-on-board sub-classes split by `game_screen._not_on_board_reason` —
+  `not_on_board_missing_letter` (a letter that exists nowhere on the board → the
+  absentletter art) and `not_on_board_gram_mismatch` (every letter is present, but
+  the grams don't divide to spell it → the tiling art). Reasons with no icon
+  (`not_involved`, `not_fossil`) fall back to the text message; the spelling
+  suggestion line is dropped (the icon replaces the text). Reason→icon wiring lives
+  in `_REASON_TO_ICON` in `views/textures.py`.
 
 ### game_screen.missing_letter_highlight
 On a NOT-ON-BOARD rejection, redden the letters of the "You typed: WORD" ghost that

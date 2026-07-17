@@ -7,6 +7,19 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Words pop in in bursts (every X seconds).
+There is no grand timer, but a resetting time every X seconds
+If there is alleast 1 cleared cell, then the game continues (and fresh cells are loaded in)
+If there no cleared cell when the timer ends, the game ends.s
+
+INVATATION didn't recommend INVITATION
+
+DEMIGOG should suggest demagogue
+
+
+Maybe a list of missing letters at the top?
+
+
 diaphram should have spell hinted diaphragm
 diphragm should have spell hinted diaphragm
 diafram should have spell hinted diaphragm
@@ -54,6 +67,8 @@ If I clear a word while the debug pane is up, refersh the word list "board words
 
 
 Maybe an undo button?
+
+FORGOTEN should have recommended FORGOTTEN
 
 INTETION (did you mean TEEN)...
 

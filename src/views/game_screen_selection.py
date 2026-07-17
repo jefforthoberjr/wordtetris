@@ -398,9 +398,11 @@ class SelectionMixin:
         # the pane uses it to pick an error icon under game_screen.error_display =
         # rule_error_icon (ignored under the text default).
         reason = self._last_reject_reason
-        # For a not-on-board reject, which of the typed letters don't exist on the
-        # board at all (reddened in the ghost). Only meaningful with the ghost.
-        missing = self._missing_letters(word) if reason == "not_on_board" else None
+        # For a missing-letter reject, which of the typed letters don't exist on the
+        # board at all (reddened in the ghost). Only meaningful with the ghost, and
+        # only for that sub-class -- a gram-mismatch reject has no absent letters.
+        missing = (self._missing_letters(word)
+                   if reason == "not_on_board_missing_letter" else None)
         if self._reject_ghost:
             self._selecting_side_pane.reject(word, messages, reason, missing)
         else:
@@ -433,6 +435,20 @@ class SelectionMixin:
             return None
         present = self._board_letter_set()
         return [ch not in present for ch in word.upper()]
+
+    def _not_on_board_reason(self, word):
+        """Split a not-on-board rejection into its two sub-classes, so each can get
+        its own message / error icon:
+          not_on_board_missing_letter -- at least one letter of `word` exists
+              NOWHERE on the board (a letter the player simply hasn't got).
+          not_on_board_gram_mismatch  -- every letter is present somewhere, but the
+              board's grams don't divide to spell it (right letters, wrong pieces).
+        Uses the same supply-only letter set as the missing-letter highlight, so the
+        two features always agree on what counts as 'missing'."""
+        present = self._board_letter_set()
+        if any(ch not in present for ch in word.upper()):
+            return "not_on_board_missing_letter"
+        return "not_on_board_gram_mismatch"
 
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
     # Paired per timing: a submit rule (what one submit does) and a phase-end
@@ -786,7 +802,7 @@ class SelectionMixin:
         if not is_word(word):
             reason = "not_in_dictionary"
         elif word not in self._board_words_any:
-            reason = "not_on_board"
+            reason = self._not_on_board_reason(word)
         elif word not in self._length_ok_words:
             reason = "too_short"
         elif word not in self._candidate_words:

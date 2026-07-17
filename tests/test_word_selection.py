@@ -130,8 +130,11 @@ class FakePane:
         # The running point total shown near the timer; recorded but unused here.
         self.score = points
 
-    def show_errors(self, messages):
+    def show_errors(self, messages, reason=None):
+        # `reason` (the stable rejection key) drives icon selection in the real
+        # pane; recorded here so tests can assert the sub-class if they want.
         self.errors = list(messages)
+        self.reason = reason
 
     def clear_errors(self):
         self.errors = None
@@ -147,12 +150,15 @@ class FakePane:
     def set_word_count(self, count):
         self.word_count = count
 
-    def reject(self, word, messages):
+    def reject(self, word, messages, reason=None, missing=None):
         # The rejected-word echo path (reject_ghost on): records the ghost word
         # and, like the real pane, still surfaces the reason(s) via errors so the
-        # existing error-message assertions hold.
+        # existing error-message assertions hold. `reason` / `missing` (the split
+        # not-on-board key and the per-letter missing flags) are recorded too.
         self.rejected = word
         self.errors = list(messages)
+        self.reason = reason
+        self.missing = missing
 
     def clear_ghost(self):
         self.rejected = None
@@ -183,6 +189,16 @@ class FakeMergedPane:
 
     def set_phase_label(self, count):
         self.phase_label = count
+
+    def show_errors(self, messages, reason=None):
+        self.errors = list(messages)
+        self.reason = reason
+
+    def reject(self, word, messages, reason=None, missing=None):
+        self.rejected = word
+        self.errors = list(messages)
+        self.reason = reason
+        self.missing = missing
 
     def clear_errors(self):
         pass
@@ -375,6 +391,10 @@ def _game(board, interactive=True, history=None):
     # Rejected-submit ghost on (production default): the echo path records both
     # the ghost word and the reason(s), so error-message assertions still hold.
     g._reject_ghost = True
+    # Missing-letter highlight off (production default): the not-on-board reason
+    # split still classifies via _board_letter_set, but no per-letter flags are
+    # computed for the ghost.
+    g._missing_letter_highlight = False
     # Auto-submit-on-open off by default here (the logic tests drive submits
     # explicitly and use an empty hunt); the dedicated test flips it on.
     g._select_autosubmit_hunt = False
@@ -485,14 +505,24 @@ def test_real_word_off_board_shows_no_suggestions():
     g._spell_suggest_rule = lambda word: ["SHOULD_NOT_APPEAR"]
     g._begin_selection([(3, 0)])
     g._on_submit_word("hello")
-    assert g._selecting_side_pane.errors == ["Word isn't on the board"]
+    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
 
 
-def test_real_word_not_on_board_errors():
+def test_real_word_not_on_board_missing_letter_errors():
     g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
     g._begin_selection([(3, 0)])
-    g._on_submit_word("hello")  # a real word, but not on the board
-    assert g._selecting_side_pane.errors == ["Word isn't on the board"]
+    g._on_submit_word("hello")  # real word; H, L, O exist nowhere on the board
+    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
+
+
+def test_real_word_not_on_board_gram_mismatch_errors():
+    # Every letter of RATE is on the board (T, E, A, R present), but the pathfinder
+    # can't trace it -- the letters are here, the arrangement isn't. Distinct class.
+    g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
+    g._begin_selection([(3, 0)])
+    g._on_submit_word("rate")
+    assert g._selecting_side_pane.errors == [
+        "Those letters are here, but the pieces don't line up"]
 
 
 def test_word_too_short_errors():
@@ -526,12 +556,13 @@ def test_already_cleared_word_errors():
 
 
 def test_recompute_after_clear_allows_second_word():
-    # TEAR clears, leaving nothing; resubmitting it now reads as off-board.
+    # TEAR clears, leaving an empty board; resubmitting it now has no letters left
+    # on the board at all -- the missing-letter sub-class of not-on-board.
     g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
     g._begin_selection([(3, 0)])
     g._on_submit_word("tear")
     g._on_submit_word("tear")
-    assert g._selecting_side_pane.errors == ["Word isn't on the board"]
+    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
 
 
 def test_auto_selector_clears_immediately_without_selecting():
