@@ -1,5 +1,7 @@
 """Selection / word-clearing pipeline extracted from GameScreen: begin_selection, recompute_candidates, clear_paths and the clear-action / clear-timing / disambiguation-chooser / word-limit / player-word-piece rules, plus submission error wording, scoring glue and advance/end-selection. A mixin -- every method runs with GameScreen's self; the __init__ registries resolve these by name. Kept out of game_screen.py to bound its size (see AGENTS.md)."""
 
+from collections import Counter
+
 from views.game_phase import Phase
 from models.gram import Gram
 from models.word_dictionary import (
@@ -411,42 +413,56 @@ class SelectionMixin:
     # --- not-on-board missing-letter hint (game_screen.missing_letter_highlight) -
     _VOWELS = set("AEIOU")
 
-    def _board_letter_set(self):
-        """The set of letters that appear anywhere in the board's occupied grams
-        (a wild cell contributes every vowel). Supply-only -- no gram-boundary or
-        tiling awareness -- so a letter that is physically present but awkward to
-        arrange is still counted present and never reddened."""
-        letters = set()
+    def _board_letter_counts(self):
+        """The multiset {letter -> how many exist} across the board's occupied grams
+        (a wild cell contributes one of every vowel). Supply-only: it counts letters,
+        NOT gram boundaries or tiling -- but the total count of a letter is a hard
+        upper bound on how many any tiling could ever place, so demand exceeding it
+        is provably unspellable (a genuine shortage, not an arrangement quirk)."""
+        counts = Counter()
         for cell in self._board.occupied_cells():
             gram = self._board.gram_at(*cell)
             if gram is None:
                 continue
             if gram.is_wild:
-                letters |= self._VOWELS
+                counts.update(self._VOWELS)      # a wild can be any one vowel
             else:
-                letters.update(gram.text)
-        return letters
+                counts.update(gram.text)
+        return counts
+
+    def _excess_letters(self, word):
+        """One bool per letter of `word`: True where that OCCURRENCE outruns the
+        board's supply of that letter -- i.e. the word needs more of it than the
+        board has. The first N copies of a letter (N = board supply) read as present;
+        every copy past N is flagged. Generalizes 'letter exists nowhere' (supply 0
+        flags every copy) to 'not ENOUGH copies' (RUTHLESS's 2nd S when the board has
+        one S). Drives both the reason split and the ghost highlight, so they agree."""
+        avail = self._board_letter_counts()
+        used = Counter()
+        flags = []
+        for ch in word.upper():
+            used[ch] += 1
+            flags.append(used[ch] > avail[ch])
+        return flags
 
     def _missing_letters(self, word):
-        """One bool per letter of `word`: True where that letter exists NOWHERE on
-        the board -- the not-on-board "that letter doesn't exist" hint. None when
-        the highlight rule is off (so the pane draws the ghost plain)."""
+        """The per-letter over-demand flags for the ghost highlight, or None when the
+        highlight rule is off (so the pane draws the ghost plain)."""
         if not self._missing_letter_highlight:
             return None
-        present = self._board_letter_set()
-        return [ch not in present for ch in word.upper()]
+        return self._excess_letters(word)
 
     def _not_on_board_reason(self, word):
         """Split a not-on-board rejection into its two sub-classes, so each can get
         its own message / error icon:
-          not_on_board_missing_letter -- at least one letter of `word` exists
-              NOWHERE on the board (a letter the player simply hasn't got).
-          not_on_board_gram_mismatch  -- every letter is present somewhere, but the
-              board's grams don't divide to spell it (right letters, wrong pieces).
-        Uses the same supply-only letter set as the missing-letter highlight, so the
-        two features always agree on what counts as 'missing'."""
-        present = self._board_letter_set()
-        if any(ch not in present for ch in word.upper()):
+          not_on_board_missing_letter -- the word needs more of some letter than the
+              board physically has (including letters it has none of) -- provably
+              unspellable, and the shortfall letters get reddened in the ghost.
+          not_on_board_gram_mismatch  -- every letter is available in sufficient
+              supply, but the board's grams don't divide to spell it (right letters,
+              wrong pieces).
+        Shares _excess_letters with the highlight, so the two always agree."""
+        if any(self._excess_letters(word)):
             return "not_on_board_missing_letter"
         return "not_on_board_gram_mismatch"
 

@@ -804,24 +804,30 @@ maps it to an icon under icon mode.
   same slot. Icons exist for: `not_in_dictionary`; `too_short`; the duplicate family
   (`already_cleared` / `already_selected_one_way` / `every_way_selected`); and the
   two not-on-board sub-classes split by `game_screen._not_on_board_reason` —
-  `not_on_board_missing_letter` (a letter that exists nowhere on the board → the
-  absentletter art) and `not_on_board_gram_mismatch` (every letter is present, but
-  the grams don't divide to spell it → the tiling art). Reasons with no icon
+  `not_on_board_missing_letter` (the word needs more of some letter than the board
+  has, including letters it has none of → the absentletter art) and
+  `not_on_board_gram_mismatch` (every letter is available in enough supply, but the
+  grams don't divide to spell it → the tiling art). Reasons with no icon
   (`not_involved`, `not_fossil`) fall back to the text message; the spelling
   suggestion line is dropped (the icon replaces the text). Reason→icon wiring lives
   in `_REASON_TO_ICON` in `views/textures.py`.
 
 ### game_screen.missing_letter_highlight
-On a NOT-ON-BOARD rejection, redden the letters of the "You typed: WORD" ghost that
-don't exist anywhere on the board — a quick "that letter isn't here" cue. Deliberately
-a pure letter-existence check: the board's occupied grams are pooled into a set of
-letters (a wild cell counts as every vowel) and any typed letter absent from that set
-is reddened. NO tiling / arrangement awareness — a letter that is physically present
-but awkward to use is never flagged. Rides on the ghost, so it needs
+On a NOT-ON-BOARD rejection, redden the letters of the "You typed: WORD" ghost the
+board can't supply — a quick "you haven't got that letter" cue. A supply-COUNT check
+(not mere existence): the board's occupied grams are pooled into a multiset of letters
+(a wild cell counts as one of every vowel), and each occurrence of a letter in the word
+past the board's available count is reddened. So a word needing two S when the board has
+one S reddens the *second* S; a letter the board has none of reddens every copy. NO
+tiling / arrangement awareness — but the letter count is a hard upper bound on any
+tiling, so a reddened letter is provably unspellable. This is the same computation that
+splits the rejection into `not_on_board_missing_letter` (some letter over-demanded) vs
+`not_on_board_gram_mismatch` (supply sufficient, arrangement fails), so the highlight
+and the message/icon always agree. Rides on the ghost, so it needs
 `game_screen.reject_ghost = rule_reject_ghost_on`; the color is
 `selecting_side_pane.missing_letter`.
 - `rule_missing_letter_highlight_off` — draw the ghost in one dim color (original).
-- `rule_missing_letter_highlight_on` — redden the absent letters.
+- `rule_missing_letter_highlight_on` — redden the over-demanded letters.
 
 ### game_screen.show_clear_button / show_submit_button / show_next_button / show_end_button
 Whether each control label in the right pane is drawn. The pane stacks its controls

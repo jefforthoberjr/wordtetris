@@ -61,7 +61,7 @@ en:
   err_not_in_dictionary: "Word is not in the dictionary"
   err_not_on_board:      "Word isn't on the board"
   # not_on_board split into two sub-classes (see game_screen._not_on_board_reason)
-  err_not_on_board_missing_letter: "Some of those letters aren't on the board"
+  err_not_on_board_missing_letter: "Not enough of those letters on the board"
   err_not_on_board_gram_mismatch:  "Those letters are here, but the pieces don't line up"
   err_too_short:         "Word is too short"
   err_not_involved:      "Word didn't involve placed piece"
@@ -115,7 +115,7 @@ es:
   # Word-submission errors
   err_not_in_dictionary: "La palabra no está en el diccionario"
   err_not_on_board:      "La palabra no está en el tablero"
-  err_not_on_board_missing_letter: "Faltan letras en el tablero"
+  err_not_on_board_missing_letter: "No hay suficientes de esas letras en el tablero"
   err_not_on_board_gram_mismatch:  "Las letras están, pero las piezas no encajan"
   err_too_short:         "La palabra es demasiado corta"
   err_not_involved:      "La palabra no usó la pieza colocada"

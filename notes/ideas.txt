@@ -6,6 +6,10 @@ GAME NAMES
 
 * catalyst cata LIST
 
+Add the title of the current running game mode to the top of the board
+
+
+TRACEA should have suggested TRACHEA
 
 Words pop in in bursts (every X seconds).
 There is no grand timer, but a resetting time every X seconds

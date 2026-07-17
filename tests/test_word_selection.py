@@ -392,7 +392,7 @@ def _game(board, interactive=True, history=None):
     # the ghost word and the reason(s), so error-message assertions still hold.
     g._reject_ghost = True
     # Missing-letter highlight off (production default): the not-on-board reason
-    # split still classifies via _board_letter_set, but no per-letter flags are
+    # split still classifies via _excess_letters, but no per-letter flags are
     # computed for the ghost.
     g._missing_letter_highlight = False
     # Auto-submit-on-open off by default here (the logic tests drive submits
@@ -505,14 +505,14 @@ def test_real_word_off_board_shows_no_suggestions():
     g._spell_suggest_rule = lambda word: ["SHOULD_NOT_APPEAR"]
     g._begin_selection([(3, 0)])
     g._on_submit_word("hello")
-    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
+    assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
 
 
 def test_real_word_not_on_board_missing_letter_errors():
     g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
     g._begin_selection([(3, 0)])
     g._on_submit_word("hello")  # real word; H, L, O exist nowhere on the board
-    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
+    assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
 
 
 def test_real_word_not_on_board_gram_mismatch_errors():
@@ -523,6 +523,20 @@ def test_real_word_not_on_board_gram_mismatch_errors():
     g._on_submit_word("rate")
     assert g._selecting_side_pane.errors == [
         "Those letters are here, but the pieces don't line up"]
+
+
+def test_not_on_board_letter_shortage_is_missing_not_mismatch():
+    # LESS needs two S, but the board has only one -- a supply SHORTAGE, which the
+    # count-based split reads as missing-letter (not gram-mismatch), and the second
+    # S is the flagged excess occurrence (RUTHLESS-with-one-S in miniature).
+    g = _game(FakeBoard({(0, 0): "L", (1, 0): "E", (2, 0): "S"}))
+    g._missing_letter_highlight = True
+    g._begin_selection([(2, 0)])
+    g._on_submit_word("less")
+    assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
+    assert g._selecting_side_pane.reason == "not_on_board_missing_letter"
+    # L, E, first S fit the supply; only the second S outruns it.
+    assert g._selecting_side_pane.missing == [False, False, False, True]
 
 
 def test_word_too_short_errors():
@@ -562,7 +576,7 @@ def test_recompute_after_clear_allows_second_word():
     g._begin_selection([(3, 0)])
     g._on_submit_word("tear")
     g._on_submit_word("tear")
-    assert g._selecting_side_pane.errors == ["Some of those letters aren't on the board"]
+    assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
 
 
 def test_auto_selector_clears_immediately_without_selecting():
