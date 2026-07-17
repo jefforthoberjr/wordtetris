@@ -60,7 +60,7 @@ from models.scoring import Scorer
 from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
-from config import select_rule, get_color, get_string, CONFIG
+from config import select_rule, get_color, get_string, active_mode, CONFIG
 from controls import control_keys, control_button, control_modifier
 import session_log
 import log_codes as L
@@ -451,6 +451,23 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # right. Both grid builders size themselves to this square region rather
         # than the full window.
         self._grid_area_size = window.height
+        # A single-line title along the top of the board naming the current game
+        # mode. Small text, centered across the board width, drawn over the top of
+        # the grid. Its text is set by the game_screen.mode_title rule below (on =
+        # the active mode's label; off = blank, so the label draws nothing).
+        self._mode_title_label = pyglet.text.Label(
+            "",
+            font_size=max(11, math.floor(window.height / 45)),
+            x=math.floor(self._grid_area_size / 2),
+            y=window.height - 4,
+            anchor_x="center", anchor_y="top",
+            color=get_color("board.mode_title"),
+        )
+        mode_title_rules = {
+            "rule_mode_title_on": self._rule_mode_title_on,
+            "rule_mode_title_off": self._rule_mode_title_off,
+        }
+        select_rule("game_screen.mode_title", mode_title_rules)()
         side_pane_x = self._grid_area_size
         side_pane_width = window.width - self._grid_area_size
         self._moving_side_pane = MovingSidePane(
@@ -1556,6 +1573,18 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         """Block a word that has already been cleared earlier this game."""
         return word not in self._cleared_word_history
 
+    # Mode-title rule (game_screen.mode_title): whether the current game mode's
+    # name is shown as a single line along the top of the board (see draw /
+    # self._mode_title_label). Resolved once at construction.
+    def _rule_mode_title_on(self):
+        """Show the active mode's label (blank if on the bare base config)."""
+        active = active_mode()
+        self._mode_title_label.text = active[1] if active else ""
+
+    def _rule_mode_title_off(self):
+        """No title (leave the label blank so it draws nothing)."""
+        self._mode_title_label.text = ""
+
     # Word-trail rule (game_screen.word_trail): whether a cleared word leaves a
     # path trail overlaid on the board (see _clear_paths / views.word_trail).
     def _rule_word_trail_on(self, accepted):
@@ -1867,6 +1896,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._obstacle_batch.draw()
         self._mission_batch.draw()
         self._piece_batch.draw()
+        # Current game-mode title, along the top of the board (blank on base config).
+        self._mode_title_label.draw()
         # Word-hunt highlight overlays: a transparent per-letter paint layer drawn
         # directly on top of the gram glyphs (board + active piece). Empty (draws
         # nothing) unless the player is hunting a word in the MOVING side pane.

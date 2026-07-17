@@ -6,8 +6,20 @@ GAME NAMES
 
 * catalyst cata LIST
 
-Add the title of the current running game mode to the top of the board
 
+barnicle did not surface Barnacle
+why?
+
+perservierence did not surface perseverance
+(missing E between R and V blocked it)
+
+CAPITAIN did not surface captain
+(extra I between P and T blocked it)
+
+Add the title of the current running game mode, to be displayed at the top of the board. Single line, running along the full length of the board. Not too big of text.
+
+Update spell_check.yaml rule 
+csk_class, to also include "CH" and "SH" in the set of allowed swapps.
 
 TRACEA should have suggested TRACHEA
 

@@ -516,6 +516,13 @@ opening of every game.
 `rule_repeat_block` or `rule_repeat_allow` — whether a word already cleared this game
 can be cleared again.
 
+### game_screen.mode_title
+Show the current game mode's human-readable name (`mode_label` from the active
+`game_modes/*.yaml`, via `active_mode()`) as a single small line along the top of
+the board. Blank when the game is on the bare base `config.yaml` (no mode applied).
+Toggle with `rule_mode_title_on` / `rule_mode_title_off`. Text color is
+`board.mode_title` in the colors file.
+
 ### game_screen.word_trail (+ word_trail_thickness / word_trail_opacity)
 Word trail: overlay a polyline along each cleared word's cell path (center to
 center) on top of the board. Trails accumulate for the whole game (cleared on a new

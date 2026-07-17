@@ -25,6 +25,7 @@ board:
   disambig_line_selected: [0, 0, 180]       # dark blue: the currently-highlighted candidate path
   disambig_highlight_fill: [204, 255, 204]  # pale lime: background of the cells the selected candidate would clear (highlight display mode)
   background:       [255, 255, 255]   # game board window background
+  mode_title:       [120, 120, 120, 255]  # grey: current game-mode title, single line across the top of the board
 
 window:
   background:       [0, 0, 0]         # default clear color (menu / title screens)

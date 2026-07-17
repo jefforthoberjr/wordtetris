@@ -166,6 +166,10 @@ rules:
   game_screen.word_repeat:  rule_repeat_block
   # game_screen.word_repeat: rule_repeat_allow
 
+  # Current game-mode title along the top of the board. [ref: game_screen.mode_title]
+  game_screen.mode_title:         rule_mode_title_on
+  # game_screen.mode_title:       rule_mode_title_off
+
   # Cleared-word path overlay. [ref: game_screen.word_trail]
   # game_screen.word_trail:           rule_word_trail_on
   game_screen.word_trail:         rule_word_trail_off
