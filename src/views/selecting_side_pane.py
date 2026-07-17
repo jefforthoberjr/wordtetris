@@ -47,13 +47,18 @@ class SelectingSidePane:
     # lines in this narrow pane, so reserve enough that the blue controls never
     # ride up under the suggestions.
     MAX_ERRORS = 5
+    # Icon-plus-suggestion layout (error_icon_keeps_suggestion on): the icon
+    # shrinks to the top fraction of the error box, the "did you mean?" text
+    # occupies the rest underneath. Icon-only mode ignores this (full-box icon).
+    SUGGESTION_ICON_FRACTION = 0.6
     # Prompt + top-edge header text come from the active language (see
     # config.get_string); the header is the SELECTING twin of the moving pane's
     # "Pieces: N" countdown label (both pinned to the very top of the right pane).
 
     def __init__(self, x, y, width, height, on_submit, on_next,
                  on_end=None, show_end=False, show_clear=True,
-                 show_submit=True, show_next=True, error_display="text"):
+                 show_submit=True, show_next=True, error_display="text",
+                 error_icon_keeps_suggestion=False):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
         # on_end(): the End game label, present only when show_end (constellation);
         # None everywhere else, so the button is neither built nor clickable.
@@ -66,6 +71,9 @@ class SelectingSidePane:
         # "text" shows the rejection reason as words; "icon" shows a reason icon in
         # the same slot (game_screen.error_display). See show_errors / _set_error_icon.
         self._error_display = error_display
+        # In icon mode, whether a "did you mean?" suggestion still rides under the
+        # icon as text (game_screen.error_icon_keeps_suggestion); off = icon only.
+        self._error_icon_keeps_suggestion = error_icon_keeps_suggestion
         # Live error-icon sprite (icon mode only), or None when the slot shows text.
         self._error_sprite = None
         self._typed = ""
@@ -142,6 +150,9 @@ class SelectingSidePane:
         self._err_box_h = self.MAX_ERRORS * error_step
         self._err_box_cx = left + self._err_box_w / 2
         self._err_box_cy = error_top - self._err_box_h / 2
+        # Top edge of the error box: the text label's default y, and the anchor the
+        # icon-plus-suggestion layout measures its top icon region down from.
+        self._err_box_top = error_top
 
         # Controls (clickable labels), stacked top-to-bottom in the fixed order
         # Clear / Submit / Next / End. Each is built only when its show flag is set;
@@ -295,35 +306,48 @@ class SelectingSidePane:
         self._score.text = get_string("score_count", count=points)
 
     def show_errors(self, messages, reason=None):
-        # Icon mode: show the reason's icon in place of the text (and drop any
-        # extra lines like the "did you mean?" suggestion). Reasons with no icon
-        # fall through to the text message. One message at a time today; join
-        # defensively if several are passed.
-        if self._error_display == "icon" and self._set_error_icon(reason):
-            self._error.text = ""
-            return
+        # `messages[0]` is the rejection reason; any further lines are the
+        # "did you mean?" suggestion. Icon mode replaces the reason SENTENCE with a
+        # reason icon; under error_icon_keeps_suggestion the suggestion lines still
+        # ride under a shrunk icon as text, otherwise they're dropped (icon only).
+        # Reasons with no icon fall through to the plain text message.
+        if self._error_display == "icon":
+            extra = messages[1:] if self._error_icon_keeps_suggestion else []
+            budget = (self._err_box_h * self.SUGGESTION_ICON_FRACTION
+                      if extra else self._err_box_h)
+            if self._set_error_icon(reason, budget):
+                self._error.color = self.ERROR_COLOR
+                self._error.y = self._err_box_top - (budget if extra else 0)
+                self._error.text = "\n".join(extra)
+                return
         self._clear_error_icon()
         self._error.color = self.ERROR_COLOR
+        self._error.y = self._err_box_top
         self._error.text = "\n".join(messages)
 
     def clear_errors(self):
         self._clear_error_icon()
         self._error.color = self.ERROR_COLOR
+        self._error.y = self._err_box_top
         self._error.text = ""
 
-    def _set_error_icon(self, reason):
-        """Show the error icon for `reason`, scaled to fit the error slot. Returns
-        False (and shows nothing) when the reason has no icon, so the caller falls
-        back to text."""
+    def _set_error_icon(self, reason, height=None):
+        """Show the error icon for `reason`, scaled to fit the error slot. `height`
+        caps the icon's vertical extent (default: the full error box); a smaller
+        budget pins the icon to the TOP of the box so suggestion text can sit below.
+        Returns False (and shows nothing) when the reason has no icon, so the caller
+        falls back to text."""
+        if height is None:
+            height = self._err_box_h
         image = error_icon_image(reason, self._err_box_w)
         if image is None:
             return False
         self._clear_error_icon()
         sprite = pyglet.sprite.Sprite(image, batch=self._batch)
         sprite.scale = min(self._err_box_w / image.width,
-                           self._err_box_h / image.height)
+                           height / image.height)
         sprite.x = self._err_box_cx
-        sprite.y = self._err_box_cy
+        sprite.y = self._err_box_top - height / 2
         self._error_sprite = sprite
         return True
 
@@ -339,6 +363,7 @@ class SelectingSidePane:
         read as a rejection."""
         self._clear_error_icon()
         self._error.color = self.PROMPT_COLOR
+        self._error.y = self._err_box_top
         self._error.text = text
 
     def hide_prompt(self):

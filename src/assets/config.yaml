@@ -291,6 +291,11 @@ rules:
   # game_screen.error_display: rule_error_text
   game_screen.error_display: rule_error_icon
 
+  # With the reason icon, keep the "did you mean?" hint as text under the icon
+  # (vs icon only). [ref: game_screen.error_icon_keeps_suggestion]
+  game_screen.error_icon_keeps_suggestion: rule_error_icon_keeps_suggestion_on
+  # game_screen.error_icon_keeps_suggestion: rule_error_icon_keeps_suggestion_off
+
   # On a NOT-ON-BOARD reject, redden the "You typed:" letters absent from the board.
   # [ref: game_screen.missing_letter_highlight]
   # game_screen.missing_letter_highlight: rule_missing_letter_highlight_off

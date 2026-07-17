@@ -119,7 +119,8 @@ class AutoSelect:
 
     def create_ui(self, x, y, width, height, on_submit, on_next,
                   on_end=None, show_end=False, show_clear=True,
-                  show_submit=True, show_next=True, error_display="text"):
+                  show_submit=True, show_next=True, error_display="text",
+                  error_icon_keeps_suggestion=False):
         return None
 
 
@@ -131,11 +132,14 @@ class TextInputSelect:
 
     def create_ui(self, x, y, width, height, on_submit, on_next,
                   on_end=None, show_end=False, show_clear=True,
-                  show_submit=True, show_next=True, error_display="text"):
-        return SelectingSidePane(x, y, width, height, on_submit, on_next,
-                                 on_end=on_end, show_end=show_end,
-                                 show_clear=show_clear, show_submit=show_submit,
-                                 show_next=show_next, error_display=error_display)
+                  show_submit=True, show_next=True, error_display="text",
+                  error_icon_keeps_suggestion=False):
+        return SelectingSidePane(
+            x, y, width, height, on_submit, on_next,
+            on_end=on_end, show_end=show_end,
+            show_clear=show_clear, show_submit=show_submit,
+            show_next=show_next, error_display=error_display,
+            error_icon_keeps_suggestion=error_icon_keeps_suggestion)
 
 
 # Control key bindings now live in assets/controls.yaml (loaded via controls.py).
@@ -347,6 +351,13 @@ def _gram_manip_family(text):
 
 class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin,
                  ConstellationMixin, InputMixin):
+    # Error-display defaults so the submission pipeline reads sane values on a bare
+    # __new__ test instance (build() overrides both from config). Text mode always
+    # shows the "did you mean?" hint, matching the pre-icon behavior. See
+    # _submission_messages and game_screen.error_display / error_icon_keeps_suggestion.
+    _error_display = "text"
+    _error_icon_keeps_suggestion = False
+
     GRID_WIDTH = CONFIG["rules"]["game_screen.grid_width"]
     PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
     # Obstacle pieces the scattered formation drops before play begins; also gates
@@ -1052,6 +1063,16 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "game_screen.error_display",
             {"rule_error_text": "text", "rule_error_icon": "icon"},
         )
+        # When error_display is the icon, whether a "did you mean?" spelling
+        # suggestion still rides under the icon as text, or is dropped so only the
+        # icon shows (game_screen.error_icon_keeps_suggestion). Inert under
+        # rule_error_text (text mode always shows the suggestion). Passed to the
+        # SELECT / merged pane; see the panes' show_errors.
+        self._error_icon_keeps_suggestion = select_rule(
+            "game_screen.error_icon_keeps_suggestion",
+            {"rule_error_icon_keeps_suggestion_on": True,
+             "rule_error_icon_keeps_suggestion_off": False},
+        )
         # Stable reason key of the most recent rejection (set by the _*_error
         # functions right before they log it); read by _reject_submission.
         self._last_reject_reason = None
@@ -1110,6 +1131,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 on_end=self._enter_endgame, show_end=self._show_end_btn,
                 show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
                 error_display=self._error_display,
+                error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
             )
             self._moving_side_pane = merged
             self._selecting_side_pane = merged
@@ -1122,6 +1144,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 on_end=self._enter_endgame, show_end=self._show_end_btn,
                 show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
                 show_next=self._show_next_btn, error_display=self._error_display,
+                error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
             )
         self._set_phase(Phase.MOVING)
         # Candidate word-paths for the move being selected (interactive only):

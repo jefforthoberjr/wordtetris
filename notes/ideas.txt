@@ -7,6 +7,9 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Let's add the the session logs more information about the spell check hints that get presented to the user, for these type of debugging sessions in the future.
+
+
 barnicle did not surface Barnacle
 why?
 

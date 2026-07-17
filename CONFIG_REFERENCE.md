@@ -815,9 +815,28 @@ maps it to an icon under icon mode.
   has, including letters it has none of → the absentletter art) and
   `not_on_board_gram_mismatch` (every letter is available in enough supply, but the
   grams don't divide to spell it → the tiling art). Reasons with no icon
-  (`not_involved`, `not_fossil`) fall back to the text message; the spelling
-  suggestion line is dropped (the icon replaces the text). Reason→icon wiring lives
-  in `_REASON_TO_ICON` in `views/textures.py`.
+  (`not_involved`, `not_fossil`) fall back to the text message. Whether the
+  "Did you mean: …?" spelling suggestion survives the icon is a separate knob,
+  `game_screen.error_icon_keeps_suggestion` (below). Reason→icon wiring lives in
+  `_REASON_TO_ICON` in `views/textures.py`.
+
+### game_screen.error_icon_keeps_suggestion
+Only meaningful under `game_screen.error_display = rule_error_icon` (inert in text
+mode, which always shows the suggestion). Controls what happens to the
+"Did you mean: …?" spelling hint (`game_screen.spell_suggest`) when a not-a-word
+rejection is shown as an icon: the icon replaces the reason *sentence*, but the
+suggestion is a separate line.
+- `rule_error_icon_keeps_suggestion_on` — keep the hint. The reason icon shrinks to
+  the top ~60% of the error box (`SUGGESTION_ICON_FRACTION` in the panes) and the
+  suggestion text sits underneath it, so the player sees both the icon and
+  "Did you mean: BARNACLE?".
+- `rule_error_icon_keeps_suggestion_off` — drop the hint (original icon behavior):
+  the icon fills the whole error box and the suggestion line is discarded, so only
+  the icon shows.
+
+Either way the computed hint (and whether it was shown) is recorded in the session
+log via `log_30005`, so a replay can tell a hint the engine never produced from one
+this knob suppressed.
 
 ### game_screen.missing_letter_highlight
 On a NOT-ON-BOARD rejection, redden the letters of the "You typed: WORD" ghost the

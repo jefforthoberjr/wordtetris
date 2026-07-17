@@ -248,6 +248,20 @@ def log_30004(word, path, index, total):
                      word=word, cells=cells, index=index, total=total)
 
 
+def log_30005(word, suggestions, shown):
+    """The "did you mean?" spelling hint computed for a rejected non-dictionary
+    `word` (game_screen.spell_suggest). `suggestions` is the ordered list of close
+    in-dictionary words the engine offered (empty when it found none). `shown` is
+    whether the player actually SAW them: text error_display always shows them;
+    icon display shows them only under game_screen.error_icon_keeps_suggestion.
+    Logged even when empty and even when hidden, so a debugging replay can tell a
+    hint the engine never produced from one the display mode suppressed."""
+    joined = ",".join(suggestions) if suggestions else "-"
+    tag = "" if shown else " (hidden)"
+    session_log.emit(30005, f"hint for {word}: {joined}{tag}",
+                     word=word, suggestions=joined, shown=shown)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.
