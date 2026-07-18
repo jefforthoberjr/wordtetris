@@ -7,6 +7,15 @@ GAME NAMES
 * catalyst cata LIST
 
 
+yabbering wasn't in the dictionary
+
+high score screen
+
+fix typerwritter mode
+
+IDEA: use a gun to shot the letters in order
+
+
 exume didn't surface exhume
 
 
