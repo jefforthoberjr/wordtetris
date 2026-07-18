@@ -539,6 +539,26 @@ def test_not_on_board_letter_shortage_is_missing_not_mismatch():
     assert g._selecting_side_pane.missing == [False, False, False, True]
 
 
+def test_letter_trapped_in_nonsubstring_grams_is_missing_not_mismatch():
+    # SPONSOR needs two O. The board's spare O's live only inside SHO (a multi-letter
+    # gram that is NOT a substring of SPONSOR), so no tiling could ever place a second
+    # O -- the board-wide letter census counts those trapped O's and masks the shortage,
+    # but the word-restricted supply (substring grams only) exposes it. Reason must be
+    # missing-letter, and the flagged occurrence is the second O, not the first.
+    g = _game(FakeBoard({
+        (0, 0): "S", (1, 0): "P", (2, 0): "O", (3, 0): "N",
+        (4, 0): "R", (5, 0): "S", (6, 0): "SHO",
+    }))
+    g._missing_letter_highlight = True
+    g._begin_selection([(6, 0)])
+    g._on_submit_word("sponsor")
+    assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
+    assert g._selecting_side_pane.reason == "not_on_board_missing_letter"
+    # S P O N S O R -- only the second O (index 5) outruns the one placeable O.
+    assert g._selecting_side_pane.missing == [
+        False, False, False, False, False, True, False]
+
+
 def test_word_too_short_errors():
     # GO is a dictionary word and sits on the board, but the active length rule
     # (min 3 letters) makes it too short to clear -- a distinct message from

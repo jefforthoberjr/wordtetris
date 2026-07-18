@@ -7,6 +7,12 @@ GAME NAMES
 * catalyst cata LIST
 
 
+exume didn't surface exhume
+
+
+Create a new error class, all the right tiles exist on the board (i.e. not a tile overlap/mismatch issue) but instead I need to move the pieces on the board into proper arrangement. See new icon_error_rearrange* pngs. This error of course would only surface in game modes where arrangement/adjacency is part of the rules (e.g. I won't expect to see this error in constellation mode)
+
+
 kludge was not in the dictionary.
 Maybe that's ok; maybe it's just an obscure word.
 

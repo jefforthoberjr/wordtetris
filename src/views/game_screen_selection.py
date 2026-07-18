@@ -414,11 +414,13 @@ class SelectionMixin:
     _VOWELS = set("AEIOU")
 
     def _board_letter_counts(self):
-        """The multiset {letter -> how many exist} across the board's occupied grams
-        (a wild cell contributes one of every vowel). Supply-only: it counts letters,
-        NOT gram boundaries or tiling -- but the total count of a letter is a hard
-        upper bound on how many any tiling could ever place, so demand exceeding it
-        is provably unspellable (a genuine shortage, not an arrangement quirk)."""
+        """The multiset {letter -> how many exist} across ALL the board's occupied
+        grams (a wild cell contributes one of every vowel). Supply-only: it counts
+        letters, NOT gram boundaries or tiling. Superseded by the word-restricted
+        _board_letter_counts_for_word for the shortage check (this over-counts a
+        letter that lives only in grams that can't tile the word -- SPONSOR's 2nd O,
+        carried by SHO / TION / OND, none of them a substring of SPONSOR); kept as
+        the plain board-wide census in case a caller wants the unrestricted count."""
         counts = Counter()
         for cell in self._board.occupied_cells():
             gram = self._board.gram_at(*cell)
@@ -430,14 +432,39 @@ class SelectionMixin:
                 counts.update(gram.text)
         return counts
 
+    def _board_letter_counts_for_word(self, word):
+        """Like _board_letter_counts, but restricted to grams that could actually sit
+        inside `word` -- i.e. whose text is a substring of it (a wild counts toward any
+        vowel that appears in the word). Any whole-gram tiling of the word partitions it
+        into contiguous grams, each necessarily a substring of the word AND present on
+        the board, so this restricted supply -- not the board-wide census -- is the true
+        upper bound on how many of each letter a tiling can place. A letter locked solely
+        inside non-substring grams (SPONSOR's 2nd O, alive only in SHO / TION / OND)
+        contributes nothing here, exposing the shortage the board-wide count hides."""
+        word = word.upper()
+        word_vowels = self._VOWELS.intersection(word)
+        counts = Counter()
+        for cell in self._board.occupied_cells():
+            gram = self._board.gram_at(*cell)
+            if gram is None:
+                continue
+            if gram.is_wild:
+                counts.update(word_vowels)       # a wild can be any vowel the word uses
+            elif gram.text in word:              # only substring grams can tile into word
+                counts.update(gram.text)
+        return counts
+
     def _excess_letters(self, word):
-        """One bool per letter of `word`: True where that OCCURRENCE outruns the
-        board's supply of that letter -- i.e. the word needs more of it than the
-        board has. The first N copies of a letter (N = board supply) read as present;
-        every copy past N is flagged. Generalizes 'letter exists nowhere' (supply 0
-        flags every copy) to 'not ENOUGH copies' (RUTHLESS's 2nd S when the board has
-        one S). Drives both the reason split and the ghost highlight, so they agree."""
-        avail = self._board_letter_counts()
+        """One bool per letter of `word`: True where that OCCURRENCE outruns the board's
+        PLACEABLE supply of that letter -- i.e. the word needs more of it than any tiling
+        could ever lay down. The first N copies of a letter (N = placeable supply) read as
+        present; every copy past N is flagged. Generalizes 'letter exists nowhere' (supply
+        0 flags every copy) to 'not ENOUGH placeable copies' -- RUTHLESS's 2nd S when the
+        board has one S, and SPONSOR's 2nd O when the only spare O's are trapped in grams
+        (SHO / TION / OND) that can't tile into SPONSOR. Uses the word-restricted supply,
+        not the board-wide census, so those trapped copies don't mask the shortage. Drives
+        both the reason split and the ghost highlight, so they agree."""
+        avail = self._board_letter_counts_for_word(word)
         used = Counter()
         flags = []
         for ch in word.upper():
