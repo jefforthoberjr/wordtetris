@@ -9,7 +9,7 @@ rules:
   # Board starts full; formed words freeze instead of clearing; no instant win;
   # a pass always opens word entry; every action is a select turn.
   game_screen.setup_formation:      rule_formation_fill_player_diagonal
-  game_screen.clear_action:         rule_clear_fossilize
+  game_screen.clear_action:         rule_fossilize_cells
   game_screen.victory:              rule_victory_none
   game_screen.skip_select_isolated: rule_never_skip_select
   game_screen.select_trigger:       rule_select_every_placement

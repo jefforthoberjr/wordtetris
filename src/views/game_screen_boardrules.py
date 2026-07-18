@@ -37,13 +37,13 @@ class BoardRulesMixin:
 
     def _rule_victory_grid_empty(self):
         # Win once the board holds no cells at all -- the whole-board-cleared
-        # endgame (constellation with rule_clear_remove, no replenish; also the
+        # endgame (constellation with rule_remove_cells, no replenish; also the
         # jigsaw grid-empty win). An already-empty opening board can't win.
         return len(self._board.occupied_cells()) == 0
 
     def _rule_victory_grid_fossilized(self):
         # Win once every board cell is fossilized -- the whole-board-frozen
-        # endgame (constellation / omniswap with rule_clear_fossilize). Mirrors
+        # endgame (constellation / omniswap with rule_fossilize_cells). Mirrors
         # _rule_fill_board_all_fossilized but as a victory condition. Guards
         # against an empty board reading as trivially won.
         cells = self._all_board_cells()

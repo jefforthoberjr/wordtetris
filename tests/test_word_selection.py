@@ -381,7 +381,7 @@ def _game(board, interactive=True, history=None):
     g._spell_suggest_rule = lambda word: []
     # Clear-action at its original "remove": consumed cells leave the board
     # (partial-gram aware), the behavior the clear / partial-gram tests assert.
-    g._clear_action_rule = g._rule_clear_remove
+    g._clear_action_rule = g._rule_remove_cells
     # Per-select submit counter, reset each time a SELECT phase opens in
     # production; initialized here so the submit handlers can bump it.
     g._words_submitted_this_select = 0

@@ -57,7 +57,7 @@ rules:
   game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
   game_screen.clear_timing:         rule_clear_at_phase_end
   game_screen.select_word_limit:    rule_one_word_per_select
-  game_screen.clear_action:         rule_clear_remove
+  game_screen.clear_action:         rule_remove_cells
   game_screen.victory:              rule_victory_none
   game_screen.word_trail:           rule_word_trail_off
   game_screen.clear_disambiguation: rule_disambig_auto_pick

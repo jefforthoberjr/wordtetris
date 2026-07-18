@@ -637,8 +637,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # formed word covers -- remove them (the original) or fossilize them in
         # place (frozen + dead). See _clear_paths / the _rule_clear_* methods.
         clear_action_rules = {
-            "rule_clear_remove": self._rule_clear_remove,
-            "rule_clear_fossilize": self._rule_clear_fossilize,
+            "rule_remove_cells": self._rule_remove_cells,
+            "rule_fossilize_cells": self._rule_fossilize_cells,
         }
         self._clear_action_rule = select_rule(
             "game_screen.clear_action", clear_action_rules

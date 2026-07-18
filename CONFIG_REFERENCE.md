@@ -328,14 +328,14 @@ cap is safe). Ignored by every other mode.
 Constellation only: after a submitted word clears, what happens to the cells it
 vacated.
 - `rule_constellation_no_replenish` — vacated cells stay empty, so the board shrinks
-  toward the whole-board-cleared endgame (pair with `rule_clear_remove` +
-  `rule_victory_grid_empty`). With `rule_clear_fossilize` the cells aren't empty
+  toward the whole-board-cleared endgame (pair with `rule_remove_cells` +
+  `rule_victory_grid_empty`). With `rule_fossilize_cells` the cells aren't empty
   anyway, so this is the natural choice there too (board freezes toward
   `rule_victory_grid_fossilized`).
 - `rule_constellation_replenish` — each now-empty vacated cell refills with a fresh
   gram from the configured player picker, so the board never empties (an endless
   constellation; no grid-empty win). Only refills cells the clear-action actually
-  emptied, so it's a no-op under `rule_clear_fossilize`.
+  emptied, so it's a no-op under `rule_fossilize_cells`.
 
 ### game_screen.constellation_replenish_fade_seconds
 Constellation + `rule_constellation_replenish` only: how many seconds a
@@ -448,7 +448,7 @@ flip these (so the board starts full, formed words freeze instead of clearing,
 there's no instant win, a pass always opens word entry, and every action is a select
 turn):
 - `game_screen.setup_formation` → `rule_formation_fill_player_diagonal`
-- `game_screen.clear_action` → `rule_clear_fossilize`
+- `game_screen.clear_action` → `rule_fossilize_cells`
 - `game_screen.victory` → `rule_victory_none`
 - `game_screen.skip_select_isolated` → `rule_never_skip_select`
 - `game_screen.select_trigger` → `rule_select_every_placement`
@@ -463,7 +463,7 @@ words can form anywhere with no placed piece, every commit is a select turn). Tu
 `omniswap_timer_seconds` for length and `omniswap_timer` for the per-phase vs race
 variant; `select_word_limit` picks one-word-then-MOVING vs many-words-per-SELECT:
 - `game_screen.setup_formation` → `rule_formation_fill_player_diagonal`
-- `game_screen.clear_action` → `rule_clear_fossilize`
+- `game_screen.clear_action` → `rule_fossilize_cells`
 - `game_screen.victory` → `rule_victory_none`
 - `game_screen.skip_select_isolated` → `rule_never_skip_select`
 - `game_screen.select_trigger` → `rule_select_every_placement`
@@ -485,8 +485,8 @@ opens word entry, and SELECT stays open so many words clear per visit):
 - `game_screen.select_word_limit` → `rule_unlimited_words` (keep typing without leaving SELECT)
 - `game_screen.word_trail` → `rule_word_trail_on` (draw the constellation line)
 - `game_screen.clear_action` + `game_screen.victory` — pick a matching pair:
-  - `rule_clear_fossilize` + `rule_victory_grid_fossilized` (freeze cells; win when all frozen), or
-  - `rule_clear_remove` + `rule_victory_grid_empty` (remove cells; win when board empty),
+  - `rule_fossilize_cells` + `rule_victory_grid_fossilized` (freeze cells; win when all frozen), or
+  - `rule_remove_cells` + `rule_victory_grid_empty` (remove cells; win when board empty),
   - or `rule_victory_none` for an endless board.
 - `game_screen.constellation_turnover` → `rule_constellation_no_replenish` (board shrinks
   toward the win) or `rule_constellation_replenish` (vacated cells refill; endless board —
@@ -712,7 +712,7 @@ Whether a word must use all of a cell's gram, or may take part.
 
 ### game_screen.fossil_word_use
 May a NEW word use fossilized cells (frozen formed words; only present under
-`clear_action: rule_clear_fossilize`).
+`clear_action: rule_fossilize_cells`).
 - `rule_fossil_block` — fossils are walls: a word can't start on, pass through, or end
   on one (original behavior).
 - `rule_fossil_allow` — a word may use fossilized cells, but must include at least one
@@ -980,9 +980,9 @@ Victory condition (only one active at a time):
 - `rule_victory_missions_and_obstacles_cleared`
 - `rule_victory_obstacles_cleared`
 - `rule_victory_grid_empty` — win when the board holds no cells (the whole-board-
-  cleared endgame; pair with `rule_clear_remove`, e.g. constellation without replenish).
+  cleared endgame; pair with `rule_remove_cells`, e.g. constellation without replenish).
 - `rule_victory_grid_fossilized` — win when every board cell is fossilized (the whole-
-  board-frozen endgame; pair with `rule_clear_fossilize`, e.g. constellation/omniswap).
+  board-frozen endgame; pair with `rule_fossilize_cells`, e.g. constellation/omniswap).
 - `rule_victory_none` — no win condition at all; the game runs until the player quits
   (use with `rule_formation_fill_player_diagonal`, which has no missions/obstacles).
 
@@ -991,7 +991,7 @@ Whole-board fill bonus: awards `scoring.fill_board_bonus` ONCE per game the firs
 the board is entirely filled. What "filled" means is MODE-DEPENDENT, so pick the
 variant matching `game_screen.mode` / `clear_action`:
 - `rule_fill_board_all_fossilized` — every board cell is FOSSILIZED (the fossilize
-  modes: omniswap / typewriter, `clear_action: rule_clear_fossilize`, where a
+  modes: omniswap / typewriter, `clear_action: rule_fossilize_cells`, where a
   completed-word cell freezes in place until the whole board is frozen).
 - `rule_fill_board_all_occupied` — every board cell is OCCUPIED by a settled piece
   (the place/remove modes: jigsaw fills empty cells until none remain).
@@ -1011,9 +1011,9 @@ Whether a piece may be moved onto / placed over a type of occupied cell.
 ### game_screen.clear_action
 The fate of the cells a formed word covers when it is applied (clear-on-submit or the
 phase-end batch).
-- `rule_clear_remove` — the consumed cells leave the board, partial-gram aware (a word
+- `rule_remove_cells` — the consumed cells leave the board, partial-gram aware (a word
   ending mid-gram leaves the leftover letters) — the original.
-- `rule_clear_fossilize` — every cell on the word's path freezes in place: the whole
+- `rule_fossilize_cells` — every cell on the word's path freezes in place: the whole
   cell stays (letters intact) but goes dead — un-swappable, skipped by word-finding
   and the typewriter cursor, tinted stone grey.
 

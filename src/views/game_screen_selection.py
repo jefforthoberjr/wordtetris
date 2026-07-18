@@ -276,7 +276,7 @@ class SelectionMixin:
     # Stage 4's cell fate for the accepted words. Both record the words the same
     # way (see _clear_paths); they differ only in what becomes of the cells. Each
     # returns the cells that FULLY left the board (for obstacle/mission tracking).
-    def _rule_clear_remove(self, accepted):
+    def _rule_remove_cells(self, accepted):
         """Original: the consumed cells leave the board, partial-gram aware. Per
         cell, count letters eaten from the head (largest prefix any word took) and
         tail (largest suffix): a word's first cell gives up a suffix, its last a
@@ -310,7 +310,7 @@ class SelectionMixin:
                     eat_head(cell, len(seg))     # word ends here: a prefix goes
         return self._apply_partial_clears(force_clear, eaten)
 
-    def _rule_clear_fossilize(self, accepted):
+    def _rule_fossilize_cells(self, accepted):
         """Typewriter: every cell on each accepted word's path FOSSILIZES -- it
         stays on the board with its whole gram intact (no partial split, even
         under rule_gram_use_partial) but goes permanently dead: tracked in

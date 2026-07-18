@@ -82,7 +82,7 @@ class ConstellationMixin:
     # clear-action the cells aren't empty, so replenish naturally skips them.
     def _rule_constellation_no_replenish(self, cleared_cells):
         """Vacated cells stay empty -- the board shrinks toward the whole-board-
-        cleared endgame (pair with rule_clear_remove + rule_victory_grid_empty)."""
+        cleared endgame (pair with rule_remove_cells + rule_victory_grid_empty)."""
         pass
 
     def _rule_constellation_replenish(self, cleared_cells):

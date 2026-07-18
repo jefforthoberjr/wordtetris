@@ -464,7 +464,7 @@ class OmniswapVsTimerMode(MovingMode):
       timer never resets; add_time() is the seam for future word-time bonuses.
 
     Pairs with the OMNISWAP preset: rule_formation_fill_player_diagonal (so every cell is
-    swappable), rule_clear_fossilize, rule_victory_none, rule_nucleate_anywhere
+    swappable), rule_fossilize_cells, rule_victory_none, rule_nucleate_anywhere
     (no placed piece to nucleate around), rule_never_skip_select and
     rule_select_every_placement. The timer length is game_screen.omniswap_timer_
     seconds.
