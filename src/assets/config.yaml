@@ -129,6 +129,10 @@ rules:
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
 
+  # OMNISWAP: auto-finish when no word can be submitted from the remaining swappable grams. [ref: game_screen.omniswap_auto_end]
+  game_screen.omniswap_auto_end: rule_omniswap_auto_end_off
+  # game_screen.omniswap_auto_end: rule_omniswap_auto_end_on
+
   # SAND-TIMER settings (only rule_omniswap_timer_sand). [ref: game_screen.sand_timer_delay_seconds]
   game_screen.sand_timer_delay_seconds: 15
   game_screen.sand_timer_seconds:       30

@@ -7,7 +7,12 @@ GAME NAMES
 * catalyst cata LIST
 
 
-Let's add the the session logs more information about the spell check hints that get presented to the user, for these type of debugging sessions in the future.
+kludge was not in the dictionary.
+Maybe that's ok; maybe it's just an obscure word.
+
+Maybe we add an "appeal" button for a word not in the dictionary, like a second check to unlock an even more thorought word check. Maybe this is when there is a pop quiz definition and/or you must spell the word exactly correct.
+
+Let's also add the the session logs more information about the spell check hints that get presented to the user, for these type of debugging sessions in the future.
 
 
 barnicle did not surface Barnacle

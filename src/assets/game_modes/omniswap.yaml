@@ -15,6 +15,7 @@ rules:
 
   game_screen.victory:              rule_victory_none
   game_screen.show_end_button:  rule_show_end_button
+  game_screen.omniswap_auto_end: rule_omniswap_auto_end_on
 
   game_screen.skip_select_isolated: rule_never_skip_select
   game_screen.select_trigger:       rule_select_every_placement

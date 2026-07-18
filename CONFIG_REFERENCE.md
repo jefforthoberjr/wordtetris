@@ -376,6 +376,29 @@ fires.
   Note this cuts against the no-word-availability-hints principle: an auto-finish
   tells the player the board is exhausted. Opt in deliberately.
 
+### game_screen.omniswap_auto_end
+Omniswap only: after each word fossilizes, whether the game finishes on its own
+once the remaining **swappable** grams can no longer spell ANY submittable
+dictionary word (the existence check reuses `starting_coverage.any_word_formable`,
+honoring the active `game_screen.word_length` rule). The omniswap twin of
+`game_screen.constellation_auto_end`, with one deliberate difference: the usable
+pool is the freely-swappable, non-wild, **non-fossil** cells only. Under
+`rule_fossil_allow` a fossilized cell is walkable, but it is frozen in place and a
+new word must still include at least one fresh cell
+(`_rule_fossil_allow_word_ok`), so fossil grams are not material the player can
+rearrange into a submittable word and are excluded from the check. Because
+omniswap lets the player rearrange any non-fossil cell freely, this
+arrangement-independent multiset check is exact for words built from the swappable
+pool. Ends as FINISHED, the same end-state as the End game button / the race
+clock hitting zero, running the final score tally. The point is to not waste the
+player's time hunting (and running the clock down) for a word that cannot exist —
+e.g. once the board is all but fully fossilized.
+- `rule_omniswap_auto_end_off` — never auto-end (the default); the player finishes
+  by hand (the End game button) or the timer runs out.
+- `rule_omniswap_auto_end_on` — auto-finish the moment no word is submittable.
+  Note this cuts against the no-word-availability-hints principle: an auto-finish
+  tells the player the board is exhausted. Opt in deliberately.
+
 ### game_screen.omniswap_timer_seconds
 Seconds the MOVING_OMNISWAP countdown starts at (only used by
 `rule_mode_omniswap_vs_timer`). Under `rule_omniswap_timer_per_phase` this is the

@@ -229,10 +229,11 @@ def log_30002(word, path, variation, is_new, is_obscure=False, points=0):
 
 def log_30003(word, reason):
     """A submission was rejected. `reason` is a stable key (not_in_dictionary /
-    not_on_board_missing_letter / not_on_board_gram_mismatch / too_short /
-    not_involved / not_fossil / already_cleared / already_selected_one_way /
-    every_way_selected) -- the incorrect-submission signal for analysis. (Older
-    logs may carry the pre-split not_on_board key.)"""
+    not_on_board_missing_letter / not_on_board_needs_rearrange /
+    not_on_board_gram_mismatch / too_short / not_involved / not_fossil /
+    already_cleared / already_selected_one_way / every_way_selected) -- the
+    incorrect-submission signal for analysis. (Older logs may carry the pre-split
+    not_on_board key.)"""
     session_log.emit(30003, f"rejected {word}", word=word, reason=reason)
 
 

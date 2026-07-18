@@ -42,6 +42,12 @@ _ERROR_ICON_TEXTURES = {
         (768, "icon_error_wordnotonboard_tilingmismatch_768x512.png"),
         (1536, "icon_error_wordnotonboard_tilingmismatch_1536x1024.png"),
     ],
+    "needs_rearrange": [
+        (96, "icon_error_rearrange_96x64.png"),
+        (192, "icon_error_rearrange_192x128.png"),
+        (384, "icon_error_rearrange_384x256.png"),
+        (1536, "icon_error_rearrange_1536x1024.png"),
+    ],
     "too_short": [
         (104, "icon_error_wordtooshort_104x60.png"),
         (208, "icon_error_wordtooshort_208x119.png"),
@@ -56,15 +62,17 @@ _ERROR_ICON_TEXTURES = {
         (1139, "icon_error_duplicateword_1139_705.png"),
     ],
 }
-# Several distinct rejection reasons share the one "duplicate" artwork. The two
-# not_on_board sub-reasons (see game_screen._not_on_board_reason) now each have their
-# own icon: missing-letter -> the absentletter art, gram-mismatch -> the tiling
-# art. The bare "not_on_board" key stays mapped (to missing_letter) for old session
-# logs that still carry the pre-split reason.
+# Several distinct rejection reasons share the one "duplicate" artwork. The three
+# not_on_board sub-reasons (see game_screen._not_on_board_reason) each have their own
+# icon: missing-letter -> the absentletter art, needs-rearrange -> the rearrange art
+# (right pieces, wrong spots), gram-mismatch -> the tiling art. The bare
+# "not_on_board" key stays mapped (to missing_letter) for old session logs that still
+# carry the pre-split reason.
 _REASON_TO_ICON = {
     "not_in_dictionary": "not_in_dictionary",
     "not_on_board": "missing_letter",
     "not_on_board_missing_letter": "missing_letter",
+    "not_on_board_needs_rearrange": "needs_rearrange",
     "not_on_board_gram_mismatch": "gram_mismatch",
     "too_short": "too_short",
     "already_cleared": "duplicate",

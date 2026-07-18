@@ -31,6 +31,11 @@ class ConstellationMixin:
     # set it from the mode; bare __new__ test instances inherit this False).
     _constellation = False
 
+    # Default so the SELECT pipeline's `if self._omniswap` auto-end branches resolve
+    # to "not omniswap" unless __init__ turned it on (real games set it from the
+    # mode; bare __new__ test instances inherit this False).
+    _omniswap = False
+
     # --- SELECT-pipeline seam (routed here when self._constellation is True) ---
     # The engine calls these instead of the pathfinder-based candidate map. They
     # never enumerate the board: options are matched on demand for the one word the
@@ -193,6 +198,72 @@ class ConstellationMixin:
         self._enter_endgame()
         return True
 
+    # --- omniswap auto-end rules (game_screen.omniswap_auto_end) ----------------
+    # The omniswap twin of the constellation rules above. After a word fossilizes,
+    # decide whether the game should finish because the board's SWAPPABLE grams can
+    # no longer spell any submittable word -- so the player isn't left running the
+    # clock down hunting for a word that cannot exist (e.g. an all-but-fossilized
+    # board). Consulted only in omniswap mode (see _commit_clear_now); off is the
+    # default so nothing is revealed unless the option is on. Like the constellation
+    # version this trades against no-word-availability-hints, so it is opt-in.
+    def _rule_omniswap_auto_end_off(self, *_):
+        """Never auto-end: the player finishes by hand (the End game button) or the
+        timer runs out. The default."""
+        return False
+
+    def _rule_omniswap_auto_end_on(self, *_):
+        """End the game the moment no dictionary word can still be submitted from the
+        board's remaining swappable grams: finish (FINISHED, the End-button end-
+        state) and return True so the caller stops. Because omniswap lets the player
+        rearrange any non-fossil cells freely, an arrangement-independent multiset
+        check over the swappable grams is exact for words built from them."""
+        if self._omniswap_any_word_formable():
+            return False
+        self._enter_endgame()
+        return True
+
+    def _omniswap_usable_grams(self):
+        """The multiset {gram text -> cell count} of the board's SWAPPABLE grams:
+        occupied, non-wild, NON-FOSSIL cells, pooled by text. Unlike
+        _constellation_usable_grams this always excludes fossilized cells regardless
+        of the fossil-use rule: under rule_fossil_allow a fossil is walkable, but it
+        is frozen in place AND a new word must include at least one fresh cell
+        (_rule_fossil_allow_word_ok), so fossil grams are not material the player can
+        rearrange into a submittable word. The raw material for both omniswap
+        auto-end and its F3 sample -- the freely-swappable pool a new word draws on.
+        """
+        grams = Counter()
+        for cell in self._board.occupied_cells():
+            if cell in self._fossilized_cells:
+                continue
+            gram = self._board.gram_at(*cell)
+            if gram is None or gram.is_wild or not gram.text:
+                continue
+            grams[gram.text] += 1
+        return grams
+
+    def _omniswap_any_word_formable(self):
+        """Whether ANY dictionary word can still be assembled from the board's
+        remaining swappable grams under the active word-length rule -- the omniswap
+        end-detection twin of _constellation_any_word_formable. Existence-only over
+        the whole dictionary with an early exit on the first formable word, so a
+        board that can still spell something is cheap."""
+        grams = self._omniswap_usable_grams()
+        if not grams:
+            return False
+        return any_word_formable(all_words(), grams, self._constellation_accept())
+
+    def _omniswap_word_samples(self, limit):
+        """Up to `limit` example words the board's swappable grams can currently
+        spell (the F3 debug sample for omniswap). The omniswap twin of
+        _constellation_word_samples: reuses the swappable-gram gathering and feeds
+        sample_formable_words, which early-exits at `limit`. A short SAMPLE, never a
+        count (see the no-word-availability-hints rule)."""
+        grams = self._omniswap_usable_grams()
+        if not grams:
+            return []
+        return sample_formable_words(all_words(), grams, self._constellation_accept(), limit)
+
     def _constellation_usable_grams(self):
         """The multiset {gram text -> cell count} of the board's currently usable
         grams: occupied, non-wild, non-fossil-wall cells, pooled by text. The raw
@@ -235,7 +306,8 @@ class ConstellationMixin:
         ONLY while the panel is visible and something changed. Called every tick
         from GameScreen.update. A rising edge of visibility re-dirties, so the
         samples appear the instant the panel opens; otherwise a hidden panel (normal
-        play) costs nothing. Non-constellation modes clear the section."""
+        play) costs nothing. Modes without a gram pool (neither constellation nor
+        omniswap) clear the section."""
         visible = debug_panel.visible
         if visible and not self._dbg_panel_was_visible:
             self._dbg_words_dirty = True     # opening the panel is a change
@@ -246,8 +318,11 @@ class ConstellationMixin:
         if self._constellation:
             debug_panel.set_word_samples(
                 self._constellation_word_samples(self._dbg_word_sample_count))
+        elif self._omniswap:
+            debug_panel.set_word_samples(
+                self._omniswap_word_samples(self._dbg_word_sample_count))
         else:
-            debug_panel.set_word_samples(None)   # section hidden outside constellation
+            debug_panel.set_word_samples(None)   # section hidden outside constellation/omniswap
 
     def _constellation_word_samples(self, limit):
         """Up to `limit` example words the board can currently spell (the F3 debug

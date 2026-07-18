@@ -503,17 +503,27 @@ class SelectionMixin:
         return self._unavailable_letters(word)
 
     def _not_on_board_reason(self, word):
-        """Split a not-on-board rejection into its two sub-classes, so each can get
+        """Split a not-on-board rejection into its three sub-classes, so each can get
         its own message / error icon:
           not_on_board_missing_letter -- some letter can't be placed: the board has
               too few copies of it, OR it exists only inside grams that don't fit the
               word (so it's effectively absent here). Provably unspellable, and the
               blocking letters get reddened in the ghost.
+          not_on_board_needs_rearrange -- every letter's here AND the board's whole
+              grams DO tile the word (an arrangement-independent assembly exists), but
+              no physically-adjacent path spells it. The right pieces are on the board,
+              just not next to each other -- moving them together would spell it. Only
+              reachable in adjacency modes: the constellation path asks this only when
+              no assembly exists, so there it always falls through to gram-mismatch.
           not_on_board_gram_mismatch  -- every letter can be placed somewhere, but the
-              board's grams don't divide to spell it (right letters, wrong pieces).
-        Shares _unavailable_letters with the highlight, so the two always agree."""
+              board's whole grams don't divide to spell it at all (right letters, wrong
+              pieces) -- no rearrangement helps. (Whole-gram basis: a word spellable
+              only via partial-gram eating still reads as gram-mismatch here.)
+        Shares _unavailable_letters with the highlight, so those two always agree."""
         if any(self._unavailable_letters(word)):
             return "not_on_board_missing_letter"
+        if self._constellation_match(word, 1):
+            return "not_on_board_needs_rearrange"
         return "not_on_board_gram_mismatch"
 
     # --- clear-timing rules (game_screen.clear_timing) ---------------------
@@ -587,6 +597,12 @@ class SelectionMixin:
         # so it reads the settled board. Off by default and inert in every other
         # mode; the rule ends the game itself and returns True when it fires.
         if self._constellation and self._constellation_auto_end_rule():
+            return
+        # Omniswap auto-end (game_screen.omniswap_auto_end): mirror the constellation
+        # check for the swappable-gram board -- if the remaining swappable grams can
+        # no longer spell any submittable word, finish rather than let the player run
+        # the clock down. Off by default and inert in every other mode.
+        if self._omniswap and self._omniswap_auto_end_rule():
             return
         # One-word-per-select ends the phase right after this first clear,
         # regardless of adjacency (game_screen.select_word_limit).
@@ -995,6 +1011,12 @@ class SelectionMixin:
         # returns True when it fires; stop here rather than returning to MOVING /
         # spawning the next piece. Off by default and inert in every other mode.
         if self._constellation and self._constellation_auto_end_rule():
+            return
+        # Omniswap auto-end (game_screen.omniswap_auto_end): the batch-mode twin of
+        # the _commit_clear_now check, so auto-end works under rule_clear_at_phase_end
+        # too. Stop here rather than returning to MOVING when it fires. Off by default
+        # and inert in every other mode.
+        if self._omniswap and self._omniswap_auto_end_rule():
             return
         self._set_phase(Phase.MOVING)
         self._moving_mode.advance()

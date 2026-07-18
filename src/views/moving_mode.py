@@ -82,6 +82,12 @@ class MovingMode:
     # ConstellationMode flips it True.
     finds_words_by_constellation = False
 
+    # Whether this mode is an omniswap board: a fixed pool of freely-swappable
+    # grams that shrinks (fossilizes) as words form, so it can be exhausted. The
+    # engine reads it to gate the omniswap auto-end + F3 word sample; only
+    # OmniswapVsTimerMode flips it True.
+    is_omniswap = False
+
     def __init__(self, game_screen):
         self._gs = game_screen
 
@@ -472,6 +478,8 @@ class OmniswapVsTimerMode(MovingMode):
     (WIP: swapping into a truly EMPTY cell isn't handled yet -- under
     fill_player+fossilize the board never empties, so both swap ends are always
     occupied. Other formations that leave gaps are a follow-up.)"""
+
+    is_omniswap = True
 
     def __init__(self, game_screen):
         super().__init__(game_screen)

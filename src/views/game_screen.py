@@ -839,6 +839,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # through the constellation seam instead of the pre-enumerated candidate
         # map. False for every other mode.
         self._constellation = self._moving_mode.finds_words_by_constellation
+        # Omniswap mode: a fixed pool of freely-swappable grams that fossilizes as
+        # words form. The engine reads it to gate the omniswap auto-end + F3 word
+        # sample (see _rule_omniswap_auto_end_on / _omniswap_word_samples). False
+        # for every other mode.
+        self._omniswap = self._moving_mode.is_omniswap
         # Phase model (game_screen.phase_model): two distinct phases (MOVING then
         # SELECTING) or one merged MOVING_AND_SELECTING pane where the player
         # rearranges the board and submits words inline, never leaving MOVING.
@@ -914,6 +919,18 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_auto_end_rule = select_rule(
             "game_screen.constellation_auto_end", constellation_auto_end_rules)
+        # Omniswap auto-end (game_screen.omniswap_auto_end): after a word fossilizes,
+        # optionally finish the game once the remaining SWAPPABLE grams can spell no
+        # submittable word -- so the player isn't left running down the clock hunting
+        # for a word that cannot exist (e.g. the board is all but fully fossilized).
+        # Off by default (an auto-finish reveals board exhaustion, against the
+        # no-hints rule). Only consulted in omniswap mode; see _commit_clear_now.
+        omniswap_auto_end_rules = {
+            "rule_omniswap_auto_end_off": self._rule_omniswap_auto_end_off,
+            "rule_omniswap_auto_end_on": self._rule_omniswap_auto_end_on,
+        }
+        self._omniswap_auto_end_rule = select_rule(
+            "game_screen.omniswap_auto_end", omniswap_auto_end_rules)
         # Debug panel (F3): example words the board can currently spell. Recomputed
         # only while the panel is visible and the board changed (_dbg_words_dirty),
         # so hidden play pays nothing; a rising edge of visibility re-dirties so the
