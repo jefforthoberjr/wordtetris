@@ -445,24 +445,74 @@ class SelectionMixin:
             flags.append(used[ch] > avail[ch])
         return flags
 
+    def _placeable_gram_texts(self):
+        """The set of gram texts the board can lay down, plus a flag for whether any
+        wild is present. Mirrors _board_letter_counts' supply view (all occupied
+        cells; a wild stands in for any one vowel) but keeps whole-gram texts rather
+        than loose letters, so _uncoverable_flags can ask WHERE a gram could sit."""
+        texts = set()
+        wild_vowels = False
+        for cell in self._board.occupied_cells():
+            gram = self._board.gram_at(*cell)
+            if gram is None:
+                continue
+            if gram.is_wild:
+                wild_vowels = True
+            else:
+                texts.add(gram.text)
+        return texts, wild_vowels
+
+    def _uncoverable_flags(self, word):
+        """One bool per letter of `word`: True where NO placeable board gram can sit
+        over that position, so the letter can't be tiled there no matter how the rest
+        is arranged. A tighter form of _excess_letters: a letter absent from every
+        gram (supply 0) is uncoverable everywhere, but so is a letter that lives ONLY
+        inside grams that never appear in `word` -- TROGLODYTE's G, carried only by
+        GE / GH when the word contains neither substring. A wild covers any single
+        vowel position. Purely local (per-position), so a letter that IS coverable
+        somewhere but still won't tile globally stays unflagged (that's gram-mismatch,
+        not a missing letter)."""
+        word = word.upper()
+        texts, wild_vowels = self._placeable_gram_texts()
+        covered = [False] * len(word)
+        for gram in texts:
+            start = word.find(gram)
+            while start != -1:
+                for k in range(start, start + len(gram)):
+                    covered[k] = True
+                start = word.find(gram, start + 1)
+        return [not covered[i] and not (wild_vowels and ch in self._VOWELS)
+                for i, ch in enumerate(word)]
+
+    def _unavailable_letters(self, word):
+        """Per-letter flags unioning the two provably-unspellable signals: over-demand
+        (needs more copies of a letter than the board holds -- RUTHLESS's 2nd S) and
+        uncoverable (no gram carrying the letter can sit at that position -- TROGLODYTE's
+        G). Both are necessary conditions any real tiling must meet, so a flag is a hard
+        'this letter can't go here', and a fully-tileable word flags nothing. Drives both
+        the reason split and the ghost highlight, so the two always agree."""
+        excess = self._excess_letters(word)
+        uncoverable = self._uncoverable_flags(word)
+        return [e or u for e, u in zip(excess, uncoverable)]
+
     def _missing_letters(self, word):
-        """The per-letter over-demand flags for the ghost highlight, or None when the
-        highlight rule is off (so the pane draws the ghost plain)."""
+        """The per-letter unavailable-letter flags for the ghost highlight, or None when
+        the highlight rule is off (so the pane draws the ghost plain)."""
         if not self._missing_letter_highlight:
             return None
-        return self._excess_letters(word)
+        return self._unavailable_letters(word)
 
     def _not_on_board_reason(self, word):
         """Split a not-on-board rejection into its two sub-classes, so each can get
         its own message / error icon:
-          not_on_board_missing_letter -- the word needs more of some letter than the
-              board physically has (including letters it has none of) -- provably
-              unspellable, and the shortfall letters get reddened in the ghost.
-          not_on_board_gram_mismatch  -- every letter is available in sufficient
-              supply, but the board's grams don't divide to spell it (right letters,
-              wrong pieces).
-        Shares _excess_letters with the highlight, so the two always agree."""
-        if any(self._excess_letters(word)):
+          not_on_board_missing_letter -- some letter can't be placed: the board has
+              too few copies of it, OR it exists only inside grams that don't fit the
+              word (so it's effectively absent here). Provably unspellable, and the
+              blocking letters get reddened in the ghost.
+          not_on_board_gram_mismatch  -- every letter can be placed somewhere, but the
+              board's grams don't divide to spell it (right letters, wrong pieces).
+        Shares _unavailable_letters with the highlight, so the two always agree."""
+        if any(self._unavailable_letters(word)):
             return "not_on_board_missing_letter"
         return "not_on_board_gram_mismatch"
 
