@@ -257,3 +257,7 @@ class InputMixin:
         # it just isn't drawn until then (see draw / _sync_shooting_cursor).
         if self._shooting and self._phase == Phase.MOVING:
             self._moving_mode.on_mouse_motion(x, y)
+        # Line blast: the in-hand floating piece follows the mouse, snapped to the
+        # grid cell under the cursor (recolored green/red for a legal/illegal drop).
+        if self._line_blast and self._phase == Phase.MOVING and not self._menu_open:
+            self._moving_mode.on_mouse_motion(x, y)

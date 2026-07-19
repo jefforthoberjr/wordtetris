@@ -168,6 +168,18 @@ class WordFindMixin:
         """No word ever qualifies, which disables clearing entirely."""
         return []
 
+    def _rule_nucleate_within_highlight(self, found, placed_positions):
+        """Line blast: keep only words whose path lies WHOLLY inside the currently
+        highlighted line(s) -- the cells of a just-completed row/column
+        (self._line_blast_highlight). Placement plays no part (there is no
+        placed-piece tie); the highlighted set is the entire SELECT domain, so a word
+        that steps to any cell outside it is dropped. Empty highlight -> nothing
+        qualifies (SELECT isn't open in line blast without a completed line)."""
+        highlight = self._line_blast_highlight
+        if not highlight:
+            return []
+        return [fw for fw in found if all(cell in highlight for cell in fw.path)]
+
     # --- Placed-cell requirement rules (game_screen.placed_cell_requirement) -
     # Stage 2b: an independent filter on the nucleated words -- whether a word
     # must include a cell from a piece placed this moving phase. Composes with

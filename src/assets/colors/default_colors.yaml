@@ -11,6 +11,9 @@ board:
   crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
   fossilized_fill:  [165, 165, 165]   # stone grey: a fossilized cell (formed word, frozen + dead)
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
+  line_blast_highlight: [152, 251, 152]   # light green: cells of a completed row/column (line blast SELECT domain)
+  line_blast_floating_valid:   [144, 238, 144]  # light green: floating piece where a drop is legal (line blast)
+  line_blast_floating_invalid: [255, 153, 153]  # light red: floating piece where a drop would overlap / hang off (line blast)
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
   cell_text:        [0, 0, 0, 255]    # gram/letter glyphs (flat default; plain rule + preview)
   cell_text_low_value:  [0, 0, 0, 255]      # low end of the board.cell_text_color score gradient

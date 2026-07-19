@@ -26,6 +26,8 @@ en:
   calculating:           "CALCULATING..."
   dictionary_count:      "Dictionary: {count} words"
   pieces_count:          "Pieces: {count}"
+  # MOVING_LINE_BLAST piece-preview pane title.
+  line_blast_pieces:     "Pieces"
   # MOVING_OMNISWAP countdown (seconds left in the moving phase)
   time_count:            "Time: {count}"
   # Running point total, shown near the timer in the right pane (see scoring.py)
@@ -92,6 +94,7 @@ es:
   calculating:           "CALCULANDO..."
   dictionary_count:      "Diccionario: {count} palabras"
   pieces_count:          "Piezas: {count}"
+  line_blast_pieces:     "Piezas"
   time_count:            "Tiempo: {count}"
   score_count:           "Puntos: {count}"
   type_a_word:           "Escribe una palabra:"

@@ -6,7 +6,7 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from views.moving_mode import (
     JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode,
-    ShootingGalleryMode)
+    ShootingGalleryMode, LineBlastMovingMode)
 from views.found_word import FoundWord
 from views.game_phase import Phase
 from views.game_screen_wordfind import WordFindMixin
@@ -17,6 +17,7 @@ from views.game_screen_constellation import ConstellationMixin
 from views.game_screen_shooting import ShootingMixin
 from views.game_screen_input import InputMixin
 from views.moving_side_pane import MovingSidePane
+from views.line_blast_side_pane import LineBlastMovingPane
 from views.selecting_side_pane import SelectingSidePane
 from views.moving_selecting_side_pane import MovingSelectingSidePane
 from views.load_side_pane import LoadSidePane
@@ -367,6 +368,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # _submission_messages and game_screen.error_display / error_icon_keeps_suggestion.
     _error_display = "text"
     _error_icon_keeps_suggestion = False
+    # Line-blast flag + highlight default, so a bare __new__ test instance (and the
+    # nucleation rule) resolve before build() sets the real values.
+    _line_blast = False
+    _line_blast_highlight = set()
 
     GRID_WIDTH = CONFIG["rules"]["game_screen.grid_width"]
     PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
@@ -851,6 +856,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_mode_omniswap_vs_timer": OmniswapVsTimerMode,
             "rule_mode_constellation": ConstellationMode,
             "rule_mode_shooting_gallery": ShootingGalleryMode,
+            "rule_mode_line_blast": LineBlastMovingMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
         # Constellation mode swaps stage-1 word-finding from the adjacency
@@ -884,6 +890,23 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._shooting_crosshair_scale = CONFIG["rules"]["game_screen.shooting_crosshair_scale"]
         self._shooting_crosshair_gap = CONFIG["rules"]["game_screen.shooting_crosshair_gap"]
         self._crosshair_color = get_color("board.crosshair")
+        # Line-blast mode: pieces picked from a side-pane pool and dropped on an empty
+        # board; a filled row/column opens SELECT over exactly those cells (see
+        # LineBlastMovingMode). The engine reads the flag to route mouse motion to the
+        # mode and to swap in the line-blast moving pane. False for every other mode.
+        self._line_blast = self._moving_mode.is_line_blast
+        # Line-blast knobs (game_screen.line_blast_*), read by LineBlastMovingMode +
+        # LineBlastMovingPane; ignored by every other mode.
+        self._line_blast_pool_size = CONFIG["rules"]["game_screen.line_blast_pool_size"]
+        self._line_blast_slots = CONFIG["rules"]["game_screen.line_blast_slots"]
+        self._line_blast_preview_scale = CONFIG["rules"]["game_screen.line_blast_preview_scale"]
+        self._line_blast_highlight_color = get_color("board.line_blast_highlight")
+        self._line_blast_valid_color = get_color("board.line_blast_floating_valid")
+        self._line_blast_invalid_color = get_color("board.line_blast_floating_invalid")
+        # The completed row/column cells currently highlighted for line-blast SELECT
+        # (the nucleation domain; the whole set clears on Next piece). Empty except
+        # while a line-blast SELECT is open. Reset per game in _start_new_game.
+        self._line_blast_highlight = set()
         # Phase model (game_screen.phase_model): two distinct phases (MOVING then
         # SELECTING) or one merged MOVING_AND_SELECTING pane where the player
         # rearranges the board and submits words inline, never leaving MOVING.
@@ -1207,6 +1230,20 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 show_next=self._show_next_btn, error_display=self._error_display,
                 error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
             )
+            # Line blast swaps the plain MovingSidePane (hunt field + cleared list)
+            # for the piece-preview pane: up to `slots` half-size previews of the
+            # pool pieces the player can drop next, a running score, and a manual
+            # End-game button (line blast has no victory rule). SELECTING still uses
+            # the SelectingSidePane built above. Preview cell = half the board cell,
+            # sized from the same square-region math the grid builder uses (the board
+            # isn't built until _start_new_game, so _cell_size isn't set yet).
+            if self._line_blast:
+                preview_cell = math.floor(
+                    self._grid_area_size / self.GRID_WIDTH * self._line_blast_preview_scale)
+                self._moving_side_pane = LineBlastMovingPane(
+                    side_pane_x, 0, side_pane_width, window.height,
+                    on_end=self._enter_endgame, preview_cell=preview_cell,
+                    slots=self._line_blast_slots)
         self._set_phase(Phase.MOVING)
         # Candidate word-paths for the move being selected (interactive only):
         # the full path list plus a word -> path map (first path wins a tie).
@@ -1260,6 +1297,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_adjacent_to_placed_pieces": self._rule_adjacent_to_placed_pieces,
             "rule_nucleate_anywhere": self._rule_nucleate_anywhere,
             "rule_nucleate_none": self._rule_nucleate_none,
+            "rule_nucleate_within_highlight": self._rule_nucleate_within_highlight,
         }
         self._nucleation_rule = select_rule(
             "game_screen.word_nucleation", nucleation_rules
@@ -1415,6 +1453,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
+        # Fresh per game: the line-blast highlighted line(s) (empty until a placement
+        # completes a row/column; see LineBlastMovingMode).
+        self._line_blast_highlight = set()
         # Fresh per game: how many words have cleared so far. Drives the
         # first-word skip for the fossil requirement (rule_fossil_skip_first_word);
         # 0 means the opening word hasn't landed yet.

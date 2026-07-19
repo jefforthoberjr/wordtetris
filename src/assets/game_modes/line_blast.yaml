@@ -1,0 +1,72 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else comes
+# from the base file. mode_label is the menu name, stripped before merge.
+# Signature = LINE BLAST PRESET in CONFIG_REFERENCE.md.
+mode_label: "Line Blast"
+
+# MINDSET
+# Tetris-meets-spelling on an empty square board. Pick a piece from the side-pane
+# pool, float it on the board (snapped to the grid, green where it drops legally,
+# red where it can't), drop it with no overlap. Fill a whole row or column and
+# those cells light up: type as many words as they can spell, scoring each, then
+# Next piece clears the whole line and play resumes.
+
+dictionary:
+  include_obscure: false
+
+rules:
+  game_screen.mode:         rule_mode_line_blast
+  game_screen.phase_model:  rule_two_phase
+
+  # Square grid, empty board (the piece pool fills it); nothing pre-placed.
+  game_screen.grid:            rule_use_square_grid
+  game_screen.setup_formation: rule_formation_empty
+  game_screen.obstacle_count:  0
+  game_screen.mission_count:   0
+
+  # Tetriminos with one letter per cell (unigram picker). No opening reveal needed
+  # on an empty board, so the zero animation; plain glyph color; uncapped unigrams
+  # (the pool draws freely, not a formation).
+  square_player.piece_set:  rule_use_tetriminos
+  square_player.gram_pick:  rule_scrabble_distribution
+  gram.unigram_dedup:       rule_nolimit_duplicate_unigrams
+  board.cell_text_color:    rule_cell_text_plain
+  assets.loading_animation: zero_loading_animation.yaml
+  game_screen.starting_coverage_dictionary: rule_starting_coverage_off
+
+  # Words are found/scored only within the highlighted completed line, adjacency-
+  # pathable per the square pathfinder (flip to _diagonal to allow diagonals).
+  square_grid.word_pathfinding: rule_snake_anydirection
+  # square_grid.word_pathfinding: rule_snake_anydirection_diagonal
+  game_screen.word_nucleation:  rule_nucleate_within_highlight
+  game_screen.word_length:      rule_word_min3letters_min2cells   # unigram cells: 3+ letters = 3+ cells
+  game_screen.word_repeat:      rule_repeat_allow
+
+  # Batch several words (cells reusable across them), all cleared on Next piece;
+  # board clicks inert during SELECT (words come from the text field only).
+  game_screen.word_select:          rule_select_by_text_input
+  game_screen.clear_timing:         rule_clear_at_phase_end
+  game_screen.select_word_limit:    rule_unlimited_words
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.select_click:         rule_select_click_none
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+  game_screen.clear_action:         rule_remove_cells
+  game_screen.player_word_piece:    rule_player_word_piece_disabled
+
+  # The moving pane shows piece previews + score + End game, not a hunt field.
+  game_screen.moving_hunt_field: rule_hunt_field_off
+  game_screen.hunt_highlight:    rule_hunt_none
+
+  # SELECTING buttons: Clear / Submit / Next. End game lives on the MOVING pane
+  # (line blast has no victory rule), so keep the SELECT pane's own End off.
+  game_screen.show_clear_button:  rule_show_clear_button
+  game_screen.show_submit_button: rule_show_submit_button
+  game_screen.show_next_button:   rule_show_next_button
+  game_screen.show_end_button:    rule_hide_end_button
+  game_screen.victory:            rule_victory_none
+
+  # Pool + preview tuning (see game_screen.line_blast_* in the base config).
+  game_screen.line_blast_pool_size:     60
+  game_screen.line_blast_slots:         3
+  game_screen.line_blast_preview_scale: 0.5

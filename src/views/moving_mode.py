@@ -4,6 +4,9 @@ from config import select_rule, get_string
 from source import rand
 from models.hex_grid import flattop_vertices
 from models.word_dictionary import is_word
+from models.gram import Gram
+from models.square_piece import ALL_PIECE_ROTATIONS, player_gram_pick_rule
+from models.gram_picker import pick_grams
 from views.shaders import get_shape_shader
 import log_codes as L
 
@@ -94,6 +97,13 @@ class MovingMode:
     # reads it to draw the crosshair overlay + hide the system cursor; only
     # ShootingGalleryMode flips it True.
     is_shooting = False
+
+    # Whether this mode is line blast: pieces are picked from a side-pane pool and
+    # dropped on an empty board (a mouse-follow floating piece), and a filled row /
+    # column opens SELECT over exactly those highlighted cells. The engine reads it
+    # to route mouse motion to the mode and to swap in the line-blast moving pane;
+    # only LineBlastMovingMode flips it True.
+    is_line_blast = False
 
     def __init__(self, game_screen):
         self._gs = game_screen
@@ -1122,3 +1132,269 @@ class ShootingGalleryMode(MovingMode):
         L.log_30003(word, "shooting_miss")
         self._buffer = []
         self._since_shot = 0.0
+
+
+class LineBlastMovingMode(MovingMode):
+    """MOVING_LINE_BLAST -- pieces are preselected into a finite pool and offered a
+    few at a time in the right pane (half-size previews). The player clicks a
+    preview to take it in hand, then a copy FLOATS on the board following the mouse
+    (snapped to the grid, half alpha, tinted green where it would land legally, red
+    where it would not); left/right arrows rotate it. A board click drops it -- but
+    only on a fully-on-board, ZERO-OVERLAP spot (an illegal click does nothing).
+    Placing a piece repopulates its pane slot from the pool.
+
+    The instant a placement fills a whole row or column, those cells HIGHLIGHT and
+    SELECT opens over exactly them: the player types as many words as the highlighted
+    cells can spell (adjacency-pathable per square_grid.word_pathfinding, cells
+    reusable across words), scoring each. On Next piece the ENTIRE highlighted set
+    clears from the board (tetris line-clear, whether or not a cell was used in a
+    word) and play returns to MOVING. There is no victory rule: the End-game button
+    in the moving pane is the only end (auto-detect of an unplaceable hand is
+    deferred).
+
+    Pairs with the LINE BLAST preset: rule_formation_empty (the pool fills the board),
+    rule_use_square_grid, rule_two_phase, rule_nucleate_within_highlight (words must
+    lie inside the highlighted line), rule_clear_at_phase_end + rule_unlimited_words
+    (batch several words before clearing), rule_select_click_none and
+    rule_victory_none. See views/line_blast_side_pane.py for the preview pane."""
+
+    is_line_blast = True
+
+    FLOATING_OPACITY = 128     # half alpha for the mouse-follow floating piece
+
+    def __init__(self, game_screen):
+        super().__init__(game_screen)
+        self._pool = []            # finite [(piece_type, (letters...))] preselected pool
+        self._pool_index = 0       # next pool spec to deal into a slot
+        self._slots = []           # per-slot spec or None (None = drained slot)
+        self._selected = None      # index of the in-hand slot, or None
+        self._floating = None      # the SquarePiece following the mouse, or None
+        self._floating_cell = None # last grid cell under the cursor
+
+    def start(self):
+        gs = self._gs
+        self._build_pool()
+        self._selected = None
+        self._floating = None
+        self._floating_cell = None
+        self._slots = [self._draw_from_pool() for _ in range(gs._line_blast_slots)]
+        self._push_slots()
+
+    def advance(self):
+        """One SELECT turn resolved back to MOVING (Next piece). The submitted words
+        already cleared + scored their own cells in the phase-end batch; now clear
+        the REST of the highlighted line(s) too -- every highlighted cell goes,
+        used in a word or not (the tetris line-clear) -- and drop the highlight."""
+        gs = self._gs
+        cleared = []
+        for (x, y) in gs._line_blast_highlight:
+            if gs._board.is_cell_occupied(x, y):
+                gs._board.clear_cell(x, y)
+                cleared.append((x, y))
+        L.log_20007("line_clear", len(gs._line_blast_highlight))
+        gs._line_blast_highlight = set()
+
+    def request_select(self):
+        """No manual Select in line blast -- SELECT opens only when a placement
+        fills a line (see _try_place). The moving pane has no Select button, so this
+        is never reached; kept inert so an accidental route can't nucleate nothing."""
+        pass
+
+    def active_cells(self):
+        # The floating piece is half-alpha over the board on purpose (so overlaps
+        # read through it), so nothing is hover-hidden.
+        return []
+
+    # --- input -----------------------------------------------------------
+    def on_key_press(self, symbol, modifiers):
+        gs = self._gs
+        if self._floating is None:
+            return False
+        if symbol in gs._keys["rotate_clockwise"]:
+            self._floating.rotate_cw()
+            self._restyle_floating()
+            return True
+        if symbol in gs._keys["rotate_counterclockwise"]:
+            self._floating.rotate_ccw()
+            self._restyle_floating()
+            return True
+        return False
+
+    def on_mouse_motion(self, x, y):
+        cell = self._gs._board.cell_at(x, y)
+        if cell is None:
+            return
+        self._floating_cell = cell
+        if self._floating is not None:
+            self._snap_floating(cell)
+            self._restyle_floating()
+
+    def on_mouse_press(self, x, y, button):
+        gs = self._gs
+        if button != gs._buttons["move_primary"]:
+            return
+        # Right-pane controls first: the End-game button, then a piece preview.
+        if gs._moving_side_pane.hit_end(x, y):
+            gs._enter_endgame()
+            return
+        slot = gs._moving_side_pane.slot_at(x, y)
+        if slot is not None:
+            self._select_slot(slot)
+            return
+        # Otherwise a board click drops the in-hand piece (if the spot is legal).
+        if self._floating is not None:
+            self._try_place(x, y)
+
+    # --- piece pool ------------------------------------------------------
+    def _build_pool(self):
+        """Preselect the whole finite pool up front: each piece a random player
+        piece type with its cells' unigrams drawn through the configured player
+        gram-pick. Seeded rand()/pick_grams keep it replay-reproducible."""
+        gs = self._gs
+        types = list(gs._player_piece_types)
+        self._pool = []
+        self._pool_index = 0
+        for _ in range(gs._line_blast_pool_size):
+            piece_type = types[rand().randrange(len(types))]
+            n = len(ALL_PIECE_ROTATIONS[piece_type][0])
+            letters = tuple(g.text for g in pick_grams(player_gram_pick_rule(), n))
+            self._pool.append((piece_type, letters))
+        L.log_20007("pool_built", len(self._pool))
+
+    def _draw_from_pool(self):
+        """The next pool spec, or None once the finite pool is exhausted (that slot
+        then shows nothing -- the only time fewer than `slots` pieces are offered)."""
+        if self._pool_index >= len(self._pool):
+            return None
+        spec = self._pool[self._pool_index]
+        self._pool_index += 1
+        return spec
+
+    def _push_slots(self):
+        self._gs._moving_side_pane.set_slots(list(self._slots), self._selected)
+
+    # --- floating piece --------------------------------------------------
+    def _select_slot(self, index):
+        """Take the piece in slot `index` in hand: float a full-size copy on the
+        board (at the last cursor cell) and dim the preview. Switching slots discards
+        the previous floating piece."""
+        if index >= len(self._slots) or self._slots[index] is None:
+            return
+        self._discard_floating()
+        self._selected = index
+        self._floating = self._build_floating(self._slots[index])
+        cell = self._floating_cell or self._gs._board.center_cell()
+        self._snap_floating(cell)
+        self._restyle_floating()
+        self._push_slots()
+        L.log_20007("select_slot", index)
+
+    def _build_floating(self, spec):
+        gs = self._gs
+        piece_type, letters = spec
+        grams = [Gram(letter) for letter in letters]
+        return gs._piece_class(
+            piece_type, gs._cell_size, gs._piece_batch, visible=True,
+            gram_pick_rule=lambda count: list(grams),
+            cell_color=gs._line_blast_valid_color, dedup_grams=False)
+
+    def _snap_floating(self, cell):
+        """Position the floating piece so the cursor cell holds the piece's PIVOT
+        cell (the rotation center that stays at offset (1,1); see
+        SquarePiece.pivot_offset), rather than its (grid_x, grid_y) origin -- which
+        for most shapes isn't even one of the piece's cells, leaving the cursor off
+        to the side. The pivot offset is invariant under rotation, so the piece also
+        turns about the cursor cell."""
+        px, py = self._floating.pivot_offset()
+        self._floating.set_position(cell[0] - px, cell[1] - py)
+
+    def _floating_valid(self):
+        """Whether the floating piece could be dropped where it sits: fully on the
+        grid AND covering no occupied cell (the zero-overlap placement rule)."""
+        piece = self._floating
+        return (self._gs._piece_on_board(piece)
+                and not self._gs._overlapped_cells(piece))
+
+    def _restyle_floating(self):
+        """Recolor the floating piece for its current spot: light green where a drop
+        is legal, light red where it isn't, both at half alpha so occupied cells read
+        through it."""
+        gs = self._gs
+        color = gs._line_blast_valid_color if self._floating_valid() else gs._line_blast_invalid_color
+        for _gx, _gy, cell, label, _gram, _overlay in self._floating.get_cell_data():
+            cell.color = color
+            cell.opacity = self.FLOATING_OPACITY
+            label.opacity = self.FLOATING_OPACITY
+
+    def _discard_floating(self):
+        """Drop the current floating piece's render objects (called on a switch /
+        after a placement) so switching slots doesn't pile up shapes."""
+        if self._floating is None:
+            return
+        for _gx, _gy, cell, label, _gram, _overlay in self._floating.get_cell_data():
+            cell.delete()
+            label.delete()
+        self._floating = None
+
+    def _try_place(self, x, y):
+        """Drop the in-hand piece if the spot is legal (fully on board, zero
+        overlap); an illegal click does nothing. On a legal drop the cells settle
+        onto the board, the slot repopulates from the pool, and a completed line (if
+        any) opens SELECT."""
+        gs = self._gs
+        piece = self._floating
+        if not self._floating_valid():
+            return
+        piece.place()
+        placed = []
+        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
+            # Settle from the half-alpha green/red floating look to a plain board cell.
+            cell.color = gs.SETTLED_CELL_COLOR
+            cell.opacity = 255
+            label.opacity = 255
+            gs._board.place(gx, gy, cell, label, gram, overlay)
+            placed.append((gx, gy))
+        self._floating = None      # its render objects now belong to the board
+        L.log_20007("place", len(placed))
+        self._consume_selected_slot()
+        lines = self._completed_line_cells()
+        if lines:
+            self._open_line_select(lines)
+
+    def _consume_selected_slot(self):
+        """Refill the just-placed slot from the pool (None when the pool is drained),
+        keeping slot positions stable, then repaint the previews."""
+        self._slots[self._selected] = self._draw_from_pool()
+        self._selected = None
+        self._push_slots()
+
+    # --- line detection + select ----------------------------------------
+    def _completed_line_cells(self):
+        """The union of every cell in any fully-occupied row or column -- the cells
+        that highlight and become the SELECT domain. Empty when the placement
+        completed no line."""
+        board = self._gs._board
+        cells = set()
+        for y in range(board.height):
+            row = [(x, y) for x in range(board.width) if board.is_valid(x, y)]
+            if row and all(board.is_cell_occupied(x, y) for (x, y) in row):
+                cells.update(row)
+        for x in range(board.width):
+            col = [(x, y) for y in range(board.height) if board.is_valid(x, y)]
+            if col and all(board.is_cell_occupied(x, y) for (x, y) in col):
+                cells.update(col)
+        return cells
+
+    def _open_line_select(self, cells):
+        """Highlight the completed line(s) and open the interactive SELECT phase
+        over exactly those cells (the nucleation rule keeps only words that lie
+        wholly inside the highlight). Words are found/scored by the shared pipeline;
+        _begin_selection([]) enters SELECT with no placed-piece nucleation tie."""
+        gs = self._gs
+        gs._line_blast_highlight = set(cells)
+        for (x, y) in cells:
+            cell = gs._board.get_cell(x, y)
+            if cell is not None and cell.square is not None:
+                cell.square.color = gs._line_blast_highlight_color
+        L.log_20007("line_select", len(cells))
+        gs._begin_selection([])

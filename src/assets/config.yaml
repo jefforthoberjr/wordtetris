@@ -102,12 +102,19 @@ rules:
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery. [ref: game_screen.mode]
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
   # game_screen.mode:       rule_mode_omniswap_vs_timer
   game_screen.mode:       rule_mode_constellation
   # game_screen.mode:       rule_mode_shooting_gallery
+  # game_screen.mode:       rule_mode_line_blast
+
+  # LINE BLAST: preselected piece pool size, side-pane preview count, and preview
+  # size as a fraction of a board cell. [ref: game_screen.line_blast_pool_size]
+  game_screen.line_blast_pool_size:    60
+  game_screen.line_blast_slots:        3
+  game_screen.line_blast_preview_scale: 0.5
 
   # CONSTELLATION: max distinct cell-assemblies the matcher returns per word (the
   # chooser cycles them; auto-pick keeps fewest-cell). [ref: game_screen.constellation_max_paths]
@@ -257,6 +264,7 @@ rules:
   # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
   game_screen.word_nucleation: rule_nucleate_anywhere
   # game_screen.word_nucleation: rule_nucleate_none
+  # game_screen.word_nucleation: rule_nucleate_within_highlight   # line blast: only within the completed line
 
   # Stage 2b: independent "must include a placed cell" filter. [ref: game_screen.placed_cell_requirement]
   # (related to word nucleation)

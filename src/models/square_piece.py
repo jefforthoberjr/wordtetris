@@ -262,6 +262,19 @@ class SquarePiece:
         for dx, dy in self._shapes_data:
             positions.append((self._grid_x + dx, self._grid_y + dy))
         return positions
+
+    def pivot_offset(self):
+        """The ROTATION PIVOT cell's offset in the current rotation state -- the cell
+        that stays put as the piece turns. Every tetrimino rotation state keeps a cell
+        at (1,1) by construction (see SQUARE_TETRIMINO_ROTATIONS), so that IS the
+        pivot; for shapes without an exact (1,1) cell (dominoes / unimos) fall back to
+        the cell nearest it. Used to anchor a mouse-follow piece so the cursor always
+        sits on an actual cell of the piece rather than off to its side, and -- since
+        the pivot offset is invariant under rotation -- the piece turns about the
+        cursor cleanly."""
+        if (1, 1) in self._shapes_data:
+            return (1, 1)
+        return min(self._shapes_data, key=lambda o: (o[0] - 1) ** 2 + (o[1] - 1) ** 2)
     
     def get_cell_data(self):
         """Returns list of (grid_x, grid_y, cell, label, gram, overlay) for each

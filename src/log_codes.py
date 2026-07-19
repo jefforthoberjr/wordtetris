@@ -215,6 +215,15 @@ def log_20006(action, cell, gram, buffer):
                      action=action, cell=cell_s, gram=gram_s, buffer=buffer)
 
 
+def log_20007(action, count):
+    """A line-blast mode event (game_screen.mode = rule_mode_line_blast). `action` is
+    pool_built / select_slot / place / line_select / line_clear; `count` its size
+    (pool length, slot index, cells placed, or highlighted-line cells). Makes the
+    pick-drop-line-clear rhythm visible for replay/analysis; the moment-to-moment
+    clicks + arrow keys are already in the 2000x input stream."""
+    session_log.emit(20007, f"lineblast {action} {count}", action=action, count=count)
+
+
 # --- 3xxxx  word pipeline ----------------------------------------------------
 def log_30001(word):
     """A word was submitted in the interactive SELECT phase (the normalized,

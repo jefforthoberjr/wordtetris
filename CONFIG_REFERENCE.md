@@ -325,6 +325,33 @@ mode-agnostic.
   `shooting_word_timeout_seconds` errors and clears. No typing, no board
   rearrangement, one continuous real-time phase against `game_screen.game_timer`.
   See the SHOOTING GALLERY PRESET.
+- `rule_mode_line_blast` — MOVING_LINE_BLAST: pieces are preselected into a finite
+  pool and offered a few at a time as half-size previews in the right pane. The
+  player clicks a preview to take it in hand; a copy then FLOATS on the empty board
+  following the mouse (snapped to the grid, half alpha, tinted green where a drop is
+  legal and red where it would overlap or hang off), and left/right arrows rotate it.
+  A board click drops it only on a fully-on-board, ZERO-OVERLAP spot; placing
+  repopulates that pane slot from the pool. The instant a placement fills a whole row
+  or column, those cells highlight and SELECT opens over exactly them: the player
+  types as many words as the highlighted cells can spell (adjacency-pathable per
+  `square_grid.word_pathfinding`, cells reusable across words), scoring each. On Next
+  piece the ENTIRE highlighted set clears (tetris line-clear, used in a word or not)
+  and play returns to MOVING. No victory rule — the moving pane's End-game button is
+  the only end (auto-detecting an unplaceable hand is deferred). See the LINE BLAST
+  PRESET.
+
+### game_screen.line_blast_pool_size / line_blast_slots / line_blast_preview_scale
+Line blast only (ignored by every other mode). `line_blast_pool_size` is how many
+pieces the finite preselected pool holds (each a random player piece type with its
+cells' unigrams drawn through `square_player.gram_pick`); when it drains, fewer than
+`line_blast_slots` previews are offered and no more appear (no auto-end for now).
+`line_blast_slots` is how many piece previews sit in the right pane at once (a placed
+slot repopulates from the pool). `line_blast_preview_scale` is the preview cell size
+as a fraction of a board cell (0.5 = half size). The floating piece is drawn at full
+board-cell size; only the pane previews are shrunk. Paired colors live in the colors
+file: `board.line_blast_highlight` (the completed row/column), and
+`board.line_blast_floating_valid` / `board.line_blast_floating_invalid` (the
+green/red floating-piece tint).
 
 ### game_screen.shooting_batch_size
 Shooting gallery only: how many cells make up one fade batch. The `ShootingField`
@@ -610,6 +637,36 @@ constellation and pathfinder word-finding both sit idle. Flip:
   with `_word_timeout_seconds`, and the reticle with `_crosshair_scale` / `_gap` and
   the `board.crosshair` color.
 
+### LINE BLAST PRESET
+To play MOVING_LINE_BLAST, set `game_screen.mode` to `rule_mode_line_blast` and pair:
+- `game_screen.grid` → `rule_use_square_grid` (line blast focuses on the square grid;
+  full-row/column detection assumes it)
+- `game_screen.setup_formation` → `rule_formation_empty` (the pool fills the board;
+  nothing is pre-placed)
+- `game_screen.phase_model` → `rule_two_phase` (drop pieces in MOVING, type words in
+  SELECTING)
+- `square_player.piece_set` → `rule_use_tetriminos` and `square_player.gram_pick` →
+  a unigram picker (e.g. `rule_scrabble_distribution`) so each piece cell is one letter
+- `game_screen.word_nucleation` → `rule_nucleate_within_highlight` (words must lie
+  inside the completed line)
+- `game_screen.word_select` → `rule_select_by_text_input`,
+  `game_screen.clear_timing` → `rule_clear_at_phase_end` and
+  `game_screen.select_word_limit` → `rule_unlimited_words` (batch several words, cells
+  reusable across them, all cleared together on Next piece)
+- `game_screen.clear_action` → `rule_remove_cells`, `game_screen.select_click` →
+  `rule_select_click_none`, `game_screen.player_word_piece` → `..._disabled`
+- `game_screen.moving_hunt_field` → `rule_hunt_field_off` and
+  `game_screen.hunt_highlight` → `rule_hunt_none` (the moving pane shows piece
+  previews, not a hunt field)
+- `game_screen.victory` → `rule_victory_none` (no win condition; the moving pane's
+  End-game button ends the game — so `game_screen.show_end_button` →
+  `rule_hide_end_button` keeps the SELECTING pane's own End button off)
+- `game_screen.word_length` → `rule_word_min3letters_min2cells` (unigram cells, so ≥3
+  letters means ≥3 cells)
+- tune the pool + previews with `game_screen.line_blast_pool_size` / `_slots` /
+  `_preview_scale`, and the tints with `board.line_blast_highlight` /
+  `_floating_valid` / `_floating_invalid`.
+
 ### game_screen.word_length
 - `rule_word_min3letters_min2cells` — words need ≥3 letters and ≥2 cells.
 - `rule_word_min2letters_min2cells` — words need ≥2 letters and ≥2 cells.
@@ -785,6 +842,11 @@ ended.
 - `rule_nucleate_anywhere` — every board word counts, wherever it sits (no tie to a
   placed piece, so words can be built anywhere).
 - `rule_nucleate_none` — nothing qualifies (clearing off).
+- `rule_nucleate_within_highlight` — line blast: keep only words whose path lies
+  WHOLLY inside the currently highlighted line(s) (`_line_blast_highlight`, the cells
+  of a just-completed row/column). Placement plays no part; the highlighted set is
+  the entire SELECT domain, so a word stepping to any cell outside it is dropped.
+  Empty highlight ⇒ nothing qualifies. See MOVING_LINE_BLAST / the LINE BLAST PRESET.
 
 ### game_screen.placed_cell_requirement
 Stage 2b (placed-cell requirement): an independent filter on the nucleated words —
