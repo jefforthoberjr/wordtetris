@@ -59,6 +59,7 @@ en:
   dictionary_sort_score: "Sort: Score"
   # Word-submission errors
   err_not_in_dictionary: "Word is not in the dictionary"
+  err_shooting_miss:     "Not a word -- shots cleared"
   err_not_on_board:      "Word isn't on the board"
   # not_on_board split into three sub-classes (see game_screen._not_on_board_reason)
   err_not_on_board_missing_letter: "Not enough of those letters on the board"
@@ -115,6 +116,7 @@ es:
   dictionary_sort_score: "Orden: Puntuación"
   # Word-submission errors
   err_not_in_dictionary: "La palabra no está en el diccionario"
+  err_shooting_miss:     "No es una palabra -- disparos borrados"
   err_not_on_board:      "La palabra no está en el tablero"
   err_not_on_board_missing_letter: "No hay suficientes de esas letras en el tablero"
   err_not_on_board_needs_rearrange: "Las piezas correctas están aquí -- júntalas"

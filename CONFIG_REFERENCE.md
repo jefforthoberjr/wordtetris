@@ -316,6 +316,76 @@ mode-agnostic.
   board — each cell used once, whole grams only, no adjacency, no nucleation. The
   used cells clear or fossilize and a word_trail "constellation" is drawn through
   them. See the CONSTELLATION PRESET.
+- `rule_mode_shooting_gallery` — MOVING_SHOOTING_GALLERY: a fairground shooter over
+  an otherwise-empty board. Grams appear in fading batches (`shooting_batch_*`); the
+  player aims a crosshair and left-clicks ("shoots") a cell to append its gram to a
+  running buffer and blow that cell away (a fast `shooting_shot_fade_seconds` fade).
+  Detection is greedy — the instant the buffer spells a dictionary word it auto-
+  submits for points and clears; a non-word buffer left idle for
+  `shooting_word_timeout_seconds` errors and clears. No typing, no board
+  rearrangement, one continuous real-time phase against `game_screen.game_timer`.
+  See the SHOOTING GALLERY PRESET.
+
+### game_screen.shooting_batch_size
+Shooting gallery only: how many cells make up one fade batch. The `ShootingField`
+picks this many empty board cells at random, gives each a fresh gram from the player
+picker, and fades them all in together over `shooting_fade_in_seconds`; each then
+fades out over `shooting_fade_out_seconds` (or `shooting_shot_fade_seconds` if shot).
+Once the whole batch has cleared, that batch waits `shooting_batch_delay_seconds`
+before spawning again. Ignored by every other mode.
+
+### game_screen.shooting_batch_count
+Shooting gallery only: how many batches run at the same time, each on its own clock.
+`1` is the original single-batch churn (spawn → clear → delay → respawn). With more,
+each batch cycles independently, and their first spawns are staggered evenly across
+one full cycle (fade-in + hold + fade-out + delay) so they fade on alternating
+schedules — e.g. `batch_count: 5` with `batch_size: 10` ripples five waves of ten
+cells across the board rather than flashing all fifty at once. Batches never collide:
+each only ever draws from currently-empty board cells, so the live total is capped by
+the board size (extra demand simply spawns fewer cells).
+
+### game_screen.shooting_batch_delay_seconds
+Shooting gallery only: the pause, in seconds, between one batch fully clearing (every
+cell faded away) and that same batch spawning again. `0` respawns immediately. With
+several batches this is per-batch, so the board never goes fully empty between waves.
+
+### game_screen.shooting_fade_in_seconds
+Shooting gallery only: seconds a fresh batch cell takes to bloom from transparent to
+its resting color when it spawns. A cell is shootable throughout its whole life,
+including mid fade-in. `0` pops it in instantly.
+
+### game_screen.shooting_hold_seconds
+Shooting gallery only: seconds a cell stays pinned fully shown (opaque) after it
+finishes fading in, before the fade-out begins — the steady window that's easiest to
+aim at. `0` starts the fade-out the instant the bloom completes (the original
+in→out behavior). The cell is shootable during the hold like any other phase.
+
+### game_screen.shooting_fade_out_seconds
+Shooting gallery only: seconds an un-shot cell takes to fade away once its visible
+hold ends. This is the slow, ambient churn; a cell that fades fully away without
+being shot contributes nothing to the buffer.
+
+### game_screen.shooting_shot_fade_seconds
+Shooting gallery only: seconds a SHOT cell takes to fade away — the quick "hit"
+reaction, much faster than the ambient `shooting_fade_out_seconds`. The gram is
+appended to the buffer at the moment of the shot, so the cell's fast fade is purely
+visual (a shot gram still counts even after it has vanished).
+
+### game_screen.shooting_word_timeout_seconds
+Shooting gallery only: seconds of no shot after which a buffer that is NOT yet a
+dictionary word is declared a miss — an error blip shows and the buffer clears, so a
+dead-end run of letters doesn't linger. Reset by every shot. Because detection is
+greedy (a valid word auto-submits the instant it forms), the timeout only ever fires
+on a genuine non-word prefix.
+
+### game_screen.shooting_crosshair_scale
+Shooting gallery only: the crosshair's half-size as a fraction of one cell radius, so
+`1.0` makes a crosshair about a cell wide. Purely cosmetic.
+
+### game_screen.shooting_crosshair_gap
+Shooting gallery only: the blank gap at the crosshair's center as a fraction of its
+half-size (`0` = solid cross through the middle, `1` = the arms vanish). Purely
+cosmetic.
 
 ### game_screen.constellation_max_paths
 Constellation only: the maximum number of distinct cell-assemblies the on-submit
@@ -520,9 +590,34 @@ The auto-pick vs blue-line chooser for which constellation clears is the existin
 choice; `rule_disambig_cycle_*` = cycle the star patterns with the blue lines).
 (`game_screen.word_select` stays `rule_select_by_text_input`.)
 
+### SHOOTING GALLERY PRESET
+To play MOVING_SHOOTING_GALLERY, set `game_screen.mode` to `rule_mode_shooting_gallery`.
+The word is built by shooting cells, not typing, and validated as a plain dictionary
+lookup on the shot-gram buffer (no board assembly / adjacency / nucleation), so the
+constellation and pathfinder word-finding both sit idle. Flip:
+- `game_screen.setup_formation` → `rule_formation_empty` (the `ShootingField` owns the
+  grams, spawning them in fading batches into the empty grid)
+- `game_screen.phase_model` → `rule_single_phase` (one continuous real-time phase; the
+  player never leaves MOVING, the buffer + Clear-word button ride the merged pane)
+- `game_screen.game_timer` → `rule_game_timer_on` with `game_screen.game_timer_seconds`
+  → `300` (the 5-minute gallery clock)
+- `game_screen.victory` → `rule_victory_none` (the timer is the only end)
+- `game_screen.show_clear_button` → `rule_show_clear_button`; hide Submit / Next / End
+  (there is nothing to submit or advance by hand — detection is automatic)
+- tune the churn with `game_screen.shooting_batch_size` / `_batch_count` (concurrent
+  staggered batches) / `_batch_delay_seconds` / `_fade_in_seconds` / `_hold_seconds`
+  (linger fully shown) / `_fade_out_seconds` / `_shot_fade_seconds`, the miss timeout
+  with `_word_timeout_seconds`, and the reticle with `_crosshair_scale` / `_gap` and
+  the `board.crosshair` color.
+
 ### game_screen.word_length
 - `rule_word_min3letters_min2cells` — words need ≥3 letters and ≥2 cells.
 - `rule_word_min2letters_min2cells` — words need ≥2 letters and ≥2 cells.
+- `rule_word_min3letters_min1cell` — words need ≥3 letters, any cell count (so a
+  single multi-letter gram can be a whole word). The shooting-gallery choice: one
+  shot is one cell, so this cuts single-letter shots (S / O / T — which the
+  dictionary's obscure tier accepts as words) while still allowing a 3-letter word
+  shot from one trigram cell, which the min2cells rules would wrongly reject.
 
 ### game_screen.starting_coverage_dictionary
 Starting-coverage dictionary (debug/analysis): once at game start, before the
@@ -607,6 +702,10 @@ Player-piece spawn: where each single live piece appears, one at a time.
 How the whole opening set of obstacle + mission pieces is laid out (built and placed
 before play). Separate from the per-piece player spawn above; the formation owns how
 many pieces of each it lays down.
+- `rule_formation_empty` — leave the board completely empty: no obstacle, mission, or
+  player fill. For modes whose own field populates cells at runtime (the shooting
+  gallery's `ShootingField` spawns fade-in batches into the empty grid). Pair with
+  `game_screen.victory: rule_victory_none` (an empty board is not a win here).
 - `rule_formation_scattered` — `obstacle_count` obstacles + `mission_count` missions,
   each at a random non-overlapping spot (the original opening).
 - `rule_formation_mission_center_obstacle_ring` — 1 mission on the center cell,

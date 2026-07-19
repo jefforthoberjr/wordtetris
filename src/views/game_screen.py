@@ -5,7 +5,8 @@ from collections import Counter, defaultdict
 import pyglet
 from views.ingame_menu import IngameMenu
 from views.moving_mode import (
-    JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode)
+    JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode,
+    ShootingGalleryMode)
 from views.found_word import FoundWord
 from views.game_phase import Phase
 from views.game_screen_wordfind import WordFindMixin
@@ -13,6 +14,7 @@ from views.game_screen_selection import SelectionMixin
 from views.game_screen_setup import BoardSetupMixin
 from views.game_screen_boardrules import BoardRulesMixin
 from views.game_screen_constellation import ConstellationMixin
+from views.game_screen_shooting import ShootingMixin
 from views.game_screen_input import InputMixin
 from views.moving_side_pane import MovingSidePane
 from views.selecting_side_pane import SelectingSidePane
@@ -160,10 +162,18 @@ def rule_word_min2letters_min2cells(text, path):
 def rule_word_min3letters_min2cells(text, path):
     return len(text) >= 3 and len(path) >= 2
 
+def rule_word_min3letters_min1cell(text, path):
+    # Letters-only floor (3+), any cell count -- so a single multi-letter gram can
+    # be a whole word. For the shooting gallery, where one shot is one cell and a
+    # trigram cell shot once is a legitimate 3-letter word (the min2cells rules
+    # would wrongly reject it), while single-letter shots (S / O / T) are still cut.
+    return len(text) >= 3
+
 # Minimum-word rule (letters + cells), chosen by the YAML key game_screen.word_length.
 _WORD_LENGTH_RULES = {
     "rule_word_min2letters_min2cells": rule_word_min2letters_min2cells,
     "rule_word_min3letters_min2cells": rule_word_min3letters_min2cells,
+    "rule_word_min3letters_min1cell": rule_word_min3letters_min1cell,
 }
 
 
@@ -350,7 +360,7 @@ def _gram_manip_family(text):
 
 
 class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin,
-                 ConstellationMixin, InputMixin):
+                 ConstellationMixin, ShootingMixin, InputMixin):
     # Error-display defaults so the submission pipeline reads sane values on a bare
     # __new__ test instance (build() overrides both from config). Text mode always
     # shows the "did you mean?" hint, matching the pre-icon behavior. See
@@ -663,6 +673,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # layouts, rather than a separate formation_arrangement key. One place to pick
         # the opening layout.
         setup_formation_rules = {
+            "rule_formation_empty": self._rule_formation_empty,
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
             "rule_formation_fill_player_diagonal": self._rule_formation_fill_player_diagonal,
@@ -830,6 +841,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_mode_typewriter": TypewriterMovingMode,
             "rule_mode_omniswap_vs_timer": OmniswapVsTimerMode,
             "rule_mode_constellation": ConstellationMode,
+            "rule_mode_shooting_gallery": ShootingGalleryMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
         # Constellation mode swaps stage-1 word-finding from the adjacency
@@ -844,6 +856,25 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # sample (see _rule_omniswap_auto_end_on / _omniswap_word_samples). False
         # for every other mode.
         self._omniswap = self._moving_mode.is_omniswap
+        # Shooting-gallery mode: a fairground shooter where cells are SHOT (not
+        # typed) to build a word, greedily submitted the instant it is a dictionary
+        # word (see ShootingMixin / ShootingGalleryMode). The engine reads it to draw
+        # the crosshair overlay + hide the system cursor. False for every other mode.
+        self._shooting = self._moving_mode.is_shooting
+        # Shooting-gallery knobs (game_screen.shooting_*), read by ShootingField +
+        # ShootingGalleryMode; ignored by every other mode. The crosshair color comes
+        # from the colors asset (board.crosshair), overridable per mode via assets.colors.
+        self._shooting_batch_size = CONFIG["rules"]["game_screen.shooting_batch_size"]
+        self._shooting_batch_count = CONFIG["rules"]["game_screen.shooting_batch_count"]
+        self._shooting_batch_delay_seconds = CONFIG["rules"]["game_screen.shooting_batch_delay_seconds"]
+        self._shooting_fade_in_seconds = CONFIG["rules"]["game_screen.shooting_fade_in_seconds"]
+        self._shooting_hold_seconds = CONFIG["rules"]["game_screen.shooting_hold_seconds"]
+        self._shooting_fade_out_seconds = CONFIG["rules"]["game_screen.shooting_fade_out_seconds"]
+        self._shooting_shot_fade_seconds = CONFIG["rules"]["game_screen.shooting_shot_fade_seconds"]
+        self._shooting_word_timeout_seconds = CONFIG["rules"]["game_screen.shooting_word_timeout_seconds"]
+        self._shooting_crosshair_scale = CONFIG["rules"]["game_screen.shooting_crosshair_scale"]
+        self._shooting_crosshair_gap = CONFIG["rules"]["game_screen.shooting_crosshair_gap"]
+        self._crosshair_color = get_color("board.crosshair")
         # Phase model (game_screen.phase_model): two distinct phases (MOVING then
         # SELECTING) or one merged MOVING_AND_SELECTING pane where the player
         # rearranges the board and submits words inline, never leaving MOVING.
@@ -1142,9 +1173,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             # Point BOTH slots at it -- the submit pipeline talks to the selecting
             # slot, the hunt highlight + status labels to the moving slot -- and it
             # replaces the plain MovingSidePane built earlier in __init__.
+            # Shooting gallery drives the merged field by SHOOTING, not typing, and
+            # its buffer letters need not be on the board -- so the live word-HUNT
+            # highlight (on_change) has nothing meaningful to light and is dropped.
+            on_change = None if self._shooting else self._on_hunt_change
             merged = MovingSelectingSidePane(
                 self._moving_side_pane.x, 0, self._moving_side_pane.width, window.height,
-                on_submit=self._on_submit_word, on_change=self._on_hunt_change,
+                on_submit=self._on_submit_word, on_change=on_change,
                 on_end=self._enter_endgame, show_end=self._show_end_btn,
                 show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
                 error_display=self._error_display,
@@ -1912,6 +1947,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         if session_log.is_open():
             L.log_00002("left_screen")
             session_log.close(reason="left_screen")
+        # Never leave the game screen with the system cursor hidden (shooting mode
+        # hides it for the crosshair); restore it for the menu / other screens.
+        self._window.set_mouse_visible(True)
 
     def dispose(self):
         """Detach this screen's window handlers so it can be dropped for GC. Called
@@ -1950,6 +1988,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # Candidate polylines for the open "select which one" chooser, above the
         # trails; empty (draws nothing) when no chooser is open.
         self._disambig_lines.draw()
+        # Shooting-gallery aiming reticle, over the board while the player is aiming
+        # (MOVING, menu closed). Drawn only in shooting mode; the system cursor is
+        # hidden to match (see _sync_shooting_cursor).
+        if (self._shooting and self._phase == Phase.MOVING and not self._menu_open):
+            self._moving_mode.draw_crosshair()
         # The right pane swaps between the opening "LOADING..." pane, the
         # game-long cleared-word list (MOVING) and the word-entry UI (SELECTING).
         if self._phase == Phase.LOADING:
@@ -1968,6 +2011,16 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         if self._menu_open:
             self._ingame_menu.draw()
     
+    def _sync_shooting_cursor(self):
+        """Hide the system cursor exactly while the shooting-gallery crosshair is
+        live -- MOVING with the menu closed -- and show it again whenever the menu
+        is open or the game has ended (so the player can point at the pause menu / a
+        dismiss click). A no-op outside shooting mode. Called on every menu toggle
+        and end transition; the mode also hides it once on start()."""
+        if self._shooting:
+            live = self._phase == Phase.MOVING and not self._menu_open
+            self._window.set_mouse_visible(not live)
+
     def update(self, dt):
         # Debug panel (F3) formable-word samples: recompute only while the panel is
         # visible and something changed, so normal (hidden) play does no dictionary

@@ -8,6 +8,7 @@ board:
   active_piece_fill: [100, 180, 245]   # darker blue: the live/movable piece
   placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
   cursor_fill:      [80, 80, 80]      # dark grey: the MOVING_TYPEWRITER cursor cell
+  crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
   fossilized_fill:  [165, 165, 165]   # stone grey: a fossilized cell (formed word, frozen + dead)
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)

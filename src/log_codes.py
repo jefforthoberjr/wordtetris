@@ -203,6 +203,18 @@ def log_20005(action, cell, other=None):
                      action=action, cell=cell_s, other=other_s)
 
 
+def log_20006(action, cell, gram, buffer):
+    """A shooting-gallery shot outcome (game_screen.mode =
+    rule_mode_shooting_gallery). `action` is hit / miss (an empty-cell click);
+    `cell` the click's board cell; `gram` the shot gram's letters ('-' on a miss);
+    `buffer` the running shot-word after the shot. Makes the shoot-to-spell stream
+    -- which cell, which letters, what word so far -- visible for replay/analysis."""
+    cell_s = "-" if cell is None else f"{cell[0]},{cell[1]}"
+    gram_s = gram or "-"
+    session_log.emit(20006, f"shot {action} at {cell_s} -> {buffer or '(empty)'}",
+                     action=action, cell=cell_s, gram=gram_s, buffer=buffer)
+
+
 # --- 3xxxx  word pipeline ----------------------------------------------------
 def log_30001(word):
     """A word was submitted in the interactive SELECT phase (the normalized,

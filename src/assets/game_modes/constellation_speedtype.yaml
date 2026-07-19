@@ -20,6 +20,7 @@ rules:
   game_screen.phase_model: rule_single_phase
   
   game_screen.game_timer: rule_game_timer_on
+  # game_screen.game_timer: rule_game_timer_off
   game_screen.constellation_auto_end: rule_constellation_auto_end_off
 
   

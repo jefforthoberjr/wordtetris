@@ -37,6 +37,8 @@ class InputMixin:
     def _handle_menu_action(self, action):
         if action == "resume":
             self._menu_open = False
+            # Re-hide the system cursor if play resumes in shooting mode.
+            self._sync_shooting_cursor()
         elif action == "main_menu":
             self._screen_manager.switch_to(ScreenType.MAIN_MENU)
         elif action == "exit":
@@ -94,6 +96,8 @@ class InputMixin:
         if symbol in self._keys["pause"]:
             self._menu_open = True
             self._ingame_menu.reset()
+            # Restore the system cursor over the pause menu (shooting mode hid it).
+            self._sync_shooting_cursor()
             return True
 
         # During the opening reveal nothing on the board responds; only the pause
@@ -248,3 +252,8 @@ class InputMixin:
     def on_mouse_motion(self, x, y, dx, dy):
         if self._menu_open:
             self._ingame_menu.on_mouse_motion(x, y, dx, dy)
+        # Shooting gallery: the crosshair overlay follows the mouse. Tracked even
+        # with the menu open so it's in the right place the instant play resumes;
+        # it just isn't drawn until then (see draw / _sync_shooting_cursor).
+        if self._shooting and self._phase == Phase.MOVING:
+            self._moving_mode.on_mouse_motion(x, y)

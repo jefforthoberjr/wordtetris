@@ -266,6 +266,9 @@ class BoardRulesMixin:
         self._end_overlay_dismissed = False
         self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
+        # Restore the system cursor if the shooting-gallery crosshair was hiding it,
+        # so the player can dismiss the end panel (phase is no longer MOVING).
+        self._sync_shooting_cursor()
         # End-of-game bonus for time left on the clock (per whole second). Read
         # whichever clock is active -- the whole-game timer (owned here) if on, else
         # the countdown mode's remaining seconds (0 in modes with no clock, and ~0

@@ -296,6 +296,13 @@ class BoardSetupMixin:
     # its cells in _obstacle_cells / _mission_cells. Clearing is intentionally
     # skipped (we never call _begin_selection), so the player doesn't start the
     # game with words already cleared for free.
+    def _rule_formation_empty(self):
+        """Leave the board completely empty -- no obstacle, mission, or player fill.
+        For modes whose own field populates cells at runtime: MOVING_SHOOTING_GALLERY's
+        ShootingField spawns fade-in gram batches into the empty grid. Pair with
+        game_screen.victory: rule_victory_none (an empty board is not a win here)."""
+        pass
+
     def _rule_formation_scattered(self):
         """The original opening: OBSTACLE_COUNT obstacles and MISSION_COUNT
         missions, each scattered to a random on-board, non-overlapping spot.

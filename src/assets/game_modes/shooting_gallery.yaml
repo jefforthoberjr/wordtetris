@@ -1,0 +1,60 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
+# scoring, dictionary, gram picks, spell_check ...) comes from the base file.
+# mode_label is the menu display name, stripped before merge -- not a game knob.
+# Signature = SHOOTING GALLERY PRESET in CONFIG_REFERENCE.md.
+mode_label: "Shooting Party"
+
+# MINDSET
+# A fairground shooter. Grams appear in fading batches; aim the crosshair and
+# shoot cells to spell words. Shot letters bank into a buffer that auto-submits
+# the instant it is a real word. Race the 5-minute clock.
+
+rules:
+  game_screen.mode: rule_mode_shooting_gallery
+
+  # Empty board -- the ShootingField owns the grams, spawning them in fade batches.
+  game_screen.setup_formation: rule_formation_empty
+
+  # One continuous real-time phase: the buffer + Clear-word button ride one merged
+  # pane and the player never leaves MOVING (there is no typing / SELECT phase).
+  game_screen.phase_model: rule_single_phase
+
+  # The gallery clock: 5 minutes across the whole game. This is the only end.
+  game_screen.game_timer: rule_game_timer_on
+  game_screen.game_timer_seconds: 300
+  game_screen.victory: rule_victory_none
+
+  # Detection is automatic (greedy on the shot buffer), so only Clear word is shown
+  # -- there is nothing to submit / advance / end by hand.
+  game_screen.show_clear_button:  rule_show_clear_button
+  game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button:   rule_hide_next_button
+  game_screen.show_end_button:    rule_hide_end_button
+
+  # The shot buffer is scored, not board-cleared, so no clear-action / trail is
+  # needed; keep them quiet.
+  game_screen.clear_action: rule_remove_cells
+  game_screen.word_trail:   rule_word_trail_off
+
+  # Minimum word: 3 letters AND 2+ cells -- single-letter shots (S / O / T) never
+  # clear, and a word must span at least two SHOT cells, so a lone trigram cell
+  # (e.g. "SON") can't clear on its own; you must chain grams from separate shots.
+  game_screen.word_length: rule_word_min3letters_min2cells
+
+  # Churn: several batches run at once on staggered schedules (e.g. 5 batches of
+  # 10 rippling across the board). Each cell fades in, lingers fully shown for the
+  # hold, then fades out over ~5s; a shot cell fades fast (0.5s).
+  game_screen.shooting_batch_size:           10
+  game_screen.shooting_batch_count:          5
+  game_screen.shooting_batch_delay_seconds:  12
+  game_screen.shooting_fade_in_seconds:      0.5
+  game_screen.shooting_hold_seconds:         1.5
+  game_screen.shooting_fade_out_seconds:     5.0
+  game_screen.shooting_shot_fade_seconds:    0.5
+  # Seconds of no shot before a non-word buffer is declared a miss and cleared.
+  game_screen.shooting_word_timeout_seconds: 20
+
+  # Reticle: about one cell wide, a small center gap, the board.crosshair color.
+  game_screen.shooting_crosshair_scale: 1.0
+  game_screen.shooting_crosshair_gap:   0.35

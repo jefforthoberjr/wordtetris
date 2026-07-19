@@ -1,8 +1,9 @@
 import math
 import pyglet
-from config import select_rule
+from config import select_rule, get_string
 from source import rand
 from models.hex_grid import flattop_vertices
+from models.word_dictionary import is_word
 from views.shaders import get_shape_shader
 import log_codes as L
 
@@ -87,6 +88,12 @@ class MovingMode:
     # engine reads it to gate the omniswap auto-end + F3 word sample; only
     # OmniswapVsTimerMode flips it True.
     is_omniswap = False
+
+    # Whether this mode is the shooting gallery: cells are SHOT (not typed) to build
+    # a word, greedily submitted the instant it is a dictionary word. The engine
+    # reads it to draw the crosshair overlay + hide the system cursor; only
+    # ShootingGalleryMode flips it True.
+    is_shooting = False
 
     def __init__(self, game_screen):
         self._gs = game_screen
@@ -753,3 +760,365 @@ class ConstellationMode(MovingMode):
         """The moving pane's Select button: same as ENTER -- open SELECT with an
         empty placed set (a word may assemble anywhere)."""
         self._gs._begin_selection([])
+
+
+class _ShootingCell:
+    """One live shooting-gallery target: a placed cell whose render objects fade in,
+    linger, then fade out. Drives the cell's own fade handles (AlphaFade / WhiteFade,
+    the same ones the opening reveal + constellation replenish use) directly, ramping
+    a single visible `fraction` (0 = gone, 1 = full) through three phases:
+      'in'   -- fraction 0 -> 1 over fade_in seconds (the spawn bloom)
+      'hold' -- fraction pinned at 1 for hold seconds (fully shown, no fade yet)
+      'out'  -- fraction 1 -> 0 over the current duration (fade_out normally, or the
+                fast shot_fade once shot), after which the cell is finished and its
+                board cell is cleared by the field.
+    Shootable in any phase; shoot() switches it straight to a fast fade-out that
+    resumes from its current dimness so the fraction never jumps."""
+
+    def __init__(self, handles, fade_in, hold, fade_out):
+        self._handles = handles
+        self._hold = max(0.0, float(hold))
+        self._fade_out = max(0.0001, float(fade_out))
+        self.phase = "in"
+        self.duration = max(0.0001, float(fade_in))
+        self.clock = 0.0
+        self.fraction = 0.0
+        self.shot = False
+        self._apply()
+
+    @property
+    def finished(self):
+        return self.phase == "out" and self.clock >= self.duration
+
+    def advance(self, dt):
+        self.clock += dt
+        if self.phase == "in":
+            self.fraction = min(1.0, self.clock / self.duration)
+            if self.clock >= self.duration:      # bloom complete -> linger fully shown
+                self._enter("hold", self._hold, 1.0)
+        elif self.phase == "hold":
+            self.fraction = 1.0
+            if self.clock >= self.duration:      # linger over -> begin fading out
+                self._enter("out", self._fade_out, 1.0)
+        else:
+            self.fraction = max(0.0, 1.0 - self.clock / self.duration)
+        self._apply()
+
+    def shoot(self, shot_fade):
+        """Switch to the fast shot fade-out, resuming from the current visible
+        fraction (so a cell shot mid-bloom / mid-hold keeps its brightness, then
+        drops)."""
+        self.shot = True
+        self.phase = "out"
+        self.duration = max(0.0001, float(shot_fade))
+        self.clock = (1.0 - self.fraction) * self.duration
+
+    def _enter(self, phase, duration, fraction):
+        self.phase = phase
+        self.duration = max(0.0001, float(duration))
+        self.clock = 0.0
+        self.fraction = fraction
+
+    def _apply(self):
+        for handle in self._handles:
+            handle.set_progress(self.fraction)
+
+
+class _BatchSlot:
+    """One independently-cycling batch inside a ShootingField. Spawns a batch of
+    cells (via the field), runs them through their fade, and once they have ALL
+    cleared waits batch_delay before spawning the next -- its own clock, so several
+    slots run on staggered ('alternating') schedules. Positions never collide across
+    slots: the field only ever draws from currently-EMPTY board cells, and every live
+    cell (any slot) is a placed, occupied board cell."""
+
+    def __init__(self, field):
+        self._field = field
+        self.cells = {}           # (x, y) -> _ShootingCell owned by this slot
+        self._between = 0.0        # seconds until this slot's next batch spawns
+
+    def reset(self, initial_delay):
+        self.cells = {}
+        self._between = float(initial_delay)   # stagger before the FIRST batch
+
+    def tick(self, dt):
+        if not self.cells:
+            self._between -= dt
+            if self._between <= 0:
+                self._field._spawn_batch_into(self)
+            return
+        finished = []
+        for pos, st in self.cells.items():
+            st.advance(dt)
+            if st.finished:
+                finished.append(pos)
+        for pos in finished:
+            del self.cells[pos]
+            self._field._gs._board.clear_cell(*pos)
+        if not self.cells:
+            self._between = self._field._batch_delay
+
+
+class ShootingField:
+    """The MOVING_SHOOTING_GALLERY churn (game_screen.shooting_*). The board opens
+    empty (rule_formation_empty); this field spawns grams in fading BATCHES for the
+    player to shoot. A batch is up to `batch_size` random empty cells, each given a
+    fresh player gram (via _fill_one_player_cell), faded IN over `fade_in`, held fully
+    shown for `hold`, then faded OUT over `fade_out` before its board cell is cleared.
+    Shooting a cell switches it to the fast `shot_fade` (its gram was already banked
+    in the buffer at the shot, so the fast fade is purely visual). Cells are shootable
+    throughout their whole life -- mid fade-in, hold, or fade-out alike.
+
+    `batch_count` batches run at once, each an independent _BatchSlot on its own
+    clock. At start their first spawns are staggered across one full cycle so the
+    batches fade on alternating schedules (e.g. 5 batches of 10 rippling across the
+    board) rather than all blooming together. Each slot, once its batch clears, waits
+    `batch_delay` and respawns. A single batch (batch_count=1) is the original churn.
+
+    Structural twin of SandTimerField: an owned per-cell timer field the mode ticks
+    each frame across MOVING; here the cells appear/vanish rather than fossilize."""
+
+    def __init__(self, game_screen, batch_size, batch_count, batch_delay,
+                 fade_in, hold, fade_out, shot_fade):
+        self._gs = game_screen
+        self._batch_size = max(1, int(batch_size))
+        self._batch_delay = float(batch_delay)
+        self._fade_in = float(fade_in)
+        self._hold = float(hold)
+        self._fade_out = float(fade_out)
+        self._shot_fade = float(shot_fade)
+        self._slots = [_BatchSlot(self) for _ in range(max(1, int(batch_count)))]
+
+    # --- queries ---------------------------------------------------------
+    def active_positions(self):
+        out = []
+        for slot in self._slots:
+            out.extend(slot.cells)
+        return out
+
+    def _cell_at(self, pos):
+        for slot in self._slots:
+            st = slot.cells.get(pos)
+            if st is not None:
+                return st
+        return None
+
+    def is_live(self, pos):
+        """A shootable cell: one this field owns (in any slot) not yet shot."""
+        st = self._cell_at(pos)
+        return st is not None and not st.shot
+
+    # --- lifecycle -------------------------------------------------------
+    def start(self):
+        # Stagger each slot's FIRST batch across one full cycle so the batches fade
+        # on alternating schedules instead of all at once. A lone slot starts at 0.
+        cycle = self._fade_in + self._hold + self._fade_out + self._batch_delay
+        stagger = cycle / len(self._slots)
+        for i, slot in enumerate(self._slots):
+            slot.reset(i * stagger)
+        # Fire the zero-delay spawns now so the first (offset-0) batch is on the
+        # board the instant play begins; later slots wait out their stagger in tick.
+        self.tick(0.0)
+
+    def shoot(self, pos):
+        """Mark the cell at `pos` shot -> fast fade-out. No-op if it isn't live."""
+        st = self._cell_at(pos)
+        if st is not None and not st.shot:
+            st.shoot(self._shot_fade)
+
+    def tick(self, dt):
+        """Advance every slot: fade its live cells, clear the finished ones, and
+        respawn a drained batch after batch_delay. Called each frame while MOVING
+        (paused with the menu, like every other play timer)."""
+        for slot in self._slots:
+            slot.tick(dt)
+
+    # --- internals -------------------------------------------------------
+    def _spawn_batch_into(self, slot):
+        pool = self._empty_cells()
+        for pos in self._sample(pool, min(self._batch_size, len(pool))):
+            self._gs._fill_one_player_cell(*pos)     # places a fresh gram + logs it
+            cell = self._gs._board.get_cell(*pos)
+            handles = []
+            self._gs._add_cell_label_fade_handle(handles, cell)
+            self._gs._add_cell_background_fade_handles(handles, cell)
+            slot.cells[pos] = _ShootingCell(
+                handles, self._fade_in, self._hold, self._fade_out)
+
+    def _empty_cells(self):
+        board = self._gs._board
+        out = []
+        for y in range(board.height):
+            for x in range(board.width):
+                if board.is_valid(x, y) and not board.is_cell_occupied(x, y):
+                    out.append((x, y))
+        return out
+
+    def _sample(self, pool, n):
+        """`n` distinct random cells from `pool`, drawn through the seeded rand() so
+        a replay reproduces the same batch (mirrors SandTimerField._refill)."""
+        pool = list(pool)
+        chosen = []
+        for _ in range(min(n, len(pool))):
+            chosen.append(pool.pop(rand().randrange(len(pool))))
+        return chosen
+
+
+class Crosshair:
+    """The MOVING_SHOOTING_GALLERY aiming reticle that follows the mouse: four arms
+    (up / down / left / right) in the crosshair color with a blank gap at the very
+    center, sized to about a cell. Owns its own batch, drawn over the board by
+    GameScreen.draw while MOVING (and hidden with the system cursor when the pause
+    menu is open)."""
+
+    def __init__(self, half, gap, color):
+        self._half = max(2.0, float(half))       # arm reach in px from center
+        self._gap = max(0.0, float(gap))         # blank radius in px at center
+        self._batch = pyglet.graphics.Batch()
+        program = get_shape_shader()
+        thickness = max(1.0, self._half * 0.06)
+        self._lines = [
+            pyglet.shapes.Line(0, 0, 0, 0, thickness=thickness, color=color,
+                               batch=self._batch, program=program)
+            for _ in range(4)
+        ]
+        self.move(-1000.0, -1000.0)              # start off-screen until first motion
+
+    def move(self, x, y):
+        g, h = self._gap, self._half
+        segs = ((x, y + g, x, y + h), (x, y - g, x, y - h),
+                (x - g, y, x - h, y), (x + g, y, x + h, y))
+        for line, (x1, y1, x2, y2) in zip(self._lines, segs):
+            line.x, line.y, line.x2, line.y2 = x1, y1, x2, y2
+
+    def draw(self):
+        self._batch.draw()
+
+
+class ShootingGalleryMode(MovingMode):
+    """MOVING_SHOOTING_GALLERY -- a fairground shooter over an otherwise-empty board.
+    The ShootingField spawns grams in fading batches; the player aims a crosshair and
+    left-clicks ("shoots") a cell to append its gram to a running buffer and blow the
+    cell away (a fast fade). Detection is greedy: the instant the buffer spells a
+    dictionary word it auto-submits for points (see GameScreen._shooting_submit) and
+    the buffer clears; a non-word buffer left idle for shooting_word_timeout_seconds
+    is declared a miss (an error blip, buffer cleared). No typing and no board
+    rearrangement -- one continuous real-time phase against game_screen.game_timer.
+
+    Pairs with the SHOOTING GALLERY preset: rule_formation_empty, rule_single_phase
+    (the merged pane shows the buffer + Clear-word button), rule_game_timer_on with a
+    300s clock, and rule_victory_none. The shot buffer is validated as a plain
+    dictionary lookup, so the constellation matcher / pathfinder both sit idle."""
+
+    is_shooting = True
+
+    def __init__(self, game_screen):
+        super().__init__(game_screen)
+        self._field = None
+        self._crosshair = None
+        self._buffer = []          # [(pos, gram_text)] shot toward the current word
+        self._since_shot = 0.0     # seconds since the last shot (miss timeout)
+
+    def start(self):
+        gs = self._gs
+        self._buffer = []
+        self._since_shot = 0.0
+        self._field = ShootingField(
+            gs, gs._shooting_batch_size, gs._shooting_batch_count,
+            gs._shooting_batch_delay_seconds, gs._shooting_fade_in_seconds,
+            gs._shooting_hold_seconds, gs._shooting_fade_out_seconds,
+            gs._shooting_shot_fade_seconds)
+        self._field.start()
+        half = gs._cell_size * gs._shooting_crosshair_scale
+        self._crosshair = Crosshair(half, half * gs._shooting_crosshair_gap,
+                                    gs._crosshair_color)
+        gs._window.set_mouse_visible(False)      # the crosshair replaces the cursor
+
+    def advance(self):
+        # No SELECT turn ever resolves here (detection is inline + automatic).
+        pass
+
+    def update(self, dt):
+        self._field.tick(dt)
+        # Miss timeout: an incomplete buffer left idle clears with an error blip.
+        # Greedy detection auto-submits a COMPLETE word the instant it forms, so
+        # between shots the buffer is never complete -- this only fires on a genuine
+        # dead-end run (too short, or not a word). Uses the same completeness test as
+        # the submit gate so a valid-but-too-short buffer (e.g. "AT") still times out.
+        if self._buffer:
+            self._since_shot += dt
+            if (self._since_shot >= self._gs._shooting_word_timeout_seconds
+                    and not self._is_complete_word()):
+                self._miss()
+
+    def active_cells(self):
+        # No live piece to hover-hide; the crosshair is a pure overlay.
+        return []
+
+    # --- input -----------------------------------------------------------
+    def on_mouse_press(self, x, y, button):
+        gs = self._gs
+        if button != gs._buttons["move_primary"]:
+            return
+        pos = gs._board.cell_at(x, y)
+        if pos is None or not self._field.is_live(pos):
+            L.log_20006("miss", pos, None, self._word())
+            return
+        gram = gs._board.gram_at(*pos)
+        text = gram.text if gram is not None else ""
+        if not text:
+            # A wild / empty-text cell carries no fixed letters to spell with; treat
+            # a shot on it as a miss (mirrors the matcher skipping wild cells).
+            L.log_20006("miss", pos, None, self._word())
+            return
+        # Resync if the buffer was cleared out from under the mode (the Clear-word
+        # button empties the pane directly), so the next shot starts a fresh word.
+        if gs._moving_side_pane.is_empty():
+            self._buffer = []
+        self._buffer.append((pos, text))
+        self._since_shot = 0.0
+        self._field.shoot(pos)                   # fast fade-out (gram already banked)
+        gs._moving_side_pane.on_text(text)       # mirror it into the buffer readout
+        L.log_20006("hit", pos, text, self._word())
+        if self._is_complete_word():
+            self._submit()
+
+    def on_mouse_motion(self, x, y):
+        if self._crosshair is not None:
+            self._crosshair.move(x, y)
+
+    def draw_crosshair(self):
+        if self._crosshair is not None:
+            self._crosshair.draw()
+
+    # --- word buffer -----------------------------------------------------
+    def _word(self):
+        return "".join(text for _, text in self._buffer)
+
+    def _is_complete_word(self):
+        """Whether the shot buffer is a submittable word: a dictionary word that
+        also passes the active game_screen.word_length rule (the shooting preset
+        uses rule_word_min3letters_min1cell, so single-letter grams like S / O / T
+        never clear). The length rule reads letters + cell count, so pass the shot
+        cells as the path."""
+        word = self._word()
+        if not word:
+            return False
+        path = [pos for pos, _ in self._buffer]
+        return is_word(word) and self._gs._word_length_rule(word, path)
+
+    def _submit(self):
+        path = [pos for pos, _ in self._buffer]
+        segments = [text for _, text in self._buffer]
+        self._gs._shooting_submit(self._word(), path, segments)
+        self._buffer = []
+        self._since_shot = 0.0
+
+    def _miss(self):
+        word = self._word()
+        pane = self._gs._moving_side_pane
+        pane.clear_word()
+        pane.show_errors([get_string("err_shooting_miss")], "shooting_miss")
+        L.log_30003(word, "shooting_miss")
+        self._buffer = []
+        self._since_shot = 0.0

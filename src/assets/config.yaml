@@ -102,11 +102,12 @@ rules:
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation. [ref: game_screen.mode]
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
   # game_screen.mode:       rule_mode_omniswap_vs_timer
   game_screen.mode:       rule_mode_constellation
+  # game_screen.mode:       rule_mode_shooting_gallery
 
   # CONSTELLATION: max distinct cell-assemblies the matcher returns per word (the
   # chooser cycles them; auto-pick keeps fewest-cell). [ref: game_screen.constellation_max_paths]
@@ -125,6 +126,27 @@ rules:
   # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
   # game_screen.constellation_auto_end: rule_constellation_auto_end_off
   game_screen.constellation_auto_end: rule_constellation_auto_end_on
+
+  # SHOOTING GALLERY: cells per fade batch (fade in together, out over the fade-out seconds). [ref: game_screen.shooting_batch_size]
+  game_screen.shooting_batch_size: 7
+  # SHOOTING GALLERY: how many batches run at once, on staggered schedules. [ref: game_screen.shooting_batch_count]
+  game_screen.shooting_batch_count: 1
+  # SHOOTING GALLERY: seconds to wait after a batch fully clears before the next spawns. [ref: game_screen.shooting_batch_delay_seconds]
+  game_screen.shooting_batch_delay_seconds: 10
+  # SHOOTING GALLERY: seconds a fresh batch cell takes to fade IN. [ref: game_screen.shooting_fade_in_seconds]
+  game_screen.shooting_fade_in_seconds: 0.5
+  # SHOOTING GALLERY: seconds a cell stays fully shown before it starts fading OUT. [ref: game_screen.shooting_hold_seconds]
+  game_screen.shooting_hold_seconds: 1.0
+  # SHOOTING GALLERY: seconds an un-shot cell takes to fade OUT. [ref: game_screen.shooting_fade_out_seconds]
+  game_screen.shooting_fade_out_seconds: 5.0
+  # SHOOTING GALLERY: seconds a SHOT cell takes to fade out (fast). [ref: game_screen.shooting_shot_fade_seconds]
+  game_screen.shooting_shot_fade_seconds: 0.5
+  # SHOOTING GALLERY: seconds of no shot before a non-word buffer errors + clears. [ref: game_screen.shooting_word_timeout_seconds]
+  game_screen.shooting_word_timeout_seconds: 10
+  # SHOOTING GALLERY: crosshair half-size as a fraction of a cell radius. [ref: game_screen.shooting_crosshair_scale]
+  game_screen.shooting_crosshair_scale: 1.0
+  # SHOOTING GALLERY: crosshair center gap as a fraction of its half-size. [ref: game_screen.shooting_crosshair_gap]
+  game_screen.shooting_crosshair_gap: 0.35
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
@@ -161,6 +183,7 @@ rules:
   # Min word size. [ref: game_screen.word_length]
   game_screen.word_length:  rule_word_min3letters_min2cells
   # game_screen.word_length: rule_word_min2letters_min2cells
+  # game_screen.word_length: rule_word_min3letters_min1cell   # shooting gallery: 3+ letters, any cells
 
   # Enumerate every word the opening board could spell -> coverage.csv (BLOCKING, slow).
   # game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
@@ -205,6 +228,7 @@ rules:
   # game_screen.spawn_orientation: rule_orient_default
 
   # Opening obstacle/mission layout (or full-board player fill). [ref: game_screen.setup_formation]
+  # game_screen.setup_formation: rule_formation_empty
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
   # game_screen.setup_formation: rule_formation_fill_player_diagonal
