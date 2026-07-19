@@ -249,6 +249,10 @@ rules:
   # hex_grid.word_pathfinding: rule_snake_straightline  #TODO retest these after refactor
   hex_grid.word_pathfinding: rule_snake_anydirection
 
+  # Stage 1 (pathfind): how the square search snakes the board. [ref: square_grid.word_pathfinding]
+  square_grid.word_pathfinding: rule_snake_anydirection
+  # square_grid.word_pathfinding: rule_snake_anydirection_diagonal
+
   # Stage 2a (nucleate): which found words count this phase. [ref: game_screen.word_nucleation]
   # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
   game_screen.word_nucleation: rule_nucleate_anywhere

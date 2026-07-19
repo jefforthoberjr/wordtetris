@@ -4,7 +4,41 @@ from models.grid_cell import GridCell
 from models.gram import Gram, gram_font_size
 from models.gram_text_color import cell_text_color
 from views.shaders import get_shape_shader
-from config import get_color
+from config import select_rule, get_color
+
+
+# Step offsets indexed by a `direction` id, mirroring hex_grid's direction
+# constants so the shared word-walk can hand a direction back as prev_direction.
+# 0-3 are the cardinals; 4-7 are the diagonals.
+_SQUARE_STEPS = (
+    (1, 0), (-1, 0), (0, 1), (0, -1),      # E, W, N, S
+    (1, 1), (1, -1), (-1, 1), (-1, -1),    # NE, SE, NW, SW
+)
+_SQUARE_DIRS_CARDINAL = (0, 1, 2, 3)
+_SQUARE_DIRS_ALL = (0, 1, 2, 3, 4, 5, 6, 7)
+
+
+def rule_snake_anydirection(prev_direction):
+    """Snake through the four cardinals with no turn restriction (the board's
+    long-standing behavior). No diagonals. The only limit -- no snaking back onto
+    a cell already in the path -- can't be seen from a direction set, so it's
+    enforced by the path-visited guard in the caller's word walk."""
+    return _SQUARE_DIRS_CARDINAL
+
+
+def rule_snake_anydirection_diagonal(prev_direction):
+    """Like rule_snake_anydirection but also lets the walk step diagonally, so a
+    word may run through the eight king-move directions with any turn allowed.
+    Same path-visited guard stops it doubling back."""
+    return _SQUARE_DIRS_ALL
+
+
+# Which snake-direction the pathfinding walk may take, chosen by the YAML key
+# square_grid.word_pathfinding.
+_SQUARE_RULES = {
+    "rule_snake_anydirection": rule_snake_anydirection,
+    "rule_snake_anydirection_diagonal": rule_snake_anydirection_diagonal,
+}
 
 
 class SquareGrid:
@@ -19,6 +53,9 @@ class SquareGrid:
                 row.append(GridCell())
             self._cells.append(row)
         
+        # Rule for which directions the pathfinding walk can take (_SQUARE_RULES).
+        self._snake_rule = select_rule("square_grid.word_pathfinding", _SQUARE_RULES)
+
         self._lines = []
         self._create_lines(window_width, window_height, batch)
     
@@ -135,15 +172,19 @@ class SquareGrid:
             cell.overlay.set_text(text, font_size)
 
     def forward_neighbors(self, x, y, prev_direction=None):
-        """Cardinal neighbors of (x, y) for snaking words in any direction, with
-        no diagonals. Matches the hex grid's forward_neighbors call shape so the
-        same snaking word-walk serves both boards. prev_direction is accepted but
-        ignored: the square grid imposes no turn restriction, so a word may bend
-        any way; the walk's own path-visited guard is what stops it from snaking
-        backwards onto a cell it already used."""
-        steps = ((1, 0), (-1, 0), (0, 1), (0, -1))
+        """Neighbors of (x, y) the snaking word-walk may step to, per the
+        configured square_grid.word_pathfinding rule (_SQUARE_RULES): cardinals
+        only, or cardinals plus diagonals. Matches the hex grid's
+        forward_neighbors call shape so the same word-walk serves both boards.
+        prev_direction is passed to the rule but the current square rules ignore
+        it (no turn restriction); the walk's own path-visited guard is what stops
+        a word from snaking backwards onto a cell it already used."""
+        # Old hardcoded cardinal-only version, preserved for reference:
+        #   steps = ((1, 0), (-1, 0), (0, 1), (0, -1))
+        #   for direction, (dx, dy) in enumerate(steps): ...
         result = []
-        for direction, (dx, dy) in enumerate(steps):
+        for direction in self._snake_rule(prev_direction):
+            dx, dy = _SQUARE_STEPS[direction]
             nx, ny = x + dx, y + dy
             if self.is_valid(nx, ny):
                 result.append(((nx, ny), direction))

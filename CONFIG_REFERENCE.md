@@ -760,11 +760,22 @@ kind", so that victory rule can't be satisfied.
 
 ### hex_grid.word_pathfinding
 Stage 1 (pathfind): how the search walks the board to find words. Grid-level because
-geometry differs — the square board steps its 4 cardinals (hardcoded); the hex
-board's snake directions are configurable here.
+geometry differs — the hex board's snake directions are configured here, the square
+board's under `square_grid.word_pathfinding`.
 - `rule_snake_rightanddown_nosharptwist`, `rule_snake_rightanddown`,
   `rule_snake_straightline` — TODO: retest after refactor.
 - `rule_snake_anydirection` — current.
+
+### square_grid.word_pathfinding
+Stage 1 (pathfind) for the square board — the counterpart to
+`hex_grid.word_pathfinding`. Chooses which step directions the word-walk may take.
+Neither rule restricts turns; the walk's path-visited guard is what stops a word
+doubling back onto its own cells. (Physical adjacency for the SELECT phase stays
+cardinal-only regardless — this knob only affects the word-finding walk.)
+- `rule_snake_anydirection` — the four cardinals, any turn (the board's original
+  hardcoded behavior).
+- `rule_snake_anydirection_diagonal` — the eight king-move directions (cardinals +
+  diagonals), any turn; lets words run diagonally across the grid.
 
 ### game_screen.word_nucleation
 Stage 2a (nucleate): of every word found, which count for the moving phase just

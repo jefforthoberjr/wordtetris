@@ -28,6 +28,7 @@ rules:
 
   game_screen.word_length: rule_word_min3letters_min1cell
   game_screen.word_repeat: rule_repeat_allow
+  square_grid.word_pathfinding: rule_snake_anydirection_diagonal
 
   game_screen.moving_hunt_field: rule_hunt_field_off
   game_screen.hunt_highlight: rule_hunt_none          # off -- no green paint
