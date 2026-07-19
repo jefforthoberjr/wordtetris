@@ -38,6 +38,7 @@ class _FakePiece:
         self._gx = 0
         self._gy = 0
         self.placed = False
+        self.visible = visible
         self._objs = [(_Obj(), _Obj()) for _ in self._shape]
 
     def set_position(self, gx, gy):
@@ -50,6 +51,9 @@ class _FakePiece:
     def rotate_ccw(self):
         self._state = (self._state - 1) % len(self._rotations)
         self._shape = list(self._rotations[self._state])
+
+    def set_visible(self, visible):
+        self.visible = visible
 
     def place(self):
         self.placed = True
@@ -213,6 +217,20 @@ def test_select_slot_floats_and_dims():
     m._select_slot(0)
     assert m._floating is not None and m._selected == 0
     assert gs._moving_side_pane.selected == 0           # dimmed preview
+
+
+def test_floating_hidden_until_mouse_is_over_the_board():
+    random.seed(31)
+    gs = _GS(_Board(6, 6))
+    m = _mode(gs)
+    m.start()
+    m._select_slot(0)
+    # Built hidden: a slot is clicked from the side pane, so nothing floats yet.
+    assert m._floating.visible is False
+    m.on_mouse_motion(2, 2)                 # mouse moves onto the board -> revealed
+    assert m._floating.visible is True
+    m.on_mouse_motion(999, 2)               # mouse leaves the board (side pane) -> hidden
+    assert m._floating.visible is False
 
 
 def test_switching_slot_discards_previous_floating():

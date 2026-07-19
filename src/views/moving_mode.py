@@ -1222,12 +1222,21 @@ class LineBlastMovingMode(MovingMode):
 
     def on_mouse_motion(self, x, y):
         cell = self._gs._board.cell_at(x, y)
+        if self._floating is None:
+            if cell is not None:
+                self._floating_cell = cell
+            return
+        # The floating piece is shown ONLY while the mouse is over the board. A slot
+        # is clicked from the side pane (off the board), so the piece is built hidden
+        # and stays hidden until the player moves back onto the board here -- placing
+        # it under the cursor rather than at a stale spot the player can't see coming.
         if cell is None:
+            self._floating.set_visible(False)
             return
         self._floating_cell = cell
-        if self._floating is not None:
-            self._snap_floating(cell)
-            self._restyle_floating()
+        self._snap_floating(cell)
+        self._restyle_floating()
+        self._floating.set_visible(True)
 
     def on_mouse_press(self, x, y, button):
         gs = self._gs
@@ -1282,10 +1291,11 @@ class LineBlastMovingMode(MovingMode):
             return
         self._discard_floating()
         self._selected = index
+        # Built HIDDEN: the mouse is on the side pane (a slot was just clicked), so
+        # nothing floats on the board until the player moves back onto it
+        # (on_mouse_motion snaps + reveals it under the cursor). Avoids a phantom
+        # piece appearing at a spot the mouse isn't.
         self._floating = self._build_floating(self._slots[index])
-        cell = self._floating_cell or self._gs._board.center_cell()
-        self._snap_floating(cell)
-        self._restyle_floating()
         self._push_slots()
         L.log_20007("select_slot", index)
 
@@ -1294,7 +1304,7 @@ class LineBlastMovingMode(MovingMode):
         piece_type, letters = spec
         grams = [Gram(letter) for letter in letters]
         return gs._piece_class(
-            piece_type, gs._cell_size, gs._piece_batch, visible=True,
+            piece_type, gs._cell_size, gs._piece_batch, visible=False,
             gram_pick_rule=lambda count: list(grams),
             cell_color=gs._line_blast_valid_color, dedup_grams=False)
 
@@ -1342,9 +1352,18 @@ class LineBlastMovingMode(MovingMode):
         onto the board, the slot repopulates from the pool, and a completed line (if
         any) opens SELECT."""
         gs = self._gs
+        cell_xy = gs._board.cell_at(x, y)
+        if cell_xy is None:
+            return
+        # Snap to the clicked cell so a drop lands exactly where the click was, even
+        # if no motion event moved the (possibly hidden) piece here first.
+        self._snap_floating(cell_xy)
         piece = self._floating
         if not self._floating_valid():
             return
+        # Reveal in case the piece was still hidden (clicked before a motion event
+        # brought it onto the board), so the settled cells actually render.
+        piece.set_visible(True)
         piece.place()
         placed = []
         for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
