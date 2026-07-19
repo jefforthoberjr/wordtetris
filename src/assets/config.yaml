@@ -218,7 +218,7 @@ rules:
   # game_screen.disambig_cancel:       rule_disambig_cancel_off
 
   # Rows in the right-pane cleared-word list. [ref: moving_side_pane.wordlist_rows]
-  moving_side_pane.wordlist_rows:   30
+  moving_side_pane.wordlist_rows:   20
 
   # Where each live player piece spawns. [ref: game_screen.spawn]
   game_screen.spawn:        rule_spawn_random_spot
@@ -366,6 +366,9 @@ rules:
   game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
   # game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_disabled
 
+  # Show the MOVING word-hunt field (two-phase only). [ref: game_screen.moving_hunt_field]
+  game_screen.moving_hunt_field: rule_hunt_field_on
+  # game_screen.moving_hunt_field: rule_hunt_field_off
   # Word-hunt highlight: which grams/letters light up. [ref: game_screen.hunt_highlight]
   # game_screen.hunt_highlight: rule_hunt_none          # off -- no green paint
   # game_screen.hunt_highlight: rule_hunt_full_gram
@@ -449,7 +452,7 @@ rules:
 
   # Gram picker per cell class. [ref: *_player / *_obstacle / *_mission .gram_pick]
   # square_player.gram_pick:   rule_scrabble_with_allvowelswild
-  square_player.gram_pick: rule_scrabble_distribution
+  # square_player.gram_pick: rule_scrabble_distribution
   # square_player.gram_pick: rule_random_letters
   # square_player.gram_pick: rule_englishcorpus_random_unigram
   # square_player.gram_pick: rule_englishcorpus_random_digram

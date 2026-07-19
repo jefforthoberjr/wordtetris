@@ -1068,6 +1068,21 @@ MOVING-only leaves right-click feeling dead there.
 - `rule_gram_manip_in_selecting_disabled` — right-click is inert in SELECTING
   (MOVING-only; original behavior).
 
+### game_screen.moving_hunt_field
+Whether the MOVING side pane shows its word-hunt field at all — the "Hunt a word"
+prompt and the live-typed input at the top of the pane (`views/moving_side_pane.py`).
+- `rule_hunt_field_on` — normal: the field is drawn and typed letters feed it (which
+  in turn drives `hunt_highlight`).
+- `rule_hunt_field_off` — no field is built and typed letters are swallowed, giving a
+  bare MOVING board with no text surface. The layout below (Pieces / score / Select)
+  reflows up to reclaim the two lines. SELECTING is still reachable via ENTER or the
+  "Select words" button. Because nothing is ever typed, `hunt_text()` stays empty, so
+  `hunt_highlight` never lights and `select_autosubmit_hunt` no-ops on the carry-in.
+
+This is meaningful only under `phase_model: rule_two_phase`. In `rule_single_phase`
+the merged MOVING_AND_SELECTING pane owns its own text entry (that IS how words are
+submitted), so this rule does not touch it — leave the field on there.
+
 ### game_screen.hunt_highlight (+ hunt_highlight_style)
 Word hunt (MOVING phase): the player types a word in the moving side pane and the
 grams on the board involved in it light up (see `views/hunt_highlight.py`). Two

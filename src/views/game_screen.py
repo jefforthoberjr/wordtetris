@@ -491,9 +491,18 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         select_rule("game_screen.mode_title", mode_title_rules)()
         side_pane_x = self._grid_area_size
         side_pane_width = window.width - self._grid_area_size
+        # Whether the MOVING pane shows its word-hunt field at all. Off drops the
+        # prompt/input and swallows typed letters (SELECTING is still reachable via
+        # ENTER / the Select button); only meaningful in two-phase, since the
+        # single-phase merged pane below owns its own text entry.
+        hunt_field_rules = {
+            "rule_hunt_field_on": lambda: True,
+            "rule_hunt_field_off": lambda: False,
+        }
+        show_hunt_field = select_rule("game_screen.moving_hunt_field", hunt_field_rules)()
         self._moving_side_pane = MovingSidePane(
             side_pane_x, 0, side_pane_width, window.height,
-            on_change=self._on_hunt_change,
+            on_change=self._on_hunt_change, show_hunt_field=show_hunt_field,
         )
         # Which letters of a board gram light up for the typed hunt word (full-gram
         # vs single-letter); see hunt_highlight and game_screen.hunt_highlight.

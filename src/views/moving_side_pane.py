@@ -27,10 +27,15 @@ class MovingSidePane:
     HUNT_INPUT_COLOR = get_color("moving_side_pane.hunt_input")
     HUNT_PLACEHOLDER_COLOR = get_color("moving_side_pane.hunt_placeholder")
 
-    def __init__(self, x, y, width, height, on_change=None):
+    def __init__(self, x, y, width, height, on_change=None, show_hunt_field=True):
         # on_change(text): called with the current hunt text after every edit so
         # GameScreen can re-highlight. Optional so the pane is usable standalone.
+        # show_hunt_field: when False the word-hunt prompt/input are not built and
+        # typed letters are swallowed (game_screen.moving_hunt_field:
+        # rule_hunt_field_off) -- the layout below reflows up to reclaim the space,
+        # and hunt_text() stays "" so the carry-into-SELECT auto-submit no-ops.
         self._on_change = on_change
+        self._show_hunt_field = show_hunt_field
         self._hunt_text = ""
         self._x = x
         self._y = y
@@ -52,23 +57,30 @@ class MovingSidePane:
         )
 
         # Word-hunt field pinned to the very top: a prompt then the typed word
-        # with a faux caret (the SelectingSidePane idiom).
+        # with a faux caret (the SelectingSidePane idiom). Built only when the
+        # field is on; when off, _hunt_prompt/_hunt_input stay None and the
+        # phase label slides up to the very top to reclaim the two lines.
         top = y + height - margin
-        self._hunt_prompt = pyglet.text.Label(
-            get_string("hunt_a_word"), font_size=base * 0.7, x=x + margin, y=top,
-            anchor_x="left", anchor_y="top",
-            color=self.HUNT_PROMPT_COLOR, batch=self._batch,
-        )
-        input_y = top - line_h
-        self._hunt_input = pyglet.text.Label(
-            "", font_size=base, x=x + margin, y=input_y,
-            anchor_x="left", anchor_y="top",
-            color=self.HUNT_INPUT_COLOR, batch=self._batch,
-        )
+        self._hunt_prompt = None
+        self._hunt_input = None
+        if show_hunt_field:
+            self._hunt_prompt = pyglet.text.Label(
+                get_string("hunt_a_word"), font_size=base * 0.7, x=x + margin, y=top,
+                anchor_x="left", anchor_y="top",
+                color=self.HUNT_PROMPT_COLOR, batch=self._batch,
+            )
+            input_y = top - line_h
+            self._hunt_input = pyglet.text.Label(
+                "", font_size=base, x=x + margin, y=input_y,
+                anchor_x="left", anchor_y="top",
+                color=self.HUNT_INPUT_COLOR, batch=self._batch,
+            )
+            phase_label_y = input_y - line_h
+        else:
+            phase_label_y = top
 
-        # Placements left until the next selection phase ("Pieces: N"), now one
-        # field-height below the hunt input rather than at the very top.
-        phase_label_y = input_y - line_h
+        # Placements left until the next selection phase ("Pieces: N"), one
+        # field-height below the hunt input (or at the top when the field is off).
         self._phase_label = pyglet.text.Label(
             "", font_size=base * 0.7, x=x + margin, y=phase_label_y,
             anchor_x="left", anchor_y="top",
@@ -182,6 +194,8 @@ class MovingSidePane:
         and punctuation are ignored -- so the movement/rotate keys that emit text
         (none are letters now) never leak into the hunt field. Highlighting
         updates live via on_change."""
+        if not self._show_hunt_field:
+            return
         if text.isalpha():
             self._hunt_text += text.upper()
             self._render_hunt_input()
@@ -190,6 +204,8 @@ class MovingSidePane:
     def on_key_press(self, symbol, modifiers):
         """Backspace deletes the last hunted letter. Returns True if it consumed
         the key so GameScreen knows not to pass it on to the moving mode."""
+        if not self._show_hunt_field:
+            return False
         if symbol in control_keys("game.word_backspace"):
             if self._hunt_text:
                 self._hunt_text = self._hunt_text[:-1]
@@ -218,7 +234,9 @@ class MovingSidePane:
 
     def _render_hunt_input(self):
         # Faux caret: a trailing underscore, faint when nothing's typed yet
-        # (mirrors SelectingSidePane._render_input).
+        # (mirrors SelectingSidePane._render_input). No-op when the field is off.
+        if self._hunt_input is None:
+            return
         if self._hunt_text:
             self._hunt_input.text = self._hunt_text + "_"
             self._hunt_input.color = self.HUNT_INPUT_COLOR
