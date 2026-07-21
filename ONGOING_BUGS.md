@@ -431,3 +431,139 @@ otherwise-invisible swallowed click. Correlate its timestamps with the player's
 the surrounding timeline, since our current `[00010]` key-status logging isn't
 catching these transitions. Only after this confirms the swallow do we flip the
 return to `YES` (the fix).
+
+---
+
+## BUG: End video does not play (then: no sound) — pyglet FFmpeg audio decode returns 0 bytes (macOS)
+
+**Status:** RESOLVED 2026-07-21, video AND audio (`src/views/end_video_overlay.py`).
+Root-caused to pyglet's **FFmpeg audio decoder**, NOT the misspell-instadeath rule and
+NOT the OpenAL output driver. First reported via instadeath, but it was never
+instadeath-specific — the clip failed on *every* end path. Kept for the trail.
+
+### ROOT CAUSE (confirmed 2026-07-21)
+The clip played exactly **one frame** then went black. The proximate symptom was an
+`on_eos` firing ~10 ms in (at `time≈0.017`): pyglet's Player treated it as the media
+ending, dropped the source (`player.source` → None), cleared the texture, and
+`reset()` the master `PlaybackTimer` to 0 — so `time` snapped 0.017 → 0.0, `texture`
+went None, and the overlay sat starved (still `active`).
+
+But the `on_eos` was itself a symptom. The REAL cause: **`source.get_audio_data()`
+returns length 0** — pyglet 2.1.14's FFmpeg *audio* decoder yields ZERO bytes against
+**Homebrew FFmpeg 8.1 (libavcodec 62)**, even though it reads the format header
+correctly (2ch/16-bit/44100). The OpenAL player reads 0 bytes as instant end-of-stream
+→ `_pyglet_source_exhausted` → `on_eos`. Proven step by step:
+- FFmpeg **video** decode is healthy — direct frame pulls give a continuous timestamp
+  stream (0.033, 0.067, … at 29.97 fps).
+- `src.get_audio_data(65536)` returns **length 0** repeatedly (the smoking gun).
+- Swapping the OpenAL output does NOT help (both Apple `OpenAL.framework` and Homebrew
+  `openal-soft` behave identically) → not an output-driver bug.
+- **Native decoders play the same audio fine**: a WAV via pyglet's `wave` decoder, and
+  the mp4's own audio via the macOS `coreaudio` decoder, both stream full PCM with no
+  premature eos, through *either* OpenAL — so the decoder, not the backend, was broken.
+
+### FIX (applied)
+`EndVideoOverlay` now runs **two Players from the same file, started together**:
+- VIDEO: forced FFmpeg decoder with the audio track dropped (`source.audio_format =
+  None`) — video runs on the wall-clock `PlaybackTimer`, plays through. `update()` also
+  gained a `player.source is None` teardown signal (the video-only path resets the
+  clock at the real end, so `time >= duration` alone would miss it).
+- AUDIO: `pyglet.media.load(path)` with NO forced decoder → the platform-native
+  decoder (macOS CoreAudio), played alongside the video. Best-effort (silent on
+  failure). Verified: video and audio timers advance in lockstep (1.06/1.06, 2.65/2.65).
+
+See TECH.md "SOUND / AUDIO" for the decoder-vs-output layering and the rules of thumb
+(use WAV + native decoders for game sound; never pyglet's FFmpeg audio path here).
+
+### Follow-ups (not blocking)
+- Cross-platform: the audio path relies on the platform decoder auto-pick (CoreAudio /
+  WMF / gstreamer). If a target platform falls back to the broken FFmpeg audio, ship a
+  sibling WAV/OGG track for the clip instead.
+- The debug menu's "Play endgame video" (added 2026-07-21) is the fastest re-test.
+
+---
+
+### (Original investigation — kept for the trail; superseded by the root cause above)
+
+**Status when open:** first observed 2026-07-21. Theories below.
+
+### Symptom
+Shooting gallery mode with `game_screen.misspell_instadeath: rule_misspell_instadeath_on`.
+The player shot a dead-end buffer, the game ended by instadeath, and the GoldenEye
+end clip (`game_screen.end_video: goldeneye.mp4`) did **not** appear. The player
+expects it to roll exactly as it does when the 5-minute `game_timer` runs out.
+
+### Evidence — session `2026-07-20T17-34-19_shooting_gallery_33e0`
+(the `.log` timestamp reads 07-20, but it is the instadeath run — it contains
+`[30006]`.)
+
+```
+[20006] 11.704 | shot hit at 5,2 -> RD | ... buffer=RD
+[30006] 11.704 | impossible word RD (instadeath) | word=RD
+[10001] 11.707 | phase MOVING->VICTORY
+[50003] 11.727 | end video played: goldeneye.mp4     <-- player STARTED
+[50001] 11.728 | result FINISHED: 1 words cleared, 314 points
+[00002] 11.728 | session ended
+```
+
+Facts established:
+- `[50003]` is emitted **only when `self._end_video.active` is True immediately
+  after `self._end_video.play()`** (`game_screen_boardrules.py` `_enter_endstate`).
+  So the pyglet media Player was created and started successfully — the clip is
+  loaded and `active`, not a load failure.
+- The instadeath end path and the timer end path call the **identical** shared
+  `_enter_endstate`, via the identical `_enter_endgame`. There is NO video-specific
+  code difference between them — so this is not a "rules" bug in the new rule; the
+  rule correctly ends the game and invokes the existing, previously-working
+  end-video mechanism.
+- The **one** real difference: the timer fires the end from inside `update()`
+  (`_tick_game_timer`, after `_end_video.update()` has already run that frame at the
+  top of `update()`), whereas instadeath fires it from `on_mouse_press`
+  (`ShootingGalleryMode._instadeath -> _gs._enter_endgame`), i.e. during EVENT
+  dispatch, BEFORE `update()` runs that frame.
+
+### DISPROVEN
+- **Same-frame teardown.** Theory: because instadeath calls `play()` before
+  `update()`, the `_end_video.update()` poll at `game_screen.py:2100`
+  (`if player.time >= duration: stop()`) sees a just-started player and tears it
+  down in the same frame. **Ruled out empirically:** `goldeneye.mp4` duration is
+  20.042 s and `player.time` right after `play()` is ~2e-6 s, so `time >= duration`
+  is False; a scripted `play()` then same-frame `update()` leaves the overlay
+  `active` and it stays `active` across subsequent ticks.
+- **Idle window / redraw not firing.** Theory: after an input-triggered end the
+  player stops generating events, so an invalidation-driven `on_draw` never fires
+  and the video's per-frame texture is never blitted. **Ruled out:** Round-5 work
+  on the alt-tab bug established that pyglet's default loop **clock-schedules both
+  update AND redraw at `game.ups`** (~60/s) and sleeps between ticks — redraw is
+  clock-paced, not invalidation-gated, in both vsync modes. So `on_draw` keeps
+  firing while the game sits in VICTORY regardless of input.
+
+### Open theories (leading first)
+1. **First-play texture never arrives for a Player created during event dispatch.**
+   `EndVideoOverlay.draw()` guards `if texture is None: return`. If the FFmpeg
+   decoder's first frame is late/never produced for a Player started inside
+   `on_mouse_press` (vs. one started inside the clock tick), `draw()` blits nothing
+   and the clip looks like it never played even though it is `active` and its audio
+   may be running. A headless probe could not populate textures (no GL context), so
+   this needs an in-app check. **Decisive test:** log `player.time` and
+   `player.texture is None` for a few frames right after an instadeath end vs. a
+   timer end.
+2. **Event-dispatch vs clock-tick context.** The pyglet media Player schedules its
+   internal decode via `pyglet.clock`; starting it from event dispatch instead of a
+   scheduled tick may interleave those internal schedules differently on the first
+   frames. Related to (1).
+3. **Behavioral, not code.** On a timer end the player is typically still
+   clicking/aiming (events flowing); on instadeath they freeze in surprise. If some
+   OTHER redraw/decoit path IS partly input-gated in practice (contra the Round-5
+   finding), the two ends would differ only by incidental input. Lower priority
+   given Round 5, but keep in mind.
+
+### Candidate fix (not yet applied) — decisive by construction
+Defer the instadeath end so it fires from the **update loop**, exactly like the
+timer: instead of `_instadeath` calling `_gs._enter_endgame()` synchronously in
+`on_mouse_press`, set a `self._pending_instadeath = True` flag and have
+`ShootingGalleryMode.update()` (or `game_screen.update`) call `_enter_endgame()`
+on the next tick. This makes the video start from the identical context as the
+working timer path. If it fixes the clip, it also confirms the root cause is the
+event-dispatch-vs-clock-tick difference (theory 1/2). Cheap, low-risk, and a clean
+A/B.

@@ -3,7 +3,7 @@ import pyglet
 from config import select_rule, get_string
 from source import rand
 from models.hex_grid import flattop_vertices
-from models.word_dictionary import is_word
+from models.word_dictionary import is_word, is_prefix
 from models.gram import Gram
 from models.square_piece import ALL_PIECE_ROTATIONS, player_gram_pick_rule
 from models.gram_picker import pick_grams
@@ -1092,6 +1092,8 @@ class ShootingGalleryMode(MovingMode):
         L.log_20006("hit", pos, text, self._word())
         if self._is_complete_word():
             self._submit()
+        elif self._gs._misspell_instadeath and self._is_impossible_word():
+            self._instadeath()
 
     def on_mouse_motion(self, x, y):
         if self._crosshair is not None:
@@ -1117,12 +1119,32 @@ class ShootingGalleryMode(MovingMode):
         path = [pos for pos, _ in self._buffer]
         return is_word(word) and self._gs._word_length_rule(word, path)
 
+    def _is_impossible_word(self):
+        """Whether the shot buffer is a dead end: no active dictionary word begins
+        with it, so no further shot can ever complete a word. Checked only after the
+        complete-word test fails, so a buffer that IS a word never counts as
+        impossible (a full word is a prefix of itself). Gates game_screen.
+        misspell_instadeath."""
+        word = self._word()
+        return bool(word) and not is_prefix(word)
+
     def _submit(self):
         path = [pos for pos, _ in self._buffer]
         segments = [text for _, text in self._buffer]
         self._gs._shooting_submit(self._word(), path, segments)
         self._buffer = []
         self._since_shot = 0.0
+
+    def _instadeath(self):
+        """game_screen.misspell_instadeath: the shot buffer became an impossible word
+        (no dictionary word begins with it), so end the game outright -- a spelling
+        forfeit. This overrides any running game_timer because _enter_endgame moves
+        the phase to VICTORY, where _tick_game_timer no longer counts down."""
+        word = self._word()
+        L.log_30006(word)
+        self._buffer = []
+        self._since_shot = 0.0
+        self._gs._enter_endgame()
 
     def _miss(self):
         word = self._word()

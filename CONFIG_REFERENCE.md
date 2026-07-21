@@ -414,6 +414,21 @@ Shooting gallery only: the blank gap at the crosshair's center as a fraction of 
 half-size (`0` = solid cross through the middle, `1` = the arms vanish). Purely
 cosmetic.
 
+### game_screen.misspell_instadeath
+Shooting gallery only: a sudden-death spelling rule. After each shot the running
+buffer is checked against the dictionary's prefix set; if it has become an *impossible
+word* — no active dictionary word begins with it, so no further shot could ever
+complete a word — the game ends immediately (the FINISHED end panel, plus any
+`end_video`), a spelling forfeit. Because the complete-word test runs first, a buffer
+that IS a word auto-submits and never triggers this; and because a short-but-valid
+prefix (e.g. `AT` on the way to `ATE`) is still a prefix, only genuine dead ends fire
+it. This overrides any other end mechanic: if `game_timer` is running, the instadeath
+still ends the game now (entering VICTORY stops the clock rather than waiting it out).
+- `rule_misspell_instadeath_off` — a dead-end buffer instead lingers until
+  `shooting_word_timeout_seconds` clears it as an ordinary miss (the default).
+- `rule_misspell_instadeath_on` — a dead-end buffer ends the game at once.
+Ignored by every other mode (only the shooting buffer produces impossible-word runs).
+
 ### game_screen.constellation_max_paths
 Constellation only: the maximum number of distinct cell-assemblies the on-submit
 matcher returns for one typed word. A scattered board can spell a word many ways;
@@ -521,6 +536,14 @@ score bonus reads this clock when it is the active one).
 ### game_screen.game_timer_seconds
 Length of the `game_screen.game_timer` countdown, in seconds. Only read when the
 timer is `rule_game_timer_on`. Try ~120 for a fast speed-type.
+
+### game_screen.end_video
+Filename of a video clip (under `assets/video/`) played once, fullscreen with sound,
+the moment the game freezes into the end state — over the VICTORY/FINISHED panel.
+Blank (the base default) turns the feature off; any mode can name a clip. The clip
+plays through once and removes itself when it finishes; there is no user dismiss.
+Decoded via pyglet's FFmpeg backend, so the host needs the FFmpeg shared libraries
+installed. Currently used only by the shooting gallery (`goldeneye.mp4`).
 
 ### game_screen.sand_timer_delay_seconds / sand_timer_seconds / sand_timer_count
 SAND-TIMER settings (only used by `rule_omniswap_timer_sand`). Instead of one global

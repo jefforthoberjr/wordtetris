@@ -154,6 +154,8 @@ rules:
   game_screen.shooting_crosshair_scale: 1.0
   # SHOOTING GALLERY: crosshair center gap as a fraction of its half-size. [ref: game_screen.shooting_crosshair_gap]
   game_screen.shooting_crosshair_gap: 0.35
+  # SHOOTING GALLERY: a dead-end buffer (no word starts with it) instantly ends the game. [ref: game_screen.misspell_instadeath]
+  game_screen.misspell_instadeath: rule_misspell_instadeath_off
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360
@@ -177,6 +179,9 @@ rules:
   # game_screen.game_timer: rule_game_timer_on
   # Whole-game countdown length in seconds (when on). [ref: game_screen.game_timer_seconds]
   game_screen.game_timer_seconds: 120
+
+  # Fullscreen clip played once when the game ends (blank = off). [ref: game_screen.end_video]
+  game_screen.end_video: ""
 
   # TYPEWRITER cursor visit order. [ref: game_screen.cursor_path]
   game_screen.cursor_path:  rule_cursor_typewriter

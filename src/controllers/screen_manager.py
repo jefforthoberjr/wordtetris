@@ -6,6 +6,7 @@ class ScreenType(Enum):
     GAME = 3
     DICTIONARY = 4
     MODE_SELECT = 5
+    DEBUG_MENU = 6
 
 
 class ScreenManager:

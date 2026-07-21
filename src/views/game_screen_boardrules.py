@@ -266,6 +266,11 @@ class BoardRulesMixin:
         self._end_overlay_dismissed = False
         self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
+        # Roll the end-of-game clip (fullscreen, over the end panel), if this mode
+        # set game_screen.end_video. A no-op otherwise; it removes itself when done.
+        self._end_video.play()
+        if self._end_video.active:
+            L.log_50003(self._end_video.name)
         # Restore the system cursor if the shooting-gallery crosshair was hiding it,
         # so the player can dismiss the end panel (phase is no longer MOVING).
         self._sync_shooting_cursor()

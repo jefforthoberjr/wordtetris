@@ -49,6 +49,66 @@ Avoid raw pixel math; instead things should be relative to screen size.
 
 Note: On a Retina window, window.width reports the physical framebuffer size
 
+# SOUND / AUDIO
+
+First sound arrived 2026-07-21 (the end-of-game video's soundtrack). Audio on pyglet
+has TWO independent layers -- get them straight before touching sound:
+
+1. DECODER: turns a file into raw PCM. Per-format, per-platform. `pyglet.media.load(path)`
+   auto-picks one; you can force one (e.g. `decoder=FFmpegDecoder()`).
+2. OUTPUT DRIVER: pushes PCM to the speakers. Chosen from `pyglet.options['audio']`.
+   On macOS the ONLY real output is **OpenAL** (the list is xaudio2/directsound/
+   openal/pulse/silent -- first two are Windows, pulse is Linux). There is no
+   CoreAudio *output* driver.
+
+## Hard-won lessons (macOS, pyglet 2.1.14, Homebrew FFmpeg 8.1)
+- **Do NOT decode audio with pyglet's FFmpeg decoder here.** Against FFmpeg 8.x
+  (libavcodec 62) pyglet's FFmpeg *audio* path reads the format header correctly
+  (2ch/16-bit/44100) but returns ZERO audio bytes. The OpenAL player reads 0 bytes as
+  instant end-of-stream and dispatches `on_eos` ~10 ms in -- which tore the whole end
+  video down after one black frame. (FFmpeg *video* decode is fine; only audio is
+  broken.) This was misdiagnosed twice -- see ONGOING_BUGS.md "End video does not
+  play". Root cause is the decoder, NOT the OpenAL implementation.
+- **openal-soft was a red herring for this bug** but is still worth having. Both the
+  deprecated Apple `OpenAL.framework` AND Homebrew `openal-soft` play correctly once
+  the audio is actually decoded (via a native decoder). We installed openal-soft
+  during the investigation; it is optional. pyglet hardcodes `framework='OpenAL'` on
+  mac, so it uses Apple's framework unless you redirect `ctypes.util.find_library`.
+- **Native decoders work great.** `wave` (WAV, cross-platform) and macOS `coreaudio`
+  (.wav/.m4a/.mp4/.aac...) both stream full PCM with no premature eos. Windows has
+  `wmf`, Linux has `gstreamer`. These are the ones to use.
+
+## Rules of thumb
+- **Sound effects / music:** ship **WAV** and let pyglet's native `wave` decoder play
+  it. Cross-platform, no FFmpeg, no external dep. (Compressed formats -- mp3/ogg/m4a
+  -- route through ffmpeg or a platform decoder; WAV is the safe universal path.)
+- **The end video (`EndVideoOverlay`)** is a special case: video and audio are decoded
+  SEPARATELY from the same .mp4 -- video via forced FFmpeg (audio track dropped),
+  audio via the platform-native decoder (`pyglet.media.load` with no decoder ->
+  CoreAudio on mac). Two Players started together stay in sync over the clip. Audio is
+  best-effort (a failure just plays silent).
+  - DISLIKED / TWO-PLAYER WORKAROUND: driving one clip with two Players is ugly --
+    it risks A/V drift, doubles the teardown/lifecycle bookkeeping, and only works
+    because the halves happen to stay in step over a short clip. It exists solely
+    because pyglet's FFmpeg *audio* decode is broken on FFmpeg 8.x (see above).
+    **TODO (future): replace with a SINGLE-player video+audio solution.** Candidates:
+    a pyglet/FFmpeg version combo whose FFmpeg audio decode actually returns bytes;
+    a different single-decoder media path that does both streams; or swapping the
+    video-playback library entirely. Collapse the two Players back into one once a
+    single decoder plays both tracks.
+
+## Steam / self-contained packaging (future)
+- OpenAL output: bundle **openal-soft** (small, redistributable dylib/dll/so) rather
+  than trusting the OS -- Apple's framework is deprecated and could vanish. Standard
+  for shipped pyglet games.
+- Audio decoding: staying on **WAV + native decoders** means NO ffmpeg dependency for
+  sound at all -- good for a self-contained build.
+- FFmpeg is currently required only for VIDEO (the end clip), and it is NOT
+  self-contained yet -- it relies on the Homebrew FFmpeg shared libs in
+  /opt/homebrew/lib. For a Steam build we must either bundle the FFmpeg dylibs (large)
+  or drop to a lighter video path. Revisit when we do release builds (see pyinstaller
+  note above).
+
 # RUN GAME
 
 python src/main.py

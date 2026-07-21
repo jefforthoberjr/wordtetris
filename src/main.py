@@ -26,6 +26,7 @@ from controllers.screen_manager import ScreenManager, ScreenType
 from views.title_screen import TitleScreen
 from views.main_menu_screen import MainMenuScreen
 from views.mode_select_screen import ModeSelectScreen
+from views.debug_menu_screen import DebugMenuScreen
 from views.game_screen import GameScreen
 from views.dictionary_screen import DictionaryScreen
 
@@ -75,14 +76,16 @@ def start_game_mode(mode_path):
 
 title_screen = TitleScreen(window, screen_manager, ScreenType.MAIN_MENU)
 main_menu_screen = MainMenuScreen(window, screen_manager, ScreenType.MODE_SELECT,
-                                  ScreenType.DICTIONARY)
+                                  ScreenType.DICTIONARY, ScreenType.DEBUG_MENU)
 mode_select_screen = ModeSelectScreen(window, screen_manager,
                                       ScreenType.MAIN_MENU, start_game_mode)
+debug_menu_screen = DebugMenuScreen(window, screen_manager, ScreenType.MAIN_MENU)
 game_screen = _build_game_screen()
 dictionary_screen = DictionaryScreen(window, screen_manager)
 screen_manager.register(ScreenType.TITLE, title_screen)
 screen_manager.register(ScreenType.MAIN_MENU, main_menu_screen)
 screen_manager.register(ScreenType.MODE_SELECT, mode_select_screen)
+screen_manager.register(ScreenType.DEBUG_MENU, debug_menu_screen)
 screen_manager.register(ScreenType.DICTIONARY, dictionary_screen)
 screen_manager.switch_to(ScreenType.TITLE)
 

@@ -24,13 +24,17 @@ rules:
   game_screen.game_timer: rule_game_timer_on
   game_screen.game_timer_seconds: 300
   game_screen.victory: rule_victory_none
+  game_screen.misspell_instadeath: rule_misspell_instadeath_on
+
+  # When the clock runs out, roll the GoldenEye clip fullscreen over the end panel.
+  game_screen.end_video: goldeneye.mp4
 
   # Detection is automatic (greedy on the shot buffer), so only Clear word is shown
   # -- there is nothing to submit / advance / end by hand.
   game_screen.show_clear_button:  rule_show_clear_button
   game_screen.show_submit_button: rule_hide_submit_button
   game_screen.show_next_button:   rule_hide_next_button
-  game_screen.show_end_button:    rule_hide_end_button
+  # game_screen.show_end_button:    rule_hide_end_button
 
   # The shot buffer is scored, not board-cleared, so no clear-action / trail is
   # needed; keep them quiet.

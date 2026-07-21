@@ -284,6 +284,14 @@ def log_30005(word, suggestions, shown):
                      word=word, suggestions=joined, shown=shown)
 
 
+def log_30006(word):
+    """The shot buffer became an impossible word -- no active dictionary word begins
+    with `word` -- and game_screen.misspell_instadeath ended the game on the spot
+    (shooting gallery). The end transition itself logs as log_10001 (-> VICTORY) and
+    log_00002; this records what forfeited."""
+    session_log.emit(30006, f"impossible word {word} (instadeath)", word=word)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.
@@ -306,6 +314,13 @@ def log_50002(bonus, cells):
     count that were filled. A mid-game scoring milestone, not an end state."""
     session_log.emit(50002, f"board filled: +{bonus} ({cells} cells)",
                      bonus=bonus, cells=cells)
+
+
+def log_50003(name):
+    """The end-of-game fullscreen video (game_screen.end_video) began playing as the
+    game froze. `name` is the clip filename. Cosmetic; only emitted when a clip is
+    configured. A replay re-enters the same end state, so it plays there too."""
+    session_log.emit(50003, f"end video played: {name}", name=name)
 
 
 def log_50001(result, words, obstacles_left, missions_left, score=0):

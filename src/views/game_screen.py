@@ -26,6 +26,7 @@ from views.word_trail import WordTrail
 from views.disambiguation_lines import DisambiguationLines
 from views.disambiguation_highlight import DisambiguationHighlight
 from views.victory_overlay import VictoryOverlay
+from views.end_video_overlay import EndVideoOverlay
 from views.hunt_highlight import (
     get_hunt_highlight_batch, reset_hunt_highlight, get_hunt_match_rule,
 )
@@ -63,7 +64,7 @@ from models.scoring import Scorer
 from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
-from config import select_rule, get_color, get_string, active_mode, CONFIG
+from config import select_rule, get_color, get_string, active_mode, end_video_path, CONFIG
 from controls import control_keys, control_button, control_modifier
 import session_log
 import log_codes as L
@@ -530,6 +531,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # game ends (see _enter_endstate).
         self._end_overlay_dismissed = False
 
+        # End-of-game video (game_screen.end_video): a one-shot fullscreen clip
+        # played over the frozen end state, removing itself when it finishes. Path
+        # is None (feature off) unless a mode names a file under assets/video/.
+        self._end_video = EndVideoOverlay(window, end_video_path())
+
         # Cleared-word path trails, overlaid on top of the board. Accumulate all
         # game; cleared on each new game. The game_screen.word_trail rule gates
         # whether _clear_paths records into it. See views/word_trail.py.
@@ -889,6 +895,14 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._shooting_word_timeout_seconds = CONFIG["rules"]["game_screen.shooting_word_timeout_seconds"]
         self._shooting_crosshair_scale = CONFIG["rules"]["game_screen.shooting_crosshair_scale"]
         self._shooting_crosshair_gap = CONFIG["rules"]["game_screen.shooting_crosshair_gap"]
+        # Misspell instadeath: when on, a shot buffer that no dictionary word begins
+        # with (a dead end -- see ShootingGalleryMode._instadeath) ends the game at
+        # once, overriding any running game_timer. Off leaves the buffer to time out
+        # as a plain miss. Only read by the shooting mode.
+        self._misspell_instadeath = select_rule(
+            "game_screen.misspell_instadeath",
+            {"rule_misspell_instadeath_off": False,
+             "rule_misspell_instadeath_on": True})
         self._crosshair_color = get_color("board.crosshair")
         # Line-blast mode: pieces picked from a side-pane pool and dropped on an empty
         # board; a filled row/column opens SELECT over exactly those cells (see
@@ -1997,6 +2011,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         if session_log.is_open():
             L.log_00002("left_screen")
             session_log.close(reason="left_screen")
+        # Stop any end-of-game clip so its audio does not keep playing off-screen.
+        self._end_video.stop()
         # Never leave the game screen with the system cursor hidden (shooting mode
         # hides it for the crosshair); restore it for the menu / other screens.
         self._window.set_mouse_visible(True)
@@ -2060,7 +2076,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
 
         if self._menu_open:
             self._ingame_menu.draw()
-    
+
+        # The end-of-game clip plays fullscreen over everything else while the game
+        # is frozen; it removes itself when the clip finishes (see EndVideoOverlay).
+        # Inactive (draws nothing) in every mode that leaves game_screen.end_video off.
+        if self._end_video.active:
+            self._end_video.draw()
+
     def _sync_shooting_cursor(self):
         """Hide the system cursor exactly while the shooting-gallery crosshair is
         live -- MOVING with the menu closed -- and show it again whenever the menu
@@ -2072,6 +2094,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             self._window.set_mouse_visible(not live)
 
     def update(self, dt):
+        # End-of-game clip: tear it down once it has played through. Runs ahead of
+        # every phase/menu guard below so the video always self-dismisses, even if
+        # the pause menu is opened over the frozen end state. A no-op when idle.
+        self._end_video.update()
         # Debug panel (F3) formable-word samples: recompute only while the panel is
         # visible and something changed, so normal (hidden) play does no dictionary
         # work. Opening the panel counts as a change, so the samples show at once.

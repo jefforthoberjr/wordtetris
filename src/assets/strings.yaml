@@ -17,6 +17,10 @@ en:
   # Mode-select submenu (opened by "Start Game")
   menu_mode_select_title: "Select Mode"
   menu_back:             "Back"
+  # Debug submenu (opened by "Debug" on the main menu)
+  menu_debug:            "Debug"
+  menu_debug_title:      "Debug"
+  debug_play_end_video:  "Play endgame video"
   # In-game (pause) menu
   ingame_main_menu:      "Main Menu"
   ingame_exit:           "Exit"
@@ -86,6 +90,10 @@ es:
   menu_exit:             "Salir"
   menu_mode_select_title: "Seleccionar Modo"
   menu_back:             "Atrás"
+  # Debug submenu (opened by "Debug" on the main menu)
+  menu_debug:            "Depuración"
+  menu_debug_title:      "Depuración"
+  debug_play_end_video:  "Reproducir video final"
   # In-game (pause) menu
   ingame_main_menu:      "Menú Principal"
   ingame_exit:           "Salir"

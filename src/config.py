@@ -116,6 +116,34 @@ def _asset_path(rule_key, subdir, default):
     return Path(__file__).parent / "assets" / subdir / name
 
 
+def end_video_path():
+    """Resolved path of the end-of-game video (game_screen.end_video), or None when
+    the rule is unset/blank so the feature stays off (base config + every mode that
+    names no clip). Not routed through _asset_path because the empty case must
+    collapse to None rather than a bogus assets/video/ path. Files live under
+    assets/video/."""
+    name = CONFIG.get("rules", {}).get("game_screen.end_video", "")
+    if not name:
+        return None
+    return Path(__file__).parent / "assets" / "video" / name
+
+
+def debug_end_video_path():
+    """A clip path for the Debug menu's "play endgame video" tester: the configured
+    game_screen.end_video if set, else the first video file in assets/video/ (so the
+    tester still shows something from the base config, which names no clip). None
+    when the folder holds no video."""
+    configured = end_video_path()
+    if configured is not None:
+        return configured
+    video_dir = Path(__file__).parent / "assets" / "video"
+    if video_dir.is_dir():
+        for p in sorted(video_dir.iterdir()):
+            if p.suffix.lower() in (".mp4", ".mov", ".m4v"):
+                return p
+    return None
+
+
 def colors_path():
     """Resolved path of the active colors file (assets.colors)."""
     return _asset_path("assets.colors", "colors", "default_colors.yaml")
