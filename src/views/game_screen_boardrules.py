@@ -249,19 +249,22 @@ class BoardRulesMixin:
         self._enter_endstate(get_string("victory"))
 
     def _enter_endgame(self):
-        """End the game with no win/lose verdict -- the MOVING_TYPEWRITER cursor
-        ran off the board, or the omniswap race clock hit zero: show the end panel
-        reading FINISHED, and swap the moving pane's top label to match (so the
-        last countdown value isn't left frozen behind the overlay)."""
+        """End the game with no win verdict -- the MOVING_TYPEWRITER cursor ran off
+        the board, the omniswap race clock hit zero, or a losing condition fired
+        (misspell-instadeath): show the end panel reading FINISHED, and swap the
+        moving pane's top label to match (so the last countdown value isn't left
+        frozen behind the overlay). No time bonus: a FINISHED end is never rewarded
+        for time left on the clock (see _enter_endstate)."""
         self._moving_side_pane.set_finished_label()
-        self._enter_endstate(get_string("finished"))
+        self._enter_endstate(get_string("finished"), award_time_bonus=False)
 
-    def _enter_endstate(self, label_text):
+    def _enter_endstate(self, label_text, award_time_bonus=True):
         """Shared end transition: label the end panel `label_text`, settle the
         last placed piece (so no cell is left tinted) and stop play. Phase.VICTORY
         is the single frozen end-state -- the overlay is drawn by draw() and the
         right pane reverts to the cleared-word list (phase no longer SELECTING);
-        the label is what distinguishes a win from a plain finish."""
+        the label is what distinguishes a win from a plain finish.
+        `award_time_bonus` gates the leftover-clock bonus (True only on a win)."""
         self._victory_overlay.set_text(label_text)
         self._end_overlay_dismissed = False
         self._set_phase(Phase.VICTORY)
@@ -274,17 +277,20 @@ class BoardRulesMixin:
         # Restore the system cursor if the shooting-gallery crosshair was hiding it,
         # so the player can dismiss the end panel (phase is no longer MOVING).
         self._sync_shooting_cursor()
-        # End-of-game bonus for time left on the clock (per whole second). Read
+        # End-of-game bonus for time left on the clock (per whole second), awarded
+        # ONLY on a win (award_time_bonus). A FINISHED end -- timer expiry, cursor
+        # off-board, or a LOSING condition like misspell-instadeath -- earns nothing:
+        # without this guard an early loss with most of the clock unspent banked a
+        # huge unearned bonus (instadeath at ~16s of a 300s game -> +284). Read
         # whichever clock is active -- the whole-game timer (owned here) if on, else
-        # the countdown mode's remaining seconds (0 in modes with no clock, and ~0
-        # for a clock that ends AT zero -- so this rewards finishing a victory
-        # early, not the clock running out). Refresh the readout so the bonus shows
-        # before the end panel freezes.
-        if getattr(self, "_game_timer_on", False):
-            remaining = self._game_timer_remaining
-        else:
-            remaining = getattr(self._moving_mode, "_remaining", 0) or 0
-        self._scorer.time_bonus_rule(remaining)
+        # the countdown mode's remaining seconds. Refresh the readout regardless so
+        # the (possibly unchanged) score shows before the end panel freezes.
+        if award_time_bonus:
+            if getattr(self, "_game_timer_on", False):
+                remaining = self._game_timer_remaining
+            else:
+                remaining = getattr(self._moving_mode, "_remaining", 0) or 0
+            self._scorer.time_bonus_rule(remaining)
         self._refresh_score()
         # Close out the session: the final tally, then the session-end line, then
         # flush + close. on_exit finds nothing open afterward.
