@@ -12,6 +12,11 @@ from source import rand
 
 
 class SelectionMixin:
+    # Default so _word_score_facts' stem-cell count resolves to 0 on bare __new__
+    # test instances (real games set the instance attribute in __init__ /
+    # _start_new_game). Only MOVING_PLANT populates it. See _rule_formation_plant.
+    _stem_cells = frozenset()
+
     def _request_select(self):
         """The player asked to open SELECTING now (the moving pane's Select
         button). Delegates to the active mode's request_select hook so each mode
@@ -193,6 +198,10 @@ class SelectionMixin:
             # Reusing an ALREADY-fossilized cell in a new word (fossil_word_use
             # allow); the word's own cells fossilize only after this is captured.
             "fossil_reuse_cells": sum(1 for c in path if c in self._fossilized_cells),
+            # MOVING_PLANT: cells of this word that are stem cells (>0 => a plant word
+            # grown off the stem, scored x scoring.plant_word_multiplier). Always 0 in
+            # other modes (_stem_cells is empty), so the multiplier stays inert there.
+            "stem_cells": sum(1 for c in path if c in self._stem_cells),
         }
 
     def _refresh_score(self):
@@ -322,6 +331,33 @@ class SelectionMixin:
                 if self._board.gram_at(*cell) is not None:
                     self._fossilize_cell(cell)
         return set()
+
+    def _rule_clear_plant(self, accepted):
+        """MOVING_PLANT: a cleared word's fate depends on whether it grew off the
+        stem. A PLANT WORD -- its path touches a green stem cell (the root suffix) --
+        becomes a permanent BRANCH: its fresh (non-stem) prefix cells FOSSILIZE green
+        in place, the stem cells being fossil already. A word that touches NO stem
+        cell is an ordinary REFRESH word (e.g. CAT): its cells are REMOVED and each
+        schedules a faded-in fresh gram (the same replenish path constellation uses),
+        so the player can fish the board for new letters toward more plant words.
+        Returns the cells that fully left the board (the refresh cells) for
+        obstacle/mission tracking; a branch fossilizes in place, clearing nothing."""
+        fully_cleared = set()
+        for fw in accepted:
+            touches_stem = any(cell in self._stem_cells for cell in fw.path)
+            if touches_stem:
+                for cell in fw.path:
+                    if cell not in self._stem_cells and self._board.gram_at(*cell) is not None:
+                        self._fossilize_cell(cell)
+                L.log_30007("branch", fw.word, fw.path)
+            else:
+                for cell in fw.path:
+                    if self._board.gram_at(*cell) is not None:
+                        self._board.clear_cell(*cell)
+                        fully_cleared.add(cell)
+                        self._schedule_replenish(cell[0], cell[1])
+                L.log_30007("refresh", fw.word, fw.path)
+        return fully_cleared
 
     def _fossilize_cell(self, cell):
         """Freeze one cell: record it dead and tint it the fossil color in place."""

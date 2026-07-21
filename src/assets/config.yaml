@@ -41,6 +41,7 @@ scoring:
   sand_timer_cell_bonus:     20
   fossil_reuse_bonus:        5
   new_word_bonus:            15
+  plant_word_multiplier:     1           # MOVING_PLANT: a word grown off the stem scores this many times as much (1 = off; the plant preset sets it)
   fill_board_bonus:          100
   time_remaining_per_second: 1
   word_score_display:        breakdown   # sum | breakdown -- per-word score readout [ref: scoring.word_score_display]
@@ -102,13 +103,14 @@ rules:
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast. [ref: game_screen.mode]
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast / plant. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
   # game_screen.mode:       rule_mode_omniswap_vs_timer
   game_screen.mode:       rule_mode_constellation
   # game_screen.mode:       rule_mode_shooting_gallery
   # game_screen.mode:       rule_mode_line_blast
+  # game_screen.mode:       rule_mode_plant_vs_timer
 
   # LINE BLAST: preselected piece pool size, side-pane preview count, and preview
   # size as a fraction of a board cell. [ref: game_screen.line_blast_pool_size]
@@ -124,11 +126,11 @@ rules:
   # game_screen.constellation_turnover: rule_constellation_no_replenish
   game_screen.constellation_turnover: rule_constellation_replenish
 
-  # CONSTELLATION: seconds a replenished cell fades in (0 = instant pop). [ref: game_screen.constellation_replenish_fade_seconds]
-  game_screen.constellation_replenish_fade_seconds: 2.0
+  # Any mode: seconds a replenished cell fades in (0 = instant pop). [ref: game_screen.replenish_fade_seconds]
+  game_screen.replenish_fade_seconds: 2.0
 
-  # CONSTELLATION: seconds to wait before a replenished cell is picked/placed on the board. [ref: game_screen.constellation_replenish_delay_seconds]
-  game_screen.constellation_replenish_delay_seconds: 5.0
+  # Any mode: seconds to wait before a replenished cell is refilled on the board. [ref: game_screen.replenish_delay_seconds]
+  game_screen.replenish_delay_seconds: 5.0
 
   # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
   # game_screen.constellation_auto_end: rule_constellation_auto_end_off
@@ -250,6 +252,7 @@ rules:
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_digram_bottompyramid
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
   game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
+  # game_screen.setup_formation: rule_formation_plant
 
   # Counts for rule_formation_scattered (0 also gates that victory rule). [ref: game_screen.obstacle_count]
   game_screen.obstacle_count: 4
@@ -428,6 +431,7 @@ rules:
   # Fate of a cleared word's cells: remove vs fossilize. [ref: game_screen.clear_action]
   game_screen.clear_action: rule_remove_cells
   # game_screen.clear_action: rule_fossilize_cells
+  # game_screen.clear_action: rule_clear_plant   # plant: stem words branch (fossilize), non-stem words refresh (remove + fade in)
 
   # Covered "old" cells are deleted (so covered obstacles/missions count cleared).
   game_screen.cell_overlap_action: rule_old_cells_get_delete

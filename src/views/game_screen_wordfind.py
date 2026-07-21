@@ -73,7 +73,10 @@ class WordFindMixin:
         return cell in self._fossilized_cells
 
     def _rule_fossil_allow_is_wall(self, cell):
-        """Walk: fossilized cells are walkable; the word gate enforces freshness."""
+        """Walk: fossilized cells are walkable; the word gate enforces freshness.
+        MOVING_PLANT rides this rule: the green stem cells (fossilized, carrying the
+        root gram) stay walkable so a prefix can snake onto them, and the fossil-word
+        gate still demands one fresh prefix cell."""
         return False
 
     def _rule_fossil_block_word_ok(self, path):

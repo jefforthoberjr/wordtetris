@@ -449,28 +449,32 @@ vacated.
   constellation; no grid-empty win). Only refills cells the clear-action actually
   emptied, so it's a no-op under `rule_fossilize_cells`.
 
-### game_screen.constellation_replenish_fade_seconds
-Constellation + `rule_constellation_replenish` only: how many seconds a
-just-replenished cell takes to fade in from transparent to its resting color,
-instead of popping in at full opacity the instant the vacated cell refills. The
-fade reuses the opening reveal's handles (glyph alpha-ramp; hex inner white-fade /
-square alpha-fade) and easing (`loading_animation.yaml` `easing`), but on its own
-lightweight one-shot timeline per cell (see `TimedFade`), independent of the
-LOADING reveal. `0` restores the instant pop. Paused while the in-game menu is
+### game_screen.replenish_fade_seconds
+Any mode that replenishes vacated cells (constellation's
+`rule_constellation_replenish` turnover, plant's `rule_clear_plant` refresh): how
+many seconds a just-replenished cell takes to fade in from transparent to its
+resting color, instead of popping in at full opacity the instant the vacated cell
+refills. The fade reuses the opening reveal's handles (glyph alpha-ramp; hex inner
+white-fade / square alpha-fade) and easing (`loading_animation.yaml` `easing`), but
+on its own lightweight one-shot timeline per cell (see `TimedFade`), independent of
+the LOADING reveal. `0` restores the instant pop. Paused while the in-game menu is
 open, like the mode timer. A purely visual knob — the refill itself (the placed
 gram, logging, scoring) is unchanged, so replay reproduces the same board.
+(Formerly `game_screen.constellation_replenish_fade_seconds`, renamed once plant
+mode began sharing the same replenish machinery.)
 
-### game_screen.constellation_replenish_delay_seconds
-Constellation + `rule_constellation_replenish` only: how many seconds a vacated
-cell stays visibly empty before its fresh gram is picked and placed on the board.
-Unlike `constellation_replenish_fade_seconds` (which controls the fade-in *after*
-the gram exists), this delays the placement itself — the cell holds no gram, and
-none can be typed from it, until the wait elapses. Pending waits are counted down
-each play tick in `_update_pending_replenishes` and paused while the in-game menu
-is open, like the mode timer; once a wait fires the gram is placed and then fades
-in per `constellation_replenish_fade_seconds`. `0` fills instantly (the original
-behavior). Note this defers when the new gram becomes usable, so it slightly
-lengthens the window in which `constellation_auto_end` sees a smaller board.
+### game_screen.replenish_delay_seconds
+Any mode that replenishes vacated cells (see `replenish_fade_seconds`): how many
+seconds a vacated cell stays visibly empty before its fresh gram is picked and
+placed on the board. Unlike `replenish_fade_seconds` (which controls the fade-in
+*after* the gram exists), this delays the placement itself — the cell holds no
+gram, and none can be typed from it, until the wait elapses. Pending waits are
+counted down each play tick in `_update_pending_replenishes` and paused while the
+in-game menu is open, like the mode timer; once a wait fires the gram is placed and
+then fades in per `replenish_fade_seconds`. `0` fills instantly (the original
+behavior). Note this defers when the new gram becomes usable, so under constellation
+it slightly lengthens the window in which `constellation_auto_end` sees a smaller
+board. (Formerly `game_screen.constellation_replenish_delay_seconds`.)
 
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own

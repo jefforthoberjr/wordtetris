@@ -292,6 +292,17 @@ def log_30006(word):
     session_log.emit(30006, f"impossible word {word} (instadeath)", word=word)
 
 
+def log_30007(kind, word, path):
+    """MOVING_PLANT clear-action outcome for a cleared word (game_screen.clear_action:
+    rule_clear_plant). `kind` is 'branch' -- the word touched the stem, so its fresh
+    prefix cells fossilized into a permanent branch -- or 'refresh' -- it touched no
+    stem, so its cells were removed and scheduled a faded-in replacement. `path` is
+    the word's cells. The word clear itself is log_30002; this records which fate it
+    took, so a replay/readback can tell a branch from a refresh."""
+    cells = ";".join(f"{x},{y}" for (x, y) in path)
+    session_log.emit(30007, f"plant {kind} {word}", kind=kind, word=word, cells=cells)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.
@@ -391,8 +402,8 @@ def log_06003(piece):
 
 
 def log_06006(x, y, delay):
-    """A vacated constellation cell was queued to replenish after an empty-cell
-    wait (game_screen.constellation_replenish_delay_seconds > 0): the cell stays
+    """A vacated cell was queued to replenish after an empty-cell wait
+    (game_screen.replenish_delay_seconds > 0): the cell stays
     empty for `delay` seconds, then a fresh gram is placed there and recorded as
     the matching log_06002 'fill'. Logged so a replay reproduces the empty-then-fill
     timing instead of snapping the gram in at clear time. The instant path

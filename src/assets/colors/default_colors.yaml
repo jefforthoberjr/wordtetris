@@ -10,6 +10,7 @@ board:
   cursor_fill:      [80, 80, 80]      # dark grey: the MOVING_TYPEWRITER cursor cell
   crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
   fossilized_fill:  [165, 165, 165]   # stone grey: a fossilized cell (formed word, frozen + dead)
+  stem_text:        [0, 0, 0, 255]    # gram text of the non-root plant stem cells (MOVING_PLANT); match the stem fill to hide them
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   line_blast_highlight: [152, 251, 152]   # light green: cells of a completed row/column (line blast SELECT domain)
   line_blast_floating_valid:   [144, 238, 144]  # light green: floating piece where a drop is legal (line blast)

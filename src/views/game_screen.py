@@ -6,7 +6,7 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from views.moving_mode import (
     JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode,
-    ShootingGalleryMode, LineBlastMovingMode)
+    ShootingGalleryMode, LineBlastMovingMode, PlantVsTimerMode)
 from views.found_word import FoundWord
 from views.game_phase import Phase
 from views.game_screen_wordfind import WordFindMixin
@@ -621,6 +621,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # dead to word-finding, un-swappable, and skipped by the typewriter cursor.
         # Stays empty under the default remove clear-action. See _is_fossilized.
         self._fossilized_cells = set()
+        # MOVING_PLANT: the green stem cells (center column) that each carry the
+        # game's root gram, and the root text itself. Empty / None outside plant
+        # mode. The stem is fossilized-but-walkable (rule_fossil_allow); a word whose
+        # path touches a stem cell is a 'plant word' (see _rule_formation_plant).
+        self._stem_cells = set()
+        self._plant_root = None
 
         # Cell-overlap rules: one independent slot per piece track, each deciding
         # whether a piece may be moved onto / placed over a cell of that track.
@@ -669,6 +675,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         clear_action_rules = {
             "rule_remove_cells": self._rule_remove_cells,
             "rule_fossilize_cells": self._rule_fossilize_cells,
+            "rule_clear_plant": self._rule_clear_plant,
         }
         self._clear_action_rule = select_rule(
             "game_screen.clear_action", clear_action_rules
@@ -707,6 +714,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 self._rule_formation_fill_ideation_trigram_sidepanes,
             "rule_formation_fill_ideation_trigram_sidepanes_zigzag":
                 self._rule_formation_fill_ideation_trigram_sidepanes_zigzag,
+            "rule_formation_plant": self._rule_formation_plant,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -863,6 +871,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_mode_constellation": ConstellationMode,
             "rule_mode_shooting_gallery": ShootingGalleryMode,
             "rule_mode_line_blast": LineBlastMovingMode,
+            "rule_mode_plant_vs_timer": PlantVsTimerMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
         # Constellation mode swaps stage-1 word-finding from the adjacency
@@ -904,6 +913,20 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             {"rule_misspell_instadeath_off": False,
              "rule_misspell_instadeath_on": True})
         self._crosshair_color = get_color("board.crosshair")
+        # Per-mode fossil tint: re-read here (in __init__, AFTER the mode's
+        # assets.colors swap) so it tracks the active colors file, unlike the
+        # class-level FOSSILIZED_CELL_COLOR fixed at import (see config.apply_game_mode).
+        # MOVING_PLANT points assets.colors at plant_colors.yaml, whose fossil tint is
+        # green -- so the stem trunk AND the branches grown by cleared plant words read
+        # green; every other mode re-reads its own default (grey) unchanged. The
+        # instance attribute shadows the class constant for all self.FOSSILIZED_CELL_COLOR
+        # readers.
+        self.FOSSILIZED_CELL_COLOR = get_color("board.fossilized_fill")
+        # Gram-text color for the NON-root stem cells (board.stem_text). Separate from
+        # the ordinary cell text so a mode can restyle -- or, set to the stem's own fill,
+        # HIDE -- the repeated root glyphs up the trunk while the bottom (root) cell keeps
+        # its normal text. Only MOVING_PLANT places stem cells; every other mode ignores it.
+        self.STEM_TEXT_COLOR = get_color("board.stem_text")
         # Line-blast mode: pieces picked from a side-pane pool and dropped on an empty
         # board; a filled row/column opens SELECT over exactly those cells (see
         # LineBlastMovingMode). The engine reads the flag to route mouse motion to the
@@ -972,18 +995,19 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_turnover_rule = select_rule(
             "game_screen.constellation_turnover", constellation_turnover_rules)
-        # Seconds a replenished cell fades in (rule_constellation_replenish only);
-        # 0 = instant pop. Live fades tracked in _replenish_fades, ticked in update
-        # and built by _begin_replenish_fade. See constellation_replenish_fade_seconds.
-        self._constellation_replenish_fade_seconds = CONFIG["rules"][
-            "game_screen.constellation_replenish_fade_seconds"]
+        # Seconds a replenished (vacated-then-refilled) cell fades in; 0 = instant
+        # pop. Generic across modes -- constellation's replenish turnover and plant's
+        # refresh clear-action both use it. Live fades tracked in _replenish_fades,
+        # ticked in update and built by _begin_replenish_fade. See replenish_fade_seconds.
+        self._replenish_fade_seconds = CONFIG["rules"][
+            "game_screen.replenish_fade_seconds"]
         self._replenish_fades = []
-        # Seconds a vacated cell stays empty before its replenishment gram is
-        # placed (rule_constellation_replenish only); 0 = fill instantly. Pending
-        # waits tracked in _pending_replenishes, counted down in update and queued
-        # by _schedule_replenish. See constellation_replenish_delay_seconds.
-        self._constellation_replenish_delay_seconds = CONFIG["rules"][
-            "game_screen.constellation_replenish_delay_seconds"]
+        # Seconds a vacated cell stays empty before its replenishment gram is placed;
+        # 0 = fill instantly. Generic across modes (see above). Pending waits tracked
+        # in _pending_replenishes, counted down in update and queued by
+        # _schedule_replenish. See replenish_delay_seconds.
+        self._replenish_delay_seconds = CONFIG["rules"][
+            "game_screen.replenish_delay_seconds"]
         self._pending_replenishes = []
         # Constellation auto-end (game_screen.constellation_auto_end): after a word
         # clears, optionally finish the game once the remaining grams can spell no
@@ -1467,6 +1491,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
+        # Fresh per game: the plant stem cells + root, repopulated by
+        # rule_formation_plant below (empty / None in every other mode).
+        self._stem_cells = set()
+        self._plant_root = None
         # Fresh per game: the line-blast highlighted line(s) (empty until a placement
         # completes a row/column; see LineBlastMovingMode).
         self._line_blast_highlight = set()

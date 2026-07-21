@@ -38,6 +38,7 @@ from models.gram_picker import (
     rule_grams_greater_than_47_lengthcontrolled,
     ideation_grade,
     set_unigram_vowel_guarantee,
+    pick_plant_root,
 )
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
@@ -358,6 +359,43 @@ class BoardSetupMixin:
         SCATTERED to random cells (same unigram/digram/3+ counts, no diagonal),
         unless the length-controlled picker is inactive -- then row-major."""
         self._fill_player_with(self._rule_formation_arrange_random)
+
+    def _rule_formation_plant(self):
+        """MOVING_PLANT opening: fill the whole board with swappable player grams,
+        then grow the GREEN STEM up the center column. Each stem cell is fossilized
+        (green, un-swappable) and literally carries the game's random suffix-multigram
+        ROOT gram, so the shared pathfinder can end a snaked prefix on it (GOVERN ->
+        stem -> MENT) with no special case. The bottom (root) cell shows the root text
+        in the normal color; the rest of the trunk shows the same root in the restyle-
+        able stem-text color (settable to the stem fill to read blank). rule_fossil_allow
+        keeps the stem walkable (a plant word still needs a fresh prefix cell). Pair
+        with game_screen.victory: rule_victory_none."""
+        self._fill_player_with(self._rule_formation_arrange_diagonal)
+        self._plant_root = pick_plant_root()
+        cx = self._board.center_cell()[0]
+        for y in range(self._board.height):
+            if self._board.is_valid(cx, y) and self._board.gram_at(cx, y) is not None:
+                # Bottom cell (y == 0) is the root (normal text); the rest of the trunk
+                # shows the same root gram in the restyle-able stem-text color.
+                self._place_stem_cell(cx, y, self._plant_root, is_root=(y == 0))
+        L.log_06002("plant_stem", [(cx, y, self._board.gram_at(cx, y))
+                                   for y in range(self._board.height)
+                                   if (cx, y) in self._stem_cells])
+
+    def _place_stem_cell(self, x, y, root, is_root):
+        """Turn the already-filled cell (x, y) into a stem cell: relabel it to the
+        root gram (every stem cell literally holds the same root, so the shared
+        pathfinder needs no special case), record it in _stem_cells, and fossilize
+        it (green fill + un-swappable + walkable via rule_fossil_allow). The bottom
+        (root) cell keeps its normal gram text; the rest of the trunk gets the
+        restyle-able STEM_TEXT_COLOR, so a mode can recolor -- or, by matching the
+        stem fill, hide -- the repeated root glyphs up the stem."""
+        self._board.relabel_cell(x, y, root)
+        self._stem_cells.add((x, y))
+        self._fossilize_cell((x, y))
+        cell = self._board.get_cell(x, y)
+        if cell is not None and cell.label is not None and not is_root:
+            cell.label.color = self.STEM_TEXT_COLOR
 
     def _fill_player_with(self, arrange_rule):
         """Shared body of the uniform fill formations: pack every board cell with a

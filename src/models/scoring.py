@@ -29,6 +29,10 @@ class Scorer:
         self._sand_timer_cell_bonus = cfg.get("sand_timer_cell_bonus", 0)
         self._fossil_reuse_bonus = cfg.get("fossil_reuse_bonus", 0)
         self._new_word_bonus = cfg.get("new_word_bonus", 0)
+        # MOVING_PLANT: a word grown off the stem scores this many times as much
+        # (the whole word score). 1 leaves scoring unchanged, so it's inert in every
+        # other mode. See word_points_breakdown_rule's stem_cells.
+        self._plant_word_multiplier = cfg.get("plant_word_multiplier", 1)
         self._fill_board_bonus = cfg.get("fill_board_bonus", 0)
         self._time_remaining_per_second = cfg.get("time_remaining_per_second", 0)
         self._word_score_display = cfg.get("word_score_display", "sum")
@@ -44,7 +48,8 @@ class Scorer:
         self._total = 0
 
     def word_points_breakdown_rule(self, word_length, gram_lengths, obstacle_cells,
-                                   mission_cells, sand_cells, fossil_reuse_cells, is_new):
+                                   mission_cells, sand_cells, fossil_reuse_cells, is_new,
+                                   stem_cells=0):
         """One cleared word's points split into the three DISPLAY groups, as a list
         of subtotals: [basic cell sum, cell-type bonuses, new-word bonus]. Their
         sum is the word's total (word_points_rule builds on this), so the readout
@@ -54,7 +59,11 @@ class Scorer:
         `gram_lengths` is the letters-taken count per cell -- so len() is the
         cell count and each entry drives the longer-gram bonus (letters beyond
         the first in a cell). The *_cells args are how many of the word's cells
-        are that kind; `is_new` is newness to the player's lifetime dictionary."""
+        are that kind; `is_new` is newness to the player's lifetime dictionary.
+        `stem_cells` is how many of the word's cells are plant stem cells (>0 means
+        a plant word grown off the stem); when nonzero the whole word score is scaled
+        by scoring.plant_word_multiplier. Zero in every non-plant mode, so the
+        multiplier is inert there."""
         if not self._enabled:
             return [0, 0, 0]
         # 1) Basic cell sum: base + per-cell + per-letter + longer-gram (every
@@ -70,7 +79,12 @@ class Scorer:
                      + self._fossil_reuse_bonus * fossil_reuse_cells)
         # 3) New-word bonus (first time the player has ever collected the word).
         new_word = self._new_word_bonus if is_new else 0
-        return [basic, cell_type, new_word]
+        # 4) Plant-word multiplier (MOVING_PLANT): a word touching the stem is worth
+        #    scoring.plant_word_multiplier times as much -- scaled across every group
+        #    together so the breakdown display still sums to the word total. A word
+        #    off the stem (stem_cells 0) uses a factor of 1 (unchanged).
+        mult = self._plant_word_multiplier if stem_cells else 1
+        return [basic * mult, cell_type * mult, new_word * mult]
 
     def composition_points_rule(self, word_length, gram_lengths):
         """Points for a word from its CELL/GRAM COMPOSITION only -- the "basic
@@ -85,7 +99,7 @@ class Scorer:
         return self.word_points_breakdown_rule(
             word_length=word_length, gram_lengths=gram_lengths,
             obstacle_cells=0, mission_cells=0, sand_cells=0,
-            fossil_reuse_cells=0, is_new=False)[0]
+            fossil_reuse_cells=0, is_new=False, stem_cells=0)[0]
 
     def word_points_rule(self, **facts):
         """Points for one cleared word, WITHOUT touching the running total (a pure

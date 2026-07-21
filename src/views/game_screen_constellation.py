@@ -99,7 +99,7 @@ class ConstellationMixin:
         under an active hunt re-lights via the caller's recompute.
 
         The placement is not necessarily immediate: it's routed through
-        _schedule_replenish, which honors game_screen.constellation_replenish_delay_seconds
+        _schedule_replenish, which honors game_screen.replenish_delay_seconds
         (an empty-cell pause before the fresh gram appears)."""
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
@@ -107,17 +107,18 @@ class ConstellationMixin:
 
     def _schedule_replenish(self, x, y):
         """Queue the just-vacated cell (x, y) to refill after
-        game_screen.constellation_replenish_delay_seconds, leaving it visibly empty
-        in the meantime. A zero (or negative) delay fills right away -- the original
+        game_screen.replenish_delay_seconds, leaving it visibly empty in the
+        meantime. A zero (or negative) delay fills right away -- the original
         behavior -- so the knob turns the wait off without a separate rule. Live
         waits live in _pending_replenishes and are counted down by
-        _update_pending_replenishes."""
-        if self._constellation_replenish_delay_seconds <= 0:
+        _update_pending_replenishes. Generic: constellation's replenish turnover and
+        plant's refresh clear-action both call this."""
+        if self._replenish_delay_seconds <= 0:
             self._replenish_cell_now(x, y)
         else:
             self._pending_replenishes.append(
-                [x, y, self._constellation_replenish_delay_seconds])
-            L.log_06006(x, y, self._constellation_replenish_delay_seconds)
+                [x, y, self._replenish_delay_seconds])
+            L.log_06006(x, y, self._replenish_delay_seconds)
 
     def _replenish_cell_now(self, x, y):
         """Put a fresh gram in the (still-empty) vacated cell and start its fade-in.
@@ -149,7 +150,7 @@ class ConstellationMixin:
     def _begin_replenish_fade(self, x, y):
         """Start a fade-in for the cell just replenished at (x, y): instead of the
         fresh gram popping in at full opacity, bloom it up from transparent over
-        game_screen.constellation_replenish_fade_seconds. Reuses the opening
+        game_screen.replenish_fade_seconds. Reuses the opening
         reveal's fade handles (the glyph's alpha ramp + the background's hex
         white-fade / square alpha-fade) and registers a one-shot TimedFade that
         update() ticks. A zero duration reveals instantly (the old pop), so the
@@ -163,7 +164,7 @@ class ConstellationMixin:
         self._add_cell_background_fade_handles(handles, cell)
         if handles:
             self._replenish_fades.append(
-                TimedFade(handles, self._constellation_replenish_fade_seconds))
+                TimedFade(handles, self._replenish_fade_seconds))
 
     def _update_replenish_fades(self, dt):
         """Advance every live replenish fade and drop the finished ones. Called each

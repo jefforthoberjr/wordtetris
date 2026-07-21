@@ -724,6 +724,51 @@ class OmniswapVsTimerMode(MovingMode):
 
 
 
+class PlantVsTimerMode(OmniswapVsTimerMode):
+    """MOVING_PLANT -- a pre-filled swap board (the OmniswapVsTimerMode two-click
+    pick-then-swap, inherited whole) grown around a fixed GREEN STEM: the board's
+    center column is fossilized cells that each carry the game's random suffix
+    multigram ROOT (e.g. -MENT), rendered blank green with the root shown on the
+    bottom cell (see GameScreen._rule_formation_plant). The player swaps the loose
+    grams into a prefix that snakes to the stem and types the whole word; because
+    every stem cell carries the root gram and the plant fossil rule keeps the stem
+    WALKABLE (branches wall off), the shared adjacency pathfinder finds GOVERN ->
+    stem -> MENT = GOVERNMENT with no bespoke matcher. A word whose path touches a
+    stem cell is a 'plant word'; one that doesn't is an ordinary refresh word.
+
+    Unlike its omniswap parent this mode runs NO per-mode clock: the whole match is
+    a single game_screen.game_timer countdown, ticked centrally by GameScreen.update,
+    so start/update/advance here only manage the pick cursor. is_omniswap is False
+    so the omniswap auto-end + F3 sample (which reason about plain dictionary words,
+    not root-anchored plant words) stay dormant.
+
+    Pairs with the PLANT preset: rule_formation_plant, rule_fossil_allow (the stem
+    cells are fossilized-but-walkable, a plant word still needs a fresh prefix cell),
+    rule_single_phase (swap + type inline), rule_nucleate_anywhere,
+    rule_game_timer_on, rule_victory_none."""
+
+    is_omniswap = False
+
+    def start(self):
+        # No sand field and no per-mode countdown; just a clean pick cursor. The
+        # match clock is game_screen.game_timer, started + ticked by the engine.
+        self._selected = None
+        self._sand = None
+
+    def update(self, dt):
+        # The whole-match countdown lives on the engine (game_screen.game_timer);
+        # nothing per-mode to tick.
+        pass
+
+    def update_during_select(self, dt):
+        pass
+
+    def advance(self):
+        # A submitted word resolved; drop any pick cursor. One continuous clock, so
+        # nothing to reset or surrender (unlike the omniswap per-phase variant).
+        self._clear_selection()
+
+
 class ConstellationMode(MovingMode):
     """MOVING_CONSTELLATION -- a pre-filled board the player never rearranges.
     There is no live piece, cursor, timer or swap: the whole game is typing words.

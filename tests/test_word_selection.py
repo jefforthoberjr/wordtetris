@@ -1142,7 +1142,7 @@ def _constellation_game(board):
     # turn (delay 0 => _schedule_replenish fills now, no _pending_replenishes queue),
     # which is what the replenish test asserts. The fade-in is a render-only effect
     # (like _fill_one_player_cell), so stub it -- the fake cells carry no label/quad.
-    g._constellation_replenish_delay_seconds = 0
+    g._replenish_delay_seconds = 0
     g._pending_replenishes = []
     g._begin_replenish_fade = lambda x, y: None
     g._phase = gs.Phase.SELECTING

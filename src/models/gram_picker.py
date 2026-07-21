@@ -785,6 +785,40 @@ def ideation_grade(gram_text):
     return _ideation_grades.get((gram_text or "").upper())
 
 
+# --- plant-mode root pool (suffix multigrams) -------------------------------
+# The MOVING_PLANT root is one freq-weighted suffix multigram (a gram graded
+# suffix_ideation 'y' in the cleaned3 corpus, >= _PLANT_ROOT_MIN_LEN letters):
+# -MENT, -TION, -NESS, -ABLE ... A prefix snaked to the stem plus this root
+# spells the plant word (GOVERN + MENT). Lazily built + cached.
+_PLANT_ROOT_MIN_LEN = 3
+_plant_root_pool = None    # (upper_texts, freq_weights)
+
+
+def plant_root_choices():
+    """The (upper_texts, weights) pool a plant-mode root is drawn from: every
+    suffix-graded multigram in the cleaned3 corpus, freq-weighted. Cached."""
+    global _plant_root_pool
+    if _plant_root_pool is None:
+        texts, weights = [], []
+        csv_path = os.path.join(os.path.dirname(__file__), 'gram_corpus', _IDEATION_CSV)
+        with open(csv_path, 'r') as f:
+            for row in csv.DictReader(f):
+                gram = row['gram'].strip()
+                if (len(gram) >= _PLANT_ROOT_MIN_LEN
+                        and row['suffix_ideation'].strip().lower() == 'y'):
+                    texts.append(gram.upper())
+                    weights.append(int(row['freq']))
+        _plant_root_pool = (texts, weights)
+    return _plant_root_pool
+
+
+def pick_plant_root():
+    """One freq-weighted random suffix-multigram root (UPPER), drawn through the
+    seeded rand() so a replay reproduces the same root."""
+    texts, weights = plant_root_choices()
+    return rand().choices(texts, weights=weights, k=1)[0]
+
+
 def _draw_from_ideation(length, attr, count):
     """Draw `count` grams of `length` (2 / 3+) that carry ideation `attr` (graded
     y), weighted by corpus frequency within that sub-list."""
