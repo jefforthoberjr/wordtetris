@@ -1,0 +1,30 @@
+# Signature = BOTANICAL PRESET. A word-growing crossword: the board is empty but
+# for a vertical stem column of per-cell grams down the center. Type a word that
+# CONTAINS one stem cell's gram; it crosses that cell and grows out both sides as
+# leaf cells (up to a trigram each). Only the crossing chunk comes from the board.
+# One leaf per stem cell; the match ends when the timer runs out (goldeneye plays).
+mode_label: "Botanical — grow leaves"
+
+rules:
+  game_screen.mode:            rule_mode_botanical
+  game_screen.setup_formation: rule_formation_botanical
+  game_screen.clear_action:    rule_clear_none
+
+  # Square grid: the horizontal leaf layout assumes clean rows/columns.
+  game_screen.grid:            rule_use_square_grid
+
+  game_screen.phase_model:          rule_single_phase       # type inline, no SELECT phase
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  game_screen.placed_cell_requirement: rule_placed_cell_optional
+  game_screen.word_repeat:          rule_repeat_allow       # same word may grow off a different stem cell
+  game_screen.word_trail:           rule_word_trail_off
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+
+  game_screen.victory:         rule_victory_none
+  game_screen.show_end_button: rule_show_end_button
+
+  game_screen.game_timer:         rule_game_timer_on
+  game_screen.game_timer_seconds: 180
+
+  # End clip: the goldeneye video plays once when the match ends.
+  game_screen.end_video: goldeneye.mp4
