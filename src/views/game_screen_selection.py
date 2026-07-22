@@ -359,6 +359,13 @@ class SelectionMixin:
                 L.log_30007("refresh", fw.word, fw.path)
         return fully_cleared
 
+    def _rule_clear_none(self, accepted):
+        """No-op clear-action: the accepted words' cells stay on the board untouched.
+        Used by MOVING_BOTANICAL, which PLACES cells on submit and records/scores the
+        grown word through _clear_paths without removing anything. Returns an empty
+        fully-cleared set (nothing left the board)."""
+        return set()
+
     def _fossilize_cell(self, cell):
         """Freeze one cell: record it dead and tint it the fossil color in place."""
         self._fossilized_cells.add(cell)
@@ -416,6 +423,13 @@ class SelectionMixin:
         the phase-end batch; both show the most specific error on rejection."""
         word = typed.strip().upper()
         if not word:
+            return
+        # Botanical (MOVING_BOTANICAL): a word grows off the stem as leaf cells rather
+        # than clearing existing cells, so it takes its own placement path and never
+        # touches the SELECT clear pipeline / candidate recompute below.
+        if self._botanical:
+            L.log_30001(word)
+            self._botanical_submit(word)
             return
         # Single-phase (MOVING_AND_SELECTING): no _begin_selection ran to snapshot
         # the board's candidates, and the board may have changed via swaps since the

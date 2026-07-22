@@ -1,7 +1,7 @@
-# All game colors live here, separate from the behavior rules in config.yaml,
-# so restyling is one edit point. Values are RGB or RGBA, 0-255 per channel
-# (the alpha channel is only needed for text labels and translucent panels).
-# Names are addressed by dotted path in code, e.g. get_color("board.settled_cell_fill").
+# PLANT MODE color set (assets.colors: plant_colors.yaml). A copy of
+# default_colors.yaml with one change: fossilized cells are GREEN, so the stem
+# trunk and the branches grown by cleared plant words read as a plant, not stone.
+# Values are RGB or RGBA, 0-255 per channel.
 
 board:
   settled_cell_fill: [255, 255, 255]   # settled cell fill (placed pieces)
@@ -9,10 +9,8 @@ board:
   placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
   cursor_fill:      [80, 80, 80]      # dark grey: the MOVING_TYPEWRITER cursor cell
   crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
-  fossilized_fill:  [165, 165, 165]   # stone grey: a fossilized cell (formed word, frozen + dead)
-  stem_text:        [0, 0, 0, 255]    # gram text of the non-root plant stem cells (MOVING_PLANT); match the stem fill to hide them
-  stem_fill:        [140, 100, 60]    # MOVING_BOTANICAL: the vertical stem-column spine cells (woody brown)
-  leaf_fill:        [120, 190, 120]   # MOVING_BOTANICAL: leaf cells a word grows into (green)
+  fossilized_fill:  [80, 150, 80]     # plant green: the stem trunk + grown branches (fossilized cells)
+  stem_text:        [225, 240, 225, 255]  # non-root stem gram text: soft near-white on the green trunk; set to [80,150,80] to hide the repeated root
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   line_blast_highlight: [152, 251, 152]   # light green: cells of a completed row/column (line blast SELECT domain)
   line_blast_floating_valid:   [144, 238, 144]  # light green: floating piece where a drop is legal (line blast)

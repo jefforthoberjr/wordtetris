@@ -6,7 +6,7 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from views.moving_mode import (
     JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode,
-    ShootingGalleryMode, LineBlastMovingMode, PlantVsTimerMode)
+    ShootingGalleryMode, LineBlastMovingMode, PlantVsTimerMode, BotanicalMode)
 from views.found_word import FoundWord
 from views.game_phase import Phase
 from views.game_screen_wordfind import WordFindMixin
@@ -14,6 +14,7 @@ from views.game_screen_selection import SelectionMixin
 from views.game_screen_setup import BoardSetupMixin
 from views.game_screen_boardrules import BoardRulesMixin
 from views.game_screen_constellation import ConstellationMixin
+from views.game_screen_botanical import BotanicalMixin
 from views.game_screen_shooting import ShootingMixin
 from views.game_screen_input import InputMixin
 from views.moving_side_pane import MovingSidePane
@@ -362,7 +363,7 @@ def _gram_manip_family(text):
 
 
 class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin,
-                 ConstellationMixin, ShootingMixin, InputMixin):
+                 ConstellationMixin, BotanicalMixin, ShootingMixin, InputMixin):
     # Error-display defaults so the submission pipeline reads sane values on a bare
     # __new__ test instance (build() overrides both from config). Text mode always
     # shows the "did you mean?" hint, matching the pre-icon behavior. See
@@ -627,6 +628,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # path touches a stem cell is a 'plant word' (see _rule_formation_plant).
         self._stem_cells = set()
         self._plant_root = None
+        # MOVING_BOTANICAL: stem cells that have already sprouted their one leaf word
+        # (a used stem cell hosts no more words). Empty outside botanical.
+        self._sprouted_stem_cells = set()
 
         # Cell-overlap rules: one independent slot per piece track, each deciding
         # whether a piece may be moved onto / placed over a cell of that track.
@@ -676,6 +680,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_remove_cells": self._rule_remove_cells,
             "rule_fossilize_cells": self._rule_fossilize_cells,
             "rule_clear_plant": self._rule_clear_plant,
+            "rule_clear_none": self._rule_clear_none,
         }
         self._clear_action_rule = select_rule(
             "game_screen.clear_action", clear_action_rules
@@ -715,6 +720,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_formation_fill_ideation_trigram_sidepanes_zigzag":
                 self._rule_formation_fill_ideation_trigram_sidepanes_zigzag,
             "rule_formation_plant": self._rule_formation_plant,
+            "rule_formation_botanical": self._rule_formation_botanical,
         }
         self._setup_formation_rule = select_rule(
             "game_screen.setup_formation", setup_formation_rules
@@ -872,6 +878,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_mode_shooting_gallery": ShootingGalleryMode,
             "rule_mode_line_blast": LineBlastMovingMode,
             "rule_mode_plant_vs_timer": PlantVsTimerMode,
+            "rule_mode_botanical": BotanicalMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
         # Constellation mode swaps stage-1 word-finding from the adjacency
@@ -927,11 +934,22 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # HIDE -- the repeated root glyphs up the trunk while the bottom (root) cell keeps
         # its normal text. Only MOVING_PLANT places stem cells; every other mode ignores it.
         self.STEM_TEXT_COLOR = get_color("board.stem_text")
+        # MOVING_BOTANICAL cell tints (per-mode, read after the assets.colors swap):
+        # the vertical stem column's spine cells, and the leaf cells words grow into.
+        # Both ignored outside botanical. See _rule_formation_botanical / _place_leaf_cell.
+        self.STEM_CELL_COLOR = get_color("board.stem_fill")
+        self.LEAF_CELL_COLOR = get_color("board.leaf_fill")
         # Line-blast mode: pieces picked from a side-pane pool and dropped on an empty
         # board; a filled row/column opens SELECT over exactly those cells (see
         # LineBlastMovingMode). The engine reads the flag to route mouse motion to the
         # mode and to swap in the line-blast moving pane. False for every other mode.
         self._line_blast = self._moving_mode.is_line_blast
+        # Botanical mode: an empty board but for a vertical stem column, where a typed
+        # word crosses one stem cell and grows out both sides as leaf cells (see
+        # BotanicalMixin). The engine reads it to route word submission through the
+        # botanical placement matcher (_on_submit_word) instead of the clear pipeline.
+        # False for every other mode.
+        self._botanical = self._moving_mode.is_botanical
         # Line-blast knobs (game_screen.line_blast_*), read by LineBlastMovingMode +
         # LineBlastMovingPane; ignored by every other mode.
         self._line_blast_pool_size = CONFIG["rules"]["game_screen.line_blast_pool_size"]
@@ -1491,10 +1509,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # Fresh per game: cells fossilized by formed words (empty until a fossilize
         # clear-action runs; see _is_fossilized).
         self._fossilized_cells = set()
-        # Fresh per game: the plant stem cells + root, repopulated by
-        # rule_formation_plant below (empty / None in every other mode).
+        # Fresh per game: the plant/botanical stem cells + plant root, repopulated by
+        # rule_formation_plant / rule_formation_botanical below (empty / None in every
+        # other mode). _sprouted_stem_cells tracks which botanical stems have grown.
         self._stem_cells = set()
         self._plant_root = None
+        self._sprouted_stem_cells = set()
         # Fresh per game: the line-blast highlighted line(s) (empty until a placement
         # completes a row/column; see LineBlastMovingMode).
         self._line_blast_highlight = set()

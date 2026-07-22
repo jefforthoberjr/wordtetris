@@ -382,6 +382,23 @@ class BoardSetupMixin:
                                    for y in range(self._board.height)
                                    if (cx, y) in self._stem_cells])
 
+    def _rule_formation_botanical(self):
+        """MOVING_BOTANICAL opening: an empty board but for a vertical STEM column
+        down the center, each cell a random player gram (the crossing letters words
+        grow from). No fill elsewhere -- leaf cells are placed at play time as words
+        are typed (see _botanical_submit). Pair with game_screen.victory:
+        rule_victory_none and a square grid (the horizontal leaf layout assumes
+        square rows/columns)."""
+        cx = self._board.center_cell()[0]
+        for y in range(self._board.height):
+            if not self._board.is_valid(cx, y):
+                continue
+            self._fill_one_player_cell(cx, y)
+            self._stem_cells.add((cx, y))
+            cell = self._board.get_cell(cx, y)
+            if cell is not None and cell.square is not None:
+                cell.square.color = self.STEM_CELL_COLOR
+
     def _place_stem_cell(self, x, y, root, is_root):
         """Turn the already-filled cell (x, y) into a stem cell: relabel it to the
         root gram (every stem cell literally holds the same root, so the shared

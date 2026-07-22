@@ -1,0 +1,30 @@
+# Signature = PLANT PRESET. A green stem (center column) carries a random suffix
+# root; snake a prefix onto it and type the whole word. Runs on hex like the other
+# pre-filled modes; chunk 1 fossilizes every word (chunk 2 adds the CAT-refresh).
+mode_label: "Plant — grow words"
+
+rules:
+  game_screen.mode:            rule_mode_plant_vs_timer
+  game_screen.setup_formation: rule_formation_plant
+  game_screen.fossil_word_use: rule_fossil_allow
+  game_screen.clear_action:    rule_clear_plant
+
+  game_screen.phase_model:          rule_single_phase       # swap + type inline
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  game_screen.placed_cell_requirement: rule_placed_cell_optional
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+
+  game_screen.victory:         rule_victory_none
+  game_screen.show_end_button: rule_show_end_button
+
+  game_screen.game_timer:         rule_game_timer_on
+  game_screen.game_timer_seconds: 180
+
+  assets.colors: plant_colors.yaml
+
+# A word grown off the stem (a real plant word) scores 3x; non-stem refresh words
+# (CAT) score at 1x. Deep-merges over the base scoring block (only this key changes).
+scoring:
+  plant_word_multiplier: 3

@@ -7,6 +7,16 @@ GAME NAMES
 * catalyst cata LIST
 
 
+I'd like to just hammer out a bunch of "wish" words up front, as like a set of templates that I'd like to fill in. Then reveal the pool of little glue grams (i.e. unigrams) to try and fill in my templates. So that I can idea words, then hunt and piece them together, in separate phases of the game (or at least in separte batches).
+
+
+Maybe have a game mode like, allow to submit words without all the letters anyways (just less points)
+Maybe allow them to get some score, but they don't get added to the player's personal dictionary if they didn't fully spell the words.
+
+
+
+
+
 PLAST did you mean PLASTIC or PLASTICS (hmmm.. maybe not)
 
 yabbering wasn't in the dictionary

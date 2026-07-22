@@ -303,6 +303,17 @@ def log_30007(kind, word, path):
     session_log.emit(30007, f"plant {kind} {word}", kind=kind, word=word, cells=cells)
 
 
+def log_30008(word, stem, path):
+    """MOVING_BOTANICAL grew a word (game_screen.clear_action: rule_clear_none). The
+    word crossed the stem cell `stem` and grew leaf cells along `path` (its full
+    reading-order cells, stem included). Logged so a replay/readback can reconstruct
+    which stem sprouted and where the leaves landed; the word's scoring/listing is the
+    companion log_30002."""
+    cells = ";".join(f"{x},{y}" for (x, y) in path)
+    session_log.emit(30008, f"grew {word} off stem {stem[0]},{stem[1]}",
+                     word=word, stem=f"{stem[0]},{stem[1]}", cells=cells)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.

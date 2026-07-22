@@ -111,6 +111,7 @@ rules:
   # game_screen.mode:       rule_mode_shooting_gallery
   # game_screen.mode:       rule_mode_line_blast
   # game_screen.mode:       rule_mode_plant_vs_timer
+  # game_screen.mode:       rule_mode_botanical
 
   # LINE BLAST: preselected piece pool size, side-pane preview count, and preview
   # size as a fraction of a board cell. [ref: game_screen.line_blast_pool_size]
@@ -253,6 +254,7 @@ rules:
   # game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes
   game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
   # game_screen.setup_formation: rule_formation_plant
+  # game_screen.setup_formation: rule_formation_botanical
 
   # Counts for rule_formation_scattered (0 also gates that victory rule). [ref: game_screen.obstacle_count]
   game_screen.obstacle_count: 4
@@ -432,6 +434,7 @@ rules:
   game_screen.clear_action: rule_remove_cells
   # game_screen.clear_action: rule_fossilize_cells
   # game_screen.clear_action: rule_clear_plant   # plant: stem words branch (fossilize), non-stem words refresh (remove + fade in)
+  # game_screen.clear_action: rule_clear_none    # botanical: no-op (words PLACE cells rather than clearing them)
 
   # Covered "old" cells are deleted (so covered obstacles/missions count cleared).
   game_screen.cell_overlap_action: rule_old_cells_get_delete

@@ -105,6 +105,13 @@ class MovingMode:
     # only LineBlastMovingMode flips it True.
     is_line_blast = False
 
+    # Whether this mode is botanical: an empty board but for a vertical stem column,
+    # where a typed word crosses one stem cell and grows out both sides as leaf cells
+    # (only the crossing chunk comes from the board). The engine reads it to route
+    # word submission through the botanical placement matcher instead of the SELECT
+    # clear pipeline; only BotanicalMode flips it True.
+    is_botanical = False
+
     def __init__(self, game_screen):
         self._gs = game_screen
 
@@ -767,6 +774,40 @@ class PlantVsTimerMode(OmniswapVsTimerMode):
         # A submitted word resolved; drop any pick cursor. One continuous clock, so
         # nothing to reset or surrender (unlike the omniswap per-phase variant).
         self._clear_selection()
+
+
+class BotanicalMode(MovingMode):
+    """MOVING_BOTANICAL -- a word-growing crossword. The board opens empty but for a
+    vertical STEM column of per-cell grams down the center; the player types words
+    that each cross ONE stem cell (its gram a contiguous chunk of the word) and grow
+    horizontally out both sides as leaf cells, each up to a trigram (see
+    GameScreen._botanical_submit). Only the crossing chunk comes from the board -- the
+    rest of the word is freely typed and auto-placed -- and one leaf grows per stem
+    cell.
+
+    Like constellation there is no piece, cursor, swap or per-mode timer: the trivial
+    MOVING phase is just the typing doorway (single-phase merged pane). The match runs
+    on game_screen.game_timer and ends when it expires. Pairs with the BOTANICAL
+    preset: rule_formation_botanical, rule_use_square_grid, rule_single_phase,
+    rule_clear_none, rule_nucleate_anywhere, rule_repeat_allow, rule_victory_none,
+    rule_game_timer_on (+ game_screen.end_video for the end clip)."""
+
+    is_botanical = True
+
+    def start(self):
+        # Nothing to set up: the formation placed the stem, and there is no
+        # piece/cursor/timer to initialize. Submission is handled in _on_submit_word.
+        pass
+
+    def advance(self):
+        # Never reached: botanical places + records inline on submit and never opens
+        # the SELECT clear pipeline, so no turn resolves back through here.
+        pass
+
+    def on_key_press(self, symbol, modifiers):
+        # No board input in botanical: in single-phase the merged pane consumes ENTER
+        # as the word submit and every letter as text, so the mode handles no keys.
+        return False
 
 
 class ConstellationMode(MovingMode):
