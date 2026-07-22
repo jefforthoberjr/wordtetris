@@ -232,6 +232,11 @@ rules:
   game_screen.disambig_cancel:         rule_disambig_cancel_on
   # game_screen.disambig_cancel:       rule_disambig_cancel_off
 
+  # Botanical: how a word's grow-site is chosen when several crossings fit. [ref: game_screen.botanical_disambiguation]
+  game_screen.botanical_disambiguation:   rule_botanical_disambig_auto_pick
+  # game_screen.botanical_disambiguation: rule_botanical_disambig_cycle_two_or_more_choices
+  # game_screen.botanical_disambiguation: rule_botanical_disambig_cycle_one_or_more_choices
+
   # Rows in the right-pane cleared-word list. [ref: moving_side_pane.wordlist_rows]
   moving_side_pane.wordlist_rows:   20
 

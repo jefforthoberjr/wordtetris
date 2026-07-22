@@ -1184,6 +1184,22 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "game_screen.disambig_cancel",
             {"rule_disambig_cancel_on": True, "rule_disambig_cancel_off": False},
         )
+        # Botanical grow-site disambiguation (game_screen.botanical_disambiguation):
+        # how WHERE a submitted word grows is chosen when several stem crossings /
+        # leaf layouts fit. Botanical bypasses the SELECT clear pipeline, so its
+        # _botanical_submit consults this seam directly -- auto-pick grows the most
+        # compact layout, the cycle rules reuse the shared chooser (blue lines).
+        botanical_disambig_rules = {
+            "rule_botanical_disambig_auto_pick":
+                self._rule_botanical_disambig_auto_pick,
+            "rule_botanical_disambig_cycle_two_or_more_choices":
+                self._rule_botanical_disambig_cycle_two_or_more_choices,
+            "rule_botanical_disambig_cycle_one_or_more_choices":
+                self._rule_botanical_disambig_cycle_one_or_more_choices,
+        }
+        self._botanical_disambiguation_rule = select_rule(
+            "game_screen.botanical_disambiguation", botanical_disambig_rules
+        )
         # Whether a rejected submit echoes the typed word as a ghost above a
         # cleared field (game_screen.reject_ghost); see _reject_submission.
         self._reject_ghost = select_rule(

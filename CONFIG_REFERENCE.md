@@ -770,6 +770,23 @@ Whether a back-out gesture (`word_clear` / Backspace / Escape / any letter) exit
 chooser — returning to the typed word — or the player must commit to one candidate
 once a valid word is submitted. `rule_disambig_cancel_on` / `_off`.
 
+### game_screen.botanical_disambiguation
+Botanical only. A typed word can often grow off the stem several ways — a different
+stem cell whose gram it contains, or the same gram at a different position in the word
+— each laying the leaves in a different spot. This chooses WHICH grow-site is used.
+Botanical places cells rather than clearing them, so it bypasses the SELECT
+`clear_disambiguation` pipeline and consults this seam instead; the cycle rules reuse
+the same shared chooser (cycle with `word_cycle_prev` / `word_cycle_next`, confirm with
+`word_submit`), so pair them with `disambig_display: rule_disambig_display_lines` — the
+leaf targets are still-empty cells, so only the blue polylines (drawn through cell
+centers) visualize each candidate; the highlight display would show nothing there.
+- `rule_botanical_disambig_auto_pick` — silently grow the most compact layout (fewest
+  new leaves, then the earliest crossing), no confirm step (original).
+- `rule_botanical_disambig_cycle_two_or_more_choices` — open the chooser only when 2+
+  grow-sites fit; a lone layout grows instantly.
+- `rule_botanical_disambig_cycle_one_or_more_choices` — open the chooser for every
+  accepted word, a lone layout included, so every grow previews its span + confirms.
+
 ### moving_side_pane.wordlist_rows
 How many word rows the right pane's scrolling cleared-word list shows. Fewer rows
 than the pane fits pack from the top (blank space below); more rows than fit shrink

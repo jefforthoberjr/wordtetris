@@ -18,7 +18,13 @@ rules:
   game_screen.placed_cell_requirement: rule_placed_cell_optional
   game_screen.word_repeat:          rule_repeat_allow       # same word may grow off a different stem cell
   game_screen.word_trail:           rule_word_trail_off
-  game_screen.clear_disambiguation: rule_disambig_auto_pick
+  game_screen.clear_disambiguation: rule_disambig_auto_pick  # inert: botanical bypasses the SELECT clear pipeline
+
+  # Grow-site chooser: show it for every word (one option included) this playtest.
+  game_screen.botanical_disambiguation: rule_botanical_disambig_cycle_one_or_more_choices
+  # Blue polylines through cell centers -- the leaf targets are empty, so the
+  # highlight display would show nothing. Required for the chooser to be visible.
+  game_screen.disambig_display: rule_disambig_display_lines
 
   game_screen.victory:         rule_victory_none
   game_screen.show_end_button: rule_show_end_button

@@ -36,12 +36,62 @@ class BotanicalMixin:
     def _botanical_submit(self, word):
         """Handle one typed word in botanical mode (single-phase, clear-on-submit):
         grow it as a leaf off a stem cell, or show why it can't. Bypasses the whole
-        SELECT clear pipeline -- botanical places cells rather than clearing them."""
+        SELECT clear pipeline -- botanical places cells rather than clearing them.
+        The active game_screen.botanical_disambiguation rule then either grows a
+        chosen placement now or opens the cycle chooser."""
         placements = self._botanical_placements(word) if is_word(word) else []
         if not placements:
             self._reject_submission(word, [self._botanical_submission_error(word)])
             return
+        self._botanical_disambiguation_rule(word, placements)
+
+    # --- botanical grow-site rules (game_screen.botanical_disambiguation) ----
+    # WHERE a word grows when several stem crossings / leaf layouts are legal.
+    # Signature (word, placements) -> None: grow a chosen placement now, or open the
+    # SHARED cycle chooser (the same left/right + Enter UI the SELECT clear_
+    # disambiguation rules drive), whose on_confirm grows the confirmed layout.
+    def _rule_botanical_disambig_auto_pick(self, word, placements):
+        """Original: silently grow the most-compact layout (_botanical_pick), no
+        player choice."""
         self._botanical_place(word, self._botanical_pick(placements))
+
+    def _rule_botanical_disambig_cycle_two_or_more_choices(self, word, placements):
+        """Open the chooser only when 2+ layouts fit; a lone layout grows instantly
+        (no needless prompt)."""
+        self._botanical_open_chooser(word, placements, min_choices=2)
+
+    def _rule_botanical_disambig_cycle_one_or_more_choices(self, word, placements):
+        """Open the chooser for every accepted word, a lone layout included -- so
+        every grow previews its span and takes an explicit confirm."""
+        self._botanical_open_chooser(word, placements, min_choices=1)
+
+    def _botanical_open_chooser(self, word, placements, min_choices):
+        """Shared entry for the cycle rules: below min_choices layouts, grow the
+        picked one now; else open the shared cycle chooser over the layouts (built as
+        FoundWords), committing the confirmed one via _botanical_confirm_placement."""
+        if len(placements) < min_choices:
+            self._botanical_place(word, self._botanical_pick(placements))
+            return
+        options = [self._botanical_found_word(p) for p in placements]
+        self._begin_disambiguation(word, options, self._botanical_confirm_placement)
+
+    def _botanical_found_word(self, placement):
+        """The FoundWord the chooser cycles for a placement: its full reading path +
+        per-cell segments (see _botanical_layout). The chooser orders/draws by these
+        alone, and _botanical_confirm_placement rebuilds the grow from them."""
+        return FoundWord(list(placement["path"]), list(placement["segments"]),
+                         placement["word"])
+
+    def _botanical_confirm_placement(self, word, found):
+        """Chooser on_confirm: grow the confirmed layout, rebuilt from its FoundWord.
+        The one path cell that is a stem is the crossing; every other path cell is a
+        new leaf holding its segment's gram."""
+        stem = next(cell for cell in found.path if cell in self._stem_cells)
+        cells = [(x, y, seg) for (x, y), seg in zip(found.path, found.segments)
+                 if (x, y) != stem]
+        self._botanical_place(word, {"stem": stem, "cells": cells,
+                                     "segments": list(found.segments),
+                                     "path": list(found.path), "word": word})
 
     def _botanical_placements(self, word):
         """Every legal way to grow `word` off the stem: for each un-sprouted stem
