@@ -98,6 +98,7 @@ rules:
 
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
+  # game_screen.grid:       rule_use_triangle_grid
 
   # Board columns (grid is square) + player piece-pool size. [ref: game_screen.grid_width]
   game_screen.grid_width:       8
@@ -274,6 +275,9 @@ rules:
   # Stage 1 (pathfind): how the square search snakes the board. [ref: square_grid.word_pathfinding]
   square_grid.word_pathfinding: rule_snake_anydirection
   # square_grid.word_pathfinding: rule_snake_anydirection_diagonal
+
+  # Stage 1 (pathfind): how the triangle search snakes the board. [ref: triangle_grid.word_pathfinding]
+  triangle_grid.word_pathfinding: rule_snake_edges_anydirection
 
   # Stage 2a (nucleate): which found words count this phase. [ref: game_screen.word_nucleation]
   # game_screen.word_nucleation: rule_adjacent_to_placed_pieces
@@ -563,6 +567,41 @@ rules:
 
   # hex_mission.piece_set: rule_use_hex_dominos
   hex_mission.piece_set: rule_use_hex_unimos
+
+  # triangle_player.gram_pick also governs the initial board formation cells.
+  # A triangle cell is the tightest on any grid, so unigrams are the default.
+  triangle_player.gram_pick:      rule_englishcorpus_random_unigram
+  # triangle_player.gram_pick:    rule_random_letters
+  # triangle_player.gram_pick:    rule_scrabble_distribution
+  # triangle_player.gram_pick:    rule_scrabble_with_allvowelswild
+  # triangle_player.gram_pick:    rule_englishcorpus_random_digram
+  # triangle_player.gram_pick:    rule_grams_greater_than_47
+  # triangle_player.gram_pick:    rule_grams_greater_than_47_lengthcontrolled
+  # triangle_player.gram_pick:    rule_mixed_scrabble_digram52
+  # triangle_player.gram_pick:    rule_digram52_distribution
+  # triangle_player.gram_pick:    rule_trigram_equalweight
+
+  triangle_player.piece_set:    rule_use_triangle_unimos_and_dominos
+  # triangle_player.piece_set:  rule_use_triangle_dominos
+  # triangle_player.piece_set:  rule_use_triangle_unimos
+
+  triangle_obstacle.gram_pick: rule_englishcorpus_random_unigram
+  # triangle_obstacle.gram_pick: rule_scrabble_distribution
+  # triangle_obstacle.gram_pick: rule_random_letters
+  # triangle_obstacle.gram_pick: rule_digram52_distribution
+  # triangle_obstacle.gram_pick: rule_trigram_equalweight
+
+  # triangle_obstacle.piece_set: rule_use_triangle_dominos
+  triangle_obstacle.piece_set: rule_use_triangle_unimos
+
+  triangle_mission.gram_pick: rule_englishcorpus_random_unigram
+  # triangle_mission.gram_pick: rule_scrabble_distribution
+  # triangle_mission.gram_pick: rule_random_letters
+  # triangle_mission.gram_pick: rule_digram52_distribution
+  # triangle_mission.gram_pick: rule_trigram_equalweight
+
+  # triangle_mission.piece_set: rule_use_triangle_dominos
+  triangle_mission.piece_set: rule_use_triangle_unimos
 
   # Multi-shape piece-pool distribution. [ref: piece_pool.order]
   piece_pool.order:         rule_create_shuffled_roundrobin

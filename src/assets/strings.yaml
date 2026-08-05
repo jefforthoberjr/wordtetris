@@ -13,6 +13,7 @@ en:
   # Main menu
   menu_start:            "Start Game"
   menu_dictionary:       "My Dictionary"
+  menu_controls:         "Controls"
   menu_exit:             "Exit"
   # Mode-select submenu (opened by "Start Game")
   menu_mode_select_title: "Select Mode"
@@ -21,6 +22,15 @@ en:
   menu_debug:            "Debug"
   menu_debug_title:      "Debug"
   debug_play_end_video:  "Play endgame video"
+  # Controls reference screen (opened by "Controls" on the main menu). One
+  # section per grid style, since the same keys mean different things on each.
+  controls_title:            "Controls"
+  controls_section_menus:    "MENUS"
+  controls_section_square:   "SQUARE GRID"
+  controls_section_hex:      "HEX GRID"
+  controls_section_triangle: "TRIANGLE GRID"
+  controls_section_piece:    "PIECE"
+  controls_section_words:    "SPELLING A WORD"
   # In-game (pause) menu
   ingame_main_menu:      "Main Menu"
   ingame_exit:           "Exit"
@@ -90,6 +100,7 @@ es:
   # Main menu
   menu_start:            "Comenzar Juego"
   menu_dictionary:       "Mi Diccionario"
+  menu_controls:         "Controles"
   menu_exit:             "Salir"
   menu_mode_select_title: "Seleccionar Modo"
   menu_back:             "Atrás"
@@ -97,6 +108,13 @@ es:
   menu_debug:            "Depuración"
   menu_debug_title:      "Depuración"
   debug_play_end_video:  "Reproducir video final"
+  controls_title:            "Controles"
+  controls_section_menus:    "MENÚS"
+  controls_section_square:   "CUADRÍCULA CUADRADA"
+  controls_section_hex:      "CUADRÍCULA HEXAGONAL"
+  controls_section_triangle: "CUADRÍCULA TRIANGULAR"
+  controls_section_piece:    "PIEZA"
+  controls_section_words:    "DELETREAR UNA PALABRA"
   # In-game (pause) menu
   ingame_main_menu:      "Menú Principal"
   ingame_exit:           "Salir"

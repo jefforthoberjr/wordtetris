@@ -7,6 +7,15 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Lexivorous Lexivore
+-game mode where a little monster character shows up, with a gram painted on their belly. Then they eat, and grow fat bellies.
+-word munchers inspired
+-Trying to balance, keeping all your monsters feed.
+-Optional burps out new grabs
+
+
+
+
 I'd like to just hammer out a bunch of "wish" words up front, as like a set of templates that I'd like to fill in. Then reveal the pool of little glue grams (i.e. unigrams) to try and fill in my templates. So that I can idea words, then hunt and piece them together, in separate phases of the game (or at least in separte batches).
 
 

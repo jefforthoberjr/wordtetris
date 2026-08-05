@@ -1,6 +1,6 @@
 import math
 import pyglet
-from config import get_color, get_string, debug_end_video_path
+from config import get_color, get_string, debug_end_video_path, list_video_paths
 from controls import control_keys
 from views.end_video_overlay import EndVideoOverlay
 
@@ -9,11 +9,11 @@ class DebugMenuScreen:
     """The "Debug" submenu (main menu -> Debug): developer-only actions for testing
     isolated features without playing a full game.
 
-    Currently one action -- "Play endgame video" -- which plays the end-of-game clip
-    (game_screen.end_video, or the first file in assets/video/ when the active config
-    names none) fullscreen right here, so the EndVideoOverlay trigger + playback can
-    be eyeballed in a single click. This screen owns its OWN overlay, separate from
-    the game screen's, so the clip is exercised in isolation from game state. See
+    Its actions are one "Play endgame video" row PER clip in assets/video/ (goldeneye,
+    mario, ...), each playing that specific clip fullscreen right here so the
+    EndVideoOverlay trigger + playback can be eyeballed in a single click without
+    swapping game_screen.end_video first. This screen owns its OWN overlay, separate
+    from the game screen's, so a clip is exercised in isolation from game state. See
     ONGOING_BUGS.md ("End video does not play on misspell-instadeath end")."""
 
     def __init__(self, window, screen_manager, back_screen_type):
@@ -24,16 +24,18 @@ class DebugMenuScreen:
         self._normal_color = get_color("menu.normal")
         self._batch = pyglet.graphics.Batch()
 
-        # The action rows in order; the trailing Back row is handled by index.
+        # One "Play <clip>" row per video in assets/video/, then a trailing Back row
+        # (handled by index). _video_paths[i] is the clip for row i; Back has no entry.
+        self._video_paths = list_video_paths()
+        label_prefix = get_string("debug_play_end_video")
         self._menu_items = [
-            get_string("debug_play_end_video"),
-            get_string("menu_back"),
-        ]
+            f"{label_prefix}: {p.stem}" for p in self._video_paths
+        ] + [get_string("menu_back")]
         self._selected_index = 0
         self._labels = []
 
-        # This screen's own end-video overlay (rebuilt on each play so a mode swap
-        # since construction is picked up via debug_end_video_path).
+        # This screen's own end-video overlay (rebuilt on each play so a config swap
+        # since construction is picked up). Seeded with the debug default clip.
         self._end_video = EndVideoOverlay(window, debug_end_video_path())
 
         self._title = pyglet.text.Label(
@@ -67,18 +69,19 @@ class DebugMenuScreen:
         # The Back item is always the last row.
         return len(self._labels) - 1
 
-    def _play_end_video(self):
-        """Start the end clip fullscreen over this menu. A fresh overlay each call
-        re-resolves the path (config may have changed) and covers a replay of the
-        same clip within one screen visit. A no-op flash when no clip is found."""
-        self._end_video = EndVideoOverlay(self._window, debug_end_video_path())
+    def _play_end_video(self, path):
+        """Start the given clip fullscreen over this menu. A fresh overlay each call
+        covers a replay of the same clip within one screen visit. A no-op flash when
+        the path is None (no clip)."""
+        self._end_video = EndVideoOverlay(self._window, path)
         self._end_video.play()
 
     def _select_current(self):
         if self._selected_index == self._back_index():
             self._screen_manager.switch_to(self._back_screen_type)
-        elif self._selected_index == 0:
-            self._play_end_video()
+        else:
+            # A video row: play its own clip (rows and _video_paths share indices).
+            self._play_end_video(self._video_paths[self._selected_index])
 
     def _get_item_at(self, x, y):
         for i, label in enumerate(self._labels):

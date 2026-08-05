@@ -290,7 +290,19 @@ digram if the picker can't produce a fresh one in budget.
 - `rule_allow_only_vowel_digrams` — disable.
 
 ### game_screen.grid
-`rule_use_hex_grid` or `rule_use_square_grid`.
+`rule_use_hex_grid`, `rule_use_square_grid`, or `rule_use_triangle_grid`.
+
+The triangle board tiles equilateral triangles, rows alternating point-up and
+point-down (the orientation of a cell is the parity of `col + row`, so it is one
+checkerboard across the whole board; cell (0,0) points up). Its side length is the
+square grid's cell size, so it fits about twice the columns and 1.15x the rows in
+the same area — cells are smaller, which is why triangle modes default to unigrams.
+A triangle has only three edges, so a cell has only three neighbors: left, right,
+and the one across its horizontal edge (below it when it points up, above when it
+points down). That third step is the movement "flip" (see the movement rules in
+`game_screen.py`) and the reason a piece walks up the board by alternating a flip
+with a sideways step. Cleared words are recorded in the player dictionary with `^`
+as the gram separator (`|` square, `/` hex).
 
 ### game_screen.grid_width / game_screen.piece_pool_size
 `grid_width` is the number of columns (the grid area is a square, so cell size
@@ -867,6 +879,14 @@ board's under `square_grid.word_pathfinding`.
   `rule_snake_straightline` — TODO: retest after refactor.
 - `rule_snake_anydirection` — current.
 
+### triangle_grid.word_pathfinding
+Stage 1 (pathfind) for the triangle board — the counterpart to
+`hex_grid.word_pathfinding`.
+- `rule_snake_edges_anydirection` — the three edge-neighbors, any turn. This is the
+  full physical-adjacency set for a triangle. Vertex-adjacency (the twelve cells
+  that merely touch a corner) is deliberately not offered: word paths stay
+  edge-connected. Register a second rule here if that is ever worth trying.
+
 ### square_grid.word_pathfinding
 Stage 1 (pathfind) for the square board — the counterpart to
 `hex_grid.word_pathfinding`. Chooses which step directions the word-walk may take.
@@ -1402,6 +1422,12 @@ initial board formation cells. Options:
 Which piece shapes a cell class draws.
 - Square: `rule_use_tetriminos`, `rule_use_dominos`, `rule_use_unimos`.
 - Hex: `rule_use_hex_dominos`, `rule_use_hex_unimos`.
+- Triangle: `rule_use_triangle_dominos`, `rule_use_triangle_unimos`,
+  `rule_use_triangle_unimos_and_dominos`. A triangle domino is two triangles
+  sharing an edge (a rhombus); it has three rotation states, not four or six. The
+  combined rule deals BOTH shapes from one pool, mixed by `piece_pool.order` — the
+  only triangle set with more than one shape, so it is the only one that knob
+  affects.
 
 ### piece_pool.order
 For piece sets that have multiple shapes, how to manage the distribution of shapes.

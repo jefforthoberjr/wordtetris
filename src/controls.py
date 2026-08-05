@@ -42,6 +42,24 @@ def control_keys(path):
     return tuple(symbols)
 
 
+def control_names(path, joiner=" / "):
+    """The bound key/button NAMES as a display string (e.g. "LEFT", or
+    "ENTER / RETURN" for a multi-key action); "--" when the binding is
+    unassigned. For showing a control to the player -- the Controls reference
+    screen reads every row through this, so a rebinding in controls.yaml shows up
+    there without the screen knowing anything about specific keys."""
+    value = _control_node(path)
+    if isinstance(value, str) or value is None:
+        names = [value]
+    else:
+        names = value
+    shown = [n for n in names
+             if n is not None and str(n).lower() not in ("none", "null")]
+    if not shown:
+        return "--"
+    return joiner.join(shown)
+
+
 def control_button(path):
     """Resolve a dotted controls.yaml path to a pyglet mouse-button constant
     (e.g. "LEFT" -> pyglet.window.mouse.LEFT). An UNASSIGNED binding -- the YAML

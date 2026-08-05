@@ -128,6 +128,17 @@ def end_video_path():
     return Path(__file__).parent / "assets" / "video" / name
 
 
+def list_video_paths():
+    """Every clip in assets/video/, sorted by filename -- backs the Debug menu's
+    per-video test rows so each clip (goldeneye, mario, ...) gets its own entry and
+    the list stays in sync with the folder. Empty list when the folder holds none."""
+    video_dir = Path(__file__).parent / "assets" / "video"
+    if not video_dir.is_dir():
+        return []
+    return [p for p in sorted(video_dir.iterdir())
+            if p.suffix.lower() in (".mp4", ".mov", ".m4v")]
+
+
 def debug_end_video_path():
     """A clip path for the Debug menu's "play endgame video" tester: the configured
     game_screen.end_video if set, else the first video file in assets/video/ (so the
@@ -136,12 +147,8 @@ def debug_end_video_path():
     configured = end_video_path()
     if configured is not None:
         return configured
-    video_dir = Path(__file__).parent / "assets" / "video"
-    if video_dir.is_dir():
-        for p in sorted(video_dir.iterdir()):
-            if p.suffix.lower() in (".mp4", ".mov", ".m4v"):
-                return p
-    return None
+    videos = list_video_paths()
+    return videos[0] if videos else None
 
 
 def colors_path():

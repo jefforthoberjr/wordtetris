@@ -1,0 +1,224 @@
+
+In practice, with the chunking/scripting we landed on, it used up 15% of my claude subscriptions' 5-hour-limit total. Nice! And it ran in about 10 minutes.
+
+
+Token cost
+(harness overhead)
+W = per word
+I = pushinputchunk = 5 x W
+0 = process+response = 3 x I = 15 x W
+
+So overall processing token cost is 20 x W
+
+Overall emperically measured process time
+(walltime is linear / consistent regardless of batch size)
+1 min per 150 words
+7.5 min per 1000 words
+About 2 hours to process 22k words
+Could parallelize 10 subagents at a time; do it in 15 mins 
+
+Sonnet chokes on word batch sizes of 2000k
+	Probably because this start to push the output context size limits (in addition to otherwise normal overloading the LLM with too much data)
+		"the thinking cliff"
+
+Try my batches again on Haiku (even cheaper)
+	Q: Does Haiku have any "reasoning"/"thinking"? Can it be disabled?
+	Q: Are there any other models that have a disableable reasoning? 
+
+Q: Does a subagnet system context just a copy of the main session's context? Is a subagent's context independently settable/configurable from the main session? Can a subagent's context be initialized from just a free-text instructions to the main session, or do I need to create a separate outputstyle type JSON for this?
+	Not just a copy
+
+Q: Why would using the lean API be so much faster? Is this just otherwise less time spent for the LLM parsing and ingesting the subagent intro?
+
+	Lean API already has minimal context set, and thinking disabled.
+
+	Q: If millions of people are using claude code, and subagents, and if I guess that many claude code users are all using the same default system context prefix; is there parts of the subagents that are effectively already pre-cached for me? (as cached by other users?)
+
+		No. Prompt caching is scoped per-organization,
+
+The cost of the output is "large" because it's essentially one giant csv file that the upstream LLM appends into the messages[]?
+
+	(otherwise, once appended, the output tokens are essentially part of the cache; just being a little pedantic about your "output never cached" statement; otherwise I understand)
+
+	Could we reduce this cost, but just returning a simple list of words that were included in the classification? (Since, I suspect, with most of these classification schemes, only like 1-10% of the words will end up being classified)?
+
+Batching is required
+	AI wants to chunk it into 40 chunks (500 words each)
+	
+	Q: Why 500? Is this just like a nice cautious round number to divide by, or is there a good technical reason for it?
+	Q: Do smaller chunks help keep the upstream/LLM cache alive? (i.e. to help ensure each chunk processes within 5 mins) (I'm to sure how the 5 min TTL/window works admittedly)
+	"one shot, if it fits"
+	Q: Are there any hard technical limitations to this? Or just practical context polluting type of limitations?
+
+		Yes, both
+		Sonnet/Haiku cap at ~64k output tokens per response
+
+		And concerns about context drift
+
+		Q: Do other models (other than sonnet) have larger token response limits?
+
+			Yes, but not by much.
+			Opus has ~128k output tokens per response.
+
+	Q: How much more do "opus tokens cost more"?
+
+2 ways to send the dictionary:
+	tool_use: Read (pulled by the LLM)
+	embed it into the messages (pushed to the LLM)
+
+	claude code and/or claude does not automatically invoke tool_calls through any sort of side channel/chat; it all gets appended into 1 large chat sessions.
+
+	Write add to the messages[] transcript:
+		the input to the tool_use for write (i.e. the csv file) is also appended to the transcript.
+		The results of the tool_use "wrote 500 lines" is also added to the transcript
+
+	Both Read tool call or upfront harness push appended the dictionary to the transcript.
+
+	So, to be clever, and effectively drop a read chunk content or write argument chunk content from the main session context:
+		A) Use subagents (get the isolation for free)
+		B) Individual API calls
+		C) Some kind of clever trimming / cherry-picking / compacting of the transcript
+
+Python scripts cannot tap into the subscription API path.
+	Q: Specifically, why not? Maybe dive a little bit more into what parts of the OAuth login force usage of the claude code first party tool.
+
+		It actually seems like we could hack this in python, with a bit of oauth scraping... might be fragile, but could be a way to tap into a scriptable format.
+
+Claude code can use both the public API path (pay-per-token) and the private API path (subscription)
+	Q: Does an interactive claude code session have the ability to jump back and forth between the API paths, or does it have to be pre-configed before starting the session which type of API path it will be?
+	Q: Do I (human) decide how/when the mode switches, or otherwise if both API modes are enabled, can claude code choose itself between them. That is, does claude code have built-in cost/token awareness, or as the human will I forever have to be aware and watching the costs.
+
+		Yes, human be babysitting all this.
+
+	Either way, both API paths use the same backend LLM.
+
+
+Using subagents vs. 1 main session is only equivalent in tokencost, if we can thin the subagent's context overhead to 1k (otherwise it defaults to a 20k context overhead)
+
+	Techniques to shrink the agent context size:
+
+		define a custom agent type with (a) your own minimal system prompt and (b) a restricted toolset (say, only Write)
+
+		"tool JSON schemas are bulky"
+
+	Otherwise, a subagent will always have more overhead than a naked SDK API call
+
+We can prevent the growth of the main chat session messages[] by using subagents.
+
+	Otherwise there is no magic to get around the raw token cost of processing the whole file.
+
+	subagents just report back to the main agent "wrote 500 rows,"
+
+Subagents can share cache, so long as their context prefix is the same, and it's all within the same 5min TTL window.
+	However, they very often will not actually utilize shared caching, because of timing.
+	A cache entry only becomes readable after the first response starts streaming. Fire 10 subagents simultaneously and all 10 miss the shared-prefix cache (they're all writing it at once).
+
+
+How to choose the cheaper models?
+	/model  Sonnet
+
+	For the main thread, the model can only be explicitly selected. The harness cannot read a line from a skill or prompt to change its own model...
+
+
+Defining custom subagent context
+	
+	subagents do not inherit the main session's outputstyle / context
+
+	thus, the cli flags --bare etc. do not effect the subagents
+
+	different "subagent types" are defined
+
+	.claude/agents/<name>.md
+
+		(AI can write these agent files)
+
+		minimal system prompt + restricted toolset
+
+	Q: I don't see a ~/.claude/agents/ dir on my fs. Does this mean I have no custom defined subagent types? Whereelse are other built-in agent types defined? What are they?
+
+		The built-in agents aren't exposed via a file on disk.
+
+		What are the existing built-in agents?
+			"explore"
+				read-only tools
+			"plan"
+				read-only research
+			"general-purpose
+				full tools
+			"statusline-setup"
+				Q: What is this?
+
+	Q: How/when is an subagent specified by the main session?
+
+		The main session can choose to specify different subagent types at subagent startup time
+
+	specifying subagent "type" and subagent "model" are two different things.
+
+
+Q: Do multiple (parallelized) tool calls (from multiple subagents) back to the harness create a realistic choke point? Does my local running instance of claude code fork many processes and parallelize well? On my specific laptop (Apple M3 13-inch, M3, 2024; HYV1YNF0XG; "memory 16 GB") at how many concurrent subagents should I start to be worried about contention / plateaued benefits?
+
+	We are not hardware limited for concurrency, but instead application software limited.
+
+	10 at a time is a limit in claude code
+
+	Scripted use of public API would effectively have no limits on concurrency. Much higher concurrency if I wanted.
+
+Q: Do the public pay-per-token SDK based API calls, are they effectively without the "reason" feature?
+
+Q: Why or whynot would a script with multiple parallel "lean" API calls run into similar contention?
+
+Q: Why would a subscription based API calls have more agentic round-trips than the lean API?
+
+
+"Thinking" (aka "adaptive thinking") enabled or disabled
+
+	Q: What is thinking?
+	Q: Is thinking a claude (upstream LLM) or claude code (harness) feature?
+
+		Thinking is an extra 4-6 conversation steps, done completely on a side scratch pad, that the LLM does to double check / perform a meta-pass reasoning / refinement on the output, before officially putting the output on the messages[] API response back to the harness.
+
+		Every extra thinking token generated on the scratch pad is tallied and billed to you!
+
+		The content of the thinking token / scratch pad is hidden by default.
+
+			I could get some limited visibility on the scratch pad with "display: summarized"
+
+	The main session may be able to set the subagents's model but it does not explicit set the subagent's thinking mode
+
+		"thinking is NOT configurable per-subagent — subagents inherit the session's thinking setting"
+
+		I would have to launch a main session without any thinking settings enabled?
+
+		Q: How do I set a main session's thinking mode to disabled (when it is dependent on the model I choose?)
+			"launch the new session with thinking turned OFF "
+
+"Effort" vs. "thinking"
+	effort: low  is a differen knob than thinking disabled.
+
+Q: What is the claude CLI flag is disable thinking?
+
+	No CLI flag
+	settings.json : alwaysThinkingEnabled: false
+	env var: MAX_THINKING_TOKENS=0
+		both settable in a project level settings file
+		.../.claude/settings.json
+
+	{
+	  "alwaysThinkingEnabled": false,
+	  "effortLevel": "low",
+	  "env": { "MAX_THINKING_TOKENS": "0" }
+	}
+
+	So I would just make sure the launch the claude session from a certain dir.
+
+		(maybe a subdir within the code dir).
+		wordtetris/processfulldictionarysessions/settings.json
+
+	//not settable in outputstyles
+
+Q: What is the claude CLI flag to set effort low?
+
+	effort: low can be specified in the subagent's config file frontmatter.
+
+	There is also a --effort low CLI file; but may be effectively redundant
+

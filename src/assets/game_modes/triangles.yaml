@@ -1,0 +1,48 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else comes
+# from the base file. mode_label is the menu name, stripped before merge.
+mode_label: "Jigsaw - triangles"
+
+dictionary:
+  include_obscure: false
+
+rules:
+  game_screen.mode:         rule_mode_jigsaw
+  game_screen.phase_model: rule_two_phase
+
+  game_screen.grid:       rule_use_triangle_grid
+  game_screen.setup_formation: rule_formation_empty
+  game_screen.obstacle_count: 0
+  game_screen.mission_count: 0
+  # Both shapes in the pool: 1-cell triangles and 2-cell rhombi, one letter each.
+  triangle_player.piece_set:   rule_use_triangle_unimos_and_dominos
+  triangle_player.gram_pick: rule_scrabble_distribution
+  # triangle_obstacle.gram_pick: rule_scrabble_distribution
+  # triangle_obstacle.piece_set: rule_use_triangle_unimos
+  # triangle_mission.gram_pick: rule_scrabble_distribution
+  # triangle_mission.piece_set: rule_use_triangle_unimos
+  assets.loading_animation:  zero_loading_animation.yaml
+  gram.unigram_dedup:   rule_nolimit_duplicate_unigrams
+  board.cell_text_color:  rule_cell_text_plain
+  game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
+  game_screen.spawn:        rule_spawn_random_spot
+
+  game_screen.word_length: rule_word_min3letters_min1cell
+  game_screen.word_repeat: rule_repeat_allow
+  # A triangle cell has only three edges, so this is its full adjacency -- there
+  # is no diagonal variant to match block_blast's snake_anydirection_diagonal.
+  triangle_grid.word_pathfinding: rule_snake_edges_anydirection
+
+  game_screen.moving_hunt_field: rule_hunt_field_off
+  game_screen.hunt_highlight: rule_hunt_none          # off -- no green paint
+  # game_screen.select_autosubmit_hunt: rule_select_autosubmit_off
+
+  game_screen.select_trigger: rule_select_every_placement
+  #autoselect
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+  # game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
+  game_screen.select_word_limit: rule_unlimited_words
+
+  game_screen.clear_action: rule_remove_cells
+
+  game_screen.victory:              rule_victory_none

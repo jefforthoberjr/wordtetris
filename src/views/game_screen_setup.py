@@ -8,7 +8,8 @@ from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from models.piece_pool import PiecePool
 # Piece-set / gram-pick accessors, resolved per call so a game mode's *.piece_set /
 # *.gram_pick override takes effect (these modules import before apply_game_mode
-# swaps CONFIG). Called at board-build time in _rule_use_square_grid / _rule_use_hex_grid.
+# swaps CONFIG). Called at board-build time in _rule_use_square_grid /
+# _rule_use_hex_grid / _rule_use_triangle_grid.
 from models.square_piece import (
     SquarePiece,
     player_piece_types as square_player_piece_types,
@@ -25,8 +26,17 @@ from models.hex_piece import (
     mission_piece_types as hex_mission_piece_types,
     mission_gram_pick_rule as hex_mission_gram_pick_rule,
 )
+from models.triangle_piece import (
+    TrianglePiece,
+    player_piece_types as triangle_player_piece_types,
+    obstacle_piece_types as triangle_obstacle_piece_types,
+    obstacle_gram_pick_rule as triangle_obstacle_gram_pick_rule,
+    mission_piece_types as triangle_mission_piece_types,
+    mission_gram_pick_rule as triangle_mission_gram_pick_rule,
+)
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
+from models.triangle_unimo import TriangleUnimoType
 from models.gram_picker import (
     reset_gram_dedup,
     begin_formation_gram_run,
@@ -42,6 +52,7 @@ from models.gram_picker import (
 )
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
+from models.triangle_grid import TriangleGrid
 from models.word_dictionary import (
     is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from starting_coverage import write_coverage_csv
@@ -51,7 +62,29 @@ import log_codes as L
 from source import rand
 
 
+# The active grid rule -> the shape word its per-grid config keys are prefixed
+# with ("hex_player.gram_pick", "triangle_obstacle.piece_set", ...) and the gram
+# separator its cleared words are recorded with in the player dictionary. Keeping
+# both here means adding a grid touches one table instead of every branch that
+# used to ask `== "rule_use_hex_grid"`.
+_GRID_SHAPES = {
+    "rule_use_square_grid": ("square", "|"),
+    "rule_use_hex_grid": ("hex", "/"),
+    "rule_use_triangle_grid": ("triangle", "^"),
+}
+
+
 class BoardSetupMixin:
+    def _grid_shape_name(self):
+        """Shape word of the active game_screen.grid ("square" / "hex" /
+        "triangle") -- the prefix of that grid's own config keys."""
+        return _GRID_SHAPES[CONFIG["rules"]["game_screen.grid"]][0]
+
+    def _grid_gram_separator(self):
+        """Gram separator the active grid records cleared words with (see
+        player_dictionary's variation encoding)."""
+        return _GRID_SHAPES[CONFIG["rules"]["game_screen.grid"]][1]
+
     # --- LOADING phase (opening reveal) ------------------------------------
     def _begin_loading(self):
         """Enter LOADING: bucket every just-placed cell (and the grid lines) into
@@ -248,7 +281,7 @@ class BoardSetupMixin:
         self._force_paint()
         grams = self._starting_gram_multiset()
         # Grouping separator mirrors player_dictionary's grid-aware scheme.
-        sep = "/" if CONFIG["rules"]["game_screen.grid"] == "rule_use_hex_grid" else "|"
+        sep = self._grid_gram_separator()
         # The word-length rule reads only len(text) and len(path), so feed it a
         # placeholder path of the grouping's cell count: coverage honors the same
         # min-letters/min-cells gate as live play while ignoring all nucleation.
@@ -435,9 +468,7 @@ class BoardSetupMixin:
         """True when the active player gram-pick is the length-controlled corpus
         picker -- the only picker whose draws carry the unigram/digram/3+ lengths
         the arrangement steers. Other pickers fill plain row-major."""
-        key = ("hex_player.gram_pick"
-               if CONFIG["rules"]["game_screen.grid"] == "rule_use_hex_grid"
-               else "square_player.gram_pick")
+        key = self._grid_shape_name() + "_player.gram_pick"
         return CONFIG["rules"][key] == "rule_grams_greater_than_47_lengthcontrolled"
 
     def _fill_player_arranged(self, cells, arrange_rule):
@@ -876,13 +907,28 @@ class BoardSetupMixin:
         L.log_06002(kind, logged_cells)
         piece.set_visible(True)
 
+    def _random_spot_width(self):
+        """Column count the random-placement rules draw an x from: the board's
+        ACTUAL width, not GRID_WIDTH.
+
+        GRID_WIDTH is the config knob the cell SIZE is derived from; only the
+        square board ends up with exactly that many columns. The hex board fits
+        ~1.15x more (its columns step 3/4 of a hex width), and the triangle board
+        ~2x more (columns overlap by half a triangle), so drawing x from
+        GRID_WIDTH left the right-hand slice of those boards unreachable --
+        starting pieces and random spawns only ever landed on the left.
+
+        Old version, preserved: `x = rand().randint(0, self.GRID_WIDTH - 1)`
+        inline in _position_scattered / _rule_spawn_random_spot."""
+        return self._board.width
+
     def _position_scattered(self, piece, occupied):
         """Pick a random on-board anchor whose cells are all on the grid and clear
         of `occupied`. Retries a bounded number of times, then keeps the last spot
         rather than looping forever on a crowded board. Independent of the player
         spawn rule -- starting pieces lay themselves out, they don't spawn live."""
         for _ in range(100):
-            x = rand().randint(0, self.GRID_WIDTH - 1)
+            x = rand().randint(0, self._random_spot_width() - 1)
             y = rand().randint(0, self._board_height - 1)
             piece.set_position(x, y)
             cells = piece.get_cell_positions()
@@ -953,6 +999,44 @@ class BoardSetupMixin:
         self._gram_separator = "/"
         return board
 
+    def _rule_use_triangle_grid(self, window):
+        """Build an equilateral-triangle board and set piece sizing to match.
+
+        Rows alternate point-up / point-down triangles (the orientation is the
+        (col + row) checkerboard -- see triangle_grid). The side length is the
+        square grid's cell size, so triangles tile the same area with about twice
+        the columns and 1.15x the rows; each cell is smaller than a square or hex
+        cell, which is why the piece derives its font from the inradius.
+        """
+        side = self._grid_area_size / self.GRID_WIDTH
+        board = TriangleGrid(
+            side, self._grid_area_size, self._grid_area_size,
+            self._board_batch
+        )
+        # Keep the float side length: the piece must use the exact same value as
+        # the grid, or it drifts off the cells across the board (same trap as hex).
+        self._cell_size = side
+        self._board_height = board.height
+        self._piece_class = TrianglePiece
+        self._player_piece_types = triangle_player_piece_types()
+        # Single-cell shape a clicked-word piece uses on this grid (see
+        # _swap_to_word_piece / game_screen.player_word_piece).
+        self._unimo_type = TriangleUnimoType.SINGLE
+        # Obstacles get their own piece set + gram-pick (triangle_obstacle.* keys),
+        # so they can differ from the playable pieces.
+        self._obstacle_piece_types = triangle_obstacle_piece_types()
+        self._obstacle_gram_pick_rule = triangle_obstacle_gram_pick_rule()
+        # Missions: the obstacles' twin, own piece set + gram-pick (triangle_mission.*).
+        self._mission_piece_types = triangle_mission_piece_types()
+        self._mission_gram_pick_rule = triangle_mission_gram_pick_rule()
+
+        self._movement_rule = self._rule_triangle_movement_flipkey
+        # self._movement_rule = self._rule_triangle_movement_strict_updown
+        # Gram separator a cleared word is recorded with in the player dictionary
+        # (see _encode_variation): "^" marks a word formed on the triangle grid.
+        self._gram_separator = "^"
+        return board
+
     def _init_first_piece(self):
         piece = self._piece_pool.current_piece()
         self._spawn_piece(piece)
@@ -1005,7 +1089,7 @@ class BoardSetupMixin:
         (overlapping) spot and could be stuck. Fine while boards are sparse;
         revisit with a board-full / game-over condition once they fill up."""
         for _ in range(100):
-            x = rand().randint(0, self.GRID_WIDTH - 1)
+            x = rand().randint(0, self._random_spot_width() - 1)
             y = rand().randint(0, self._board_height - 1)
             piece.set_position(x, y)
             if self._move_allowed(piece):

@@ -58,6 +58,8 @@ from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
+from models.triangle_domino import triangle_neighbor, triangle_points_up
+from models.triangle_domino import TRIANGLE_LEFT, TRIANGLE_RIGHT, TRIANGLE_BASE
 from models.word_dictionary import (
     is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from models.spelling_suggester import SUGGEST_RULES
@@ -1511,6 +1513,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         grid_rules = {
             "rule_use_square_grid": self._rule_use_square_grid,
             "rule_use_hex_grid": self._rule_use_hex_grid,
+            "rule_use_triangle_grid": self._rule_use_triangle_grid,
         }
         self._board = select_rule("game_screen.grid", grid_rules)(self._window)
 
@@ -1670,6 +1673,66 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         else:
             handled = False
         return handled
+
+    def _rule_triangle_movement_flipkey(self, symbol, modifiers):
+        """Triangle grid: LEFT/RIGHT step sideways, UP or DOWN cross the
+        horizontal edge. (Keys are controls.yaml game.move_*.)
+
+        A triangle has only three edges, so there are only three moves. Left and
+        right always work (they stay in the row). The third move is the "flip":
+        it lands on the cell sharing the horizontal edge, which is BELOW the piece
+        when it points up and ABOVE it when it points down -- so W and S are bound
+        to the same flip rather than to fixed screen directions. Every second flip
+        therefore returns the piece to where it started, and a piece walks up the
+        board by alternating flip and a sideways step. Returns handled."""
+        handled = True
+        if symbol in self._keys["move_left"]:
+            self._move_piece_tridir(TRIANGLE_LEFT)
+        elif symbol in self._keys["move_right"]:
+            self._move_piece_tridir(TRIANGLE_RIGHT)
+        elif symbol in self._keys["move_up"] or symbol in self._keys["move_down"]:
+            self._move_piece_tridir(TRIANGLE_BASE)
+        else:
+            handled = False
+        return handled
+
+    def _rule_triangle_movement_strict_updown(self, symbol, modifiers):
+        """Triangle grid, screen-true vertical keys: LEFT/RIGHT step sideways, and
+        UP / DOWN cross the horizontal edge ONLY when that edge is the one they
+        point at -- UP works on a point-down cell (its neighbor is above), DOWN on
+        a point-up cell (its neighbor is below); the other key is inert on that
+        cell. Truer to the key's arrow, but half the vertical presses do nothing.
+        The alternative to _rule_triangle_movement_flipkey; swap in
+        _rule_use_triangle_grid. Returns handled."""
+        piece = self._current_piece()
+        points_up = triangle_points_up(piece.grid_x, piece.grid_y)
+        handled = True
+        if symbol in self._keys["move_left"]:
+            self._move_piece_tridir(TRIANGLE_LEFT)
+        elif symbol in self._keys["move_right"]:
+            self._move_piece_tridir(TRIANGLE_RIGHT)
+        elif symbol in self._keys["move_up"]:
+            if points_up:
+                handled = False   # base neighbor is below; W is inert here
+            else:
+                self._move_piece_tridir(TRIANGLE_BASE)
+        elif symbol in self._keys["move_down"]:
+            if points_up:
+                self._move_piece_tridir(TRIANGLE_BASE)
+            else:
+                handled = False   # base neighbor is above; S is inert here
+        else:
+            handled = False
+        return handled
+
+    def _move_piece_tridir(self, direction):
+        """Move the piece to its triangle neighbor in the given direction index.
+        The BASE step depends on the piece's current parity, so it is resolved
+        from the piece's live position (a piece that just moved sideways has
+        flipped orientation)."""
+        piece = self._current_piece()
+        nx, ny = triangle_neighbor(piece.grid_x, piece.grid_y, direction)
+        self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
 
     def _move_piece_hexdir(self, direction):
         """Move the piece to its hex neighbor in the given direction index."""

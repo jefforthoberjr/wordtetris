@@ -109,6 +109,65 @@ has TWO independent layers -- get them straight before touching sound:
   or drop to a lighter video path. Revisit when we do release builds (see pyinstaller
   note above).
 
+# CLIPPING END VIDEOS (FFmpeg)
+
+End clips (`EndVideoOverlay`, `game_screen.end_video`) live in `src/assets/video/`.
+
+Use the tool -- do NOT hand-run ffmpeg each time:
+
+```
+python tools/clip_end_video.py --probe ~/Desktop/source.mp4   # analyze a new source
+python tools/clip_end_video.py mario_flag_ending              # clip a registered source
+```
+
+`tools/clip_end_video.py` probes the source UP FRONT, then clips it into
+`src/assets/video/<name>.mp4` and re-encodes to a **standardized, decode-friendly
+output format** (there is no need to preserve the source's resolution/fps/profile):
+720p, 30fps, Main profile, no B-frames, yuv420p, faststart -- the traits of the
+known-good `goldeneye.mp4`. Anything heavier is auto-normalized; the tool prints why.
+
+To add a new source: `--probe` it, add an entry to the `SOURCES` dict (in/out points
++ any per-source special case), then run it by name. Per-source special-casing lives
+in that dict because filmed/ripped sources differ and a one-size command does not
+work (see the smear lesson below). Then point a mode at the result:
+`game_screen.end_video: <name>.mp4` in its game_modes yaml.
+
+The equivalent raw ffmpeg (output seeking + normalize), for reference:
+
+```
+ffmpeg -y -i ~/Desktop/source.mp4 -ss 6 -to 20 \
+  -vf "scale=-2:720,fps=30" \
+  -c:v libx264 -profile:v main -level 3.1 -bf 0 -refs 1 -preset medium -crf 20 -pix_fmt yuv420p \
+  -c:a aac -movflags +faststart \
+  src/assets/video/my_clip.mp4
+```
+
+Hard-won lessons:
+- **Match the source to a profile pyglet can decode in real time -- this is the big
+  one.** `EndVideoOverlay` decodes via pyglet's threaded FFmpeg decoder and blits each
+  frame stretched fullscreen. A heavy source (a 1080p60, High-profile, B-frame clip)
+  overruns the decoder and it displays torn / smeared / "broken pixel" frames -- even
+  though the source plays perfectly in QuickTime. Downscale + simplify to match the
+  known-good `goldeneye.mp4`: **720p, 30fps, `-profile:v main`, `-bf 0` (no B-frames),
+  `yuv420p`.** `scale=-2:720` keeps aspect with an even width; `fps=30` halves 60fps
+  sources. If a clip smears, re-encode SMALLER/SIMPLER before anything else.
+- **Use OUTPUT seeking, not input seeking, for the clip start.** `-ss` BEFORE `-i`
+  (input seeking) is fast but jumps to the nearest keyframe and can emit a
+  smeared/broken FIRST frame (a P/B frame decoded without its reference). `-ss` after
+  `-i` decodes from the beginning, so the first output frame is always a clean
+  I-frame. Slower, but the clips are short so it doesn't matter.
+- **Do NOT force keyframes to "fix" a smear.** `-force_key_frames "expr:gte(t,0)"`
+  is true for *every* frame (t is always >= 0), turning the whole clip into I-frames
+  and bloating the file ~25x (a 14s clip went 2 MB -> 56 MB). Output seeking already
+  gives a clean start; a smear mid-clip is the decode-load issue above, not keyframes.
+- `-pix_fmt yuv420p` keeps it broadly decodable; `-movflags +faststart` moves the
+  moov atom to the front for smooth playback start; `-crf 20` is a good quality knob
+  (lower = better/bigger).
+- Diagnose by comparing a bad clip against the known-good `goldeneye.mp4`:
+  `ffprobe -v error -select_streams v:0 -show_entries stream=profile,width,height,r_frame_rate,has_b_frames,pix_fmt -of default=noprint_wrappers=1 clip.mp4`
+  Verify the first frame is a keyframe (should print `I`):
+  `ffprobe -v error -select_streams v:0 -show_entries frame=pict_type -read_intervals "%+#1" -of csv=p=0 clip.mp4`
+
 # RUN GAME
 
 python src/main.py
@@ -209,3 +268,81 @@ alongside the current dictionary:
 
 Invariant: every allowed word derives from a kept headword (families are built
 only for the 21.9k headwords). Rerun anytime; it is deterministic.
+
+
+# BULK DICTIONARY CLASSIFICATION (e.g. plant-bonus tiers)
+
+Offline pass that tags each of the ~24k headwords with a topic-bonus tier
+(1/2/3), for a themed scoring bonus. Runs inside a dedicated lean Claude Code
+session on the Max subscription ($0 marginal cost), NOT the pay-per-token API.
+
+Launch (always from the repo root; the flag scopes config to this session only):
+
+  ./tools/dict_classify_session.sh
+  ./tools/dict_classify_session.sh "run the plant-classifier probe on 100/250/500/750"
+
+What the launcher does and why:
+- Runs `claude --effort low` — drives per-step thinking to its floor, the main
+  lever for fitting a full run inside one 5-hour window. Per-session only, so
+  normal coding sessions are unaffected (Claude Code binds .claude/settings.json
+  to the git root, so a subdir settings.json can't scope this — the CLI flag can).
+- Launches from the repo root so the session sees the dictionaries, the
+  plant-classifier subagent, and CLAUDE.md/AGENTS.md.
+
+Pieces:
+- .claude/agents/plant-classifier.md — the worker subagent (Sonnet, Read+Write
+  only, effort low, rubric baked into its system prompt).
+- tools/dict_classify/ — task folder for the rubric and output CSVs.
+
+Runbook: fan out ~8 plant-classifier subagents in parallel, each classifying a
+<=750-word slice to its own chunk CSV (batches >750 words have stalled). Then
+`cat` the chunk CSVs together and let build_expanded_dictionary.py's headword
+lineage propagate each tier across inflections to cover the full ~60k word set.
+Sonnet is the worker model; keep the main session model irrelevant to output.
+
+## Wave-based run pattern (validated on the 21.9k headword set)
+
+Proven end-to-end on the full spellingDictionary20k-nocompound.txt (~4 min of
+agent walltime, 351 tier-3 / 329 tier-2 / 21194 tier-1, zero integrity errors):
+
+1. Probe first. Run 100/250/500/750-word batches before committing to a size.
+   Confirms the classifier holds row integrity as batches grow and finds the
+   real stall point. 750 completes cleanly in ~55s; that's the working ceiling.
+2. Chunk deterministically with `split`, into a temp subfolder the workers own:
+     mkdir -p run/in run/out
+     split -l 750 -d -a 2 <source> run/in/chunk_
+   750 words -> 30 chunks (last one partial). One input file per subagent.
+3. Fan out in WAVES of 8 (Claude Code caps concurrency ~10; 8 leaves headroom).
+   Launch all 8 agents of a wave in a single message so they run concurrently;
+   wait for the whole wave to report before launching the next. 30 chunks = 4
+   waves (8/8/8/6). Each wave takes ~55-60s regardless of chunk contents.
+4. Each subagent writes ONLY to its own run/out/chunk_NN.csv. No shared output
+   file -> no write contention, and any single chunk can be re-run in isolation.
+5. Verify from the CSVs, NOT the agents' spoken summaries. The subagents'
+   self-reported tier counts are routinely wrong (miscounts, and a trailing
+   newline makes them say "751" for a 750-word chunk) -- but the written files
+   are exact. After each wave check: input line count == CSV data-row count, and
+   every tier value is in {1,2,3}. Trust the file, distrust the prose.
+6. Combine in chunk order (`grep ',' out/chunk_* >> plant_tiers.csv`), then do
+   the one final integrity gate that matters: `diff` the CSV's word column
+   against the source dictionary -- it must match byte-for-byte, in order. That
+   proves no drops, dupes, reordering, or drift across all 30 chunks at once.
+
+Notes on subagent prompting / chunking (the levers that make this work):
+- <=750 words per chunk is a hard practical ceiling. Sonnet chokes on ~2000
+  ("the thinking cliff" -- big batches blow the ~64k output-token cap and drift).
+  Smaller chunks also help each response land inside the 5-min cache TTL window.
+- Walltime is linear and batch-size-independent: ~1 min / 150 words (~7.5 min
+  per 1k single-threaded). Parallelism is the only real speedup; ~10 concurrent
+  turns a ~2-hour serial pass into ~15 min.
+- The win of subagents is context ISOLATION, not caching. Each Read of a chunk
+  and each Write of a CSV would otherwise bloat the main transcript; subagents
+  keep all of that out of the main session, which only sees "wrote N rows".
+  (Don't count on shared prefix caching between simultaneously-fired workers --
+  they all write the cache at once and all miss it.)
+- Keep the worker prompt MECHANICAL: rubric baked into the agent's system
+  prompt, Read+Write only, effort low, thinking off. The per-invocation prompt
+  is just the input path + output path + "classify every word, write the CSV".
+- Classification is loose at the top tier -- expect a few false tier-3s
+  (anaconda, angora, dwarf slipped through). If tier-3 precision matters, the
+  tier-3 list is small enough (~350) to eyeball in one manual pass.

@@ -2,3 +2,4 @@ pytest
 pyglet
 psutil
 pyyaml
+anthropic

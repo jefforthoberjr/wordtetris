@@ -6,13 +6,16 @@ from controls import control_keys
 
 class MainMenuScreen:
     def __init__(self, window, screen_manager, mode_select_screen_type,
-                 dictionary_screen_type, debug_menu_screen_type):
+                 dictionary_screen_type, controls_screen_type,
+                 debug_menu_screen_type):
         self._window = window
         self._screen_manager = screen_manager
         # "Start Game" now opens the mode-select submenu (pick a game mode),
         # rather than jumping straight into a game on the base config.
         self._mode_select_screen_type = mode_select_screen_type
         self._dictionary_screen_type = dictionary_screen_type
+        # "Controls" opens the read-only key reference (all grid styles listed).
+        self._controls_screen_type = controls_screen_type
         # "Debug" opens the developer submenu (isolated feature tests).
         self._debug_menu_screen_type = debug_menu_screen_type
         self._batch = pyglet.graphics.Batch()
@@ -20,6 +23,7 @@ class MainMenuScreen:
         self._menu_items = [
             get_string("menu_start"),
             get_string("menu_dictionary"),
+            get_string("menu_controls"),
             get_string("menu_debug"),
             get_string("menu_exit"),
         ]
@@ -58,8 +62,10 @@ class MainMenuScreen:
         elif self._selected_index == 1:
             self._screen_manager.switch_to(self._dictionary_screen_type)
         elif self._selected_index == 2:
-            self._screen_manager.switch_to(self._debug_menu_screen_type)
+            self._screen_manager.switch_to(self._controls_screen_type)
         elif self._selected_index == 3:
+            self._screen_manager.switch_to(self._debug_menu_screen_type)
+        elif self._selected_index == 4:
             self._window.close()
     
     def _get_item_at(self, x, y):

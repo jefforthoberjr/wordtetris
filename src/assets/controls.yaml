@@ -81,6 +81,13 @@ game:
   # (rule_use_hex_grid) under rule_hex_movement_holdshift: move_left/move_right
   # reach the up-left/up-right neighbors, holding hex_down_modifier (below) with
   # them reaches down-left/down-right, and move_up/move_down go straight up/down.
+  # On the TRIANGLE grid (rule_use_triangle_grid) a cell has only three edges:
+  # move_left/move_right step sideways within the row, and move_up OR move_down
+  # both do the same "flip" across the horizontal edge -- which lands BELOW a
+  # point-up cell and ABOVE a point-down one, so the key that helps depends on the
+  # cell, not on the arrow (see _rule_triangle_movement_flipkey in game_screen.py;
+  # its _strict_updown alternative makes each arrow screen-true but inert on half
+  # the cells).
   # ONLY WHEN game_screen.mode: rule_mode_jigsaw.
   # ARROW KEYS (were WASD): freed the letter keys so the MOVING-phase word-hunt
   # field can capture typed letters without moving the piece (the hunt takes

@@ -32,5 +32,5 @@ rules:
   game_screen.game_timer:         rule_game_timer_on
   game_screen.game_timer_seconds: 180
 
-  # End clip: the goldeneye video plays once when the match ends.
-  game_screen.end_video: goldeneye.mp4
+  # End clip: the mario flag ending video plays once when the match ends.
+  game_screen.end_video: mario_flag_ending.mp4

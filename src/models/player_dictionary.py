@@ -23,10 +23,11 @@ from pathlib import Path
 _DEFAULT_PATH = Path(__file__).resolve().parents[2] / "player_dictionary.txt"
 
 # The separator / annotation characters used inside a variation; stripping them
-# from a variation string leaves the bare word. "|" "/" separate grams; "[ ]"
+# from a variation string leaves the bare word. "|" "/" "^" separate grams (one
+# per grid shape: square / hex / triangle); "[ ]"
 # wrap an obstacle gram; "<>" wrap a mission gram; "?" wrap the letters a
 # wild-vowel cell resolved to.
-_GRAM_MARKUP = "|/[]<>?"
+_GRAM_MARKUP = "|/^[]<>?"
 
 
 def word_of_variation(variation):

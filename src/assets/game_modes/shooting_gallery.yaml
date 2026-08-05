@@ -22,7 +22,7 @@ rules:
 
   # The gallery clock: 5 minutes across the whole game. This is the only end.
   game_screen.game_timer: rule_game_timer_on
-  game_screen.game_timer_seconds: 300
+  game_screen.game_timer_seconds: 900
   game_screen.victory: rule_victory_none
   game_screen.misspell_instadeath: rule_misspell_instadeath_on
 
