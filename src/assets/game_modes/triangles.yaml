@@ -14,8 +14,10 @@ rules:
   game_screen.setup_formation: rule_formation_empty
   game_screen.obstacle_count: 0
   game_screen.mission_count: 0
-  # Both shapes in the pool: 1-cell triangles and 2-cell rhombi, one letter each.
-  triangle_player.piece_set:   rule_use_triangle_unimos_and_dominos
+  # All three shapes in the pool: 1-cell triangles, 2-cell rhombi and 6-cell
+  # hexagons (six triangles around a vertex). One letter per cell throughout --
+  # gram_pick below is a unigram distribution, so a hexagon spells six letters.
+  triangle_player.piece_set:   rule_use_triangle_unimos_dominos_hexagons
   triangle_player.gram_pick: rule_scrabble_distribution
   # triangle_obstacle.gram_pick: rule_scrabble_distribution
   # triangle_obstacle.piece_set: rule_use_triangle_unimos

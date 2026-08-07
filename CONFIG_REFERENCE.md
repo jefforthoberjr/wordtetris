@@ -1423,11 +1423,13 @@ Which piece shapes a cell class draws.
 - Square: `rule_use_tetriminos`, `rule_use_dominos`, `rule_use_unimos`.
 - Hex: `rule_use_hex_dominos`, `rule_use_hex_unimos`.
 - Triangle: `rule_use_triangle_dominos`, `rule_use_triangle_unimos`,
-  `rule_use_triangle_unimos_and_dominos`. A triangle domino is two triangles
-  sharing an edge (a rhombus); it has three rotation states, not four or six. The
-  combined rule deals BOTH shapes from one pool, mixed by `piece_pool.order` — the
-  only triangle set with more than one shape, so it is the only one that knob
-  affects.
+  `rule_use_triangle_hexagons`, `rule_use_triangle_unimos_and_dominos`,
+  `rule_use_triangle_unimos_dominos_hexagons`. A triangle domino is two triangles
+  sharing an edge (a rhombus); it has three rotation states, not four or six. A
+  triangle hexagon is the six triangles meeting at one vertex — a regular hexagon
+  six cells (so six letters) in size, and rotation-symmetric, so turning it is a
+  visual no-op. The two combined rules deal several shapes from one pool, mixed by
+  `piece_pool.order`; the single-shape rules ignore that knob.
 
 ### piece_pool.order
 For piece sets that have multiple shapes, how to manage the distribution of shapes.

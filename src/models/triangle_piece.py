@@ -17,6 +17,9 @@ from models.triangle_domino import (
     triangle_neighbor, triangle_points_up,
 )
 from models.triangle_unimo import TriangleUnimoType, TRIANGLE_UNIMO_DIRECTIONS
+from models.triangle_hexagon import (
+    TriangleHexagonType, TRIANGLE_HEXAGON_DIRECTIONS, TRIANGLE_HEXAGON_ROTATIONS,
+)
 from models.triangle_grid import (
     SQRT3, triangle_cell_center, triangle_corner_offsets,
     triangle_inradius, triangle_base_font_size,
@@ -34,6 +37,22 @@ def _rule_use_triangle_dominos():
 
 def _rule_use_triangle_unimos():
     return TriangleUnimoType, TRIANGLE_UNIMO_DIRECTIONS
+
+
+def _rule_use_triangle_hexagons():
+    return TriangleHexagonType, TRIANGLE_HEXAGON_DIRECTIONS
+
+
+def _rule_use_triangle_unimos_dominos_hexagons():
+    """All three shapes in one pool: 1-cell triangles, 2-cell rhombi and 6-cell
+    hexagons, mixed by the active piece_pool.order rule. Same explicit-members
+    form as the unimo+domino rule below."""
+    directions = {}
+    directions.update(TRIANGLE_UNIMO_DIRECTIONS)
+    directions.update(TRIANGLE_DOMINO_DIRECTIONS)
+    directions.update(TRIANGLE_HEXAGON_DIRECTIONS)
+    return (TriangleUnimoType.SINGLE, TriangleDominoType.DOUBLE,
+            TriangleHexagonType.HEXAGON), directions
 
 
 def _rule_use_triangle_unimos_and_dominos():
@@ -59,6 +78,8 @@ _PIECE_SET_RULES = {
     "rule_use_triangle_dominos": _rule_use_triangle_dominos,
     "rule_use_triangle_unimos": _rule_use_triangle_unimos,
     "rule_use_triangle_unimos_and_dominos": _rule_use_triangle_unimos_and_dominos,
+    "rule_use_triangle_hexagons": _rule_use_triangle_hexagons,
+    "rule_use_triangle_unimos_dominos_hexagons": _rule_use_triangle_unimos_dominos_hexagons,
 }
 # Resolved per call (not cached at import) so a game mode's *.piece_set override
 # takes effect: this module is imported before apply_game_mode swaps CONFIG, so an
@@ -87,6 +108,14 @@ def mission_piece_types():
 ALL_PIECE_DIRECTIONS = {}
 ALL_PIECE_DIRECTIONS.update(TRIANGLE_DOMINO_DIRECTIONS)
 ALL_PIECE_DIRECTIONS.update(TRIANGLE_UNIMO_DIRECTIONS)
+ALL_PIECE_DIRECTIONS.update(TRIANGLE_HEXAGON_DIRECTIONS)
+
+# Shapes whose rotation states must be LISTED rather than derived by cycling each
+# satellite's direction index. Multi-step paths break under that derivation (see
+# triangle_hexagon), so any shape here supplies its own per-state satellite lists;
+# a shape absent from this table keeps the derived rotation.
+ALL_PIECE_ROTATIONS = {}
+ALL_PIECE_ROTATIONS.update(TRIANGLE_HEXAGON_ROTATIONS)
 
 # How each piece's grams are picked. The main (player) pieces follow
 # triangle_player.gram_pick; the starting obstacles follow their own
@@ -117,6 +146,14 @@ def obstacle_gram_pick_rule():
 def mission_gram_pick_rule():
     """Active triangle_mission.gram_pick rule function."""
     return select_rule("triangle_mission.gram_pick", _GRAM_PICK_RULES)
+
+
+def _as_path(satellite):
+    """A satellite entry as a tuple of direction steps. Single ints (the
+    unimo/domino form) read as a one-step walk, so callers never branch."""
+    if isinstance(satellite, int):
+        return (satellite,)
+    return tuple(satellite)
 
 
 class TriangleCellShape:
@@ -186,6 +223,10 @@ class TrianglePiece:
         # exactly with TriangleGrid, which is built from the same value.
         self._side = cell_size
         self._sat_dirs = list(ALL_PIECE_DIRECTIONS[piece_type])
+        # Listed rotation states for shapes whose satellites are multi-step paths
+        # (None = derive rotation by cycling each direction index). See
+        # ALL_PIECE_ROTATIONS.
+        self._rotations = ALL_PIECE_ROTATIONS.get(piece_type)
         self._rotation_state = 0
         self._batch = batch
         self._grid_x = 0
@@ -300,9 +341,19 @@ class TrianglePiece:
         self._update_positions()
 
     def _cell_grid_positions(self):
+        """The anchor cell plus one cell per satellite.
+
+        A satellite is a WALK from the anchor: a single direction index for the
+        1-step shapes (unimo/domino), or a list of indices for shapes whose cells
+        are further off (the hexagon). Walking rather than adding a fixed offset
+        is what makes one table right at both parities -- each step re-reads the
+        current cell's orientation (see triangle_neighbor)."""
         positions = [(self._grid_x, self._grid_y)]
-        for d in self._sat_dirs:
-            positions.append(triangle_neighbor(self._grid_x, self._grid_y, d))
+        for satellite in self._sat_dirs:
+            x, y = self._grid_x, self._grid_y
+            for d in _as_path(satellite):
+                x, y = triangle_neighbor(x, y, d)
+            positions.append((x, y))
         return positions
 
     def _update_positions(self):
@@ -393,20 +444,29 @@ class TrianglePiece:
         triangle's actual edges are not. A domino still visits all three of its
         possible rhombus orientations either way, so the piece behaves; if the
         turn direction ever feels wrong under the hand, flip the sign here per
-        triangle_points_up(self._grid_x, self._grid_y)."""
+        triangle_points_up(self._grid_x, self._grid_y).
+
+        Shapes with LISTED rotation states (multi-step paths -- the hexagon) take
+        their satellites straight from that table instead; deriving them would
+        collapse the shape."""
         self._rotation_state = (self._rotation_state + 1) % 3
-        rotated = []
-        for d in self._sat_dirs:
-            rotated.append((d + 1) % 3)
-        self._sat_dirs = rotated
-        self._update_positions()
+        self._apply_rotation(1)
 
     def rotate_ccw(self):
         self._rotation_state = (self._rotation_state - 1) % 3
-        rotated = []
-        for d in self._sat_dirs:
-            rotated.append((d - 1) % 3)
-        self._sat_dirs = rotated
+        self._apply_rotation(-1)
+
+    def _apply_rotation(self, step):
+        """Re-point the satellites for the current _rotation_state: from the
+        shape's listed states when it has them, else by turning each single-step
+        direction index by `step`."""
+        if self._rotations is not None:
+            self._sat_dirs = list(self._rotations[self._rotation_state])
+        else:
+            rotated = []
+            for d in self._sat_dirs:
+                rotated.append((d + step) % 3)
+            self._sat_dirs = rotated
         self._update_positions()
 
     @property

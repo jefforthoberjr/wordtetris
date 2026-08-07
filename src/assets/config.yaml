@@ -581,7 +581,9 @@ rules:
   # triangle_player.gram_pick:    rule_digram52_distribution
   # triangle_player.gram_pick:    rule_trigram_equalweight
 
-  triangle_player.piece_set:    rule_use_triangle_unimos_and_dominos
+  triangle_player.piece_set:    rule_use_triangle_unimos_dominos_hexagons
+  # triangle_player.piece_set:  rule_use_triangle_unimos_and_dominos
+  # triangle_player.piece_set:  rule_use_triangle_hexagons
   # triangle_player.piece_set:  rule_use_triangle_dominos
   # triangle_player.piece_set:  rule_use_triangle_unimos
 
