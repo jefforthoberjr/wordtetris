@@ -67,6 +67,36 @@ def triangle_vertices(side, col, row):
     return [(cx + dx, cy + dy) for dx, dy in offsets]
 
 
+def jumbo_hex_center(side, col, row):
+    """Center of the JUMBO_HEX cell anchored at (col, row): the lattice vertex
+    its six triangles meet at. That vertex is one triangle-width right of the
+    anchor's left corner, on the anchor's own row line when it points up and on
+    the line above when it points down."""
+    height = triangle_row_height(side)
+    cx = col * (side / 2) + side
+    cy = row * height
+    if not triangle_points_up(col, row):
+        cy += height
+    return cx, cy
+
+
+def jumbo_hex_corner_offsets(radius):
+    """The six corners of a jumbo hexagon cell relative to its center. Flat-top
+    (a corner at 0 degrees), circumradius = the triangle side, which is exactly
+    the outline the six triangles beneath it trace."""
+    corners = []
+    for i in range(6):
+        angle = math.radians(60 * i)
+        corners.append((radius * math.cos(angle), radius * math.sin(angle)))
+    return corners
+
+
+def jumbo_hex_apothem(radius):
+    """Center-to-edge distance of a jumbo hexagon cell -- the room its gram has,
+    and the basis for turning a pixel border into a smaller inner hexagon."""
+    return radius * SQRT3 / 2
+
+
 def triangle_inradius(side):
     """Radius of the inscribed circle -- the usable room for a cell's glyph, and
     the basis for converting a pixel border width into a smaller inner triangle."""
@@ -116,6 +146,20 @@ class TriangleGrid:
 
         # Rule for which directions the pathfinding walk can take (_SNAKE_RULES).
         self._snake_rule = select_rule("triangle_grid.word_pathfinding", _SNAKE_RULES)
+
+        # --- jumbo-cell footprints ---------------------------------------
+        # A JUMBO cell is one cell whose shape spans several grid coordinates (the
+        # hexagon cell = the six triangles around a vertex, holding ONE gram). The
+        # board still stores contents in exactly one GridCell -- the PRIMARY
+        # coordinate -- so the word walk sees one node with one letter and nothing
+        # in the pathfinder had to change. The other coordinates it covers are
+        # recorded here instead:
+        #   _footprint_primary: covered coord -> its primary coord (primary too)
+        #   _footprint_cells:   primary coord -> tuple of every coord it covers
+        # Both are empty on a board with no jumbo cells, which is why every method
+        # below behaves exactly as it did before one is placed.
+        self._footprint_primary = {}
+        self._footprint_cells = {}
 
         self._lines = []
         self._create_outlines(batch)
@@ -199,7 +243,61 @@ class TriangleGrid:
         the LOADING fade-in ramps their .opacity)."""
         return self._lines
 
+    # --- jumbo cells ----------------------------------------------------
+
+    def resolve(self, x, y):
+        """The coordinate that OWNS (x, y): itself for an ordinary cell, or the
+        primary coordinate of the jumbo cell covering it. Every lookup that should
+        treat a jumbo cell as one thing -- adjacency, clicks, clearing -- goes
+        through this, so callers never have to know a cell is oversized."""
+        return self._footprint_primary.get((x, y), (x, y))
+
+    def footprint(self, x, y):
+        """Every coordinate the cell at (x, y) covers: a 1-tuple for an ordinary
+        cell, or all coordinates of the jumbo cell owning it. Used to free the
+        whole shape on a clear, and to hide it as a unit on hover."""
+        primary = self.resolve(x, y)
+        return self._footprint_cells.get(primary, (primary,))
+
+    def is_jumbo(self, x, y):
+        """Whether (x, y) belongs to a jumbo (multi-coordinate) cell."""
+        return (x, y) in self._footprint_primary
+
+    def place_jumbo(self, cells, square, label, gram=None, overlay=None):
+        """Place ONE cell that spans several coordinates. `cells` is the full
+        footprint; its FIRST entry becomes the primary, which alone holds the
+        contents -- so the board reports one gram, and word paths, min-cell rules
+        and scoring all count the jumbo cell exactly once.
+
+        Fails (returns False) unless every coordinate is on-board and free, since
+        a partly-off-board jumbo cell has no sensible meaning."""
+        for cx, cy in cells:
+            if not self.is_valid(cx, cy) or self.is_cell_occupied(cx, cy):
+                return False
+        primary = cells[0]
+        cell = self.get_cell(*primary)
+        if cell.is_occupied():
+            cell.clear()
+        cell.set_contents(square, label, gram, overlay)
+        footprint = tuple(cells)
+        self._footprint_cells[primary] = footprint
+        for coord in footprint:
+            self._footprint_primary[coord] = primary
+        return True
+
+    def _release_footprint(self, primary):
+        """Drop a jumbo cell's coordinate registrations (its contents are cleared
+        separately, by the caller)."""
+        for coord in self._footprint_cells.pop(primary, ()):
+            self._footprint_primary.pop(coord, None)
+
     def is_cell_occupied(self, x, y):
+        """Whether anything sits on (x, y) -- including a coordinate covered by a
+        jumbo cell whose contents live elsewhere. This is the occupancy test piece
+        placement and overlap rules use, so a jumbo cell blocks its whole
+        footprint even though only its primary holds a gram."""
+        if (x, y) in self._footprint_primary:
+            return True
         cell = self.get_cell(x, y)
         result = False
         if cell is not None:
@@ -219,7 +317,9 @@ class TriangleGrid:
         result = None
         for col in (strip - 1, strip):
             if self.is_valid(col, row) and self._point_in_cell(px, py, col, row):
-                result = (col, row)
+                # Resolve so a click anywhere inside a jumbo cell -- on any of the
+                # triangles it covers -- lands on the cell itself.
+                result = self.resolve(col, row)
                 break
         return result
 
@@ -250,7 +350,13 @@ class TriangleGrid:
         return result
 
     def clear_cell(self, x, y):
-        cell = self.get_cell(x, y)
+        """Clear the cell at (x, y). A jumbo cell clears WHOLE: clearing any
+        coordinate it covers removes the one gram and frees every coordinate of
+        its footprint, so a word that used the hexagon takes all six triangles
+        with it."""
+        primary = self.resolve(x, y)
+        self._release_footprint(primary)
+        cell = self.get_cell(*primary)
         if cell:
             cell.clear()
 
@@ -259,7 +365,7 @@ class TriangleGrid:
         a partial-gram clear), re-fitting the label to the new length. Same base
         font as TrianglePiece (the inradius-derived size), so the cell matches a
         freshly placed gram of that length. The cell stays on the board."""
-        cell = self.get_cell(x, y)
+        cell = self.get_cell(*self.resolve(x, y))
         if cell is None or not cell.is_occupied():
             return
         gram = Gram(text)
@@ -301,26 +407,57 @@ class TriangleGrid:
         return letter
 
     def forward_neighbors(self, x, y, prev_direction=None):
-        result = []
-        for direction in self._snake_rule(prev_direction):
-            nx, ny = triangle_neighbor(x, y, direction)
-            if self.is_valid(nx, ny):
-                result.append(((nx, ny), direction))
-        return result
+        """Neighbors the word-walk may step to, per triangle_grid.word_pathfinding.
+
+        A JUMBO cell steps out of its whole footprint, so a hexagon offers the six
+        cells around its perimeter rather than a triangle's three -- the extra
+        connectivity is the point of the shape. Neighbors are resolved to their
+        owning cell, and coordinates inside this same cell are dropped, so the
+        walk can neither enter a jumbo cell twice nor spend two steps crossing it.
+
+        The `direction` returned alongside each neighbor is the direction of the
+        underlying triangle step. For a jumbo cell that is one of several edges
+        leading to the same neighbor, so it is indicative only; the active snake
+        rule ignores prev_direction (a triangle's three edges are its full
+        adjacency), so nothing downstream depends on it."""
+        return self._adjacent(x, y, self._snake_rule(prev_direction),
+                              with_direction=True)
 
     def neighbors(self, x, y):
-        """Every on-board cell adjacent to (x, y): the three edge-neighbors,
-        independent of the word-walk snake rule (this is physical adjacency).
-        Cells that only touch at a corner are NOT neighbors."""
+        """Every on-board cell adjacent to (x, y), independent of the word-walk
+        snake rule (this is physical adjacency): a triangle's three edge-neighbors,
+        or the six around a jumbo hexagon cell. Cells that only touch at a corner
+        are NOT neighbors."""
+        return self._adjacent(x, y, TRIANGLE_ALL_DIRECTIONS, with_direction=False)
+
+    def _adjacent(self, x, y, directions, with_direction):
+        """Shared neighbor walk for both the pathfinding and physical-adjacency
+        views. Steps out of every coordinate of the cell's footprint (one for an
+        ordinary cell), resolves each neighbor to its owning cell, and drops both
+        the cell itself and duplicates -- two footprint coordinates can border the
+        same outside cell."""
+        owner = self.resolve(x, y)
         result = []
-        for direction in TRIANGLE_ALL_DIRECTIONS:
-            nx, ny = triangle_neighbor(x, y, direction)
-            if self.is_valid(nx, ny):
-                result.append((nx, ny))
+        seen = set()
+        for cx, cy in self.footprint(x, y):
+            for direction in directions:
+                nx, ny = triangle_neighbor(cx, cy, direction)
+                if not self.is_valid(nx, ny):
+                    continue
+                neighbor = self.resolve(nx, ny)
+                if neighbor == owner or neighbor in seen:
+                    continue
+                seen.add(neighbor)
+                if with_direction:
+                    result.append((neighbor, direction))
+                else:
+                    result.append(neighbor)
         return result
 
     def occupied_cells(self):
-        """Coordinates of every occupied cell on the board."""
+        """Coordinates of every occupied cell on the board. A jumbo cell appears
+        ONCE, as its primary -- the coordinates it merely covers hold no contents,
+        so it counts as one cell here just as it does in a word path."""
         cells = []
         for y in range(self._rows):
             for x in range(self._cols):
@@ -329,14 +466,16 @@ class TriangleGrid:
         return cells
 
     def hide_cells_for_hover(self, positions):
+        # Resolved so hovering ANY triangle a jumbo cell covers hides that cell as
+        # a unit (its contents live on the primary, which may not be in positions).
         for x, y in positions:
-            cell = self.get_cell(x, y)
+            cell = self.get_cell(*self.resolve(x, y))
             if cell:
                 cell.hide_for_hover()
 
     def restore_cells_from_hover(self, positions):
         for x, y in positions:
-            cell = self.get_cell(x, y)
+            cell = self.get_cell(*self.resolve(x, y))
             if cell:
                 cell.restore_from_hover()
 

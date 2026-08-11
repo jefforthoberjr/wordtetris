@@ -252,6 +252,7 @@ rules:
   # game_screen.setup_formation: rule_formation_empty
   # game_screen.setup_formation: rule_formation_scattered
   # game_screen.setup_formation: rule_formation_mission_center_obstacle_ring
+  # game_screen.setup_formation: rule_formation_jumbo_mission_center_obstacle_ring
   # game_screen.setup_formation: rule_formation_fill_player_diagonal
   # game_screen.setup_formation: rule_formation_fill_player_wood_grain
   # game_screen.setup_formation: rule_formation_fill_player_random
@@ -582,6 +583,8 @@ rules:
   # triangle_player.gram_pick:    rule_trigram_equalweight
 
   triangle_player.piece_set:    rule_use_triangle_unimos_dominos_hexagons
+  # triangle_player.piece_set:  rule_use_triangle_unimos_dominos_jumbos
+  # triangle_player.piece_set:  rule_use_triangle_jumbos
   # triangle_player.piece_set:  rule_use_triangle_unimos_and_dominos
   # triangle_player.piece_set:  rule_use_triangle_hexagons
   # triangle_player.piece_set:  rule_use_triangle_dominos

@@ -37,6 +37,7 @@ from models.triangle_piece import (
 from models.square_unimo import SquareUnimoType
 from models.hex_unimo import HexUnimoType
 from models.triangle_unimo import TriangleUnimoType
+from models.triangle_jumbo import jumbo_hex_footprint, jumbo_hex_ring_anchors
 from models.gram_picker import (
     reset_gram_dedup,
     begin_formation_gram_run,
@@ -53,6 +54,7 @@ from models.gram_picker import (
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
 from models.triangle_grid import TriangleGrid
+from models.piece_placement import place_piece_cells
 from models.word_dictionary import (
     is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from starting_coverage import write_coverage_csv
@@ -365,6 +367,56 @@ class BoardSetupMixin:
             self._place_one_setup_piece(
                 self._obstacle_pool, cell, self._obstacle_cells, occupied, "obstacle"
             )
+
+    def _rule_formation_jumbo_mission_center_obstacle_ring(self):
+        """The JUMBO twin of rule_formation_mission_center_obstacle_ring: one jumbo
+        mission cell at the board's center, ringed by up to six jumbo obstacles
+        that touch it edge-to-edge -- a flower of seven big cells.
+
+        Why it can't reuse the rule above: that one rings the center with
+        self._board.neighbors(), the anchor TRIANGLE's three edge-neighbors. A jumbo
+        anchored one triangle away overlaps four of the center jumbo's six
+        coordinates, so every obstacle landed on top of the mission. Jumbos tile on
+        the HEXAGON lattice instead -- centers sqrt(3) * side apart, which in anchor
+        coordinates is jumbo_hex_ring_anchors (parity-free; see triangle_jumbo).
+
+        The ring FLOATS with the board: an anchor whose footprint runs off the edge
+        is dropped and no obstacle is built for it, so game_screen.obstacle_count is
+        ignored here exactly as it is in the triangle ring rule (the formation
+        derives its own count). A board too small for the whole flower yields a
+        partial ring rather than a crowded one.
+
+        Triangle grid only -- the ring geometry is the triangle lattice's hexagon
+        vertices. Pair with rule_use_triangle_jumbos on BOTH triangle_mission.piece_set
+        and triangle_obstacle.piece_set; an ordinary small piece would still place,
+        just marooned at a jumbo-spaced anchor with gaps around it."""
+        center = self._board.center_cell()
+        self._build_mission_pool(1)
+        occupied = set()
+        self._place_one_setup_piece(
+            self._mission_pool, center, self._mission_cells, occupied, "mission"
+        )
+        # Ring anchors are filtered against the BOARD only (not `occupied`): the
+        # mission is placed but the obstacles are not, so nothing here is occupied
+        # yet, and the ring never overlaps the center by construction. The pool is
+        # then built to the surviving count, so the pieces and the spots match.
+        ring = [anchor for anchor in jumbo_hex_ring_anchors(*center)
+                if self._jumbo_anchor_fits(*anchor)]
+        self._build_obstacle_pool(len(ring))
+        for cell in ring:
+            self._place_one_setup_piece(
+                self._obstacle_pool, cell, self._obstacle_cells, occupied, "obstacle"
+            )
+
+    def _jumbo_anchor_fits(self, col, row):
+        """Whether a JUMBO_HEX anchored at (col, row) lies wholly on the board.
+
+        Anchor-on-board is NOT enough: the footprint extends two columns right and
+        one row across, so an anchor in the last two columns (or the top/bottom
+        row, depending on its parity) hangs off. Walks the real footprint paths
+        rather than assuming the offsets, so it stays correct if the shape changes."""
+        cells = jumbo_hex_footprint(col, row)
+        return all(self._board.is_valid(cx, cy) for (cx, cy) in cells)
 
     def _rule_formation_fill_player_diagonal(self):
         """Fill every board cell with a single-cell player piece; the gram lengths
@@ -873,36 +925,75 @@ class BoardSetupMixin:
         """Place every piece in `pool` at a random on-board spot clear of
         `occupied`, recording each cell in `occupied` (so later pieces avoid it)
         and `track_cells` (its victory/encoding set). The scattered formation's
-        per-pool worker. `kind` labels the pieces in the session log."""
+        per-pool worker. `kind` labels the pieces in the session log.
+
+        A piece the board has no room for is DROPPED (logged, left invisible) --
+        see _position_scattered and _settle_setup_piece."""
         while True:
             piece = pool.current_piece()
             self._orient_rule(piece)
-            self._position_scattered(piece, occupied)
-            self._settle_setup_piece(piece, track_cells, occupied, kind)
+            if self._position_scattered(piece, occupied):
+                self._settle_setup_piece(piece, track_cells, occupied, kind)
+            else:
+                L.log_06007(kind, (piece.grid_x, piece.grid_y), "no_free_spot")
             if pool.advance() is None:
                 break
 
     def _place_one_setup_piece(self, pool, cell, track_cells, occupied, kind):
         """Place the pool's current piece at a specific `cell` -- for formation
         rules that lay pieces at fixed coordinates -- record it, and advance the
-        pool. `kind` labels the piece in the session log."""
+        pool. `kind` labels the piece in the session log.
+
+        The spot is CHECKED first (fits on-board, clear of `occupied`) and the
+        piece dropped if it doesn't fit, rather than handed to the board to refuse
+        silently. Fixed-coordinate formations are exactly where that bites: their
+        anchors come from board geometry, so an anchor near an edge, or a piece
+        bigger than the formation's author assumed, produces a placement that
+        cannot land -- which used to leave a drawn-but-unrecorded piece overlapping
+        its neighbor."""
         piece = pool.current_piece()
         self._orient_rule(piece)
         piece.set_position(*cell)
-        self._settle_setup_piece(piece, track_cells, occupied, kind)
+        reason = self._setup_spot_refusal(piece, occupied)
+        if reason is None:
+            self._settle_setup_piece(piece, track_cells, occupied, kind)
+        else:
+            L.log_06007(kind, cell, reason)
         pool.advance()
+
+    def _setup_spot_refusal(self, piece, occupied):
+        """Why this positioned setup piece can't land here -- 'off_board' or
+        'occupied' -- or None when it fits. Tests the piece's FULL footprint, so a
+        jumbo is judged on all six coordinates it covers, not just its anchor."""
+        cells = piece.get_cell_positions()
+        result = None
+        if not all(self._board.is_valid(cx, cy) for (cx, cy) in cells):
+            result = "off_board"
+        elif any((cx, cy) in occupied for (cx, cy) in cells):
+            result = "occupied"
+        return result
 
     def _settle_setup_piece(self, piece, track_cells, occupied, kind):
         """Drop an already-positioned setup piece onto the board: place it, record
         each of its cells in `occupied` (so later setup pieces avoid it) and
-        `track_cells` (its victory/encoding set), and reveal it."""
+        `track_cells` (its victory/encoding set), and reveal it.
+
+        A piece the board REFUSES (place_piece_cells returns []) is recorded
+        nowhere and never made visible -- callers should have checked with
+        _setup_spot_refusal first, so this is the backstop, not the gate."""
         piece.place()
-        logged_cells = []
-        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label, gram, overlay)
-            occupied.add((gx, gy))
+        # One cell per coordinate normally; a jumbo-cell piece settles as ONE cell
+        # owning its whole footprint (see models/piece_placement). track_cells and
+        # the log therefore get one entry per CELL, while `occupied` -- which later
+        # setup pieces test to avoid overlap -- takes every coordinate covered.
+        logged_cells = place_piece_cells(self._board, piece)
+        if not logged_cells:
+            L.log_06007(kind, (piece.grid_x, piece.grid_y), "occupied")
+            return
+        for gx, gy, _gram in logged_cells:
             track_cells.add((gx, gy))
-            logged_cells.append((gx, gy, gram))
+        for coord in piece.get_cell_positions():
+            occupied.add(coord)
         # Record the opening cells + grams so a replay can rebuild this piece.
         L.log_06002(kind, logged_cells)
         piece.set_visible(True)
@@ -924,18 +1015,29 @@ class BoardSetupMixin:
 
     def _position_scattered(self, piece, occupied):
         """Pick a random on-board anchor whose cells are all on the grid and clear
-        of `occupied`. Retries a bounded number of times, then keeps the last spot
-        rather than looping forever on a crowded board. Independent of the player
-        spawn rule -- starting pieces lay themselves out, they don't spawn live."""
+        of `occupied`. Returns True once positioned, False if the retry budget ran
+        out -- the caller then DROPS the piece. Independent of the player spawn
+        rule -- starting pieces lay themselves out, they don't spawn live.
+
+        Old version, preserved: this used to `return` after the loop with the LAST
+        (rejected) spot still set on the piece, so a crowded board settled pieces
+        on top of each other. Harmless while every setup piece was one triangle --
+        a random spot nearly always fits -- but a jumbo needs six free coordinates
+        at once, so it exhausted the budget often enough to be seen, and the
+        overlapping piece was drawn without the board recording it.
+
+        The budget is deliberately fixed rather than exhaustive: on a board with
+        genuinely no room, dropping a piece is the right answer (it is logged), and
+        an exhaustive search would only make the impossible case slow."""
+        placed = False
         for _ in range(100):
             x = rand().randint(0, self._random_spot_width() - 1)
             y = rand().randint(0, self._board_height - 1)
             piece.set_position(x, y)
-            cells = piece.get_cell_positions()
-            on_board = all(self._board.get_cell(cx, cy) is not None for (cx, cy) in cells)
-            free = all((cx, cy) not in occupied for (cx, cy) in cells)
-            if on_board and free:
-                return
+            if self._setup_spot_refusal(piece, occupied) is None:
+                placed = True
+                break
+        return placed
 
     def _rule_use_square_grid(self, window):
         """Build a square board and set piece sizing/type to match. Sized to the
@@ -1030,7 +1132,11 @@ class BoardSetupMixin:
         self._mission_piece_types = triangle_mission_piece_types()
         self._mission_gram_pick_rule = triangle_mission_gram_pick_rule()
 
-        self._movement_rule = self._rule_triangle_movement_flipkey
+        # Jumbo-cell aware by default: it delegates to the plain flip-key rule for
+        # ordinary pieces and only applies its hexagon scheme to a jumbo cell, so
+        # it is correct for every triangle pool, mixed or not.
+        self._movement_rule = self._rule_triangle_movement_jumbo
+        # self._movement_rule = self._rule_triangle_movement_flipkey
         # self._movement_rule = self._rule_triangle_movement_strict_updown
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "^" marks a word formed on the triangle grid.

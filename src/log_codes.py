@@ -389,6 +389,21 @@ def log_06002(kind, cells):
                      kind=kind, cells=spec)
 
 
+def log_06007(kind, anchor, reason):
+    """A formation piece was NOT placed and was dropped from the opening board.
+    `kind` is the source (obstacle / mission), `anchor` the (x, y) it was asked
+    for, `reason` a short slug (off_board / occupied / no_free_spot).
+
+    Worth its own code because the alternative is invisible: the board refuses the
+    placement, so the piece is nowhere in the cell log, and without this line a
+    replay of a crowded opening silently has fewer pieces than the counts asked
+    for. A run of these means the formation is asking for more pieces than the
+    board has room for -- lower the count or shrink the piece."""
+    session_log.emit(6007,
+                     f"{kind} piece skipped at {anchor[0]},{anchor[1]} ({reason})",
+                     kind=kind, x=anchor[0], y=anchor[1], reason=reason)
+
+
 def log_06004(seconds, stats):
     """The starting-coverage enumeration finished (game_screen.starting_coverage_
     dictionary = on): the blocking pass that wrote sessions/<id>.coverage.csv.

@@ -59,6 +59,17 @@ class ControlsScreen:
                 ("  point-up cell, ABOVE a", []),
                 ("  point-down one)", []),
             ]),
+            (get_string("controls_section_bigcell"), [
+                ("Up-left / up-right", ["game.move_left", sep, "game.move_right"]),
+                ("Down-left / down-right", ["game.hex_down_modifier",
+                                            self._LITERAL + " + ",
+                                            "game.move_left", sep,
+                                            "game.move_right"]),
+                ("Straight up / down", ["game.move_up", sep, "game.move_down"]),
+                ("  (a big cell sits on the", []),
+                ("  hex lattice, so it moves", []),
+                ("  in six directions)", []),
+            ]),
             (get_string("controls_section_piece"), [
                 ("Rotate clockwise", ["game.rotate_clockwise"]),
                 ("Rotate counter-clockwise", ["game.rotate_counterclockwise"]),

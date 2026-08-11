@@ -58,6 +58,7 @@ from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
 from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
+from models.piece_placement import place_piece_cells
 from models.triangle_domino import triangle_neighbor, triangle_points_up
 from models.triangle_domino import TRIANGLE_LEFT, TRIANGLE_RIGHT, TRIANGLE_BASE
 from models.word_dictionary import (
@@ -710,6 +711,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_formation_empty": self._rule_formation_empty,
             "rule_formation_scattered": self._rule_formation_scattered,
             "rule_formation_mission_center_obstacle_ring": self._rule_formation_mission_center_obstacle_ring,
+            "rule_formation_jumbo_mission_center_obstacle_ring":
+                self._rule_formation_jumbo_mission_center_obstacle_ring,
             "rule_formation_fill_player_diagonal": self._rule_formation_fill_player_diagonal,
             "rule_formation_fill_player_wood_grain": self._rule_formation_fill_player_wood_grain,
             "rule_formation_fill_player_random": self._rule_formation_fill_player_random,
@@ -1725,6 +1728,66 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             handled = False
         return handled
 
+    def _rule_triangle_movement_jumbo(self, symbol, modifiers):
+        """Triangle grid, tuned for the JUMBO_HEX cell: LEFT/RIGHT reach the
+        up-left/up-right neighboring hexagon positions, holding the down modifier
+        with them reaches down-left/down-right, and UP/DOWN go straight up/down.
+        Returns handled.
+
+        Why a rule of its own: a hexagon cell's center sits on a lattice VERTEX,
+        and the vertices form a HEXAGONAL lattice, not the triangular one the
+        cells sit on. Two consequences, both measured from jumbo_hex_center:
+
+          * The BASE flip does not move the piece at all -- it re-anchors the SAME
+            hexagon on its other parity. It is a free toggle, not a move.
+          * A sideways step moves the hexagon DIAGONALLY, and which diagonal is
+            decided by the anchor's parity: it rises from a point-up anchor and
+            falls from a point-down one.
+
+        So a diagonal press is "toggle parity if needed (free), then step
+        sideways", and the modifier picks the downward diagonal -- the hex board's
+        scheme (_rule_hex_movement_holdshift), which reads the same under the
+        hand. Straight up/down is one rising (or falling) step each way, which
+        cancels the sideways drift and nets exactly one hexagon height.
+
+        Keys are unchanged (controls.yaml game.move_* + the hex down modifier).
+        Ordinary small pieces in the same pool keep the plain triangle movement --
+        for them a flip IS a move, so the compound steps here would be wrong."""
+        piece = self._current_piece()
+        if not getattr(piece, "jumbo_cell", False):
+            return self._rule_triangle_movement_flipkey(symbol, modifiers)
+        shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
+        handled = True
+        if symbol in self._keys["move_left"]:
+            self._move_piece_jumbo_diagonal(TRIANGLE_LEFT, want_down=shift)
+        elif symbol in self._keys["move_right"]:
+            self._move_piece_jumbo_diagonal(TRIANGLE_RIGHT, want_down=shift)
+        elif symbol in self._keys["move_up"]:
+            self._move_piece_jumbo_vertical(want_down=False)
+        elif symbol in self._keys["move_down"]:
+            self._move_piece_jumbo_vertical(want_down=True)
+        else:
+            handled = False
+        return handled
+
+    def _move_piece_jumbo_diagonal(self, sideways, want_down):
+        """One diagonal step of a JUMBO_HEX cell. A sideways step rises from a
+        point-up anchor and falls from a point-down one, so when the diagonal the
+        player asked for disagrees with the current parity, flip first -- which
+        costs no movement -- and then step."""
+        piece = self._current_piece()
+        rises = triangle_points_up(piece.grid_x, piece.grid_y)
+        if rises == want_down:
+            self._move_piece_tridir(TRIANGLE_BASE)
+        self._move_piece_tridir(sideways)
+
+    def _move_piece_jumbo_vertical(self, want_down):
+        """Move a JUMBO_HEX cell straight up or down by one hexagon: one step
+        along each diagonal on that side (right then left), whose sideways halves
+        cancel and whose vertical halves add."""
+        self._move_piece_jumbo_diagonal(TRIANGLE_RIGHT, want_down)
+        self._move_piece_jumbo_diagonal(TRIANGLE_LEFT, want_down)
+
     def _move_piece_tridir(self, direction):
         """Move the piece to its triangle neighbor in the given direction index.
         The BASE step depends on the piece's current parity, so it is resolved
@@ -2099,10 +2162,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._clear_hover_visibility()
         piece.place()
 
-        placed_positions = []
-        for gx, gy, cell, label, gram, overlay in piece.get_cell_data():
-            self._board.place(gx, gy, cell, label, gram, overlay)
-            placed_positions.append((gx, gy))
+        # One cell per coordinate for an ordinary piece; ONE cell owning the whole
+        # footprint for a jumbo-cell piece (see models/piece_placement).
+        placed_positions = [(gx, gy) for gx, gy, _gram
+                            in place_piece_cells(self._board, piece)]
         # _begin_selection recolors these cells from the live piece's darker
         # active tint to the lighter placed tint and keeps them lit -- through
         # every further placement this moving phase -- to remind the player where

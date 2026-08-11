@@ -20,9 +20,14 @@ from models.triangle_unimo import TriangleUnimoType, TRIANGLE_UNIMO_DIRECTIONS
 from models.triangle_hexagon import (
     TriangleHexagonType, TRIANGLE_HEXAGON_DIRECTIONS, TRIANGLE_HEXAGON_ROTATIONS,
 )
+from models.triangle_jumbo import (
+    TriangleJumboType, TRIANGLE_JUMBO_DIRECTIONS,
+    TRIANGLE_JUMBO_ROTATIONS, JUMBO_CELL_TYPES,
+)
 from models.triangle_grid import (
     SQRT3, triangle_cell_center, triangle_corner_offsets,
     triangle_inradius, triangle_base_font_size,
+    jumbo_hex_center, jumbo_hex_corner_offsets, jumbo_hex_apothem,
 )
 from views.shaders import get_shape_shader
 from views.textures import wild_vowel_image
@@ -41,6 +46,24 @@ def _rule_use_triangle_unimos():
 
 def _rule_use_triangle_hexagons():
     return TriangleHexagonType, TRIANGLE_HEXAGON_DIRECTIONS
+
+
+def _rule_use_triangle_jumbos():
+    """The hexagon JUMBO cell: the same six-triangle area as the hexagon piece,
+    but ONE cell holding ONE gram (see triangle_jumbo)."""
+    return TriangleJumboType, TRIANGLE_JUMBO_DIRECTIONS
+
+
+def _rule_use_triangle_unimos_dominos_jumbos():
+    """Ordinary small pieces mixed with the oversized hexagon cell -- the set that
+    puts the size contrast in one pool: 1-cell triangles, 2-cell rhombi, and the
+    six-coordinate single cell."""
+    directions = {}
+    directions.update(TRIANGLE_UNIMO_DIRECTIONS)
+    directions.update(TRIANGLE_DOMINO_DIRECTIONS)
+    directions.update(TRIANGLE_JUMBO_DIRECTIONS)
+    return (TriangleUnimoType.SINGLE, TriangleDominoType.DOUBLE,
+            TriangleJumboType.JUMBO_HEX), directions
 
 
 def _rule_use_triangle_unimos_dominos_hexagons():
@@ -80,6 +103,8 @@ _PIECE_SET_RULES = {
     "rule_use_triangle_unimos_and_dominos": _rule_use_triangle_unimos_and_dominos,
     "rule_use_triangle_hexagons": _rule_use_triangle_hexagons,
     "rule_use_triangle_unimos_dominos_hexagons": _rule_use_triangle_unimos_dominos_hexagons,
+    "rule_use_triangle_jumbos": _rule_use_triangle_jumbos,
+    "rule_use_triangle_unimos_dominos_jumbos": _rule_use_triangle_unimos_dominos_jumbos,
 }
 # Resolved per call (not cached at import) so a game mode's *.piece_set override
 # takes effect: this module is imported before apply_game_mode swaps CONFIG, so an
@@ -109,6 +134,7 @@ ALL_PIECE_DIRECTIONS = {}
 ALL_PIECE_DIRECTIONS.update(TRIANGLE_DOMINO_DIRECTIONS)
 ALL_PIECE_DIRECTIONS.update(TRIANGLE_UNIMO_DIRECTIONS)
 ALL_PIECE_DIRECTIONS.update(TRIANGLE_HEXAGON_DIRECTIONS)
+ALL_PIECE_DIRECTIONS.update(TRIANGLE_JUMBO_DIRECTIONS)
 
 # Shapes whose rotation states must be LISTED rather than derived by cycling each
 # satellite's direction index. Multi-step paths break under that derivation (see
@@ -116,6 +142,7 @@ ALL_PIECE_DIRECTIONS.update(TRIANGLE_HEXAGON_DIRECTIONS)
 # a shape absent from this table keeps the derived rotation.
 ALL_PIECE_ROTATIONS = {}
 ALL_PIECE_ROTATIONS.update(TRIANGLE_HEXAGON_ROTATIONS)
+ALL_PIECE_ROTATIONS.update(TRIANGLE_JUMBO_ROTATIONS)
 
 # How each piece's grams are picked. The main (player) pieces follow
 # triangle_player.gram_pick; the starting obstacles follow their own
@@ -234,7 +261,15 @@ class TrianglePiece:
         self._visible = visible
         self._placed = False
 
-        cell_count = 1 + len(self._sat_dirs)
+        # A JUMBO-cell piece covers the same coordinates as its small-piece twin
+        # but is ONE cell holding ONE gram (see triangle_jumbo), so it draws one
+        # oversized shape and picks a single gram no matter how many coordinates
+        # its footprint spans.
+        self._jumbo_cell = piece_type in JUMBO_CELL_TYPES
+        if self._jumbo_cell:
+            cell_count = 1
+        else:
+            cell_count = 1 + len(self._sat_dirs)
         # Pools inject a gram-pick rule so obstacles can pick grams differently
         # from the main pieces; falling back to the configured default.
         if gram_pick_rule is None:
@@ -260,17 +295,27 @@ class TrianglePiece:
         # inradius helper (TriangleGrid.relabel_cell uses the same one, so a
         # relabeled cell matches a freshly placed gram). Multi-letter grams shrink
         # from here via the active gram.font_size rule.
-        base_font_size = triangle_base_font_size(self._side)
+        if self._jumbo_cell:
+            # A hexagon cell's room is its apothem -- about three times a
+            # triangle's inradius -- so its gram starts far bigger, and a
+            # multigram (the length this cell is really meant to carry) still has
+            # space after the gram.font_size rule shrinks it.
+            base_font_size = int(jumbo_hex_apothem(self._side) * 0.8)
+        else:
+            base_font_size = triangle_base_font_size(self._side)
 
         # White fill + black border, like the square piece's BorderedRectangle.
-        # The border is a black triangle behind a slightly smaller white one.
-        # Shrinking the side by `d` pulls each edge inward by d/(2*sqrt(3)) (the
-        # inradius scales with the side), so a border of `b` pixels needs the
-        # inner side reduced by b * 2 * sqrt(3).
+        # The border is a black shape behind a slightly smaller filled one.
+        # Shrinking a triangle's side by `d` pulls each edge inward by
+        # d/(2*sqrt(3)) (the inradius scales with the side), so a border of `b`
+        # pixels needs the inner side reduced by b * 2 * sqrt(3).
         # A triangle's inradius is small, so the hex's 0.16 factor drew a border
         # that read far heavier than the hex one; 0.09 matches it by eye.
         self._border = max(2.0, triangle_inradius(self._side) * 0.09)
         self._inner_side = self._side - self._border * 2 * SQRT3
+        # Jumbo cell: the same border weight converted for hexagon geometry (its
+        # apothem is radius*sqrt(3)/2, so inset the radius by b * 2 / sqrt(3)).
+        self._inner_radius = self._side - self._border * 2 / SQRT3
 
         self._outers = []
         self._inners = []
@@ -281,23 +326,43 @@ class TrianglePiece:
         self._overlays = []
         self._label_dys = []
         for i in range(cell_count):
-            # Corner coordinates are rewritten every move (_update_positions), so
-            # the placeholder geometry here only has to exist.
-            outer = pyglet.shapes.Triangle(
-                0, 0, 0, 0, 0, 0,
-                color=border_color,
-                batch=batch,
-                program=shape_shader
-            )
+            if self._jumbo_cell:
+                # One flat-top hexagon, built around the origin and repositioned
+                # per move. Unlike a triangle its outline never changes shape --
+                # the hexagon around a lattice vertex looks the same wherever it
+                # sits -- so a Polygon that only moves is enough.
+                outer = pyglet.shapes.Polygon(
+                    *jumbo_hex_corner_offsets(self._side),
+                    color=border_color,
+                    batch=batch,
+                    program=shape_shader
+                )
+            else:
+                # Corner coordinates are rewritten every move (_update_positions),
+                # so the placeholder geometry here only has to exist.
+                outer = pyglet.shapes.Triangle(
+                    0, 0, 0, 0, 0, 0,
+                    color=border_color,
+                    batch=batch,
+                    program=shape_shader
+                )
             outer.visible = visible
             self._outers.append(outer)
 
-            inner = pyglet.shapes.Triangle(
-                0, 0, 0, 0, 0, 0,
-                color=cell_color,
-                batch=batch,
-                program=shape_shader
-            )
+            if self._jumbo_cell:
+                inner = pyglet.shapes.Polygon(
+                    *jumbo_hex_corner_offsets(self._inner_radius),
+                    color=cell_color,
+                    batch=batch,
+                    program=shape_shader
+                )
+            else:
+                inner = pyglet.shapes.Triangle(
+                    0, 0, 0, 0, 0, 0,
+                    color=cell_color,
+                    batch=batch,
+                    program=shape_shader
+                )
             inner.visible = visible
             self._inners.append(inner)
 
@@ -309,7 +374,10 @@ class TrianglePiece:
             # alongside text labels.
             gram = self._grams[i]
             if gram.is_wild:
-                emblem_size = max(1, math.floor(triangle_inradius(self._side) * 2))
+                if self._jumbo_cell:
+                    emblem_size = max(1, math.floor(jumbo_hex_apothem(self._side) * 1.6))
+                else:
+                    emblem_size = max(1, math.floor(triangle_inradius(self._side) * 2))
                 image = wild_vowel_image(emblem_size)
                 label = pyglet.sprite.Sprite(image, batch=batch)
                 label.scale = emblem_size / image.height
@@ -357,6 +425,9 @@ class TrianglePiece:
         return positions
 
     def _update_positions(self):
+        if self._jumbo_cell:
+            self._update_jumbo_cell_position()
+            return
         positions = self._cell_grid_positions()
         for i, (col, row) in enumerate(positions):
             cx, cy = triangle_cell_center(self._side, col, row)
@@ -372,6 +443,19 @@ class TrianglePiece:
             # Overlay tracks the base label's resolved position (incl. the nudge).
             if self._overlays[i] is not None:
                 self._overlays[i].set_position(self._labels[i].x, self._labels[i].y)
+
+    def _update_jumbo_cell_position(self):
+        """Put the one oversized shape and its one gram on the center of the
+        footprint -- the lattice vertex its six triangles meet at. A pyglet
+        Polygon anchors at its FIRST vertex, which for these corner offsets sits
+        at +radius on x (the same convention HexPiece uses)."""
+        cx, cy = jumbo_hex_center(self._side, self._grid_x, self._grid_y)
+        self._outers[0].position = (cx + self._side, cy)
+        self._inners[0].position = (cx + self._inner_radius, cy)
+        self._labels[0].x = cx
+        self._labels[0].y = cy + self._label_dys[0]
+        if self._overlays[0] is not None:
+            self._overlays[0].set_position(self._labels[0].x, self._labels[0].y)
 
     def _set_triangle(self, shape, cx, cy, side, points_up):
         """Point a pyglet Triangle at the three corners of a cell centered on its
@@ -476,8 +560,19 @@ class TrianglePiece:
     def place(self):
         self._placed = True
 
+    @property
+    def jumbo_cell(self):
+        """True when this piece is ONE oversized cell rather than one cell per
+        coordinate. The settle path checks it to route through
+        TriangleGrid.place_jumbo instead of placing a cell per coordinate; every
+        other caller can ignore it, because get_cell_positions still reports the
+        full footprint (so overlap, spawn and hover checks work unchanged)."""
+        return self._jumbo_cell
+
     def get_cell_positions(self):
-        """Returns list of (grid_x, grid_y) for each cell in this piece."""
+        """Every (grid_x, grid_y) this piece covers. For a jumbo cell that is its
+        whole footprint -- all six coordinates -- even though only one of them
+        holds the gram, so overlap and on-board checks see the true area."""
         return self._cell_grid_positions()
 
     def get_cell_data(self):
@@ -488,10 +583,16 @@ class TrianglePiece:
         both the border and fill via one .visible (hover hide / clear). The gram
         travels along so the board can record what the placed cell holds; the hunt
         overlay travels too so a settled cell stays highlightable (None if wild).
+
+        A JUMBO cell returns exactly ONE entry -- its primary coordinate and its
+        single gram -- however many coordinates it covers. Callers that place it
+        must use place_jumbo with get_cell_positions() (see `jumbo_cell`), so the
+        board records one cell owning the whole footprint.
         """
         data = []
         positions = self._cell_grid_positions()
-        for i, (gx, gy) in enumerate(positions):
+        for i in range(len(self._grams)):
+            gx, gy = positions[i]
             data.append((gx, gy, self._cell_shapes[i], self._labels[i],
                          self._grams[i], self._overlays[i]))
         return data

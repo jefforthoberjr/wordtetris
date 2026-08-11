@@ -822,7 +822,20 @@ many pieces of each it lays down.
 - `rule_formation_scattered` — `obstacle_count` obstacles + `mission_count` missions,
   each at a random non-overlapping spot (the original opening).
 - `rule_formation_mission_center_obstacle_ring` — 1 mission on the center cell,
-  ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces.
+  ringed by one obstacle per neighbor (6 on a hex grid). Single-cell pieces:
+  the ring sits one CELL away, so a multi-cell piece would overlap it. Use the
+  jumbo rule below for jumbo cells.
+- `rule_formation_jumbo_mission_center_obstacle_ring` — the JUMBO twin of the
+  above: one jumbo mission cell at the center, ringed by up to six jumbo obstacles
+  touching it edge-to-edge (a flower of seven big cells). Jumbos tile on the
+  HEXAGON lattice, not the triangle one, so the ring anchors are the center's six
+  jumbo-neighbors rather than its triangle-neighbors — placing a jumbo on a
+  triangle-neighbor overlaps four of the center's six coordinates. Triangle grid
+  only. Pair with `rule_use_triangle_jumbos` on BOTH `triangle_mission.piece_set`
+  and `triangle_obstacle.piece_set`. Like the ring rule above it derives its own
+  counts, so `game_screen.obstacle_count` / `mission_count` are ignored; ring
+  anchors whose footprint runs off the board are dropped, so a small board opens
+  with a partial ring rather than a crowded one.
 - `rule_formation_fill_player_diagonal` — fill every board cell with a single-cell
   player piece (no obstacles/missions). Board opens fully packed; pair with
   `game_screen.victory: rule_victory_none` so it isn't an instant/blocked win. The
@@ -1430,6 +1443,20 @@ Which piece shapes a cell class draws.
   six cells (so six letters) in size, and rotation-symmetric, so turning it is a
   visual no-op. The two combined rules deal several shapes from one pool, mixed by
   `piece_pool.order`; the single-shape rules ignore that knob.
+- Triangle JUMBO CELLS: `rule_use_triangle_jumbos`,
+  `rule_use_triangle_unimos_dominos_jumbos`. A *jumbo* is one cell whose shape
+  spans several grid coordinates — the board's first cell bigger than a grid
+  coordinate. The only jumbo so far is `JUMBO_HEX`, which covers the same six
+  triangles as the hexagon piece but is ONE cell holding ONE gram. It deliberately
+  spends six coordinates on a single gram and gets six edge-neighbors for it
+  (twice a triangle's three), so it plays as a hub words route through. It counts
+  as one cell everywhere — one node in a word path, one for the min-cell rules,
+  one for scoring — and clears whole, freeing all six coordinates. Its gram may be
+  any length; the cell has room for a multigram. See `models/triangle_jumbo.py`,
+  the footprint layer in `TriangleGrid` (`place_jumbo` / `resolve` / `footprint`),
+  and `_rule_triangle_movement_jumbo` for why it moves on the hex lattice.
+  (Named "hexcell" / "large cell" before 2026-08-11; renamed throughout so a
+  future non-hexagonal big cell fits the same vocabulary.)
 
 ### piece_pool.order
 For piece sets that have multiple shapes, how to manage the distribution of shapes.

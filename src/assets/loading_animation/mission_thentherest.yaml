@@ -1,0 +1,20 @@
+easing: rule_fade_linear
+
+categories:
+  
+  grid_lines:            { delay: 0,  duration: 0 }   # triangle grid outline
+
+  # Special-cell BACKGROUND fills (one per kind).
+  mission_background:    { delay: 0,  duration: 1 }   # mission fill
+  obstacle_background:   { delay: 1,  duration: 2 }   # obstacle fill
+  fossilized_background: { delay: 0,  duration: 0 }   # seeded start fossil fill -- LAST, after its glyph
+
+  # rule_loading_fade_by_category_glyph -- GLYPHS bucketed by cell kind. mission /
+  # obstacle / fossilized letters get their own dial; every plain letter -> settled_glyph.
+  mission_glyph:     { delay: 0,  duration: 1 }   # mission letter
+  obstacle_glyph:    { delay: 1,  duration: 2 }   # obstacle letter
+  fossilized_glyph:  { delay: 0,  duration: 0 }   # seeded start fossil letter -- reveals with the board
+  settled_glyph:     { delay: 0,  duration: 0 }   # every plain letter, one bucket
+
+  
+  

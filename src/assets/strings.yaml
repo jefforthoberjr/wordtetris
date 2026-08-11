@@ -29,6 +29,7 @@ en:
   controls_section_square:   "SQUARE GRID"
   controls_section_hex:      "HEX GRID"
   controls_section_triangle: "TRIANGLE GRID"
+  controls_section_bigcell:  "TRIANGLE GRID - BIG CELLS"
   controls_section_piece:    "PIECE"
   controls_section_words:    "SPELLING A WORD"
   # In-game (pause) menu
@@ -113,6 +114,7 @@ es:
   controls_section_square:   "CUADRÍCULA CUADRADA"
   controls_section_hex:      "CUADRÍCULA HEXAGONAL"
   controls_section_triangle: "CUADRÍCULA TRIANGULAR"
+  controls_section_bigcell:  "CUADRÍCULA TRIANGULAR - CELDAS GRANDES"
   controls_section_piece:    "PIEZA"
   controls_section_words:    "DELETREAR UNA PALABRA"
   # In-game (pause) menu

@@ -1,0 +1,77 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else comes
+# from the base file. mode_label is the menu name, stripped before merge.
+mode_label: "Jigsaw - triangles + big hex missions"
+
+dictionary:
+  include_obscure: false
+
+rules:
+  game_screen.mode:         rule_mode_jigsaw
+  
+  # game_screen.phase_model: rule_single_phase
+  game_screen.phase_model: rule_two_phase
+  game_screen.select_trigger: rule_select_every_placement
+
+  game_screen.grid:       rule_use_triangle_grid
+  triangle_player.piece_set: rule_use_triangle_unimos_and_dominos
+  triangle_player.gram_pick: rule_scrabble_distribution
+  triangle_obstacle.piece_set: rule_use_triangle_jumbos
+  triangle_obstacle.gram_pick: rule_digram52_distribution
+  triangle_mission.piece_set: rule_use_triangle_jumbos
+  triangle_mission.gram_pick: rule_trigram_equalweight
+
+  #no special color for points
+  board.cell_text_color:  rule_cell_text_plain
+
+  # game_screen.setup_formation: rule_formation_scattered
+  # game_screen.obstacle_count: 6
+  # game_screen.mission_count: 1
+  game_screen.setup_formation: rule_formation_jumbo_mission_center_obstacle_ring
+
+  game_screen.formation_vowel_coverage: rule_vowel_coverage_off
+
+  assets.loading_animation:  mission_thentherest.yaml
+  game_screen.loading_fade_glyphs_category: rule_loading_fade_by_category_glyph  
+
+  game_screen.spawn:        rule_spawn_random_spot
+  piece_pool.order:       rule_create_pure_random
+
+  game_screen.starting_coverage_dictionary:   rule_starting_coverage_off
+
+  # A triangle cell has only three edges, so this is its full adjacency -- there
+  # is no diagonal variant to match block_blast's snake_anydirection_diagonal.
+  triangle_grid.word_pathfinding: rule_snake_edges_anydirection
+
+  game_screen.moving_hunt_field: rule_hunt_field_off
+  game_screen.hunt_highlight: rule_hunt_none
+  game_screen.select_autosubmit_hunt: rule_select_autosubmit_off
+  game_screen.spell_suggest: rule_spell_suggest_off
+
+  game_screen.rightclick_unigram: rule_rightclick_none
+  game_screen.rightclick_cc: rule_rightclick_none
+  game_screen.rightclick_cv: rule_rightclick_none
+  game_screen.rightclick_vc: rule_rightclick_none
+  game_screen.rightclick_vv: rule_rightclick_none
+  game_screen.rightclick_ck: rule_rightclick_none
+  game_screen.rightclick_vcv: rule_rightclick_none
+  game_screen.rightclick_cvk: rule_rightclick_none
+
+  #autoselect words (instead of typing)
+  game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
+
+  game_screen.placed_cell_requirement: rule_require_placed_cell
+
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+
+  game_screen.select_word_limit: rule_unlimited_words
+
+  game_screen.clear_action: rule_remove_cells
+
+  game_screen.show_clear_button: rule_hide_clear_button
+  game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button: rule_hide_next_button
+
+
+  game_screen.victory: rule_victory_missions_cleared
+  game_screen.fill_board: rule_fill_board_off
