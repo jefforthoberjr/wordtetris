@@ -8,24 +8,22 @@ from models.gram import Gram
 from models.square_piece import ALL_PIECE_ROTATIONS, player_gram_pick_rule
 from models.gram_picker import pick_grams
 from views.shaders import get_shape_shader
+from views.rising_fill import clip_below, RisingFill
 import log_codes as L
 
 
 def _clip_below(verts, y_line):
     """Sutherland-Hodgman clip of a convex polygon (the hex outline) to the
     half-plane y <= y_line -- the part of the cell filled by sand rising from the
-    bottom. Returns the clipped vertex list (< 3 points when nothing is filled)."""
-    out = []
-    n = len(verts)
-    for i in range(n):
-        cur, nxt = verts[i], verts[(i + 1) % n]
-        cur_in, nxt_in = cur[1] <= y_line, nxt[1] <= y_line
-        if cur_in:
-            out.append(cur)
-        if cur_in != nxt_in:   # edge crosses the fill line -> add the crossing point
-            t = (y_line - cur[1]) / (nxt[1] - cur[1])
-            out.append((cur[0] + t * (nxt[0] - cur[0]), y_line))
-    return out
+    bottom. Returns the clipped vertex list (< 3 points when nothing is filled).
+
+    The algorithm now lives in views/rising_fill.py, where the cell-health damage
+    fill uses it too; this wrapper stays so SandTimerField's call site is
+    unchanged. (SandTimerField still draws its own hex-only polygons -- see
+    _draw_fill. Moving it onto RisingFill as well is the remaining half of that
+    convergence, deliberately left for a separate pass since it would restyle
+    working omniswap code.)"""
+    return clip_below(verts, y_line)
 
 
 # --- cursor-path rules (game_screen.cursor_path) ---------------------------
@@ -345,10 +343,12 @@ class SandTimerField:
     moves it (with its fill) to wherever the gram went. The game ends when the whole
     board is fossilized -- no cell left to time.
 
-    Each active cell shows a bottom-up fill in the fossil color, clipped to the hex
-    outline and drawn translucent (over the cell + gram) so the gram stays readable
-    as it fills. On fossilize the fill is removed and the cell's own square goes
-    solid fossil grey."""
+    Each active cell shows a bottom-up fill in the fossil color, clipped to the
+    CELL'S OWN outline (whatever the active grid draws) and translucent over the
+    cell + gram so the gram stays readable as it fills. On fossilize the fill is
+    removed and the cell's own square goes solid fossil grey. The fill itself is
+    drawn by the shared views/rising_fill.RisingFill, which the cell-health damage
+    display uses too; this class owns only the TIMING."""
 
     FILL_OPACITY = 150     # translucent so the gram reads through the rising sand
 
@@ -358,7 +358,11 @@ class SandTimerField:
         self._seconds = float(seconds)         # the visible FILLING duration
         self._delay = float(delay)             # silent lead-in before the fill starts
         self._timers = {}     # active sand cell (x, y) -> elapsed seconds (delay + fill)
-        self._shapes = {}     # active sand cell (x, y) -> its fill Polygon
+        # The rising fills, now drawn by the shared overlay (views/rising_fill.py)
+        # rather than owned here; built lazily in _fill_overlay. _shapes remains
+        # only for the preserved hex-only _draw_fill_hexonly below.
+        self._fill = None
+        self._shapes = {}
 
     # --- queries (renderer seam) -----------------------------------------
     def active_positions(self):
@@ -442,16 +446,35 @@ class SandTimerField:
                     out.append(pos)
         return out
 
-    # --- rendering: the bottom-up hex-clipped fill -----------------------
+    # --- rendering: the bottom-up fill -----------------------------------
+    def _fill_overlay(self):
+        """The shared RisingFill overlay, built on first use. Lazy on purpose: it
+        needs the board and the per-game sand batch, and the old _draw_fill only
+        reached for those at render time too -- so this keeps the exact same
+        construction ordering as before the overlay was shared."""
+        if self._fill is None:
+            self._fill = RisingFill(
+                self._gs._board, self._gs._sand_batch,
+                self._gs.FOSSILIZED_CELL_COLOR, self.FILL_OPACITY)
+        return self._fill
+
     def _render(self):
         """Rebuild each active cell's rising fill and drop overlays for cells that
         stopped timing (expired / used / swapped away)."""
-        for pos in [p for p in self._shapes if p not in self._timers]:
-            self._shapes.pop(pos).delete()
+        fill = self._fill_overlay()
+        for pos in fill.positions():
+            if pos not in self._timers:
+                fill.remove(pos)
         for pos in self._timers:
-            self._draw_fill(pos, self.elapsed_fraction(pos))
+            fill.set_fraction(pos, self.elapsed_fraction(pos))
 
-    def _draw_fill(self, pos, fraction):
+    # PRESERVED (uncalled): the original hex-only fill, before the geometry moved
+    # to views/rising_fill.py. Identical output on a hex board -- gs._cell_size IS
+    # the grid's hex_size (see _rule_use_hex_grid), so RisingFill's
+    # board.cell_vertices traces the same hexagon -- but it hardcodes the flat-top
+    # shape, so it cannot draw a sand timer on the square or triangle boards.
+    # Restore by pointing _render's loop back at it and reinstating self._shapes.
+    def _draw_fill_hexonly(self, pos, fraction):
         old = self._shapes.pop(pos, None)
         if old is not None:
             old.delete()

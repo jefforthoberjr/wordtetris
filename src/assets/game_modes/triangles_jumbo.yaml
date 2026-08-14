@@ -29,6 +29,16 @@ rules:
   # game_screen.mission_count: 1
   game_screen.setup_formation: rule_formation_jumbo_mission_center_obstacle_ring
 
+  game_screen.cell_health: rule_cell_health_on
+  game_screen.obstacle_health: rule_obstacle_health_fixed
+  game_screen.obstacle_health_amount: 3
+  game_screen.mission_health: rule_mission_health_fixed
+  game_screen.mission_health_amount: 3
+  # game_screen.obstacle_damage_display: rule_damage_fill_rising
+  game_screen.obstacle_damage_display: rule_damage_border_dashed
+  # game_screen.obstacle_damage_display: rule_damage_border_fade 
+  game_screen.damage_border_thickness: 5
+
   game_screen.formation_vowel_coverage: rule_vowel_coverage_off
 
   assets.loading_animation:  mission_thentherest.yaml
@@ -48,8 +58,11 @@ rules:
   game_screen.select_autosubmit_hunt: rule_select_autosubmit_off
   game_screen.spell_suggest: rule_spell_suggest_off
 
-  game_screen.rightclick_unigram: rule_rightclick_none
-  game_screen.rightclick_cc: rule_rightclick_none
+  # game_screen.rightclick_unigram: rule_rightclick_none
+  # game_screen.rightclick_cc: rule_rightclick_none
+  game_screen.rightclick_unigram: rule_unigram_double   # L->LL
+  game_screen.rightclick_cc: rule_cc_collapse           # LL->L
+
   game_screen.rightclick_cv: rule_rightclick_none
   game_screen.rightclick_vc: rule_rightclick_none
   game_screen.rightclick_vv: rule_rightclick_none
@@ -64,6 +77,8 @@ rules:
 
   game_screen.clear_disambiguation: rule_disambig_auto_pick
 
+  game_screen.word_trail: rule_word_trail_on
+
   game_screen.select_word_limit: rule_unlimited_words
 
   game_screen.clear_action: rule_remove_cells
@@ -74,4 +89,5 @@ rules:
 
 
   game_screen.victory: rule_victory_missions_cleared
+  # game_screen.victory: rule_victory_obstacles_cleared
   game_screen.fill_board: rule_fill_board_off

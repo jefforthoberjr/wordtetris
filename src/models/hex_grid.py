@@ -171,6 +171,22 @@ class HexGrid:
         # Pixel center of a cell
         return self._rule_flattop_cell_center(col, row)
 
+    def cell_vertices(self, col, row):
+        """The corners of the SHAPE drawn at (col, row), in order -- the outline a
+        bottom-up fill overlay clips against (see views/rising_fill.py). Every
+        grid offers it; here it is the flat-top hexagon, through the same
+        vertices rule the outlines and pieces use."""
+        cx, cy = self.cell_visual_center(col, row)
+        return self._rule_flattop_vertices(cx, cy)
+
+    def cell_visual_center(self, col, row):
+        """Center of the SHAPE drawn at (col, row) -- the same as cell_center
+        here, since every hex cell is one coordinate. Overlays that must meet a
+        cell in its visual middle (the word trail) use this instead of
+        cell_center, so the triangle board's jumbo cells can differ. Every grid
+        offers it."""
+        return self.cell_center(col, row)
+
     def is_valid(self, x, y):
         return 0 <= x < self._cols and 0 <= y < self._rows
 

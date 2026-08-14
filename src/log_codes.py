@@ -314,6 +314,32 @@ def log_30008(word, stem, path):
                      word=word, stem=f"{stem[0]},{stem[1]}", cells=cells)
 
 
+def log_30009(cell, kind, remaining, word):
+    """A word was spelled through a cell carrying health (game_screen.cell_health:
+    rule_cell_health_on), taking one point off it. `kind` is the track the cell
+    started on (obstacle / mission), `remaining` its health AFTER the hit -- 0
+    meaning this word destroyed it, and the companion log_30010 records it leaving.
+    One line per damaged cell per word, so a readback can reconstruct how many
+    words each obstacle absorbed."""
+    session_log.emit(30009, f"{kind} at {cell[0]},{cell[1]} damaged ({remaining} left)",
+                     cell=f"{cell[0]},{cell[1]}", kind=kind,
+                     remaining=remaining, word=word)
+
+
+def log_30010(cell, kind, released):
+    """A health-carrying cell hit 0 and left the board, releasing the fossilized
+    player cells it held (game_screen.attacker_release). `released` is the
+    set of cells freed with it -- empty when the release rule kept them (still held
+    by another live target) or when nothing was ever held. The damaging word is the
+    preceding log_30009."""
+    cells = ";".join(f"{x},{y}" for (x, y) in sorted(released))
+    session_log.emit(30010,
+                     f"{kind} at {cell[0]},{cell[1]} destroyed "
+                     f"({len(released)} cells released)",
+                     cell=f"{cell[0]},{cell[1]}", kind=kind,
+                     released=len(released), cells=cells)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.
@@ -445,3 +471,13 @@ def log_06005(cell):
     is auditable in the log (a replay reproduces the same draw from the seed)."""
     session_log.emit(6005, f"start fossil seeded at {cell[0]},{cell[1]}",
                      x=cell[0], y=cell[1])
+
+
+def log_06008(kind, cells, health):
+    """The starting health handed to one track at game start
+    (game_screen.cell_health: rule_cell_health_on). `kind` is obstacle / mission,
+    `cells` how many cells of that track were given health and `health` the amount
+    each got. Emitted once per track per game, so a readback knows the health
+    budget the board opened with -- the per-hit lines are log_30009."""
+    session_log.emit(6008, f"{kind} health {health} on {cells} cells",
+                     kind=kind, cells=cells, health=health)

@@ -306,8 +306,8 @@ rules:
   # game_screen.gram_usage: rule_gram_use_partial
 
   # May a new word reuse fossilized cells. [ref: game_screen.fossil_word_use]
-  game_screen.fossil_word_use: rule_fossil_block
-  # game_screen.fossil_word_use: rule_fossil_allow
+  # game_screen.fossil_word_use: rule_fossil_block
+  game_screen.fossil_word_use: rule_fossil_allow
 
   # Two phases (MOVING -> SELECTING) vs one merged MOVING_AND_SELECTING pane.
   # Single-phase is for pre-filled-board modes only. [ref: game_screen.phase_model]
@@ -448,6 +448,36 @@ rules:
 
   # Covered "old" cells are deleted (so covered obstacles/missions count cleared).
   game_screen.cell_overlap_action: rule_old_cells_get_delete
+
+  # Obstacle/mission cells survive N words before clearing. [ref: game_screen.cell_health]
+  game_screen.cell_health: rule_cell_health_off
+  # game_screen.cell_health: rule_cell_health_on
+
+  # Health per starting obstacle cell. [ref: game_screen.obstacle_health]
+  game_screen.obstacle_health: rule_obstacle_health_one
+  # game_screen.obstacle_health: rule_obstacle_health_fixed
+  game_screen.obstacle_health_amount: 3
+
+  # Health per starting mission cell. [ref: game_screen.mission_health]
+  game_screen.mission_health: rule_mission_health_one
+  # game_screen.mission_health: rule_mission_health_fixed
+  game_screen.mission_health_amount: 3
+
+  # Fate of a word spelled through a SURVIVING target. [ref: game_screen.health_word_action]
+  game_screen.health_word_action: rule_health_word_fossilize
+  # game_screen.health_word_action: rule_health_word_clear
+
+  # How a damaged target shows its remaining health. [ref: game_screen.obstacle_damage_display]
+  # game_screen.obstacle_damage_display: rule_damage_display_none
+  game_screen.obstacle_damage_display: rule_damage_fill_rising
+  # game_screen.obstacle_damage_display: rule_damage_border_dashed
+  # game_screen.obstacle_damage_display: rule_damage_border_fill
+  game_screen.damage_fill_opacity: 0.55
+  game_screen.damage_border_thickness: 5
+
+  # When an attacking cell withdraws, if it attacks several targets. [ref: game_screen.attacker_release]
+  game_screen.attacker_release: rule_attacker_release_when_all_dead
+  # game_screen.attacker_release: rule_attacker_release_when_any_dead
 
   # Length mix for rule_grams_greater_than_47_lengthcontrolled (opening board = quota).
   # Relative shares; a 0 drops that length. [ref: gram_length.*_percent]

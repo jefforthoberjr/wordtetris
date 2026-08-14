@@ -64,7 +64,12 @@ class ScrollingWordList:
         # the default proportional font; tune if wide words clip), but cap it so
         # all ROWS rows still fit the pane height -- so asking for more rows than
         # would naturally fit shrinks the text rather than overflowing the pane.
-        self._rows = self.ROWS
+        # Re-read from the live CONFIG rather than the class-level ROWS, which was
+        # resolved at import -- before any game mode was applied -- and so holds
+        # the base config.yaml value. A ScrollingWordList is built per game (with
+        # its side pane), so this reads the active mode's row count. Same pattern
+        # as GameScreen._read_config_knobs.
+        self._rows = max(1, CONFIG["rules"]["moving_side_pane.wordlist_rows"])
         width_font = (width - 2 * margin) / (self.PAD_LEN * 0.62)
         height_font = (height - 2 * margin) / (self._rows * 1.3)
         font_size = min(width_font, height_font)

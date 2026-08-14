@@ -159,6 +159,10 @@ class BoardRulesMixin:
         # victory rule.
         self._obstacle_cells.difference_update(overlapped)
         self._mission_cells.difference_update(overlapped)
+        # A covered cell counts as gone, so it stops tracking health too (else a
+        # buried obstacle would sit in _cell_health forever). No-op when the
+        # health feature is off. See views/game_screen_health.py.
+        self._forget_cell_health(overlapped)
 
     # --- whole-game countdown (game_screen.game_timer_seconds) ------------
     # A single wall clock owned by GameScreen (not any one mode), so ANY mode can

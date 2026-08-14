@@ -229,6 +229,31 @@ class TriangleGrid:
         # Pixel center (centroid) of a cell.
         return self._rule_triangle_cell_center(col, row)
 
+    def cell_vertices(self, col, row):
+        """The corners of the SHAPE drawn at (col, row), in order -- the outline a
+        bottom-up fill overlay clips against (see views/rising_fill.py). An
+        ordinary cell is its triangle; a JUMBO cell is the whole hexagon its six
+        triangles trace, so a fill rises through the big shape as one rather than
+        filling the anchor triangle alone. Every grid offers it."""
+        if self.is_jumbo(col, row):
+            cx, cy = self.cell_visual_center(col, row)
+            offsets = jumbo_hex_corner_offsets(self._side)
+            return [(cx + dx, cy + dy) for dx, dy in offsets]
+        return triangle_vertices(self._side, col, row)
+
+    def cell_visual_center(self, col, row):
+        """Center of the SHAPE drawn at (col, row). For an ordinary triangle that
+        is its centroid, as cell_center reports -- but a JUMBO hexagon's shape is
+        centered on the lattice vertex its six triangles meet at, nowhere near the
+        centroid of the anchor triangle holding its contents. Overlays that must
+        meet a cell in its visual middle (the word trail) use this, so a line into
+        a big hexagon lands in the hexagon rather than on one of its triangles.
+        Every grid offers it; only this board has a case where it differs."""
+        if self.is_jumbo(col, row):
+            primary = self.resolve(col, row)
+            return jumbo_hex_center(self._side, *primary)
+        return self.cell_center(col, row)
+
     def is_valid(self, x, y):
         return 0 <= x < self._cols and 0 <= y < self._rows
 

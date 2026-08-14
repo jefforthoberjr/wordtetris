@@ -743,6 +743,15 @@ center) on top of the board. Trails accumulate for the whole game (cleared on a 
 game). `word_trail_thickness` is in pixels; `word_trail_opacity` is a 0–1 fraction
 (0.5 = 50%). Toggle with `rule_word_trail_on` / `rule_word_trail_off`.
 
+A trail IS dropped early when the cells it runs through leave the board together — which
+happens under `game_screen.cell_health`, where an attacking word's line would otherwise
+outlive the obstacle it was drawn against (see `game_screen.attacker_release`).
+
+The polyline meets each cell at its VISUAL center, which differs from the cell
+coordinate's centroid only for the triangle board's jumbo hexagons (one cell spanning
+six triangles) — so a line into a big hexagon lands in the hexagon's middle rather than
+on the anchor triangle holding its gram.
+
 ### game_screen.clear_disambiguation (+ disambig_line_* )
 When a submitted word can clear several ways on the board (multiple paths, or
 wild-vowel expansions), how the one to clear is chosen — and whether a lone path
@@ -1309,6 +1318,91 @@ What happens to the "old" cells a placement covers. `rule_old_cells_get_delete` 
 them as gone, so a covered starting obstacle (or mission) counts as cleared for the
 mission/obstacle victory rules (otherwise covering one strands that victory
 condition).
+
+### game_screen.cell_health
+Whether starting obstacle / mission cells carry HEALTH: the number of words that must
+be spelled through a cell before it clears. `rule_cell_health_off` is the original game
+(the first word through a cell clears it) and keeps the whole feature dormant —
+`_clear_paths` runs its pre-health path untouched. `rule_cell_health_on` gives each
+starting cell the health its per-track rule asks for (`game_screen.obstacle_health` /
+`game_screen.mission_health`) and damages it by one per word spelled through it.
+
+A damaged-but-alive cell keeps its gram and its obstacle/mission tint, so it can be
+spelled through again — that is how it is chipped down. It only leaves the board (and
+only then stops counting toward `rule_victory_obstacles_cleared` /
+`rule_victory_missions_cleared`) when its health reaches 0.
+
+Note that one word damages EVERY health-carrying cell on its path, so a word threaded
+through two obstacles hits both.
+
+### game_screen.obstacle_health / game_screen.mission_health
+How much health each starting cell of that track gets when `cell_health` is on. The two
+tracks are configured independently.
+- `rule_obstacle_health_one` / `rule_mission_health_one` — 1 health: the first word
+  through the cell clears it, exactly as before the feature. The default.
+- `rule_obstacle_health_fixed` / `rule_mission_health_fixed` — every cell of that track
+  gets the same health, `game_screen.obstacle_health_amount` /
+  `game_screen.mission_health_amount` words.
+
+### game_screen.health_word_action
+The fate of a word spelled through a target that SURVIVED the hit (a word that destroys
+all of its targets always clears normally, through `game_screen.clear_action`).
+- `rule_health_word_fossilize` — the word ATTACKS: its player cells fossilize in place
+  as that target's ATTACKERS and stay on the board until it falls. The attacker trail is
+  a running visible record of how many words the obstacle has absorbed, and — under
+  `game_screen.fossil_word_use: rule_fossil_allow` — material the next word can chain
+  onto (spell `P`+`INE`, then chain `S`+`P`+`INE`). The target cell itself is never
+  fossilized while it lives. The default.
+- `rule_health_word_clear` — no attacker trail: the word clears through the normal
+  clear-action and the target simply loses a point of health.
+
+### game_screen.obstacle_damage_display (+ damage_fill_opacity)
+How a damaged-but-alive obstacle / mission cell shows the hits it has taken. Only ever
+shows PARTIAL damage: at full health nothing is drawn, and a cell at zero health has
+already left the board. Applies to both tracks despite the name.
+- `rule_damage_fill_rising` — the cell fills from the floor up as it is damaged (1 of 3
+  hits fills a third, 2 fills two thirds), in `board.damage_fill` (light red) at
+  `game_screen.damage_fill_opacity` — a 0–1 fraction, kept translucent so the cell's
+  gram still reads through the fill. Shares its machinery with the omniswap sand timers
+  (`views/rising_fill.py`), and clips to each cell's own outline, so it works on the
+  square, hex and triangle boards — and rises through a jumbo hexagon as one shape
+  rather than filling the anchor triangle.
+- `rule_damage_border_dashed` — the cell's outline is divided into max-health slots by
+  arc length, and one slot is painted per hit in `board.damage_dash`, at
+  `game_screen.damage_border_thickness` pixels. The dash COLOR decides how it reads: set
+  it to the board background (the default white) and the painted stretches are GAPS, so
+  the solid outline visibly breaks apart; set it to red (or any other color) and they are
+  colored dashes painted ON the outline instead. Either way the cell's FILL is untouched,
+  so the obstacle/mission tint still reads cleanly (unlike the rising fill, which sits on
+  top of it). Caveat on the square grid, where neighboring cells share an edge: a slot
+  painted over a shared edge marks the neighbor's outline too — harmless on the hex and
+  triangle boards, whose cells own their outlines.
+- `rule_damage_border_fill` — the same slot scheme, but painting `board.damage_fill` over
+  the WHOLE slot instead of part of it, so the outline reddens a slot at a time and stays
+  continuous. Reads as a cell heating up rather than cracking apart.
+- `rule_damage_display_none` — no indicator; the attacker trail beside the cell is the
+  only cue. The pre-feature look.
+
+All of them derive from the cell's own outline (the grid's `cell_vertices`), so they
+work on the square, hex and triangle boards, and treat a jumbo hexagon as the one big
+shape it is. Only PARTIAL damage ever shows, so a 1-health cell (the default) displays
+nothing at all — it goes from untouched to gone in one word.
+
+### game_screen.attacker_release
+When an attacking cell WITHDRAWS, for a word whose path crossed SEVERAL damaged targets
+(it is committed to all of them). An attacker committed to exactly one target always
+leaves when that target falls.
+- `rule_attacker_release_when_all_dead` — withdraws only once every target it attacks
+  has fallen. The trail stays while any of its obstacles is still being chipped at, so
+  the player can keep chaining onto it and never has to think about which obstacle to
+  kill first. The default.
+- `rule_attacker_release_when_any_dead` — withdraws as soon as any one of its targets
+  falls. Opens board space sooner, at the cost of making clear ORDER a strategic
+  concern.
+
+Whichever rule applies, the withdrawing cells take their WORD LINES with them when
+`game_screen.word_trail` is on — an attacking word's line is drawn against the target it
+attacks, so it is dropped rather than left behind on an empty board.
 
 ### gram_length.*_percent (length mix)
 Length mix for `rule_grams_greater_than_47_lengthcontrolled`: how often that picker

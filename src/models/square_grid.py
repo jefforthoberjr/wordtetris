@@ -116,6 +116,23 @@ class SquareGrid:
         return (x * self._cell_size + self._cell_size / 2,
                 y * self._cell_size + self._cell_size / 2)
 
+    def cell_vertices(self, x, y):
+        """The corners of the SHAPE drawn at (x, y), in order -- the outline a
+        bottom-up fill overlay clips against (see views/rising_fill.py). Every
+        grid offers it; here it is the cell square."""
+        left = x * self._cell_size
+        bottom = y * self._cell_size
+        right = left + self._cell_size
+        top = bottom + self._cell_size
+        return [(left, bottom), (right, bottom), (right, top), (left, top)]
+
+    def cell_visual_center(self, x, y):
+        """Center of the SHAPE drawn at (x, y) -- the same as cell_center here,
+        since every square cell is one coordinate. Overlays that must meet a cell
+        in its visual middle (the word trail) use this instead of cell_center, so
+        the triangle board's jumbo cells can differ. Every grid offers it."""
+        return self.cell_center(x, y)
+
     def is_cell_occupied(self, x, y):
         cell = self.get_cell(x, y)
         if cell is None:

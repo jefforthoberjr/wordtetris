@@ -17,6 +17,10 @@ from views.game_screen_constellation import ConstellationMixin
 from views.game_screen_botanical import BotanicalMixin
 from views.game_screen_shooting import ShootingMixin
 from views.game_screen_input import InputMixin
+from views.game_screen_piece import PieceControlMixin
+from views.game_screen_health import CellHealthMixin
+from views.game_screen_grammanip import (
+    GramManipMixin, _GRAM_MANIP_RULES, rule_rightclick_none)
 from views.moving_side_pane import MovingSidePane
 from views.line_blast_side_pane import LineBlastMovingPane
 from views.selecting_side_pane import SelectingSidePane
@@ -24,6 +28,8 @@ from views.moving_selecting_side_pane import MovingSelectingSidePane
 from views.load_side_pane import LoadSidePane
 from views.loading_animation import LoadingAnimation, AlphaFade, WhiteFade
 from views.word_trail import WordTrail
+from views.rising_fill import RisingFill
+from views.border_dashes import BorderDashes
 from views.disambiguation_lines import DisambiguationLines
 from views.disambiguation_highlight import DisambiguationHighlight
 from views.victory_overlay import VictoryOverlay
@@ -52,15 +58,10 @@ from models.gram_picker import (
     ideation_grade,
     set_unigram_vowel_guarantee,
 )
-from models.hex_domino import hex_neighbor
-from models.hex_domino import HEX_UP, HEX_DOWN
-from models.hex_domino import HEX_UP_LEFT, HEX_DOWN_LEFT
-from models.hex_domino import HEX_UP_RIGHT, HEX_DOWN_RIGHT
+# The hex / triangle direction constants and place_piece_cells moved out with the
+# piece-control methods that used them -- see views/game_screen_piece.py.
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
-from models.piece_placement import place_piece_cells
-from models.triangle_domino import triangle_neighbor, triangle_points_up
-from models.triangle_domino import TRIANGLE_LEFT, TRIANGLE_RIGHT, TRIANGLE_BASE
 from models.word_dictionary import (
     is_word, is_prefix, is_obscure, select_maximal_paths, all_words)
 from models.spelling_suggester import SUGGEST_RULES
@@ -69,7 +70,7 @@ from starting_coverage import write_coverage_csv
 from models.wild_vowel import wild_expansions
 from models.player_dictionary import PlayerDictionary
 from config import select_rule, get_color, get_string, active_mode, end_video_path, CONFIG
-from controls import control_keys, control_button, control_modifier
+from controls import control_keys, control_button
 import session_log
 import log_codes as L
 # All gameplay/setup randomness routes through the swappable Source seam (see
@@ -199,174 +200,15 @@ _DICTIONARY_COUNT_RULES = {
 }
 
 
-# --- gram-manipulation rules (game_screen.rightclick_*) --------------------
-# A RIGHT-click on a board cell during the MOVING phase manipulates that one
-# cell's gram, dispatched by the gram's length (a separate rule for unigrams,
-# digrams, and trigrams-or-larger) plus a fourth for wild-vowel cells. Each rule
-# takes the cell's current gram TEXT and returns the NEW text, or None to leave
-# the cell untouched -- so rule_rightclick_none restores the original behavior
-# (right-click did nothing). The dispatcher (_handle_gram_manipulate) relabels
-# the cell with whatever non-None text comes back.
-
-def rule_unigram_double(text):
-    """Unigram: double the single letter (O -> OO, B -> BB)."""
-    return text + text
-
-def rule_cc_collapse(text):
-    """CC digram (a doubled consonant, LL): collapse to the single letter,
-    CC -> C (LL -> L). The forward C -> CC lives in the unigram slot
-    (rule_unigram_double), so the two together make the L <-> LL toggle. Returns
-    None if the pair isn't a real double."""
-    if len(text) == 2 and text[0] == text[1]:
-        return text[0]                 # LL -> L
-    return None
-
-def rule_vv_collapse(text):
-    """VV digram (a doubled vowel, EE): collapse to the single letter, VV -> V
-    (EE -> E). The forward V -> VV lives in the unigram slot
-    (rule_unigram_double), so the two together make the E <-> EE toggle -- the
-    vowel mirror of rule_cc_collapse. Distinct vowels (EA) have nothing to dedup,
-    so it returns None and the cell is left untouched."""
-    if len(text) == 2 and text[0] == text[1]:
-        return text[0]                 # EE -> E
-    return None
-
-def rule_cv_double(text):
-    """CV digram (consonant+vowel, BA): double the consonant, C -> CC
-    (BA -> BBA); the 3-letter CCV form collapses back, CC -> C (BBA -> BA).
-    Returns None otherwise. The dispatcher routes only CV / CCV grams here
-    (see _gram_manip_family), so the shape is trusted."""
-    if len(text) == 2:
-        return text[0] + text          # BA -> BBA
-    if len(text) == 3:
-        return text[1:]                # BBA -> BA
-    return None
-
-def rule_vc_double(text):
-    """VC digram (vowel+consonant, AN): double the consonant, C -> CC
-    (AN -> ANN); the 3-letter VCC form collapses back, CC -> C (ANN -> AN).
-    Returns None otherwise. The dispatcher routes only VC / VCC grams here."""
-    if len(text) == 2:
-        return text + text[1]          # AN -> ANN
-    if len(text) == 3:
-        return text[:2]                # ANN -> AN
-    return None
-
-def rule_ck_double(text):
-    """CK digram (two DISTINCT consonants, ST): double the FRONT consonant,
-    C -> CC (ST -> SST); the 3-letter CCK form collapses back, CC -> C
-    (SST -> ST). Front-only by design -- the back double (STT) never lands in
-    real words (0/59 CK digrams in the corpus vs. 32% for the front), so it's
-    dropped, and no alternation state is needed. Returns None otherwise. The
-    dispatcher routes only CK / CCK grams here."""
-    if len(text) == 2:
-        return text[0] + text          # ST -> SST
-    if len(text) == 3:
-        return text[1:]                # SST -> ST
-    return None
-
-def rule_vcv_double(text):
-    """VCV trigram (ARE): double the single middle consonant, C -> CC
-    (ARE -> ARRE); a 4-letter VCCV whose middle is a real double collapses back,
-    CC -> C (ARRE -> ARE). Returns None otherwise. The dispatcher only routes
-    genuine VCV / VCCV grams here (see _gram_manip_family), so the shape is
-    trusted. Corpus-backed: doubling the middle consonant lands inside real words
-    for ~73% of the VCV trigrams (ate->atte, ile->ille, ome->omme)."""
-    if len(text) == 3:
-        return text[0] + text[1] + text[1] + text[2]     # ARE -> ARRE
-    if len(text) == 4 and text[1] == text[2]:
-        return text[0] + text[1] + text[3]               # ARRE -> ARE
-    return None
-
-def rule_cvk_double(text, side="back"):
-    """CVK trigram (MER): double a consonant, C -> CC. `side` picks which one --
-    'front' -> CCVK (MER -> MMER), 'back' -> CVKK (MER -> MERR); the dispatcher
-    alternates side across successive doubles on a cell (see _advance_cvk_side)
-    so BOTH forms are reachable. A 4-letter doubled form collapses back, CC -> C
-    (MMER -> MER, MERR -> MER); `side` is irrelevant there. Returns None
-    otherwise. The dispatcher routes only genuine CVK-family grams here."""
-    if len(text) == 4:
-        if text[0] == text[1]:
-            return text[1:]                              # MMER -> MER
-        if text[2] == text[3]:
-            return text[:3]                              # MERR -> MER
-        return None
-    if len(text) == 3:
-        return text[0] + text if side == "front" else text + text[2]
-    return None
-
-def rule_rightclick_none(text):
-    """Right-click leaves this gram untouched -- the original behavior, before
-    cell gram-manipulation existed. Returns None so the dispatcher relabels
-    nothing."""
-    return None
-
-_GRAM_MANIP_RULES = {
-    "rule_unigram_double": rule_unigram_double,
-    "rule_cc_collapse": rule_cc_collapse,
-    "rule_vv_collapse": rule_vv_collapse,
-    "rule_cv_double": rule_cv_double,
-    "rule_vc_double": rule_vc_double,
-    "rule_ck_double": rule_ck_double,
-    "rule_vcv_double": rule_vcv_double,
-    "rule_cvk_double": rule_cvk_double,
-    "rule_rightclick_none": rule_rightclick_none,
-}
-
-# Y is a CONSONANT here (strict AEIOU), so ITY / ARY / PHY are NOT read as
-# VCV/CVK -- a deliberate choice: doubling a consonant in those Y-shapes never
-# lands in real words (see the corpus note in config.yaml).
-_STRICT_VOWELS = set("AEIOU")
-
-def _is_manip_vowel(ch):
-    return ch in _STRICT_VOWELS
-
-def _gram_manip_family(text):
-    """Classify a 2+ letter gram for right-click routing by its vowel/consonant
-    shape (Y is a consonant). Returns the config-slot key that owns this gram's
-    doubling cycle, or None for an unmatched shape -- a plain no-op, only
-    reachable at 3+ letters (CKV, VCK, CKS were analyzed and found not worth a
-    doubling rule; see the config note):
-      2-letter:  'cc' (LL), 'ck' (ST), 'cv' (BA), 'vc' (AN), 'vv' (EE / EA)
-      3-letter forward:  'vcv' (ARE), 'cvk' (MER)
-      3-letter reverse (the doubled results the digram rules produce, recognized
-        so a second right-click collapses them):  'cv' (CCV=BBA), 'vc' (VCC=ANN),
-        'ck' (CCK=SST) -- only when the doubled pair is a REAL double, so genuine
-        clusters (STR, CKV, VCK) stay unmatched
-      4-letter reverse:  'vcv' (ARRE), 'cvk' (MMER / MERR)"""
-    v = [_is_manip_vowel(c) for c in text]
-    n = len(text)
-    if n == 2:
-        if not v[0] and not v[1]:
-            return "cc" if text[0] == text[1] else "ck"
-        if not v[0]:
-            return "cv"
-        if not v[1]:
-            return "vc"
-        return "vv"
-    if n == 3:
-        if v == [True, False, True]:
-            return "vcv"
-        if v == [False, True, False]:
-            return "cvk"
-        if v == [False, False, True] and text[0] == text[1]:
-            return "cv"                                   # CCV (BBA) -> collapse
-        if v == [True, False, False] and text[1] == text[2]:
-            return "vc"                                   # VCC (ANN) -> collapse
-        if v == [False, False, False] and text[0] == text[1]:
-            return "ck"                                   # CCK (SST) -> collapse
-    elif n == 4:
-        if v == [True, False, False, True] and text[1] == text[2]:
-            return "vcv"                                  # ARRE
-        if v == [False, False, True, False] and text[0] == text[1]:
-            return "cvk"                                  # MMER
-        if v == [False, True, False, False] and text[2] == text[3]:
-            return "cvk"                                  # MERR
-    return None
+# Gram-manipulation rules + their dispatcher moved to
+# views/game_screen_grammanip.py (GramManipMixin); _GRAM_MANIP_RULES and
+# rule_rightclick_none are imported at the top of this module, so the
+# right-click config wiring in __init__ still reads the same.
 
 
 class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin,
-                 ConstellationMixin, BotanicalMixin, ShootingMixin, InputMixin):
+                 ConstellationMixin, BotanicalMixin, ShootingMixin, InputMixin,
+                 PieceControlMixin, CellHealthMixin, GramManipMixin):
     # Error-display defaults so the submission pipeline reads sane values on a bare
     # __new__ test instance (build() overrides both from config). Text mode always
     # shows the "did you mean?" hint, matching the pre-icon behavior. See
@@ -383,6 +225,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # Obstacle pieces the scattered formation drops before play begins; also gates
     # the obstacle victory rule (0 == board never had obstacles). Config-surfaced
     # near game_screen.setup_formation; the ring formation derives its own count.
+    # NOTE: read at IMPORT, so this (and the three other numeric knobs here) is the
+    # BASE config value -- __init__ re-reads all four from the live CONFIG so a game
+    # mode's override actually applies. Add numeric knobs to that block too, not
+    # just here. See the comment at the top of __init__.
     OBSTACLE_COUNT = CONFIG["rules"]["game_screen.obstacle_count"]
     # Obstacle cells render with their own fill (see colors.yaml) so they read
     # as pre-placed hazards distinct from the playable pieces.
@@ -410,9 +256,35 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # dead to word-finding and swapping. See the clear-action / fossilize rules.
     FOSSILIZED_CELL_COLOR = get_color("board.fossilized_fill")
 
+    def _read_config_knobs(self):
+        """Re-read the numeric board knobs from the LIVE config, shadowing the
+        class-level constants of the same name with per-instance values. Called
+        first thing in __init__, before the board and pools are built from them.
+
+        Why this exists: the class body runs at IMPORT, which is before
+        apply_game_mode merges the selected mode's overrides into CONFIG -- so a
+        class-level CONFIG read freezes the BASE config.yaml value and every mode
+        override of that key is SILENTLY ignored. That is the same freeze-at-import
+        trap as resolving a select_rule into a module global, and the sibling of
+        the class-level COLOR constants documented in config.apply_game_mode --
+        but unlike colors, these are functional knobs modes really do set (four
+        game modes override obstacle_count / mission_count, and before this the
+        board ignored all of them). GameScreen is rebuilt after each mode swap, so
+        reading here always tracks the active mode.
+
+        Add any future numeric knob HERE as well as to the class body -- the class
+        attribute is only the default a bare __new__ instance reads. Every use site
+        goes through self., so these shadow cleanly."""
+        self.GRID_WIDTH = CONFIG["rules"]["game_screen.grid_width"]
+        self.PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
+        self.OBSTACLE_COUNT = CONFIG["rules"]["game_screen.obstacle_count"]
+        self.MISSION_COUNT = CONFIG["rules"]["game_screen.mission_count"]
+
     def __init__(self, window, screen_manager):
         self._window = window
         self._screen_manager = screen_manager
+
+        self._read_config_knobs()
 
         # Each value is a TUPLE of accepted key symbols (controls.yaml may bind one
         # key or several to an action), so every check below is `symbol in ...`.
@@ -625,6 +497,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # dead to word-finding, un-swappable, and skipped by the typewriter cursor.
         # Stays empty under the default remove clear-action. See _is_fossilized.
         self._fossilized_cells = set()
+
+        # Cell health (game_screen.cell_health): the per-game maps, the rule
+        # selections and the damage-display knobs all live with the feature.
+        # See CellHealthMixin in views/game_screen_health.py.
+        self._init_cell_health()
         # MOVING_PLANT: the green stem cells (center column) that each carry the
         # game's root gram, and the root text itself. Empty / None outside plant
         # mode. The stem is fossilized-but-walkable (rule_fossil_allow); a word whose
@@ -785,6 +662,14 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_word_trail_off": self._rule_word_trail_off,
         }
         self._word_trail_rule = select_rule("game_screen.word_trail", word_trail_rules)
+        # The cleanup half of the same knob: cells leaving the board drop the word
+        # lines drawn through them, so an attacking word's line never outlives the
+        # target it was attacking. Keyed off the SAME config value, so recording
+        # and dropping can't fall out of step. See CellHealthMixin.
+        self._drop_trails_rule = select_rule("game_screen.word_trail", {
+            "rule_word_trail_on": self._rule_drop_trails_on_release,
+            "rule_word_trail_off": self._rule_drop_trails_never,
+        })
 
         # Stage-3 selection strategy, chosen by the YAML key
         # game_screen.word_select. The auto strategy clears instantly; the text-
@@ -1582,6 +1467,28 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._setup_formation_rule()
         end_formation_gram_run()
 
+        # Hand the freshly-placed obstacle / mission cells their health, now that
+        # the formation has recorded them in _obstacle_cells / _mission_cells. A
+        # no-op under rule_cell_health_off. See views/game_screen_health.py.
+        # The damage overlay is rebuilt first, per game: it draws into the
+        # (per-game) sand batch and reads the (per-game) board's cell outlines.
+        # Fresh cells are undamaged, so it starts with nothing drawn.
+        self._damage_fill = RisingFill(
+            self._board, self._sand_batch,
+            get_color("board.damage_fill"), self._damage_fill_opacity)
+        # The border indicators' twin. The "dash" overlay paints part of each slot
+        # in board.damage_dash -- the board background color blanks the outline so
+        # it reads as dashed, while any other color (red, say) paints visible
+        # dashes ON it instead. The "mark" overlay paints the damage color over the
+        # whole slot, so the outline reddens. See views/border_dashes.py.
+        self._damage_border_gap = BorderDashes(
+            self._board, self._sand_batch, get_color("board.damage_dash"),
+            self._damage_border_thickness, span=0.55)
+        self._damage_border_mark = BorderDashes(
+            self._board, self._sand_batch, get_color("board.damage_fill"),
+            self._damage_border_thickness, span=1.0)
+        self._assign_cell_health()
+
         # Seed any start-of-game fossils (game_screen.fossil_requirement_first_word:
         # rule_fossil_seed_center). Runs after the formation has filled the board
         # (so there are grams to fossilize) and before _begin_loading (so the seeded
@@ -1614,285 +1521,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # Extracted to BoardSetupMixin (views/game_screen_setup.py); see there.
 
     
-    def _rule_square_movement(self, symbol, modifiers):
-        """Square grid: A/D/W/S nudge the piece by one cell. Returns handled."""
-        handled = True
-        if symbol in self._keys["move_left"]:
-            self._move_piece(-1, 0)
-        elif symbol in self._keys["move_right"]:
-            self._move_piece(1, 0)
-        elif symbol in self._keys["move_up"]:
-            self._move_piece(0, 1)
-        elif symbol in self._keys["move_down"]:
-            self._move_piece(0, -1)
-        else:
-            handled = False
-        return handled
+    # Extracted to PieceControlMixin (views/game_screen_piece.py); see there.
 
-    def _rule_hex_movement_holdshift(self, symbol, modifiers):
-        """Flat-top hex: A=up-left, Shift+A=down-left, D=up-right,
-        Shift+D=down-right, W=up, S=down. Returns handled. (The hold modifier is
-        controls.yaml game.hex_down_modifier; A/D/W/S are game.move_*.)"""
-        shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
-        handled = True
-        if symbol in self._keys["move_left"]:
-            self._move_piece_hexdir(HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
-        elif symbol in self._keys["move_right"]:
-            self._move_piece_hexdir(HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
-        elif symbol in self._keys["move_up"]:
-            self._move_piece_hexdir(HEX_UP)
-        elif symbol in self._keys["move_down"]:
-            self._move_piece_hexdir(HEX_DOWN)
-        else:
-            handled = False
-        return handled
+    # Extracted to GramManipMixin (views/game_screen_grammanip.py); see there.
 
-    def _rule_hex_movement_arrows(self, symbol, modifiers):
-        """Flat-top hex, arrow-key chords: up+A=up-left, down+A=down-left,
-        up+D=up-right, down+D=down-right, W=up, S=down. A/D alone do nothing.
-        Returns handled."""
-        # Held-key chord: only the first key bound to each arrow is consulted.
-        up = self._key_state[control_keys("game.hex_arrow_up")[0]]
-        down = self._key_state[control_keys("game.hex_arrow_down")[0]]
-        handled = True
-        if symbol in self._keys["move_left"]:
-            if up:
-                self._move_piece_hexdir(HEX_UP_LEFT)
-            elif down:
-                self._move_piece_hexdir(HEX_DOWN_LEFT)
-            else:
-                handled = False
-        elif symbol in self._keys["move_right"]:
-            if up:
-                self._move_piece_hexdir(HEX_UP_RIGHT)
-            elif down:
-                self._move_piece_hexdir(HEX_DOWN_RIGHT)
-            else:
-                handled = False
-        elif symbol in self._keys["move_up"]:
-            self._move_piece_hexdir(HEX_UP)
-        elif symbol in self._keys["move_down"]:
-            self._move_piece_hexdir(HEX_DOWN)
-        else:
-            handled = False
-        return handled
-
-    def _rule_triangle_movement_flipkey(self, symbol, modifiers):
-        """Triangle grid: LEFT/RIGHT step sideways, UP or DOWN cross the
-        horizontal edge. (Keys are controls.yaml game.move_*.)
-
-        A triangle has only three edges, so there are only three moves. Left and
-        right always work (they stay in the row). The third move is the "flip":
-        it lands on the cell sharing the horizontal edge, which is BELOW the piece
-        when it points up and ABOVE it when it points down -- so W and S are bound
-        to the same flip rather than to fixed screen directions. Every second flip
-        therefore returns the piece to where it started, and a piece walks up the
-        board by alternating flip and a sideways step. Returns handled."""
-        handled = True
-        if symbol in self._keys["move_left"]:
-            self._move_piece_tridir(TRIANGLE_LEFT)
-        elif symbol in self._keys["move_right"]:
-            self._move_piece_tridir(TRIANGLE_RIGHT)
-        elif symbol in self._keys["move_up"] or symbol in self._keys["move_down"]:
-            self._move_piece_tridir(TRIANGLE_BASE)
-        else:
-            handled = False
-        return handled
-
-    def _rule_triangle_movement_strict_updown(self, symbol, modifiers):
-        """Triangle grid, screen-true vertical keys: LEFT/RIGHT step sideways, and
-        UP / DOWN cross the horizontal edge ONLY when that edge is the one they
-        point at -- UP works on a point-down cell (its neighbor is above), DOWN on
-        a point-up cell (its neighbor is below); the other key is inert on that
-        cell. Truer to the key's arrow, but half the vertical presses do nothing.
-        The alternative to _rule_triangle_movement_flipkey; swap in
-        _rule_use_triangle_grid. Returns handled."""
-        piece = self._current_piece()
-        points_up = triangle_points_up(piece.grid_x, piece.grid_y)
-        handled = True
-        if symbol in self._keys["move_left"]:
-            self._move_piece_tridir(TRIANGLE_LEFT)
-        elif symbol in self._keys["move_right"]:
-            self._move_piece_tridir(TRIANGLE_RIGHT)
-        elif symbol in self._keys["move_up"]:
-            if points_up:
-                handled = False   # base neighbor is below; W is inert here
-            else:
-                self._move_piece_tridir(TRIANGLE_BASE)
-        elif symbol in self._keys["move_down"]:
-            if points_up:
-                self._move_piece_tridir(TRIANGLE_BASE)
-            else:
-                handled = False   # base neighbor is above; S is inert here
-        else:
-            handled = False
-        return handled
-
-    def _rule_triangle_movement_jumbo(self, symbol, modifiers):
-        """Triangle grid, tuned for the JUMBO_HEX cell: LEFT/RIGHT reach the
-        up-left/up-right neighboring hexagon positions, holding the down modifier
-        with them reaches down-left/down-right, and UP/DOWN go straight up/down.
-        Returns handled.
-
-        Why a rule of its own: a hexagon cell's center sits on a lattice VERTEX,
-        and the vertices form a HEXAGONAL lattice, not the triangular one the
-        cells sit on. Two consequences, both measured from jumbo_hex_center:
-
-          * The BASE flip does not move the piece at all -- it re-anchors the SAME
-            hexagon on its other parity. It is a free toggle, not a move.
-          * A sideways step moves the hexagon DIAGONALLY, and which diagonal is
-            decided by the anchor's parity: it rises from a point-up anchor and
-            falls from a point-down one.
-
-        So a diagonal press is "toggle parity if needed (free), then step
-        sideways", and the modifier picks the downward diagonal -- the hex board's
-        scheme (_rule_hex_movement_holdshift), which reads the same under the
-        hand. Straight up/down is one rising (or falling) step each way, which
-        cancels the sideways drift and nets exactly one hexagon height.
-
-        Keys are unchanged (controls.yaml game.move_* + the hex down modifier).
-        Ordinary small pieces in the same pool keep the plain triangle movement --
-        for them a flip IS a move, so the compound steps here would be wrong."""
-        piece = self._current_piece()
-        if not getattr(piece, "jumbo_cell", False):
-            return self._rule_triangle_movement_flipkey(symbol, modifiers)
-        shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
-        handled = True
-        if symbol in self._keys["move_left"]:
-            self._move_piece_jumbo_diagonal(TRIANGLE_LEFT, want_down=shift)
-        elif symbol in self._keys["move_right"]:
-            self._move_piece_jumbo_diagonal(TRIANGLE_RIGHT, want_down=shift)
-        elif symbol in self._keys["move_up"]:
-            self._move_piece_jumbo_vertical(want_down=False)
-        elif symbol in self._keys["move_down"]:
-            self._move_piece_jumbo_vertical(want_down=True)
-        else:
-            handled = False
-        return handled
-
-    def _move_piece_jumbo_diagonal(self, sideways, want_down):
-        """One diagonal step of a JUMBO_HEX cell. A sideways step rises from a
-        point-up anchor and falls from a point-down one, so when the diagonal the
-        player asked for disagrees with the current parity, flip first -- which
-        costs no movement -- and then step."""
-        piece = self._current_piece()
-        rises = triangle_points_up(piece.grid_x, piece.grid_y)
-        if rises == want_down:
-            self._move_piece_tridir(TRIANGLE_BASE)
-        self._move_piece_tridir(sideways)
-
-    def _move_piece_jumbo_vertical(self, want_down):
-        """Move a JUMBO_HEX cell straight up or down by one hexagon: one step
-        along each diagonal on that side (right then left), whose sideways halves
-        cancel and whose vertical halves add."""
-        self._move_piece_jumbo_diagonal(TRIANGLE_RIGHT, want_down)
-        self._move_piece_jumbo_diagonal(TRIANGLE_LEFT, want_down)
-
-    def _move_piece_tridir(self, direction):
-        """Move the piece to its triangle neighbor in the given direction index.
-        The BASE step depends on the piece's current parity, so it is resolved
-        from the piece's live position (a piece that just moved sideways has
-        flipped orientation)."""
-        piece = self._current_piece()
-        nx, ny = triangle_neighbor(piece.grid_x, piece.grid_y, direction)
-        self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
-
-    def _move_piece_hexdir(self, direction):
-        """Move the piece to its hex neighbor in the given direction index."""
-        piece = self._current_piece()
-        nx, ny = hex_neighbor(piece.grid_x, piece.grid_y, direction)
-        self._move_piece(nx - piece.grid_x, ny - piece.grid_y)
-
-    # Gram-manip-in-SELECTING rule (game_screen.gram_manip_in_selecting): whether
-    # right-click transforms a board gram during SELECTING as well as MOVING.
-    def _rule_gram_manip_in_selecting_enabled(self):
-        """Right-click manipulates board grams during SELECTING too (needed for
-        the omniswap modes, which live in SELECT)."""
-        return True
-
-    def _rule_gram_manip_in_selecting_disabled(self):
-        """Right-click is inert during SELECTING -- gram-manip is MOVING-only (the
-        original behavior, and the hard phase separation the timed modes want)."""
-        return False
-
-    def _try_gram_manipulate(self, x, y, button):
-        """If `button` is the gram-manipulate button (right-click), transform the
-        clicked cell's gram and report True (the click is consumed). Shared by the
-        MOVING and SELECTING phases so board gram-doubling works in BOTH -- the
-        omniswap modes spend most of their play in SELECT, so a MOVING-only gate
-        left right-click dead there. An UNASSIGNED (None) button never matches, so
-        it can't swallow a click when gram_manipulate isn't bound."""
-        manip_button = self._buttons["gram_manipulate"]
-        if manip_button is not None and button == manip_button:
-            self._handle_gram_manipulate(x, y)
-            return True
-        return False
-
-    def _handle_gram_manipulate(self, x, y):
-        """Right-click a board cell during MOVING (controls.yaml
-        mouse.gram_manipulate): transform that cell's gram via the
-        game_screen.rightclick_* rule for its vowel/consonant SHAPE (see
-        _apply_shape_rule) or wild-ness. Empty and fossilized cells are left
-        alone, the same as the swap rules. Mode-agnostic -- the MOVING modes never
-        see this button. A rule returning None (e.g. rule_rightclick_none, or a
-        shape with no rule) is a no-op."""
-        cell = self._board.cell_at(x, y)
-        if cell is None:
-            L.log_20004(None, None, None, "off_board")
-            return
-        if self._is_fossilized(cell):
-            L.log_20004(cell, None, None, "fossilized")
-            return
-        gram = self._board.gram_at(*cell)
-        if gram is None:
-            L.log_20004(cell, None, None, "empty")
-            return
-        if gram.is_wild:
-            new_text = self._rightclick_rules["vowelwild"](gram.text)
-        elif len(gram) == 1:
-            new_text = self._rightclick_rules["unigram"](gram.text)
-        else:
-            new_text = self._apply_shape_rule(cell, gram.text)
-        if new_text is None:
-            # A rule that declines (e.g. rule_rightclick_none, or a shape whose
-            # slot is off) -- relabel nothing, but record that the click was seen.
-            L.log_20004(cell, gram.text, None, "rule_noop")
-            return
-        self._board.relabel_cell(cell[0], cell[1], new_text)
-        L.log_20004(cell, gram.text, new_text, "applied")
-        # The gram changed under an active hunt: re-light so the new letters
-        # reflect the typed word (relabel_cell already re-synced the overlay).
-        if self._moving_side_pane.hunt_text():
-            self._refresh_hunt_highlight()
-
-    def _apply_shape_rule(self, cell, text):
-        """Route a right-click on a 2+ letter gram to its shape's config slot
-        (see _gram_manip_family). cc/cv/vc/vv/ck own the digrams (and the doubled
-        3-letter forms they produce); vcv/cvk own the trigrams; any 3+ shape with
-        no family (CKV, VCK, CKS, ...) is a plain no-op. A matched family whose own
-        slot is off also returns None -- each shape's behavior is governed solely
-        by its own config key. CVK is the lone stateful rule (it alternates
-        front/back doubling); every other shape is a pure toggle. Returns new text
-        or None."""
-        family = _gram_manip_family(text)
-        if family is None:
-            return None
-        if family == "cvk":
-            if not self._cvk_enabled:
-                return None
-            rule = self._rightclick_rules["cvk"]
-            if len(text) == 3:
-                return rule(text, self._advance_cvk_side(cell))
-            return rule(text)          # 4-letter collapse; side is irrelevant
-        return self._rightclick_rules[family](text)
-
-    def _advance_cvk_side(self, cell):
-        """Pick which consonant the next CVK double touches, flipping from the
-        side this cell doubled last so repeated doubles alternate MMER/MERR. A
-        fresh cell defaults to 'back' (MER -> MERR), the corpus-favored double."""
-        side = "front" if self._cvk_double_side.get(cell) == "back" else "back"
-        self._cvk_double_side[cell] = side
-        return side
 
     def _rule_repeat_allow(self, word):
         """Allow a word to clear even if it cleared before (original behavior)."""
@@ -1917,10 +1549,15 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # Word-trail rule (game_screen.word_trail): whether a cleared word leaves a
     # path trail overlaid on the board (see _clear_paths / views.word_trail).
     def _rule_word_trail_on(self, accepted):
-        """Record a path trail for each cleared word, center to center."""
+        """Record a path trail for each cleared word, center to center. Tagged
+        with the word's cells, so a trail can later be dropped when those cells
+        leave the board -- which is how an attacking word's line disappears with
+        the target it was attacking (see CellHealthMixin._release_dead_cells).
+        Uses the grid's VISUAL center, so a line into a jumbo hexagon meets it in
+        the middle rather than at its anchor triangle."""
         for fw in accepted:
-            points = [self._board.cell_center(x, y) for (x, y) in fw.path]
-            self._word_trail.add_path(points)
+            points = [self._board.cell_visual_center(x, y) for (x, y) in fw.path]
+            self._word_trail.add_path(points, cells=fw.path)
 
     def _rule_word_trail_off(self, accepted):
         """No path trails (the original behavior)."""
@@ -1996,12 +1633,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
     # fossil-walk, nucleation, placed-cell/fossil requirements, fossil
     # seeding) live in WordFindMixin -- see views/game_screen_wordfind.py.
 
-    def _current_piece(self):
-        # A live word-piece (game_screen.player_word_piece) overrides the pool's
-        # current piece until it's placed and _advance_piece clears the override.
-        if self._override_piece is not None:
-            return self._override_piece
-        return self._piece_pool.current_piece()
+    # Extracted to PieceControlMixin (views/game_screen_piece.py); see there.
 
     def _on_hunt_change(self, text):
         """The MOVING-phase hunt field changed (typed / backspaced / cleared):
@@ -2037,149 +1669,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             for _gx, _gy, _c, _l, gram, overlay in piece.get_cell_data():
                 self._apply_hunt_to_overlay(overlay, gram, text)
     
-    def _update_hover_visibility(self):
-        piece = self._current_piece()
-        if piece.placed:
-            return
-        positions = piece.get_cell_positions()
-        self._board.hide_cells_for_hover(positions)
-    
-    def _clear_hover_visibility(self):
-        piece = self._current_piece()
-        positions = piece.get_cell_positions()
-        self._board.restore_cells_from_hover(positions)
-    
-    def _piece_on_board(self, piece):
-        """True only if every cell the piece occupies is on the grid. Off-board
-        cells return None from get_cell, so this rejects a piece hanging off any
-        edge. One half of the move/rotate/place gate; see _move_allowed."""
-        return all(
-            self._board.get_cell(x, y) is not None
-            for (x, y) in piece.get_cell_positions()
-        )
-
-    def _overlapped_cells(self, piece):
-        """The occupied board cells the piece currently sits on -- the cells a
-        placement would cover. The piece's own cells aren't on the board yet, so
-        this reports only settled obstacle / player cells. is_cell_occupied is
-        common to the square and hex boards, so it stays grid-agnostic."""
-        overlapped = set()
-        for (x, y) in piece.get_cell_positions():
-            if self._board.is_cell_occupied(x, y):
-                overlapped.add((x, y))
-        return overlapped
-
-    def _overlap_allowed(self, overlapped):
-        """Whether `overlapped` (the occupied cells a position would cover) is
-        permitted by ALL FOUR independent overlap slots -- player
-        (game_screen.cell_overlap_player), obstacle (..._obstacle), mission
-        (..._mission) and fossilized (..._fossilized). A position holds only if
-        none of them blocks it -- so a player-allowing, obstacle-blocking config
-        still refuses to cover an obstacle. The single gate every move/place
-        runs through."""
-        return (
-            self._cell_overlap_player_rule(overlapped)
-            and self._cell_overlap_obstacle_rule(overlapped)
-            and self._cell_overlap_mission_rule(overlapped)
-            and self._cell_overlap_fossilized_rule(overlapped)
-        )
-
-    def _move_allowed(self, piece):
-        """The shared move/rotate/place gate: a position is allowed only if every
-        cell is on the grid AND the cells it covers satisfy the active cell-
-        overlap rules. Driving the overlap rules here -- not just at placement --
-        lets a blocking rule stop the piece from being moved onto a forbidden
-        cell in the first place, so the player never drags it over one."""
-        return self._piece_on_board(piece) and self._overlap_allowed(
-            self._overlapped_cells(piece)
-        )
-
-    def _move_piece(self, dx, dy):
-        piece = self._current_piece()
-        self._clear_hover_visibility()
-        piece.move(dx, dy)
-        # Reject a move that would hang a cell off the grid or violate the cell-
-        # overlap rule, restoring the prior position before refreshing the hover.
-        if not self._move_allowed(piece):
-            piece.move(-dx, -dy)
-        self._update_hover_visibility()
-
-    def _handle_move_click(self, x, y):
-        """Left-click control (MOVING phase). Clicking a cell the current piece
-        occupies rotates it clockwise; clicking any other on-board cell jumps the
-        piece there. Clicks off the board, or while the piece is already placed,
-        do nothing. The grid maps the pixel to a cell (cell_at), so this works
-        the same on the square and hex boards."""
-        piece = self._current_piece()
-        cell = self._board.cell_at(x, y)
-        if not piece.placed and cell is not None:
-            if cell in piece.get_cell_positions():
-                self._rotate_piece_cw()
-            else:
-                self._jump_piece_to(cell)
-
-    def _jump_piece_to(self, cell):
-        """Translate the current piece so its anchor cell lands on `cell` -- a
-        direct jump, not a step-by-step walk through the cells in between. The
-        anchor (grid_x, grid_y) is an occupied cell of every piece, so the click
-        ends up under the piece. Routed through _move_piece, so an invalid
-        landing (off board or a forbidden overlap) is rejected and the piece
-        stays put, exactly like a keyboard move."""
-        piece = self._current_piece()
-        target_x, target_y = cell
-        self._move_piece(target_x - piece.grid_x, target_y - piece.grid_y)
-
-    def _rotate_piece_cw(self):
-        piece = self._current_piece()
-        self._clear_hover_visibility()
-        piece.rotate_cw()
-        if not self._move_allowed(piece):
-            piece.rotate_ccw()  # off the grid or onto a forbidden cell; undo it
-        self._update_hover_visibility()
-
-    def _rotate_piece_ccw(self):
-        piece = self._current_piece()
-        self._clear_hover_visibility()
-        piece.rotate_ccw()
-        if not self._move_allowed(piece):
-            piece.rotate_cw()
-        self._update_hover_visibility()
-
-    def _place_current_piece(self):
-        piece = self._current_piece()
-        # A piece can't be placed while any cell hangs off the grid; ignore the
-        # place until the player brings it fully back on-board.
-        if not self._piece_on_board(piece):
-            return
-        # Cells already on the board this placement would cover.
-        overlapped = self._overlapped_cells(piece)
-        # Cell-overlap rules: may the piece be placed when it covers those cells?
-        # A blocking rule (obstacle or mission) refuses and aborts the place
-        # (movement is gated the same way, so a blocked piece should never reach
-        # here covering them).
-        if not self._overlap_allowed(overlapped):
-            return
-        self._clear_hover_visibility()
-        piece.place()
-
-        # One cell per coordinate for an ordinary piece; ONE cell owning the whole
-        # footprint for a jumbo-cell piece (see models/piece_placement).
-        placed_positions = [(gx, gy) for gx, gy, _gram
-                            in place_piece_cells(self._board, piece)]
-        # _begin_selection recolors these cells from the live piece's darker
-        # active tint to the lighter placed tint and keeps them lit -- through
-        # every further placement this moving phase -- to remind the player where
-        # words nucleate, until they settle once selection leaves them behind
-        # (see _mark_placed_cells / _settle_placed_cells).
-
-        # Cell-overlap action rule: handle the cells just covered (e.g. drop a
-        # covered obstacle from the obstacle-cell tracking so it counts as gone).
-        self._cell_overlap_action_rule(overlapped)
-
-        # Runs stages 1-3: auto selectors clear and advance immediately;
-        # interactive ones enter the SELECTING phase and withhold the next piece
-        # until the player hits Next piece (see _end_selection).
-        self._begin_selection(placed_positions)
+    # Extracted to PieceControlMixin (views/game_screen_piece.py); see there.
 
     def on_enter(self):
         self._menu_open = False

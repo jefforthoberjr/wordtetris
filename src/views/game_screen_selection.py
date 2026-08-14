@@ -233,7 +233,15 @@ class SelectionMixin:
         # would otherwise fossilize a word's own cells and read them as reuse, and
         # a remove action would drop cleared obstacle/mission cells from the sets).
         score_facts = [self._word_score_facts(fw) for fw in accepted]
-        fully_cleared = self._clear_action_rule(accepted)
+        # Cell-health seam (game_screen.cell_health), interposed BEFORE the clear-
+        # action: it damages every health-carrying cell the accepted words ran
+        # through, holds the words whose targets survived (their cells fossilize
+        # as a attacker trail) and returns the rest for the normal clear-action,
+        # plus the cells that left with a destroyed target. Under
+        # rule_cell_health_off it hands `accepted` straight back and releases
+        # nothing, so this is the original single line. See CellHealthMixin.
+        clearable, released = self._cell_health_rule(accepted)
+        fully_cleared = self._clear_action_rule(clearable) | released
         # A starting obstacle or mission cell counts as gone only once FULLY
         # cleared; a partially-used (or fossilized) one stays tracked.
         self._obstacle_cells.difference_update(fully_cleared)

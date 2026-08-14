@@ -30,6 +30,15 @@ class DisambiguationLines:
     OPACITY = round(255 * CONFIG["rules"]["game_screen.disambig_line_opacity"])
 
     def __init__(self):
+        # Re-read from the live CONFIG: the class-level values above were resolved
+        # at import, before any game mode was applied, so they are the base
+        # config.yaml numbers. A DisambiguationLines is built per game (after the
+        # mode swap), so these instance values are the ones actually drawn with.
+        # Same pattern as GameScreen._read_config_knobs.
+        self.THICKNESS = CONFIG["rules"]["game_screen.disambig_line_thickness"]
+        self.SELECTED_THICKNESS = CONFIG["rules"][
+            "game_screen.disambig_line_thickness_selected"]
+        self.OPACITY = round(255 * CONFIG["rules"]["game_screen.disambig_line_opacity"])
         self._batch = pyglet.graphics.Batch()
         # Kept so the Line objects aren't garbage-collected while batched.
         self._segments = []
