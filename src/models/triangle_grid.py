@@ -365,6 +365,15 @@ class TriangleGrid:
         return not (negative and positive)
 
     def place(self, x, y, square, label, gram=None, overlay=None):
+        # Placing an ordinary cell on a coordinate a JUMBO cell covers buries the
+        # jumbo WHOLE -- the same all-or-nothing deal clear_cell gives it. Without
+        # this the jumbo kept its gram and its footprint registration while a
+        # player gram sat inside it: the board reported two cells at one spot, the
+        # buried one still counted toward victory, and the drawn hexagon was left
+        # overlapping the new cell. (An overlap-BLOCKING config never reaches here;
+        # this is the backstop for the configs that allow it.)
+        if self.is_jumbo(x, y):
+            self.clear_cell(x, y)
         cell = self.get_cell(x, y)
         result = False
         if cell is not None:

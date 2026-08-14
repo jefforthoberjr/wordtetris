@@ -58,6 +58,10 @@ class FakeBoard:
     def is_valid(self, x, y):
         return True
 
+    def resolve(self, x, y):
+        # No jumbo cells here: every coordinate owns itself, like SquareGrid.
+        return (x, y)
+
     def forward_neighbors(self, x, y, prev=None):
         steps = ((1, 0), (-1, 0), (0, 1), (0, -1))
         return [((x + dx, y + dy), d) for d, (dx, dy) in enumerate(steps)]

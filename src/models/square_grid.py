@@ -248,6 +248,13 @@ class SquareGrid:
             return None
         return cell.gram.text
 
+    def resolve(self, x, y):
+        """The coordinate that OWNS (x, y) -- itself, always. This board has no
+        jumbo (multi-coordinate) cells; the method exists so grid-agnostic callers
+        (the cell-overlap rules) can resolve a coordinate to its owning cell on any
+        board. See TriangleGrid.resolve for the version that does real work."""
+        return (x, y)
+
     def hide_cells_for_hover(self, positions):
         for x, y in positions:
             cell = self.get_cell(x, y)

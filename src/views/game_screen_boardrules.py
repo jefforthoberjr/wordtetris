@@ -103,9 +103,24 @@ class BoardRulesMixin:
     # never lingers at an obstacle/mission coordinate and the block rules stay in
     # sync with the victory rules. Player cells are the covered cells in neither
     # tracking set.
+    def _owning_cells(self, overlapped):
+        """The CELLS the covered coordinates belong to: each coordinate resolved
+        through the board to the cell that owns it.
+
+        Identity on the square and hex boards, but not on the triangle board with
+        JUMBO cells: a jumbo hexagon spans six coordinates while _obstacle_cells /
+        _mission_cells (and _cell_health) record it once, at its primary. Without
+        this resolve, `overlapped & self._obstacle_cells` only matched a piece
+        sitting on the anchor triangle, so a player piece could move over -- and
+        place on -- the other five coordinates of a jumbo obstacle/mission that
+        the config says to block. On screen the jumbo then vanished under the
+        hovering piece (hover hides a covered cell WHOLE, resolved), which is what
+        the blocked move was supposed to prevent."""
+        return {self._board.resolve(x, y) for (x, y) in overlapped}
+
     def _players_covered(self, overlapped):
         # The covered cells belonging to neither the obstacle nor mission track.
-        return overlapped - self._obstacle_cells - self._mission_cells
+        return self._owning_cells(overlapped) - self._obstacle_cells - self._mission_cells
 
     def _rule_moveandplace_over_player_cell(self, overlapped):
         # Player-overlap rule: moving or placing over a player cell is always
@@ -125,7 +140,7 @@ class BoardRulesMixin:
     def _rule_block_moveandplace_over_obstacle_cell(self, overlapped):
         # Obstacle-overlap rule: a piece may not move onto or place over an
         # obstacle cell. Permitted unless it would cover one.
-        obstacles_covered = overlapped & self._obstacle_cells
+        obstacles_covered = self._owning_cells(overlapped) & self._obstacle_cells
         return len(obstacles_covered) == 0
 
     def _rule_moveandplace_over_mission_cell(self, overlapped):
@@ -136,7 +151,7 @@ class BoardRulesMixin:
     def _rule_block_moveandplace_over_mission_cell(self, overlapped):
         # Mission-overlap rule: a piece may not move onto or place over a mission
         # cell. Permitted unless it would cover one.
-        missions_covered = overlapped & self._mission_cells
+        missions_covered = self._owning_cells(overlapped) & self._mission_cells
         return len(missions_covered) == 0
 
     def _rule_moveandplace_over_fossilized_cell(self, overlapped):
@@ -149,7 +164,7 @@ class BoardRulesMixin:
         # move onto or place over one. Permitted unless it would cover one. (The
         # typewriter swap gates on _is_fossilized directly; this is the move/place
         # gate, so a fossilize+jigsaw combo is blocked too.)
-        return len(overlapped & self._fossilized_cells) == 0
+        return len(self._owning_cells(overlapped) & self._fossilized_cells) == 0
 
     def _rule_old_cells_get_delete(self, overlapped):
         # Cell-overlap action rule: the cells a placement covers are treated as
@@ -157,12 +172,17 @@ class BoardRulesMixin:
         # any covered starting-obstacle / mission coordinates from their tracking
         # sets so a covered obstacle (or mission) counts as cleared for its
         # victory rule.
-        self._obstacle_cells.difference_update(overlapped)
-        self._mission_cells.difference_update(overlapped)
+        # Resolved to owning CELLS first, so covering any coordinate of a jumbo
+        # obstacle/mission drops the whole cell (the board buries it whole -- see
+        # TriangleGrid.place -- so half-forgetting it would leave a phantom that
+        # the victory rule still waits on).
+        covered = self._owning_cells(overlapped)
+        self._obstacle_cells.difference_update(covered)
+        self._mission_cells.difference_update(covered)
         # A covered cell counts as gone, so it stops tracking health too (else a
         # buried obstacle would sit in _cell_health forever). No-op when the
         # health feature is off. See views/game_screen_health.py.
-        self._forget_cell_health(overlapped)
+        self._forget_cell_health(covered)
 
     # --- whole-game countdown (game_screen.game_timer_seconds) ------------
     # A single wall clock owned by GameScreen (not any one mode), so ANY mode can
