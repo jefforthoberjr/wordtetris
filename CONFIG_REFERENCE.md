@@ -752,6 +752,26 @@ coordinate's centroid only for the triangle board's jumbo hexagons (one cell spa
 six triangles) — so a line into a big hexagon lands in the hexagon's middle rather than
 on the anchor triangle holding its gram.
 
+### game_screen.word_trail_fade (+ word_trail_fade_seconds)
+Whether a trail, once drawn, fades itself off the board after a while — the other
+half of the trail-lifetime question from `word_trail`'s cell-based removal above.
+Without it, a word cleared away from any obstacle / mission cell leaves its line up
+for the rest of the game (nothing ever removes those cells as a group), so a long
+game silts up with dead lines.
+- `rule_word_trail_fade_off` — trails never time out (the original behavior): they
+  accumulate all game and leave only with their cells.
+- `rule_word_trail_fade_nonattacker` — a trail through a health-carrying cell
+  (obstacle / mission, per `game_screen.cell_health`) stays up, because it shows a
+  word committed to that target and already vanishes when the target falls; every
+  other trail fades. This is the one to use with a health-based mode.
+- `rule_word_trail_fade_all` — every trail fades, attacker lines included.
+
+`word_trail_fade_seconds` is the fade length in seconds (linear from
+`word_trail_opacity` to invisible, then the line is deleted). It lives here rather
+than in an `animation.yaml` on purpose: how long a spent line stays readable is a
+per-mode gameplay-clarity choice, not part of the shared animation kit. The fade is
+ticked in the play phases only, so it pauses with the pause menu.
+
 ### game_screen.clear_disambiguation (+ disambig_line_* )
 When a submitted word can clear several ways on the board (multiple paths, or
 wild-vowel expansions), how the one to clear is chosen — and whether a lone path
@@ -1403,6 +1423,25 @@ leaves when that target falls.
 Whichever rule applies, the withdrawing cells take their WORD LINES with them when
 `game_screen.word_trail` is on — an attacking word's line is drawn against the target it
 attacks, so it is dropped rather than left behind on an empty board.
+
+### game_screen.attacker_cell_clear
+Whether a LATER word may clear away cells that are already committed attackers of a
+still-live target. A committed cell stays walkable (`game_screen.fossil_word_use`:
+`rule_fossil_allow`), so a following word can be spelled through it — and if that word
+misses every target, it is not an attacking word, so its whole path goes to the normal
+clear-action.
+- `rule_attacker_cells_consumable` — the clear-action treats them like any other cell
+  and removes them with the rest of the word (the original behavior). The attack is
+  silently withdrawn: the obstacle keeps its damage, but the trail that recorded it is
+  gone.
+- `rule_attacker_cells_held` — the clear-action SKIPS a cell committed to a live
+  target. The rest of the word clears and scores as usual, and the held cell leaves
+  only the normal way, with the target it attacks (`game_screen.attacker_release`).
+  Use this with any health mode where the attacker trail is meant to be a durable
+  record of the words a target has absorbed.
+
+Inert when `game_screen.cell_health` is off (nothing is ever committed). Held cells are
+logged per clear as `30011`.
 
 ### gram_length.*_percent (length mix)
 Length mix for `rule_grams_greater_than_47_lengthcontrolled`: how often that picker

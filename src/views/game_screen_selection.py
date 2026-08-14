@@ -313,11 +313,20 @@ class SelectionMixin:
             slot = eaten.setdefault(cell, [0, 0])
             slot[1] = max(slot[1], k)
 
+        held = set()                  # cells the attacker-hold rule kept on the board
         for fw in accepted:
             last = len(fw.path) - 1
             for idx, (cell, seg) in enumerate(zip(fw.path, fw.segments)):
                 gram = self._board.gram_at(*cell)
                 if gram is None:
+                    continue
+                # Cells already committed to a live obstacle / mission are skipped
+                # under rule_attacker_cells_held: a later word that reuses an
+                # attacker fossil but misses its target must not carry the attack
+                # off the board with it. A no-op under the consumable rule (and
+                # whenever cell health is off, since nothing is ever committed).
+                if self._attacker_hold_rule(cell):
+                    held.add(cell)
                     continue
                 if gram.is_wild or last == 0 or (idx != 0 and idx != last):
                     force_clear.add(cell)        # whole gram consumed
@@ -325,6 +334,8 @@ class SelectionMixin:
                     eat_tail(cell, len(seg))     # word starts here: a suffix goes
                 else:                            # idx == last
                     eat_head(cell, len(seg))     # word ends here: a prefix goes
+        if held:
+            L.log_30011(sorted(held))
         return self._apply_partial_clears(force_clear, eaten)
 
     def _rule_fossilize_cells(self, accepted):

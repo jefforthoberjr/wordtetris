@@ -60,9 +60,13 @@ class _FakeTrail:
 
     def __init__(self):
         self.paths = []
+        # Fade time each path was recorded with (None = never fades), so a test can
+        # assert which trails the fade rule marked for expiry.
+        self.fades = []
 
-    def add_path(self, points, cells=None):
+    def add_path(self, points, cells=None, fade_seconds=None):
         self.paths.append(set(cells or ()))
+        self.fades.append(fade_seconds)
 
     def remove_paths_touching(self, cells):
         gone = set(cells)
@@ -106,6 +110,41 @@ def test_line_survives_while_the_target_does():
     # Two hits on a 3-health target: it is still standing, so both lines remain.
     assert g._cell_health[(3, 0)] == 1
     assert len(g._word_trail.paths) == 2
+
+
+def test_fade_nonattacker_marks_only_the_lines_away_from_a_target():
+    # game_screen.word_trail_fade = rule_word_trail_fade_nonattacker: a word that
+    # runs through a health-carrying cell keeps its line (it shows a commitment,
+    # and it is dropped when the target falls); a word cleared elsewhere on the
+    # board gets a fade time so its line does not sit there for the rest of the
+    # game.
+    g = _trail_game(
+        FakeBoard({(0, 0): "S", (1, 0): "P", (2, 0): "I", (3, 0): "N",
+                   (4, 0): "E", (0, 1): "T", (1, 1): "I", (2, 1): "N"}),
+        obstacles=[(3, 0)], health=3)
+    g._word_trail_fade_seconds = 4.0
+    g._trail_fade_rule = g._rule_word_trail_fade_nonattacker
+    _clear(g, "pine", [(1, 0)])          # through the obstacle at (3, 0)
+    _clear(g, "tin", [(0, 1)])           # nowhere near it
+    assert g._word_trail.fades == [None, 4.0]
+
+
+def test_fade_all_marks_every_line_and_fade_off_marks_none():
+    board = FakeBoard({(0, 0): "S", (1, 0): "P", (2, 0): "I", (3, 0): "N",
+                       (4, 0): "E"})
+    g = _trail_game(board, obstacles=[(3, 0)], health=3)
+    g._word_trail_fade_seconds = 2.5
+    g._trail_fade_rule = g._rule_word_trail_fade_all
+    _clear(g, "pine", [(1, 0)])
+    assert g._word_trail.fades == [2.5]
+    # The default rule leaves every trail up for the whole game (the behavior
+    # before the fade existed).
+    g2 = _trail_game(
+        FakeBoard({(0, 0): "S", (1, 0): "P", (2, 0): "I", (3, 0): "N",
+                   (4, 0): "E"}),
+        obstacles=[(3, 0)], health=3)
+    _clear(g2, "pine", [(1, 0)])
+    assert g2._word_trail.fades == [None]
 
 
 class _FakeFill:
@@ -248,6 +287,57 @@ def test_last_hit_destroys_the_target_and_releases_the_trail():
     assert g._obstacle_cells == set()
     assert g._fossilized_cells == set()
     assert g._cell_health == {}
+
+
+def _rang_era_game(held):
+    """The session-log case: RANG attacks the obstacle NG and fossilizes R + A,
+    then ERA reuses that R + A but misses the obstacle entirely, so it is an
+    ordinary word heading for the remove clear-action. `held` picks the
+    game_screen.attacker_cell_clear rule."""
+    g = _health_game(
+        FakeBoard({(0, 0): "E", (1, 0): "R", (2, 0): "A", (3, 0): "NG"}),
+        obstacles=[(3, 0)], health=3)
+    g._attacker_hold_rule = (g._rule_attacker_cells_held if held
+                             else g._rule_attacker_cells_consumable)
+    _clear(g, "rang", [(1, 0)])
+    assert g._cell_health[(3, 0)] == 2
+    assert g._attacker_targets[(1, 0)] == {(3, 0)}
+    assert g._attacker_targets[(2, 0)] == {(3, 0)}
+    _clear(g, "era", [(0, 0)])
+    return g
+
+
+def test_held_attacker_cells_survive_a_later_nonattacking_word():
+    g = _rang_era_game(held=True)
+    # ERA cleared its own fresh cell, but the two cells committed to the still-live
+    # obstacle stayed put -- with their grams, their fossil state and their
+    # commitment intact, so the attack RANG paid for is not withdrawn.
+    assert set(g._board.cells) == {(1, 0), (2, 0), (3, 0)}
+    assert g._fossilized_cells == {(1, 0), (2, 0)}
+    assert g._attacker_targets[(1, 0)] == {(3, 0)}
+    assert g._cell_health[(3, 0)] == 2
+    # And they still leave the normal way, with the target they attack. (The
+    # repeat history is cleared between the two hits only because this small board
+    # spells exactly one word through the obstacle.)
+    for _ in range(2):
+        g._cleared_word_history.clear()
+        _clear(g, "rang", [(1, 0)])
+    assert g._board.cells == {}
+    assert g._obstacle_cells == set()
+    assert g._fossilized_cells == set()
+
+
+def test_consumable_attacker_cells_keep_the_original_behavior():
+    g = _rang_era_game(held=False)
+    # The original path: ERA took the attacker cells with it, leaving the damaged
+    # obstacle alone on the board with no trail recording the hit.
+    assert set(g._board.cells) == {(3, 0)}
+    assert g._cell_health[(3, 0)] == 2
+    # Known wart of this rule: the cells are gone from the board but still listed
+    # as fossils / committed attackers, since the remove clear-action does not know
+    # about the health bookkeeping. rule_attacker_cells_held sidesteps it by never
+    # letting those cells be removed out from under the target.
+    assert g._fossilized_cells == {(1, 0), (2, 0)}
 
 
 def test_one_word_damages_every_target_on_its_path():

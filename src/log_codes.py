@@ -340,6 +340,17 @@ def log_30010(cell, kind, released):
                      released=len(released), cells=cells)
 
 
+def log_30011(held):
+    """A word's clear-action left cells on the board because they are committed
+    attackers of a still-live target (game_screen.attacker_cell_clear:
+    rule_attacker_cells_held). `held` is those cells -- the overlap between the
+    word just cleared and an earlier attacking word's fossil trail. Emitted once
+    per clear, so a readback can see why a word's path did not fully empty."""
+    cells = ";".join(f"{x},{y}" for (x, y) in held)
+    session_log.emit(30011, f"{len(held)} attacker cells held", held=len(held),
+                     cells=cells)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.

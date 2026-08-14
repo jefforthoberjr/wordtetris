@@ -279,6 +279,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self.PIECE_POOL_SIZE = CONFIG["rules"]["game_screen.piece_pool_size"]
         self.OBSTACLE_COUNT = CONFIG["rules"]["game_screen.obstacle_count"]
         self.MISSION_COUNT = CONFIG["rules"]["game_screen.mission_count"]
+        # Seconds a word trail takes to fade off the board, read by the trail-fade
+        # rules below (game_screen.word_trail_fade). Inert when the fade is off.
+        self._word_trail_fade_seconds = CONFIG["rules"][
+            "game_screen.word_trail_fade_seconds"]
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -669,6 +673,15 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._drop_trails_rule = select_rule("game_screen.word_trail", {
             "rule_word_trail_on": self._rule_drop_trails_on_release,
             "rule_word_trail_off": self._rule_drop_trails_never,
+        })
+        # How long each recorded trail lives before fading itself away
+        # (game_screen.word_trail_fade). Independent of the two rules above: they
+        # decide whether a line is drawn at all and whether cells leaving take it
+        # with them; this decides whether a line that nothing removed times out.
+        self._trail_fade_rule = select_rule("game_screen.word_trail_fade", {
+            "rule_word_trail_fade_off": self._rule_word_trail_fade_off,
+            "rule_word_trail_fade_all": self._rule_word_trail_fade_all,
+            "rule_word_trail_fade_nonattacker": self._rule_word_trail_fade_nonattacker,
         })
 
         # Stage-3 selection strategy, chosen by the YAML key
@@ -1557,11 +1570,55 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         the middle rather than at its anchor triangle."""
         for fw in accepted:
             points = [self._board.cell_visual_center(x, y) for (x, y) in fw.path]
-            self._word_trail.add_path(points, cells=fw.path)
+            self._word_trail.add_path(points, cells=fw.path,
+                                      fade_seconds=self._trail_fade_rule(fw))
 
     def _rule_word_trail_off(self, accepted):
         """No path trails (the original behavior)."""
         pass
+
+    # Trail-fade rule (game_screen.word_trail_fade): how long a freshly drawn
+    # trail stays before fading itself off the board. Each returns the fade time
+    # for ONE word's trail in seconds, or None for "never fades" (it then leaves
+    # only with its cells, per _drop_trails_rule). Ticked in views.word_trail's
+    # update(); the duration is game_screen.word_trail_fade_seconds, deliberately
+    # a game_screen knob rather than an animation.yaml one, since it is a gameplay
+    # readability choice per mode and not a piece of the shared animation kit.
+    def _rule_word_trail_fade_off(self, fw):
+        """Trails never fade: they accumulate for the whole game (the original
+        behavior)."""
+        return None
+
+    def _rule_word_trail_fade_all(self, fw):
+        """Every trail fades out over word_trail_fade_seconds, attacker lines
+        included. The board self-cleans; a health target's trail may vanish before
+        the target falls."""
+        return self._word_trail_fade_seconds
+
+    def _rule_word_trail_fade_nonattacker(self, fw):
+        """Fade only the trails that clear plain board cells, and leave a trail
+        that runs through a health-carrying cell (obstacle / mission) up. Those
+        attacker lines are information -- they show which words are committed to a
+        target -- and they already disappear when the target falls, so this fades
+        exactly the leftover lines from words spelled away from the targets.
+        Identical to rule_word_trail_fade_all when cell health is off (no cell
+        carries health, so no word is an attacker)."""
+        attacking = False
+        for cell in fw.path:
+            if cell in self._cell_health:
+                attacking = True
+        if attacking:
+            fade = None
+        else:
+            fade = self._word_trail_fade_seconds
+        return fade
+
+    # Bare-instance defaults for the fade, in the same spirit as CellHealthMixin's
+    # block: a __new__ test instance (no __init__, so no select_rule pass) reads the
+    # feature as OFF instead of raising. Named methods, not lambdas, so instance
+    # access still binds self. __init__ overwrites both.
+    _trail_fade_rule = _rule_word_trail_fade_off
+    _word_trail_fade_seconds = 0.0
 
     # The word-clearing pipeline runs in four stages, each its own seam:
     #   1. pathfind  -- find every dictionary word on the board (_find_words)
@@ -1804,6 +1861,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # hands back to MOVING mid-wait/fade), paused with the menu like the timer.
         self._update_pending_replenishes(dt)
         self._update_replenish_fades(dt)
+        # Age out the cleared-word path trails (game_screen.word_trail_fade). Runs
+        # in every play phase and pauses with the menu, like the fades above; a
+        # no-op when no trail carries a fade time.
+        self._word_trail.update(dt)
         # Whole-game countdown (game_screen.game_timer_seconds): one clock spanning
         # both play phases, owned here so it is mode-agnostic. A no-op when off.
         # Ticked before the mode so an expiry ends the game this frame.

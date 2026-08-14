@@ -72,6 +72,29 @@ class CellHealthMixin:
         space sooner, at the cost of making clear ORDER a strategic concern."""
         return any(t not in self._cell_health for t in targets)
 
+    # --- attacker-hold rules (game_screen.attacker_cell_clear) ---------------
+    # A committed attacker cell stays walkable (game_screen.fossil_word_use:
+    # rule_fossil_allow), so a LATER word can be spelled through it. If that later
+    # word misses every target it is not an attacking word, so it goes to the
+    # normal clear-action -- which, before this rule existed, removed the attacker
+    # cells along with its own, silently withdrawing an attack the player had
+    # already paid a word for. These decide, per cell, whether the clear-action may
+    # take it. Called with a single cell; True means HOLD it back.
+
+    def _rule_attacker_cells_consumable(self, cell):
+        """Attacker cells are ordinary cells to a later word: whatever the clear-
+        action does to the rest of that word's path, it does to them too (the
+        original behavior, kept for restore)."""
+        return False
+
+    def _rule_attacker_cells_held(self, cell):
+        """A cell committed to a live target is HELD: the clear-action skips it, so
+        it stays on the board with its gram and its commitment intact. The rest of
+        the word clears normally, and the held cell leaves the usual way -- with the
+        target it is attacking, per game_screen.attacker_release. This keeps the
+        attacker trail an honest record of the words a target has absorbed."""
+        return cell in self._attacker_targets
+
     # --- word-action rules (game_screen.health_word_action) ------------------
     # What becomes of a word spelled through a target that SURVIVES the hit.
 
@@ -205,6 +228,7 @@ class CellHealthMixin:
     _cell_health_rule = _rule_cell_health_off
     _health_word_action_rule = _rule_health_word_fossilize
     _attacker_release_rule = _rule_attacker_release_when_all_dead
+    _attacker_hold_rule = _rule_attacker_cells_consumable
     _drop_trails_rule = _rule_drop_trails_never
     _damage_display_rule = _rule_damage_display_none
     _damage_fill = None
@@ -275,6 +299,13 @@ class CellHealthMixin:
         self._attacker_release_rule = select_rule("game_screen.attacker_release", {
             "rule_attacker_release_when_all_dead": self._rule_attacker_release_when_all_dead,
             "rule_attacker_release_when_any_dead": self._rule_attacker_release_when_any_dead,
+        })
+        # Whether a later, non-attacking word may clear away cells already
+        # committed to a live target (the companion to the release rule above: that
+        # one says when a held cell LEAVES, this one says who else may take it).
+        self._attacker_hold_rule = select_rule("game_screen.attacker_cell_clear", {
+            "rule_attacker_cells_consumable": self._rule_attacker_cells_consumable,
+            "rule_attacker_cells_held": self._rule_attacker_cells_held,
         })
 
     # --- health bookkeeping --------------------------------------------------

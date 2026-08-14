@@ -38,6 +38,7 @@ rules:
   game_screen.obstacle_damage_display: rule_damage_border_dashed
   # game_screen.obstacle_damage_display: rule_damage_border_fade 
   game_screen.damage_border_thickness: 5
+  game_screen.attacker_cell_clear: rule_attacker_cells_held
 
   game_screen.formation_vowel_coverage: rule_vowel_coverage_off
 
@@ -78,6 +79,8 @@ rules:
   game_screen.clear_disambiguation: rule_disambig_auto_pick
 
   game_screen.word_trail: rule_word_trail_on
+  game_screen.word_trail_fade: rule_word_trail_fade_nonattacker
+  game_screen.word_trail_fade_seconds: 4.0
 
   game_screen.select_word_limit: rule_unlimited_words
 

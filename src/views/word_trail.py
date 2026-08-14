@@ -29,12 +29,14 @@ class WordTrail:
         self._batch = pyglet.graphics.Batch()
         # Kept so the Line objects aren't garbage-collected while batched.
         self._segments = []
-        # One entry per recorded trail: (the board cells it runs through, its Line
-        # segments). Only trails added WITH cells are listed, so a caller that
-        # never tags its paths costs nothing. See remove_paths_touching.
+        # One entry per recorded trail: [the board cells it runs through, its Line
+        # segments, seconds of fade left (or None for no fade), the fade time it
+        # started with]. A trail added without cells gets
+        # an empty set, so it is listed but never matches remove_paths_touching --
+        # the pre-fade behavior for untagged trails. See update().
         self._paths = []
 
-    def add_path(self, points, cells=None):
+    def add_path(self, points, cells=None, fade_seconds=None):
         """Add a trail along `points` (a list of (px, py) cell centers in word
         order): one Line segment between each consecutive pair. A 0/1-point path
         adds nothing.
@@ -42,7 +44,11 @@ class WordTrail:
         `cells` is the board cells the word ran through. Passing them makes the
         trail REMOVABLE by cell (remove_paths_touching) -- which is how a cell-
         health attacker trail disappears when its target falls. Omitting them
-        keeps the original behavior: the trail stays for the whole game."""
+        keeps the original behavior: the trail stays for the whole game.
+
+        `fade_seconds` (when set) makes the trail self-expire: update() fades its
+        opacity to zero over that many seconds and then deletes it. None keeps the
+        trail up until the game ends or its cells leave."""
         shader = get_shape_shader()
         segments = []
         for (x1, y1), (x2, y2) in zip(points, points[1:]):
@@ -54,8 +60,39 @@ class WordTrail:
             line.opacity = self.OPACITY
             self._segments.append(line)
             segments.append(line)
-        if cells and segments:
-            self._paths.append((set(cells), segments))
+        if segments:
+            self._paths.append([set(cells) if cells else set(), segments,
+                                fade_seconds, fade_seconds])
+
+    def update(self, dt):
+        """Advance every fading trail by `dt`: dim its lines in proportion to the
+        fade time left, and delete the trail once it reaches zero. Trails with no
+        fade time (fade_seconds None) are skipped, so a game with the fade rule off
+        pays only this walk of the list."""
+        kept = []
+        for entry in self._paths:
+            segments, remaining, total = entry[1], entry[2], entry[3]
+            if remaining is None:
+                kept.append(entry)
+                continue
+            remaining = remaining - dt
+            if remaining <= 0:
+                self._delete_segments(segments)
+            else:
+                # Opacity tracks the fraction of the fade still to run, so the line
+                # leaves at a steady rate from its configured opacity down to zero.
+                fraction = remaining / total
+                for line in segments:
+                    line.opacity = round(self.OPACITY * fraction)
+                entry[2] = remaining
+                kept.append(entry)
+        self._paths = kept
+
+    def _delete_segments(self, segments):
+        """Drop these Line objects from the batch and the keep-alive list."""
+        for line in segments:
+            line.delete()
+            self._segments.remove(line)
 
     def remove_paths_touching(self, cells):
         """Delete every tagged trail running through any cell in `cells`. Called
@@ -63,13 +100,12 @@ class WordTrail:
         rather than outliving it. Untagged trails are never touched."""
         gone = set(cells)
         kept = []
-        for path_cells, segments in self._paths:
+        for entry in self._paths:
+            path_cells, segments = entry[0], entry[1]
             if path_cells & gone:
-                for line in segments:
-                    line.delete()
-                    self._segments.remove(line)
+                self._delete_segments(segments)
             else:
-                kept.append((path_cells, segments))
+                kept.append(entry)
         self._paths = kept
 
     def clear(self):
