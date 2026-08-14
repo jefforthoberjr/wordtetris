@@ -14,7 +14,8 @@ rules:
   game_screen.select_trigger: rule_select_every_placement
 
   game_screen.grid:       rule_use_triangle_grid
-  triangle_player.piece_set: rule_use_triangle_unimos_and_dominos
+  triangle_player.piece_set:  rule_use_triangle_unimos
+  # triangle_player.piece_set: rule_use_triangle_unimos_and_dominos
   triangle_player.gram_pick: rule_scrabble_distribution
   triangle_obstacle.piece_set: rule_use_triangle_jumbos
   triangle_obstacle.gram_pick: rule_digram52_distribution

@@ -485,8 +485,8 @@ rules:
   # game_screen.attacker_release: rule_attacker_release_when_any_dead
 
   # May a later non-attacking word clear away committed attacker cells? [ref: game_screen.attacker_cell_clear]
-  game_screen.attacker_cell_clear: rule_attacker_cells_consumable
-  # game_screen.attacker_cell_clear: rule_attacker_cells_held
+  # game_screen.attacker_cell_clear: rule_attacker_cells_consumable
+  game_screen.attacker_cell_clear: rule_attacker_cells_held
 
   # Length mix for rule_grams_greater_than_47_lengthcontrolled (opening board = quota).
   # Relative shares; a 0 drops that length. [ref: gram_length.*_percent]

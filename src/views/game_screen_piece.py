@@ -146,6 +146,39 @@ class PieceControlMixin:
             handled = False
         return handled
 
+    def _rule_triangle_movement_vertex_updown(self, symbol, modifiers):
+        """Triangle grid, screen-true vertical keys that ALWAYS move: LEFT/RIGHT
+        step sideways; UP goes to (col, row + 1) and DOWN to (col, row - 1),
+        whichever way the cell points.
+
+        There are two ways to leave a triangle vertically, and this rule takes
+        whichever one the pressed arrow points at:
+
+          * across the horizontal EDGE -- upward off a point-down cell, downward
+            off a point-up cell (the move _rule_triangle_movement_flipkey makes);
+          * across the opposite VERTEX -- upward over a point-up cell's apex,
+            downward over a point-down cell's bottom corner. The cell meeting that
+            vertex head-on sits one row over in the SAME column.
+
+        Both land on column `col`, one row toward the key, so the two cases
+        collapse into a single row step. Either way the piece flips orientation --
+        a point-up cell stepping UP arrives point-down -- but unlike
+        _rule_triangle_movement_strict_updown neither key is ever inert, and
+        unlike the flip key two presses of UP climb two rows instead of undoing
+        each other. Returns handled."""
+        handled = True
+        if symbol in self._keys["move_left"]:
+            self._move_piece_tridir(TRIANGLE_LEFT)
+        elif symbol in self._keys["move_right"]:
+            self._move_piece_tridir(TRIANGLE_RIGHT)
+        elif symbol in self._keys["move_up"]:
+            self._move_piece(0, 1)
+        elif symbol in self._keys["move_down"]:
+            self._move_piece(0, -1)
+        else:
+            handled = False
+        return handled
+
     def _rule_triangle_movement_jumbo(self, symbol, modifiers):
         """Triangle grid, tuned for the JUMBO_HEX cell: LEFT/RIGHT reach the
         up-left/up-right neighboring hexagon positions, holding the down modifier
@@ -173,7 +206,10 @@ class PieceControlMixin:
         for them a flip IS a move, so the compound steps here would be wrong."""
         piece = self._current_piece()
         if not getattr(piece, "jumbo_cell", False):
-            return self._rule_triangle_movement_flipkey(symbol, modifiers)
+            # Ordinary pieces keep whichever small-piece movement rule the grid
+            # setup picked (_rule_use_triangle_grid); only a jumbo cell gets the
+            # hexagon scheme below.
+            return self._triangle_small_movement_rule(symbol, modifiers)
         shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
         handled = True
         if symbol in self._keys["move_left"]:

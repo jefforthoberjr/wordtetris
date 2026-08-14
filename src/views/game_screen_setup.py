@@ -1138,6 +1138,13 @@ class BoardSetupMixin:
         self._movement_rule = self._rule_triangle_movement_jumbo
         # self._movement_rule = self._rule_triangle_movement_flipkey
         # self._movement_rule = self._rule_triangle_movement_strict_updown
+        # self._movement_rule = self._rule_triangle_movement_vertex_updown
+        # Which rule the jumbo rule hands ordinary (non-jumbo) pieces to: UP/DOWN
+        # always step one row, crossing the horizontal edge or the opposite vertex
+        # depending on which way the cell points.
+        self._triangle_small_movement_rule = self._rule_triangle_movement_vertex_updown
+        # self._triangle_small_movement_rule = self._rule_triangle_movement_flipkey
+        # self._triangle_small_movement_rule = self._rule_triangle_movement_strict_updown
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "^" marks a word formed on the triangle grid.
         self._gram_separator = "^"
