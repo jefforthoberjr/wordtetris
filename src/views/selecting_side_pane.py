@@ -1,6 +1,7 @@
 import pyglet
 from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
+from views.idea_belt import IdeaBelt
 from views.textures import error_icon_image
 from config import get_color, get_string
 from controls import control_keys
@@ -29,6 +30,11 @@ class SelectingSidePane:
     Layout, top to bottom: header, prompt + typed-word field, error messages,
     the Clear word / Submit word / Next piece controls, then the accepted-word
     list filling the remaining space.
+
+    IDEA BELT mode (game_screen.idea_belt, show_idea_belt): the score, accepted-word
+    list and dictionary count come out and views/idea_belt.IdeaBelt -- two slow
+    columns of clickable picture prompts -- fills everything below the controls.
+    Clicking a picture types its word into the field (see _on_idea_pick).
     """
 
     DIVIDER_COLOR = get_color("selecting_side_pane.divider")
@@ -47,6 +53,11 @@ class SelectingSidePane:
     # lines in this narrow pane, so reserve enough that the blue controls never
     # ride up under the suggestions.
     MAX_ERRORS = 5
+    # Belt mode reserves less of the pane for error text: the belt is meant to be
+    # the dominant thing in the pane, and a young player gets an error ICON far
+    # more often than a stacked reason-plus-suggestion (which is what five lines
+    # were for). Shadowed onto the instance in __init__, so nothing else changes.
+    BELT_MAX_ERRORS = 2
     # Icon-plus-suggestion layout (error_icon_keeps_suggestion on): the icon
     # shrinks to the top fraction of the error box, the "did you mean?" text
     # occupies the rest underneath. Icon-only mode ignores this (full-box icon).
@@ -58,13 +69,20 @@ class SelectingSidePane:
     def __init__(self, x, y, width, height, on_submit, on_next,
                  on_end=None, show_end=False, show_clear=True,
                  show_submit=True, show_next=True, error_display="text",
-                 error_icon_keeps_suggestion=False):
+                 error_icon_keeps_suggestion=False, show_idea_belt=False):
         # on_submit(word): Enter or the Submit label. on_next(): the Next label.
         # on_end(): the End game label, present only when show_end (constellation);
         # None everywhere else, so the button is neither built nor clickable.
         # show_clear / show_submit / show_next (game_screen.show_*_button): drop a
         # button's clickable label independently; a hidden button takes no vertical
         # slot and is skipped in on_mouse_press. The keyboard route stays live.
+        # show_idea_belt (game_screen.idea_belt): replace the stats an older
+        # player reads mid-game -- score, accepted-word list, dictionary count --
+        # with the picture conveyor a young player picks words off. See
+        # views/idea_belt.py; the typed field and controls are untouched.
+        self._show_idea_belt = show_idea_belt
+        if show_idea_belt:
+            self.MAX_ERRORS = self.BELT_MAX_ERRORS
         self._on_submit = on_submit
         self._on_next = on_next
         self._on_end = on_end
@@ -106,13 +124,16 @@ class SelectingSidePane:
         top = top - line_h
 
         # Running point total, one line under the header so it reads beside the
-        # race-clock timer that shares the header (see set_score_label).
-        self._score = pyglet.text.Label(
-            "", font_size=base * 0.7, x=left, y=top,
-            anchor_x="left", anchor_y="top",
-            color=self.SCORE_LABEL_COLOR, batch=self._batch,
-        )
-        top = top - line_h
+        # race-clock timer that shares the header (see set_score_label). Belt mode
+        # drops it entirely -- no label, no slot (the stack closes up).
+        self._score = None
+        if not show_idea_belt:
+            self._score = pyglet.text.Label(
+                "", font_size=base * 0.7, x=left, y=top,
+                anchor_x="left", anchor_y="top",
+                color=self.SCORE_LABEL_COLOR, batch=self._batch,
+            )
+            top = top - line_h
 
         # Prompt + typed-word field. The prompt is a FormattedDocument label (not a
         # plain Label) so the "You typed: WORD" ghost can redden individual missing
@@ -172,20 +193,32 @@ class SelectingSidePane:
         self._end_btn = self._add_button("end_game") if show_end else None
         controls_bottom = self._controls_bottom
 
-        # Player's lifetime dictionary size, pinned to the very bottom edge.
+        # Player's lifetime dictionary size, pinned to the very bottom edge. Belt
+        # mode drops it with the rest of the stats.
         count_y = y + margin
-        self._count = pyglet.text.Label(
-            "", font_size=base * 0.7, x=left, y=count_y,
-            anchor_x="left", anchor_y="bottom",
-            color=self.COUNT_COLOR, batch=self._batch,
-        )
+        self._count = None
+        if not show_idea_belt:
+            self._count = pyglet.text.Label(
+                "", font_size=base * 0.7, x=left, y=count_y,
+                anchor_x="left", anchor_y="bottom",
+                color=self.COUNT_COLOR, batch=self._batch,
+            )
 
-        # This-phase accepted-word list fills the space between the controls and
-        # the count label, reserving one line for the latter at the bottom.
+        # Everything below the controls is either the this-phase accepted-word list
+        # (normal) or the idea belt (belt mode) -- never both; the belt exists to
+        # take this space over.
+        self._word_list = None
+        self._idea_belt = None
         list_top = controls_bottom - line_h
-        list_bottom = count_y + line_h
-        list_height = max(line_h, list_top - list_bottom)
-        self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
+        if show_idea_belt:
+            belt_bottom = y + margin
+            belt_height = max(line_h, list_top - belt_bottom)
+            self._idea_belt = IdeaBelt(x, belt_bottom, width, belt_height,
+                                       on_pick=self._on_idea_pick)
+        else:
+            list_bottom = count_y + line_h
+            list_height = max(line_h, list_top - list_bottom)
+            self._word_list = ScrollingWordList(x, list_bottom, width, list_height)
 
         self._render_input()
 
@@ -196,7 +229,8 @@ class SelectingSidePane:
         self._typed = ""
         self._ghost = ""
         self.clear_errors()
-        self._word_list.reset()
+        if self._word_list is not None:
+            self._word_list.reset()
         self._render_prompt()
         self._render_input()
 
@@ -269,7 +303,11 @@ class SelectingSidePane:
         return self._typed == ""
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if self._clear_btn is not None and self._hit(self._clear_btn, x, y):
+        # The belt is checked first: a click on a picture types its word and is
+        # consumed here, never read as a control click.
+        if self._idea_belt is not None and self._idea_belt.on_mouse_press(x, y):
+            pass
+        elif self._clear_btn is not None and self._hit(self._clear_btn, x, y):
             self.clear_word()
         elif self._submit_btn is not None and self._hit(self._submit_btn, x, y):
             self._on_submit(self._typed)
@@ -284,7 +322,8 @@ class SelectingSidePane:
         `is_new` shows it green when the word is new to the player's dictionary;
         a new word that is `is_obscure` (obscure tier only) shows orange.
         `points`, if given, shows the word's score ("+NN") right of the word."""
-        self._word_list.add_word(word, is_new, is_obscure, points)
+        if self._word_list is not None:
+            self._word_list.add_word(word, is_new, is_obscure, points)
         self._typed = ""
         self._ghost = ""
         self.clear_errors()
@@ -298,12 +337,31 @@ class SelectingSidePane:
         self._header.text = get_string("time_count", count=seconds)
 
     def set_word_count(self, count):
-        """Show the player's lifetime dictionary size along the bottom edge."""
-        self._count.text = get_string("dictionary_count", count=count)
+        """Show the player's lifetime dictionary size along the bottom edge. Both
+        stat labels are absent in belt mode, so the update lands nowhere."""
+        if self._count is not None:
+            self._count.text = get_string("dictionary_count", count=count)
 
     def set_score_label(self, points):
         """Show the running point total, one line under the header/timer."""
-        self._score.text = get_string("score_count", count=points)
+        if self._score is not None:
+            self._score.text = get_string("score_count", count=points)
+
+    # --- idea belt ---------------------------------------------------------
+    def idea_belt(self):
+        """The belt widget, or None when the pane runs the normal stats stack.
+        GameScreen reads it to tick the belt's motion each frame."""
+        return self._idea_belt
+
+    def _on_idea_pick(self, word):
+        """A picture was clicked: REPLACE whatever is in the field with its word,
+        exactly as if the player had typed it. It does not submit -- the player
+        still presses Enter / Submit."""
+        self._typed = word.upper()
+        self._ghost = ""
+        self.clear_errors()
+        self._render_prompt()
+        self._render_input()
 
     def show_errors(self, messages, reason=None):
         # `messages[0]` is the rejection reason; any further lines are the
@@ -443,4 +501,7 @@ class SelectingSidePane:
 
     def draw(self):
         self._batch.draw()
-        self._word_list.draw()
+        if self._word_list is not None:
+            self._word_list.draw()
+        if self._idea_belt is not None:
+            self._idea_belt.draw()

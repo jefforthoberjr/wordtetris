@@ -49,6 +49,23 @@ Avoid raw pixel math; instead things should be relative to screen size.
 
 Note: On a Retina window, window.width reports the physical framebuffer size
 
+## COLOR EMOJI (the idea belt's placeholder art)
+
+pyglet 2.1.14 renders COLOR emoji correctly on macOS -- a plain
+`pyglet.text.Label` with `font_name="Apple Color Emoji"` comes back as a full-color
+glyph texture, no image files and no extra library needed. Two gotchas:
+
+  * pyglet MULTIPLIES a label's color into the glyph, so an emoji label must be
+    drawn at `(255, 255, 255, 255)`. Any other tint drains the color out of it.
+  * The font differs per OS, so pass a LIST of names and let pyglet take the first
+    that resolves: Apple Color Emoji / Segoe UI Emoji / Noto Color Emoji (see
+    `views/idea_belt.EMOJI_FONTS`). A machine with none of them falls back to
+    monochrome glyphs rather than crashing.
+
+Emoji glyphs also sit smaller inside their em box than a normal letter does, so a
+belt item sizes its emoji off a bigger fraction of the circle than a real image
+would use (EMOJI_FRACTION vs ART_FRACTION).
+
 # SOUND / AUDIO
 
 First sound arrived 2026-07-21 (the end-of-game video's soundtrack). Audio on pyglet

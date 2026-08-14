@@ -129,7 +129,7 @@ class AutoSelect:
     def create_ui(self, x, y, width, height, on_submit, on_next,
                   on_end=None, show_end=False, show_clear=True,
                   show_submit=True, show_next=True, error_display="text",
-                  error_icon_keeps_suggestion=False):
+                  error_icon_keeps_suggestion=False, show_idea_belt=False):
         return None
 
 
@@ -142,13 +142,14 @@ class TextInputSelect:
     def create_ui(self, x, y, width, height, on_submit, on_next,
                   on_end=None, show_end=False, show_clear=True,
                   show_submit=True, show_next=True, error_display="text",
-                  error_icon_keeps_suggestion=False):
+                  error_icon_keeps_suggestion=False, show_idea_belt=False):
         return SelectingSidePane(
             x, y, width, height, on_submit, on_next,
             on_end=on_end, show_end=show_end,
             show_clear=show_clear, show_submit=show_submit,
             show_next=show_next, error_display=error_display,
-            error_icon_keeps_suggestion=error_icon_keeps_suggestion)
+            error_icon_keeps_suggestion=error_icon_keeps_suggestion,
+            show_idea_belt=show_idea_belt)
 
 
 # Control key bindings now live in assets/controls.yaml (loaded via controls.py).
@@ -902,6 +903,17 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._show_end_btn = (
             self._constellation if _end_btn_mode == "auto" else _end_btn_mode
         )
+        # Idea belt (game_screen.idea_belt): the young-player picture conveyor
+        # takes over the lower right pane, dropping the score / cleared-word list /
+        # dictionary count that would otherwise fill it. The pane that owns the
+        # typed field builds it (merged pane in single-phase, SELECT pane in
+        # two-phase); the widget itself is cached in self._idea_belt below so the
+        # per-frame tick and the new-game reshuffle can reach it.
+        self._show_idea_belt = select_rule(
+            "game_screen.idea_belt",
+            {"rule_idea_belt_on": True, "rule_idea_belt_off": False},
+        )
+        self._idea_belt = None
         # Cap on how many distinct cell-assemblies the constellation matcher
         # returns per submitted word (the disambiguation chooser cycles them;
         # auto-pick keeps the fewest-cell one). Ignored by the other modes.
@@ -1191,9 +1203,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
                 error_display=self._error_display,
                 error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
+                show_idea_belt=self._show_idea_belt,
             )
             self._moving_side_pane = merged
             self._selecting_side_pane = merged
+            self._idea_belt = merged.idea_belt()
         else:
             # Interactive selectors build their UI in the right-pane region (same
             # spot as the side pane; shown only while SELECTING).
@@ -1204,7 +1218,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 show_clear=self._show_clear_btn, show_submit=self._show_submit_btn,
                 show_next=self._show_next_btn, error_display=self._error_display,
                 error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
+                show_idea_belt=self._show_idea_belt,
             )
+            # Auto (non-interactive) selectors build no UI, so there is no pane to
+            # hang the belt on -- getattr keeps that case a plain None.
+            if self._selecting_side_pane is not None:
+                self._idea_belt = self._selecting_side_pane.idea_belt()
             # Line blast swaps the plain MovingSidePane (hunt field + cleared list)
             # for the piece-preview pane: up to `slots` half-size previews of the
             # pool pieces the player can drop next, a running score, and a manual
@@ -1401,6 +1420,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._sand_batch = pyglet.graphics.Batch()
         # Drop last game's path trails (they accumulate within a game only).
         self._word_trail.clear()
+        # Deal a fresh idea-belt ring and rewind the conveyor, so a replayed
+        # session's belt is the one its log_06009 line records. A no-op when the
+        # belt is off. Done here (not in the pane) because the belt may live on
+        # either pane and only one of them gets a per-game reset call.
+        if self._idea_belt is not None:
+            self._idea_belt.reset()
         # Separate batch for the starting obstacle pieces. Their cells live on
         # the board once dropped, but render through this batch so they stay
         # visually grouped and independently styleable.
@@ -1855,6 +1880,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # omniswap race variant); every other mode leaves it a no-op.
         if self._menu_open:
             return
+        # Idea belt: the right pane's picture conveyor keeps turning through both
+        # play phases, and pauses with the menu like every other timed thing (it
+        # sits under the guard above). None unless game_screen.idea_belt is on.
+        if self._idea_belt is not None:
+            self._idea_belt.update(dt)
         # Fill in any cells whose empty-cell replenish delay has elapsed
         # (constellation), then bloom in any cells replenished this game. Both run
         # in every play phase (a two-phase clear replenishes in SELECTING, then

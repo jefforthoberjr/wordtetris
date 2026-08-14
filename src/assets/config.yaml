@@ -246,6 +246,30 @@ rules:
   # Rows in the right-pane cleared-word list. [ref: moving_side_pane.wordlist_rows]
   moving_side_pane.wordlist_rows:   20
 
+  # IDEA BELT: the young-player picture conveyor in the right pane -- which deck
+  # file it deals from, how many items the pre-picked ring holds, whether items
+  # draw as emoji or downloaded images, whether one picture may repeat in the
+  # ring, and the ring's deal order. [ref: idea_belt.deck]
+  # Belt on/off, and its look: items visible per column, how many items the down
+  # column trails the up column by, scroll speed in items/second, and whether a
+  # picture carries its word as a caption. [ref: game_screen.idea_belt]
+  # game_screen.idea_belt: rule_idea_belt_off
+  game_screen.idea_belt: rule_idea_belt_on
+  idea_belt.visible_items: 6
+  idea_belt.window_offset:  15
+  idea_belt.scroll_speed:   0.25
+  idea_belt.show_word:   rule_idea_word_hidden
+  # idea_belt.show_word: rule_idea_word_shown
+
+  idea_belt.deck:        default_ideas.csv
+  idea_belt.pool_size:   50
+  idea_belt.art:         rule_idea_art_emoji
+  # idea_belt.art:       rule_idea_art_image
+  idea_belt.dedupe:      rule_idea_dedupe_on
+  # idea_belt.dedupe:    rule_idea_dedupe_off
+  idea_belt.order:       rule_idea_order_shuffled
+  # idea_belt.order:     rule_idea_order_deck
+
   # Where each live player piece spawns. [ref: game_screen.spawn]
   game_screen.spawn:        rule_spawn_random_spot
   # game_screen.spawn:      rule_spawn_center

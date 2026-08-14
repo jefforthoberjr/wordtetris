@@ -224,6 +224,15 @@ def log_20007(action, count):
     session_log.emit(20007, f"lineblast {action} {count}", action=action, count=count)
 
 
+def log_20008(word, art):
+    """A picture on the right-pane idea belt was clicked (game_screen.idea_belt),
+    typing its word into the field. `word` is what the field was filled with;
+    `art` is what the clicked item was showing (an image filename or the emoji).
+    The belt's own order is log_06009 -- read together they show which prompts a
+    young player actually reached for, and which ones scrolled by untouched."""
+    session_log.emit(20008, f"idea picked {word}", word=word, art=art)
+
+
 # --- 3xxxx  word pipeline ----------------------------------------------------
 def log_30001(word):
     """A word was submitted in the interactive SELECT phase (the normalized,
@@ -492,3 +501,13 @@ def log_06008(kind, cells, health):
     budget the board opened with -- the per-hit lines are log_30009."""
     session_log.emit(6008, f"{kind} health {health} on {cells} cells",
                      kind=kind, cells=cells, health=health)
+
+
+def log_06009(size, words):
+    """The resolved order of the idea-belt ring (game_screen.idea_belt), dealt
+    once at game start. `size` is how many items the ring holds and `words` the
+    word sequence in ring order -- both visible belt columns are windows onto this
+    one loop, so this line is the whole belt a session ran on (the clicks
+    themselves are log_20008)."""
+    session_log.emit(6009, f"idea belt ring ({size} items)",
+                     size=size, order=",".join(words))

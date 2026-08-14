@@ -69,6 +69,13 @@ selecting_side_pane:
   # (the this-phase accepted-word list reuses ScrollingWordList, which is
   #  styled by moving_side_pane.wordlist_text)
 
+# Idea belt: the young-player picture conveyor that takes over the lower right
+# pane (game_screen.idea_belt), replacing the score + cleared-word list.
+idea_belt:
+  circle_fill:      [255, 253, 240, 255]  # the disc each picture sits on
+  circle_border:    [200, 190, 160, 255]  # ring around the disc
+  word_text:        [70, 70, 70, 255]     # optional caption under a picture (idea_belt.show_word)
+
 # "My Dictionary" screen: paged, read-only list of every word the player owns.
 dictionary:
   background:       [255, 250, 205]       # light yellow: whole-screen background

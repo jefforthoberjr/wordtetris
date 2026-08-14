@@ -1,0 +1,114 @@
+# Idea-belt deck: the inventory of picture prompts the right-pane conveyor belt
+# deals from (game_screen.idea_belt). One row = one idea.
+#
+#   image  filename under assets/idea_belt/images/ (image art mode). Blank means
+#          the row has no picture yet -- it is emoji-only for now.
+#   emoji  the placeholder art drawn in emoji art mode (idea_belt.art).
+#   word1  the primary word the picture suggests; a click fills the typed field
+#   word2  with it. word2 is a second reading of the same picture -- an idea row
+#          becomes one belt item per word (see models/idea_pool.py).
+#
+# First cut: emoji only, words in the spirit of the plain examples in the Unicode
+# emoji names, kept to words a young player would recognize. Every word here must
+# exist in the game dictionary (tests/test_idea_pool.py enforces that).
+image,emoji,word1,word2
+,🍎,apple,fruit
+,🍌,banana,yellow
+,🍓,strawberry,berry
+,🍉,watermelon,melon
+,🍒,cherry,red
+,🥕,carrot,vegetable
+,🌽,corn,cob
+,🍞,bread,loaf
+,🥚,egg,shell
+,🍕,pizza,slice
+,🍪,cookie,sweet
+,🎂,cake,birthday
+,🍫,chocolate,candy
+,🧊,ice,cold
+,🐶,dog,puppy
+,🐱,cat,kitten
+,🐰,rabbit,hop
+,🦊,fox,clever
+,🐻,bear,forest
+,🐼,panda,bamboo
+,🐯,tiger,stripe
+,🦁,lion,mane
+,🐮,cow,farm
+,🐷,pig,mud
+,🐸,frog,jump
+,🐵,monkey,swing
+,🐦,bird,wing
+,🦆,duck,pond
+,🦉,owl,night
+,🐴,horse,gallop
+,🦄,unicorn,magic
+,🐝,bee,buzz
+,🦋,butterfly,flutter
+,🐜,ant,hill
+,🕷,spider,web
+,🐍,snake,slither
+,🦀,crab,claw
+,🐠,fish,swim
+,🐬,dolphin,ocean
+,🦈,shark,fin
+,🐘,elephant,trunk
+,🦒,giraffe,neck
+,🐑,sheep,wool
+,🐧,penguin,waddle
+,🌳,tree,leaf
+,🌵,cactus,prickly
+,🌹,rose,thorn
+,🌻,sunflower,seed
+,🍄,mushroom,fungus
+,🍁,maple,autumn
+,🌍,earth,planet
+,🌙,moon,crescent
+,⭐,star,shine
+,☀,sun,bright
+,⛅,cloud,sky
+,🌈,rainbow,color
+,❄,snowflake,winter
+,⛄,snowman,frost
+,🔥,fire,flame
+,💧,water,drop
+,🌊,wave,surf
+,⚡,lightning,storm
+,🚗,car,drive
+,🚌,bus,ride
+,🚲,bicycle,pedal
+,✈,airplane,flight
+,🚀,rocket,launch
+,🚂,train,track
+,⛵,sailboat,sail
+,🏠,house,home
+,🏰,castle,king
+,🎈,balloon,float
+,🎁,gift,ribbon
+,🎃,pumpkin,carve
+,👑,crown,queen
+,💎,diamond,jewel
+,🔑,key,lock
+,🕰,clock,time
+,📚,book,read
+,✏,pencil,write
+,✂,scissors,cut
+,🔨,hammer,nail
+,🎸,guitar,music
+,🥁,drum,beat
+,⚽,soccer,goal
+,🏀,basketball,hoop
+,⚾,baseball,pitch
+,🎾,tennis,racket
+,🏈,football,field
+,🎯,target,arrow
+,🧩,puzzle,piece
+,🎨,paint,brush
+,📷,camera,photo
+,💻,computer,screen
+,📱,phone,call
+,👟,shoe,lace
+,👒,hat,brim
+,🧤,glove,hand
+,👓,glasses,lens
+,💊,pill,medicine

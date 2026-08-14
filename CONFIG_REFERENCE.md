@@ -833,6 +833,75 @@ How many word rows the right pane's scrolling cleared-word list shows. Fewer row
 than the pane fits pack from the top (blank space below); more rows than fit shrink
 the font so they all stay inside the pane.
 
+### game_screen.idea_belt
+`rule_idea_belt_on` turns the right pane's lower half into the IDEA BELT: two slow
+columns of picture prompts (left drifting up, right drifting down) that a player
+clicks to type the pictured word into the field above. It is aimed at young players
+-- few words, shaky spelling, or simply out of ideas -- so it deliberately DROPS the
+stats an older player reads during a game: the running score, the cleared-word list
+and the dictionary count are hidden while the belt is up. The typed field, the error
+slot and whichever control buttons the `game_screen.show_*_button` rules leave on
+all stay exactly where they were. `rule_idea_belt_off` is the normal pane.
+
+A click only FILLS the field (replacing whatever was typed); it never submits, and
+the belt never hints whether a word can actually be formed on the board. Lives on
+the single-phase merged pane and on the two-phase SELECTING pane. See
+`views/idea_belt.py`.
+
+### idea_belt.visible_items
+How many pictures each column shows at once. Fewer items means a taller band per
+item, and since a picture's disc is capped by the column width, a low count reads as
+big gaps between pictures rather than giant pictures.
+
+### idea_belt.window_offset
+How many ring items the down (right) column trails the up (left) column by. Both
+columns are windows onto one looping ring, so this is what makes a picture that
+scrolls off the top of the up column reappear on the down column that many items
+later -- and come back around to the up column one full `idea_belt.pool_size` lap
+later. 0 shows the same item in both columns at once.
+
+### idea_belt.scroll_speed
+Belt speed in ITEMS per second (0.25 = one item every four seconds). Speed is shared
+by both columns; they only differ in direction.
+
+### idea_belt.show_word
+`rule_idea_word_shown` captions each picture with its word (a reading aid);
+`rule_idea_word_hidden` shows pictures only, so the player has to name the thing
+themselves before clicking.
+
+### idea_belt.deck
+Filename (under `assets/idea_belt/`) of the CSV inventory the idea belt deals from
+-- the picture-prompt conveyor that replaces the score + cleared-word list in the
+right pane for young players. Columns: `image,emoji,word1,word2`; `#` lines are
+comments. A game mode can point this at a themed deck (plants, hard grams) without
+touching any other knob. See `models/idea_pool.py`.
+
+### idea_belt.pool_size
+How many items the pre-picked belt RING holds. The ring is dealt once at game start
+and never re-picked: both visible columns are sliding windows onto this one loop, so
+an item that scrolls off the top comes back around in the same order every lap. A
+bigger ring means longer before a picture repeats.
+
+### idea_belt.art
+What a belt item draws as. `rule_idea_art_emoji` uses the deck's emoji column (the
+development placeholder). `rule_idea_art_image` uses its image file from
+`assets/idea_belt/images/`, falling back to the row's emoji when that row has no
+image yet -- so a half-filled image folder still plays.
+
+### idea_belt.dedupe
+Whether one picture may appear more than once in the ring. `rule_idea_dedupe_on`
+keeps the first word of each distinct picture (so a two-word deck row contributes
+one item). `rule_idea_dedupe_off` makes every word its own item, so a picture can
+appear once per word -- and, if the deck is smaller than `idea_belt.pool_size`, can
+repeat around the ring. Duplicates are judged on what the item DRAWS as, so the rule
+de-dups images in image mode and emoji in emoji mode.
+
+### idea_belt.order
+Ring deal order. `rule_idea_order_shuffled` shuffles the deck (drawing extra
+shuffled passes if the deck is smaller than the ring). `rule_idea_order_deck` keeps
+the file's own order, cycled to fill the ring -- a stable belt for tuning a
+hand-curated deck.
+
 ### game_screen.spawn
 Player-piece spawn: where each single live piece appears, one at a time.
 `rule_spawn_random_spot` or `rule_spawn_center`.
