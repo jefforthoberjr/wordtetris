@@ -110,6 +110,12 @@ class InputMixin:
         if self._phase == Phase.VICTORY:
             return True
 
+        # ENDGAME: the endgame mode owns the keyboard (the typing bonus's field --
+        # Backspace edits, ENTER submits). Nothing on the frozen board responds.
+        if self._phase == Phase.ENDGAME:
+            self._endgame.on_key_press(symbol, modifiers, self._keys)
+            return True
+
         # While selecting words, keys drive the entry pane; letters arrive
         # separately via on_text. Control scheme (anti-fat-finger): ENTER is the
         # one action key -- with text it submits the word (pane default), on an
@@ -153,7 +159,10 @@ class InputMixin:
         L.log_20002(text, self._phase.name)
         if self._menu_open:
             return
-        if self._phase == Phase.SELECTING:
+        if self._phase == Phase.ENDGAME:
+            # The endgame mode owns typed letters (the typing bonus's field).
+            self._endgame.on_text(text)
+        elif self._phase == Phase.SELECTING:
             # Typing a LETTER while the chooser is open backs out of it, then the
             # letter appends -- the player abandons the confirmation and keeps
             # hunting. If cancel is disabled the letter is swallowed (the chooser

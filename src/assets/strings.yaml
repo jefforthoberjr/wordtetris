@@ -69,6 +69,15 @@ en:
   victory:               "VICTORY"
   # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
   finished:              "FINISHED"
+  # End-of-game card shown before the endgame mode takes over; the win/lose
+  # verdict above becomes its sublabel.
+  endgame_title:         "END GAME"
+  # Endgame typing bonus (right pane)
+  endgame_prompt:        "Type the words:"
+  endgame_total:         "Bonus: {count}"
+  # Verdict flashed under the field after each submission
+  endgame_hit:           "{word} +{count}"
+  endgame_miss:          "{word}?"
   # My Dictionary screen
   words_collected:       "{count} words collected"
   dictionary_total_score: "Total Score: {count}"
@@ -143,6 +152,14 @@ es:
   victory:               "¡VICTORIA!"
   # End-of-game overlay when there's no win/lose verdict (MOVING_TYPEWRITER)
   finished:              "FIN"
+  # End-of-game card shown before the endgame mode takes over
+  endgame_title:         "FIN DEL JUEGO"
+  # Endgame typing bonus (right pane)
+  endgame_prompt:        "Escribe las palabras:"
+  endgame_total:         "Bonificación: {count}"
+  # Verdict flashed under the field after each submission
+  endgame_hit:           "{word} +{count}"
+  endgame_miss:          "{word}?"
   # My Dictionary screen
   words_collected:       "{count} palabras recopiladas"
   dictionary_total_score: "Puntuación total: {count}"

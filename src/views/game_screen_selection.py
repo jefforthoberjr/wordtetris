@@ -204,6 +204,36 @@ class SelectionMixin:
             "stem_cells": sum(1 for c in path if c in self._stem_cells),
         }
 
+    def _record_cleared_word(self, word, variation, is_new, is_obscure, points):
+        """Append one cleared word to this game's ordered record
+        (_cleared_word_records), the list the endgame typing bonus replays. Each
+        entry keeps the gram grouping the word was cleared with THIS game
+        (`variation`), so the endgame re-renders the cells the player actually
+        built -- not whatever other groupings the lifetime dictionary knows -- plus
+        the in-play `points` it earned and its new / obscure flags for coloring.
+
+        DE-DUPLICATED by word: a word cleared twice (or cleared again with a
+        different grouping) is recorded once, the FIRST clear winning, so the
+        endgame never asks the player to type the same word twice. Called from
+        every clear sink (_clear_paths, _shooting_submit)."""
+        # A real game builds the list per game (see GameScreen.reset); bare
+        # __new__ test instances never run that, so start one on first use rather
+        # than making callers wire it up.
+        if getattr(self, "_cleared_word_records", None) is None:
+            self._cleared_word_records = []
+        already = False
+        for record in self._cleared_word_records:
+            if record["word"] == word:
+                already = True
+        if not already:
+            self._cleared_word_records.append({
+                "word": word,
+                "variation": variation,
+                "is_new": is_new,
+                "is_obscure": is_obscure,
+                "points": points,
+            })
+
     def _refresh_score(self):
         """Push the running point total to the score readout in whichever play
         panes exist (the moving pane always; the selecting pane once created)."""
@@ -272,6 +302,9 @@ class SelectionMixin:
                 # breakdown or the same int, per scoring.word_score_display).
                 points = self._scorer.score_word_rule(is_new=is_new, **facts)
                 word_scores.append(self._scorer.word_score_display_rule(is_new=is_new, **facts))
+                # Keep the word (with THIS game's grouping) for the endgame typing
+                # bonus; a repeat word is ignored there.
+                self._record_cleared_word(fw.word, variation, is_new, word_obscure, points)
                 # Single sink for every clear (interactive / batch / auto).
                 L.log_30002(fw.word, fw.path, variation, is_new, word_obscure, points)
             self._moving_side_pane.add_cleared_words(

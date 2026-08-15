@@ -20,6 +20,13 @@ class Scorer:
     def __init__(self):
         cfg = CONFIG.get("scoring", {})
         self._enabled = cfg.get("enabled", True)
+        # Whether points are tallied DURING play (scoring.during_game). False
+        # silences every in-play award -- cleared words earn 0 and show no "+NN",
+        # the running total stays 0, and the time / fill-board bonuses pay nothing
+        # -- while leaving composition_points_rule (the dictionary screen and the
+        # endgame typing bonus) untouched. So the two scoring occasions are
+        # independently switchable and can both be on at once.
+        self._during_game = cfg.get("during_game", True)
         self._word_base = cfg.get("word_base", 0)
         self._per_cell = cfg.get("per_cell", 0)
         self._per_letter = cfg.get("per_letter", 0)
@@ -101,6 +108,18 @@ class Scorer:
             obstacle_cells=0, mission_cells=0, sand_cells=0,
             fossil_reuse_cells=0, is_new=False, stem_cells=0)[0]
 
+    def during_game_points_rule(self, points):
+        """`points` if in-play scoring is on, else 0 (scoring.during_game). The
+        single gate every DURING-PLAY award passes through -- per-word points, the
+        per-word readout, the time bonus, the fill-board bonus -- so switching
+        in-play scoring off silences all of them in one place. Deliberately NOT
+        applied to word_points_breakdown_rule itself: composition_points_rule is
+        built on that breakdown and must keep scoring (the dictionary screen and
+        the endgame typing bonus use it)."""
+        if not self._during_game:
+            return 0
+        return points
+
     def word_points_rule(self, **facts):
         """Points for one cleared word, WITHOUT touching the running total (a pure
         computation summing word_points_breakdown_rule's groups). Returns 0 when
@@ -108,8 +127,9 @@ class Scorer:
 
         Split from score_word_rule so a word's points can be PREVIEWED for
         display (the SELECTING pane lists a word before the phase-end batch
-        actually scores it) without double-counting into the total."""
-        return sum(self.word_points_breakdown_rule(**facts))
+        actually scores it) without double-counting into the total. Zero as well
+        when in-play scoring is off (scoring.during_game)."""
+        return self.during_game_points_rule(sum(self.word_points_breakdown_rule(**facts)))
 
     def word_score_display_rule(self, **facts):
         """What the word list shows beside a cleared word, per
@@ -118,7 +138,11 @@ class Scorer:
         new-word bonus), rendered "+A +B +C". Zeros are dropped so an ordinary
         word shows just its base and bonus values appear only when earned. Pure,
         and built from the same breakdown as the total -- the numbers always
-        agree. `facts` are word_points_breakdown_rule's keyword args."""
+        agree. Shows nothing (0) when in-play scoring is off
+        (scoring.during_game), matching what the word actually earned. `facts`
+        are word_points_breakdown_rule's keyword args."""
+        if not self._during_game:
+            return 0
         breakdown = self.word_points_breakdown_rule(**facts)
         if self._word_score_display == "breakdown":
             return [p for p in breakdown if p]
@@ -134,15 +158,19 @@ class Scorer:
     def time_bonus_rule(self, seconds_left):
         """End-of-game bonus for finishing with time on the clock: per whole
         second left, added to the total; returns it. Zero in modes with no
-        countdown (seconds_left 0). Called once at the end transition."""
-        return self.add_bonus(int(seconds_left) * self._time_remaining_per_second)
+        countdown (seconds_left 0), and zero with in-play scoring off
+        (scoring.during_game -- the clock belongs to the played game). Called once
+        at the end transition."""
+        return self.add_bonus(self.during_game_points_rule(
+            int(seconds_left) * self._time_remaining_per_second))
 
     def fill_board_bonus_rule(self):
         """Bonus for filling the whole board, added to the total; returns it. The
         caller owns detecting a full board and guarding against re-award. (Not
         yet wired -- pending the board-fullness design; the seam lives here so the
-        total stays the single source of truth.)"""
-        return self.add_bonus(self._fill_board_bonus)
+        total stays the single source of truth.) Zero with in-play scoring off
+        (scoring.during_game -- filling the board is an in-play feat)."""
+        return self.add_bonus(self.during_game_points_rule(self._fill_board_bonus))
 
     def add_bonus(self, points):
         """Add already-computed `points` to the running total and return them

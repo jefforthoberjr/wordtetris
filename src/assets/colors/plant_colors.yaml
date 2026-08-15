@@ -81,6 +81,19 @@ dictionary:
 victory:
   panel:            [40, 60, 40]          # solid panel behind the VICTORY text
   text:             [255, 215, 0, 255]    # "VICTORY" lettering (gold)
+  subtext:          [220, 220, 200, 255]  # win/lose verdict under the END GAME card
+
+# Endgame typing bonus: the player types out the words they cleared.
+endgame:
+  target_text:      [60, 60, 60, 255]     # a word still to be typed (board region)
+  target_done_text: [30, 160, 60, 255]    # a word already typed (green, matching a new-word entry)
+  prompt_text:      [120, 120, 120, 255]  # "Type the words:" heading (matches the play panes)
+  input_text:       [30, 30, 30, 255]     # the field being typed into
+  total_text:       [40, 90, 60, 255]     # running bonus total (matches the in-play score label)
+  banked_text:      [30, 160, 60, 255]    # typed-word list rows, with their points
+  hit_text:         [30, 160, 60, 255]    # flash under the field: word just typed correctly
+  miss_text:        [200, 40, 40, 255]    # flash under the field: a misspelling (no penalty)
+  cell_done_fill:   [144, 238, 144]       # endgame.render cells: fill of a word already typed (light green)
 
 menu:
   highlight:        [255, 255, 0, 255]   # selected menu item

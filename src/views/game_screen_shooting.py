@@ -51,6 +51,9 @@ class ShootingMixin:
         self._word_trail_rule([fw])
         self._player_dict.add(word, variation)
         self._cleared_word_history.add(word)
+        # Keep the word (with THIS game's grouping) for the endgame typing bonus,
+        # the same as _clear_paths does for every other clear route.
+        self._record_cleared_word(word, variation, is_new, obscure, points)
         self._words_cleared_this_game += 1
         L.log_30002(word, fw.path, variation, is_new, obscure, points)
         # List it (the game-long sink) and reset the buffer readout. add_cleared_words

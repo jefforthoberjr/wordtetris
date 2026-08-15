@@ -284,6 +284,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # rules below (game_screen.word_trail_fade). Inert when the fade is off.
         self._word_trail_fade_seconds = CONFIG["rules"][
             "game_screen.word_trail_fade_seconds"]
+        # Seconds the END GAME card holds before an endgame mode takes the screen
+        # over (game_screen.endgame_intro_seconds). Unused when endgame is off.
+        self._endgame_intro_seconds = CONFIG["rules"][
+            "game_screen.endgame_intro_seconds"]
 
     def __init__(self, window, screen_manager):
         self._window = window
@@ -411,6 +415,20 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # it, leaving the player looking at the final board. Reset each time the
         # game ends (see _enter_endstate).
         self._end_overlay_dismissed = False
+
+        # Endgame mode (game_screen.endgame): what happens once play is over. The
+        # rule returns the endgame view to run, or None to keep VICTORY as the
+        # final state (the original behavior). Built here so its labels exist
+        # before any game ends; it stays inert until started. See _start_endgame.
+        endgame_rules = {
+            "rule_endgame_none": self._rule_endgame_none,
+            "rule_endgame_typing_bonus": self._rule_endgame_typing_bonus,
+        }
+        self._endgame = select_rule("game_screen.endgame", endgame_rules)(
+            side_pane_x, side_pane_width)
+        # Counts down the END GAME card before the endgame view takes over; None
+        # whenever no hand-off is pending (see _enter_endstate / update).
+        self._endgame_intro_remaining = None
 
         # End-of-game video (game_screen.end_video): a one-shot fullscreen clip
         # played over the frozen end state, removing itself when it finishes. Path
@@ -1447,6 +1465,17 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # from being cleared twice. Fresh per game, alongside the cleared-word
         # list shown in the side pane.
         self._cleared_word_history = set()
+        # Fresh per game: an ORDERED, de-duplicated record of the words cleared
+        # this game -- each with the gram grouping it was cleared with THIS game
+        # (not the player dictionary's other known groupings) and the points it
+        # earned. Feeds the endgame typing bonus, which re-displays and re-scores
+        # these words after play ends; see _record_cleared_word.
+        self._cleared_word_records = []
+        # Fresh per game: no endgame is running or pending (a new game may start
+        # from a finished one, mid-card or mid-typing-bonus).
+        self._endgame_intro_remaining = None
+        if self._endgame is not None:
+            self._endgame.stop()
         # Fresh per game: the starting obstacle cells the victory rule tracks.
         self._obstacle_cells = set()
         # Fresh per game: the starting mission cells (obstacles' twin).
@@ -1797,7 +1826,22 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         pyglet.gl.glClearColor(bg[0] / 255, bg[1] / 255, bg[2] / 255, 1)
         self._window.clear()
         pyglet.gl.glClearColor(win_bg[0] / 255, win_bg[1] / 255, win_bg[2] / 255, 1)
-        
+
+        # ENDGAME: the endgame mode owns the whole screen -- the board is no longer
+        # relevant once play is over, so its region is reused for the endgame's own
+        # display (the words to type) and the right pane for its typing UI. The
+        # board / pane / overlay drawing below is skipped entirely.
+        if self._phase == Phase.ENDGAME:
+            self._endgame.draw()
+            if self._menu_open:
+                self._ingame_menu.draw()
+            # The end-of-game clip still plays over everything, as it does over the
+            # frozen board -- it started at the end transition and may outlast the
+            # END GAME card. Inactive in every mode with no clip configured.
+            if self._end_video.active:
+                self._end_video.draw()
+            return
+
         self._board_batch.draw()
         self._obstacle_batch.draw()
         self._mission_batch.draw()
@@ -1860,6 +1904,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # every phase/menu guard below so the video always self-dismisses, even if
         # the pause menu is opened over the frozen end state. A no-op when idle.
         self._end_video.update()
+        # END GAME card countdown: with an endgame mode configured, the end panel
+        # holds for a moment and then the endgame view takes the screen over. Runs
+        # while the game is frozen (that freeze is the point) but pauses with the
+        # pause menu, like every other timed thing here. A no-op when no hand-off
+        # is pending -- including every mode that leaves game_screen.endgame off.
+        if not self._menu_open:
+            self._tick_endgame_intro(dt)
         # Debug panel (F3) formable-word samples: recompute only while the panel is
         # visible and something changed, so normal (hidden) play does no dictionary
         # work. Opening the panel counts as a change, so the samples show at once.
@@ -1872,6 +1923,13 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 self._loading_anim.update(dt)
                 if self._loading_anim.done:
                     self._finish_loading()
+            return
+        # ENDGAME: play is over, so nothing below (the board fades, trails, the
+        # whole-game clock, the active mode) applies -- only the endgame view ticks,
+        # and it pauses with the menu like everything else.
+        if self._phase == Phase.ENDGAME:
+            if not self._menu_open:
+                self._endgame.update(dt)
             return
         # Drive the active mode's per-tick hook only during MOVING (and never
         # while the pause menu is open), so a timed mode counts down only when the

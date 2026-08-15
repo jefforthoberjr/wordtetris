@@ -409,6 +409,34 @@ def log_50001(result, words, obstacles_left, missions_left, score=0):
                      score=score)
 
 
+def log_50004(words):
+    """The endgame typing bonus began (game_screen.endgame): play is over and the
+    player must now type out the words they cleared. `words` is how many targets
+    they were given. Only emitted when an endgame mode is configured."""
+    session_log.emit(50004, f"endgame typing bonus: {words} words to type",
+                     words=words)
+
+
+def log_50005(typed, matched, points, total):
+    """One endgame typing-bonus submission. `typed` is what the player entered;
+    `matched` the target word it scored (empty on a misspelling, which costs
+    nothing); `points` what it earned and `total` the bonus total after it. The
+    misses are the interesting record here -- they are the typing mistakes the
+    bonus exists to surface."""
+    if matched:
+        summary = f"endgame typed {matched}: +{points} ({total} bonus)"
+    else:
+        summary = f"endgame miss: {typed}"
+    session_log.emit(50005, summary, typed=typed, matched=matched,
+                     points=points, total=total)
+
+
+def log_50006(total):
+    """The endgame typing bonus finished -- every target word typed. `total` is the
+    bonus banked into the game's score."""
+    session_log.emit(50006, f"endgame bonus complete: +{total}", total=total)
+
+
 # --- 6xxxx  setup / random-source outcomes -----------------------------------
 def _gram_text(gram):
     """Render one gram for a log field: '*' for a wild vowel, '_' for an empty

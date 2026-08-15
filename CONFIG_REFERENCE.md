@@ -167,6 +167,18 @@ digram+trigram word ~33, an 8-letter new word over an obstacle ~75).
 | `fill_board_bonus` | whole board filled ONCE (what "filled" means is mode-dependent; see `game_screen.fill_board`) |
 | `time_remaining_per_second` | per whole second left on the clock at game end |
 
+#### scoring.during_game
+Whether points are tallied WHILE the game is being played. `enabled` is the
+master switch (off = no scoring anywhere, including the dictionary screen and any
+endgame scoring); `during_game` is the narrower one: set it false and every
+in-play award goes silent — a cleared word earns 0 and shows no `+NN` beside it
+in the word list, the running total stays 0, and the end-of-game time / fill-board
+bonuses pay nothing. What it does NOT touch is the COMPOSITION scorer
+(`Scorer.composition_points_rule`), which the My Dictionary screen — and the
+endgame typing bonus — score with. So the two scoring occasions are independently
+switchable, and both may be on at once (the player earns points during play AND
+again for typing the words out at the end).
+
 #### scoring.word_score_display
 How each cleared word's points read in the word list (right of the word) — the
 running total at the top is unaffected either way, and the number(s) are always
@@ -1370,6 +1382,120 @@ Victory condition (only one active at a time):
   board-frozen endgame; pair with `rule_fossilize_cells`, e.g. constellation/omniswap).
 - `rule_victory_none` — no win condition at all; the game runs until the player quits
   (use with `rule_formation_fill_player_diagonal`, which has no missions/obstacles).
+
+### game_screen.endgame
+What happens AFTER play ends — a family of modes in the same spirit as
+`game_screen.mode` (which shapes the MOVING phase), but for the post-game. With one
+configured, the end panel no longer says VICTORY / FINISHED as the last word: it
+reads **END GAME** with that verdict as its sublabel, holds for
+`endgame_intro_seconds`, and then the endgame view takes the WHOLE screen
+(`Phase.ENDGAME`) — the board is not drawn, since play is over and its space is
+better spent on the endgame's own display. When the endgame finishes, its points
+bank into the game total and the screen returns to the frozen VICTORY end state.
+The session log stays OPEN across the hand-off, so a replay contains the endgame too.
+- `rule_endgame_none` — no endgame; VICTORY is the final state, exactly as before.
+- `rule_endgame_typing_bonus` — the TYPING BONUS: the player is shown every word
+  they cleared this game (de-duplicated, in clear order) and must type each one to
+  earn its points. No timer — they have as long as they need — and the phase ends
+  only when every word has been typed, which is the incentive to work through them
+  all. ENTER submits (not on-match: one target can be a prefix of another, CAT /
+  CATCH), Backspace edits, spacebar clears the field. A misspelling scores nothing
+  and can simply be retyped; there is no penalty, since the mistakes are the point
+  of the exercise. Words already typed turn green in the list and appear in the
+  right pane with the points they earned, above a running bonus total.
+  WHY: a player can clear words without ever spelling them (clicking cells, shooting
+  grams, picking a picture off the idea belt). This makes them type each word once —
+  for typing muscle memory rather than recall, since every word is on screen to copy.
+  Each word scores by the DICTIONARY-SCREEN formula (`Scorer.composition_points_rule`
+  — `word_base` + `per_cell` + `per_letter` + `per_extra_gram_letter`), off the gram
+  grouping it was cleared with in THIS game; the board bonuses are gone with the
+  board. That scorer is independent of `scoring.during_game`, so a mode can pay
+  during play, at the end, or both.
+
+### game_screen.endgame_intro_seconds
+How long the END GAME card holds before the endgame mode takes the screen over.
+Unused when `game_screen.endgame` is `rule_endgame_none`. The pause menu pauses the
+countdown, like every other timed thing on the game screen.
+
+### endgame.display
+How the typing bonus SHOWS the words to be typed, over the board region play has
+finished with (`views/endgame_displays.py`). Every display shows the same targets in
+`endgame.order`; they differ in how hard the words are to read, which is the
+difficulty knob for this phase. Typing is unaffected — the field is always in the
+right pane, and any word may be typed at any time whether or not it is on screen.
+- `rule_endgame_display_page` — one printed PAGE: every word at once, laid out in
+  top-to-bottom columns like a dictionary page, nothing moving. The font auto-shrinks
+  to fit both the page height and its column width, so a long list gets smaller
+  rather than overflowing. The gentlest display and the default.
+- `rule_endgame_display_scroll` — one slow column of LARGE words drifting up the
+  middle of the region, looping forever. Fewer words on screen at a time in much
+  bigger text: the player catches each as it comes round. Tuned by
+  `endgame.scroll_visible_words` (how many fit the height, which sets the text size)
+  and `endgame.scroll_speed` (words per second).
+- `rule_endgame_display_belt` — the two-column CONVEYOR, the idea belt's motion
+  applied to the words: the left column drifts up, the right drifts down, and both
+  are windows onto ONE looping ring, with the right trailing the left by
+  `endgame.belt_window_offset` words. So a word leaving the top of the left column
+  reappears on the right that many words later. Tuned by
+  `endgame.belt_visible_words`, `endgame.belt_speed` and `endgame.belt_window_offset`.
+  The offset is RAISED to a full window (`visible_words + 2`) if set lower: a lag
+  shorter than a window puts the same word on screen in both columns at once — one
+  copy drifting up the left while the other drifts down the right — which reads as a
+  bug rather than as one conveyor. A larger value is honored as set.
+
+### endgame.render
+Whether each word in the typing bonus is drawn as plain TEXT or as the CELLS it was
+cleared with. Independent of `endgame.display` — either render works in all three
+displays (page, scrolling, conveyor).
+- `rule_endgame_render_text` — plain uppercase text. The plainest, and the fastest to
+  read at a glance.
+- `rule_endgame_render_cells` — the word re-renders as the row of pieces the player
+  actually built it from, exactly as the My Dictionary screen re-renders a collected
+  word (`views/gram_preview.py`): the grid's own shape (square boxes / point-up
+  hexagons / alternating triangles), obstacle grams in the obstacle fill, mission
+  grams in the mission fill, and a wild cell as the vowel emblem rather than the
+  letters it resolved to. So the player types back what they can see themselves
+  having made, chunked the way they made it — a 3-letter word taken as one gram reads
+  as one box, not three.
+  A word already typed fills `endgame.cell_done_fill` (light green) — the cell-mode
+  equivalent of the text turning green.
+  The grouping shown is the one from THIS game (`variation` on the cleared-word
+  record), not the best or newest grouping in the player's lifetime dictionary.
+  Cell rows are bigger than text, so this mode automatically starts from a smaller
+  font and (on the page) leaves more room between rows.
+
+### endgame.scroll_min_ring / endgame.belt_min_ring
+Shortest the moving displays' loop may be, in slots. A game that cleared only a few
+words gives a ring shorter than what is on screen, so the SAME word appears two or
+three times at once — and in the two-column belt that reads as the columns running in
+lockstep (one word drifting up the left and down the right together), which looks
+like a bug rather than a conveyor. The fix is to pad the ring with BLANK slots: gaps
+that draw as nothing, can never be typed, and simply space the real words out. They
+are spread as evenly as the count allows, so a short list reads as words with gaps
+rather than a clump of words followed by a long empty stretch.
+
+`0` (the default) works the minimum out: the scrolling column needs a ring at least
+as long as what fits on screen; the belt needs twice that plus
+`endgame.belt_window_offset`, since its two windows read the same ring at a lag. Set
+a number to force a longer (sparser) loop — bigger value, more empty belt.
+
+**Nothing scrolls away for good.** Both moving displays loop, so every word comes
+back around — and a word can be typed whether or not it is currently on screen. A
+player who remembers a word may type it before it has ever appeared; that is allowed
+and rewarded. The moving displays are therefore a memory/pressure knob, never a way
+to lose points.
+
+### endgame.order
+Order the typing-bonus targets are presented in (`rule_endgame_typing_bonus`). The
+board-region display and the order a word can be typed in are unaffected — any word
+on the list can be typed at any time — so this is purely how the list reads:
+- `rule_endgame_order_cleared` — the order the player cleared them in, oldest first:
+  a replay of the game they just played.
+- `rule_endgame_order_alphabetical` — A–Z, like a dictionary page. Easiest to scan
+  for the word you are part-way through typing; the natural pairing with the page
+  display.
+- `rule_endgame_order_score` — highest-scoring first, so the biggest prizes are at
+  the top. Ties keep clear order.
 
 ### game_screen.fill_board
 Whole-board fill bonus: awards `scoring.fill_board_bonus` ONCE per game the first time

@@ -3,12 +3,30 @@
 import math
 
 from views.game_phase import Phase
+from views.endgame_typing import EndgameTyping
 from config import select_rule, get_color, get_string, CONFIG
 import session_log
 import log_codes as L
 
 
 class BoardRulesMixin:
+    # --- endgame rules (game_screen.endgame) ------------------------------
+    # What happens once play is over. Each builds (or declines to build) the view
+    # that takes the screen over after the END GAME card holds; selected in
+    # __init__ and started by _start_endgame. Both are handed the side pane's x /
+    # width so the endgame can own the right pane the play panes used.
+    def _rule_endgame_none(self, pane_x, pane_width):
+        """No endgame: VICTORY is the final state, exactly as before -- the end
+        panel stays up over the frozen board and the session closes right away."""
+        return None
+
+    def _rule_endgame_typing_bonus(self, pane_x, pane_width):
+        """The typing bonus: the player types out the words they cleared this game
+        for extra points, with no timer (see views/endgame_typing.py)."""
+        return EndgameTyping(
+            self._grid_area_size, pane_x, pane_width, self._window.height,
+            on_finish=self._finish_endgame)
+
     # --- victory rules (game_screen.victory) -----------------------------
     # Each returns True when its win condition is met against the current board.
     # Selected in __init__; consulted by _check_victory after every clear and
@@ -288,8 +306,20 @@ class BoardRulesMixin:
         is the single frozen end-state -- the overlay is drawn by draw() and the
         right pane reverts to the cleared-word list (phase no longer SELECTING);
         the label is what distinguishes a win from a plain finish.
-        `award_time_bonus` gates the leftover-clock bonus (True only on a win)."""
-        self._victory_overlay.set_text(label_text)
+        `award_time_bonus` gates the leftover-clock bonus (True only on a win).
+
+        With an endgame mode configured (game_screen.endgame) VICTORY is no longer
+        the LAST state: the panel reads END GAME with `label_text` as its win/lose
+        sublabel, holds for endgame_intro_seconds, and then hands the screen to the
+        endgame view (see update / _start_endgame). The session log stays open
+        across that hand-off so the endgame is captured too -- _close_session runs
+        at the true end either way."""
+        if self._endgame is None:
+            self._victory_overlay.set_text(label_text)
+            self._endgame_intro_remaining = None
+        else:
+            self._victory_overlay.set_text(get_string("endgame_title"), label_text)
+            self._endgame_intro_remaining = self._endgame_intro_seconds
         self._end_overlay_dismissed = False
         self._set_phase(Phase.VICTORY)
         self._settle_placed_cells()
@@ -316,13 +346,55 @@ class BoardRulesMixin:
                 remaining = getattr(self._moving_mode, "_remaining", 0) or 0
             self._scorer.time_bonus_rule(remaining)
         self._refresh_score()
-        # Close out the session: the final tally, then the session-end line, then
-        # flush + close. on_exit finds nothing open afterward.
+        # Close out the session -- unless an endgame mode is about to run, in which
+        # case the session stays open through it and closes when it ends, so the
+        # log (and any replay of it) contains the endgame too.
+        if self._endgame is None:
+            self._close_session(label_text)
+        else:
+            self._endstate_label = label_text
+
+    def _close_session(self, label_text):
+        """The session's final tally, then the session-end line, then flush +
+        close. on_exit finds nothing open afterward. Called at the true end of the
+        game: the end transition itself with no endgame mode, else once the endgame
+        finishes (_finish_endgame)."""
         L.log_50001(label_text, len(self._cleared_word_history),
                     len(self._obstacle_cells), len(self._mission_cells),
                     self._scorer.total)
         L.log_00002(label_text)
         session_log.close(reason=label_text)
+
+    def _tick_endgame_intro(self, dt):
+        """Count the END GAME card down and hand off to the endgame view when it
+        expires. A no-op whenever no hand-off is pending (endgame off, or already
+        started). Runs even though play is frozen -- that freeze is the point."""
+        if self._endgame_intro_remaining is not None:
+            self._endgame_intro_remaining -= dt
+            if self._endgame_intro_remaining <= 0:
+                self._endgame_intro_remaining = None
+                self._start_endgame()
+
+    def _start_endgame(self):
+        """Hand the screen to the endgame view: drop the end panel, switch to
+        Phase.ENDGAME (input routes to the endgame from here) and start it over
+        this game's cleared-word records."""
+        self._end_overlay_dismissed = True
+        self._set_phase(Phase.ENDGAME)
+        self._endgame.start(self._cleared_word_records)
+
+    def _finish_endgame(self, bonus_points):
+        """The endgame view is done (every word typed): bank its points into the
+        game's total, restore the end panel with the original win/lose verdict, and
+        close the session. Phase goes back to VICTORY -- the frozen final state the
+        game has always ended in."""
+        self._scorer.add_bonus(bonus_points)
+        self._refresh_score()
+        label_text = getattr(self, "_endstate_label", get_string("finished"))
+        self._victory_overlay.set_text(label_text)
+        self._end_overlay_dismissed = False
+        self._set_phase(Phase.VICTORY)
+        self._close_session(label_text)
 
     def _is_fossilized(self, cell):
         """Whether (x, y) `cell` has been fossilized by a formed word -- dead to

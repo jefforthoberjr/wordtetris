@@ -54,9 +54,21 @@ class GramPreview:
     the board.* colors, so a preview cell looks like its in-game counterpart;
     obstacle grams take the obstacle fill, mission grams the mission fill."""
 
-    def __init__(self, cell_size, row_height):
+    def __init__(self, cell_size, row_height, backing=True, fill_override=None):
         self._cell_size = cell_size
         self._row_height = row_height
+        # Whether to draw the opaque rect that hides the word Label underneath. The
+        # dictionary screen needs it (the preview pops up OVER a word); the endgame
+        # displays draw the cells as the word itself, with nothing behind to hide,
+        # and a backing rect there would paint a box in the wrong background color.
+        self._backing = backing
+        # Optional single fill for every cell, replacing the per-cell-kind fills.
+        # The endgame's typed-word state uses it to green out a whole word; None
+        # keeps the normal obstacle / mission / plain fills.
+        self._fill_override = fill_override
+        # Width of the row built by the last show(), so a caller can place the row
+        # (e.g. center it in a column) without re-deriving the shape's geometry.
+        self._row_width = 0
         # A fresh batch is built per show(); kept here so draw() before the first
         # hover is harmless.
         self._batch = pyglet.graphics.Batch()
@@ -92,7 +104,9 @@ class GramPreview:
             row_width = self._triangle_row_width(len(grams))
         else:
             row_width = len(grams) * self._cell_size
-        self._build_backing(left_x, center_y, max(cover_width, row_width))
+        self._row_width = row_width
+        if self._backing:
+            self._build_backing(left_x, center_y, max(cover_width, row_width))
         if shape == "hex":
             self._build_hex_row(grams, left_x, center_y)
         elif shape == "triangle":
@@ -101,8 +115,25 @@ class GramPreview:
             self._build_square_row(grams, left_x, center_y)
         self._visible = True
 
+    @property
+    def row_width(self):
+        """Width of the cell row built by the last show()."""
+        return self._row_width
+
+    def move_by(self, dx, dy):
+        """Shift the whole built row by (dx, dy), in place. Every element (shapes,
+        labels, wild sprites) carries plain x / y, so this is a handful of attribute
+        writes -- far cheaper than rebuilding the batch, which is what a MOVING
+        display would otherwise have to do 60 times a second. The dictionary screen
+        never moves a preview; the endgame's scrolling displays do it every frame."""
+        for element in self._shapes:
+            element.x += dx
+            element.y += dy
+
     def _fill_for(self, is_obstacle, is_mission):
-        if is_obstacle:
+        if self._fill_override is not None:
+            color = self._fill_override
+        elif is_obstacle:
             color = self._obstacle_fill
         elif is_mission:
             color = self._mission_fill

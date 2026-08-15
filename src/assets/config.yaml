@@ -32,6 +32,8 @@ logging:
 # Points per cleared word; every weight is an independent tunable. [ref: scoring]
 scoring:
   enabled:                   true
+  during_game:               true        # false = no points tally DURING play (endgame scoring still works) [ref: scoring.during_game]
+  # during_game:               false       # false = no points tally DURING play (endgame scoring still works) [ref: scoring.during_game]
   word_base:                 5
   per_cell:                  3
   per_letter:                2
@@ -453,6 +455,40 @@ rules:
   # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
   game_screen.victory: rule_victory_none
+
+  # What happens AFTER play ends: none, or the type-the-words bonus. [ref: game_screen.endgame]
+  game_screen.endgame: rule_endgame_typing_bonus
+  # game_screen.endgame: rule_endgame_none
+
+  # Seconds the END GAME card holds before the endgame mode takes over. [ref: game_screen.endgame_intro_seconds]
+  game_screen.endgame_intro_seconds: 2.0
+
+  # ENDGAME TYPING BONUS: how the words to type are displayed. [ref: endgame.display]
+  # endgame.display: rule_endgame_display_page
+  # endgame.display: rule_endgame_display_scroll
+  endgame.display: rule_endgame_display_belt
+
+  # ENDGAME scrolling display: words on screen + words/second. [ref: endgame.display]
+  endgame.scroll_visible_words: 5
+  endgame.scroll_speed:         0.25
+  # Shortest belt loop, in slots; short lists get blank gaps to reach it (0 = auto). [ref: endgame.min_ring]
+  endgame.scroll_min_ring:      0
+
+  # ENDGAME conveyor display: words per column, words/second, right-column lag. [ref: endgame.display]
+  endgame.belt_visible_words:  7
+  endgame.belt_speed:          0.3
+  endgame.belt_window_offset:  9      # raised to one window's worth if set lower
+  # Shortest belt loop, in slots; short lists get blank gaps to reach it (0 = auto). [ref: endgame.min_ring]
+  endgame.belt_min_ring:       0
+
+  # ENDGAME TYPING BONUS: draw each word as plain text or as its cleared cells. [ref: endgame.render]
+  endgame.render: rule_endgame_render_text
+  # endgame.render: rule_endgame_render_cells
+
+  # ENDGAME TYPING BONUS: order the words to type are presented in. [ref: endgame.order]
+  endgame.order: rule_endgame_order_cleared
+  # endgame.order: rule_endgame_order_alphabetical
+  # endgame.order: rule_endgame_order_score
 
   # Whole-board fill bonus; match variant to the mode. [ref: game_screen.fill_board]
   game_screen.fill_board: rule_fill_board_all_fossilized
