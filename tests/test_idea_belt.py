@@ -58,6 +58,41 @@ def test_an_item_leaving_the_top_of_the_up_column_returns_on_the_down_column():
     assert top_of_down == height
 
 
+def _resettable(scroll, indices, unused_ring):
+    """A belt stripped down to what reset() touches, with _layout stubbed out (it
+    drives pyglet objects). Slots are plain dicts, as the real ones are."""
+    belt = IdeaBelt.__new__(IdeaBelt)
+    belt._scroll = scroll
+    belt._slots = [{"index": i} for i in indices]
+    belt._unused_ring = unused_ring
+    belt._layout = lambda: None
+    return belt
+
+
+def test_reset_forgets_what_each_slot_was_showing():
+    """The snowflake/BOOK bug: a new ring reuses the same index numbers, so unless
+    reset() clears them, a slot keeps the OLD picture while the pool serves the NEW
+    word for that index -- a click types a word the player never saw."""
+    belt = _resettable(scroll=12.0, indices=[3, 7, 45], unused_ring=False)
+    old_pool = belt._pool = object()
+    belt.reset()
+    assert [slot["index"] for slot in belt._slots] == [None, None, None]
+    assert belt._scroll == 0.0
+    assert belt._pool is not old_pool
+
+
+def test_first_reset_keeps_the_ring_the_belt_was_built_with():
+    """GameScreen builds the pane, then starts the first game -- that reset must
+    not deal (and log) a second ring before the first one is ever played."""
+    belt = _resettable(scroll=0.0, indices=[0, 1], unused_ring=True)
+    pool = belt._pool = object()
+    belt.reset()
+    assert belt._pool is pool
+    # The next game does deal a fresh one.
+    belt.reset()
+    assert belt._pool is not pool
+
+
 def test_one_slot_hangs_off_each_end_of_the_region():
     """The spare slots are what make the belt look continuous rather than
     popping: at any scroll, one item is part-way in and one part-way out."""

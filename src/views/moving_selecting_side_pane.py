@@ -235,12 +235,12 @@ class MovingSelectingSidePane:
         self._render_input()
 
     def reset(self):
-        """New game: clear the word list (or deal a fresh belt ring) and empty the
-        field/highlight."""
+        """New game: clear the word list and empty the field/highlight. The idea
+        belt is NOT reset here -- GameScreen resets it directly, because the belt
+        can live on either pane and only one of them gets this call; doing it in
+        both places dealt (and logged) two rings per game."""
         if self._word_list is not None:
             self._word_list.reset()
-        if self._idea_belt is not None:
-            self._idea_belt.reset()
         self.clear_word()
 
     # --- idea belt ---------------------------------------------------------

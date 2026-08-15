@@ -224,13 +224,21 @@ def log_20007(action, count):
     session_log.emit(20007, f"lineblast {action} {count}", action=action, count=count)
 
 
-def log_20008(word, art):
+def log_20008(word, art, index, shown):
     """A picture on the right-pane idea belt was clicked (game_screen.idea_belt),
-    typing its word into the field. `word` is what the field was filled with;
-    `art` is what the clicked item was showing (an image filename or the emoji).
-    The belt's own order is log_06009 -- read together they show which prompts a
-    young player actually reached for, and which ones scrolled by untouched."""
-    session_log.emit(20008, f"idea picked {word}", word=word, art=art)
+    typing its word into the field. `word` / `art` / `index` come from the POOL
+    (what the ring says sits at that position); `shown` is read back off the slot
+    on screen -- the emoji actually drawn there, or the image file it is drawing.
+
+    The two sides are logged separately ON PURPOSE. If they ever disagree, the
+    player clicked one picture and got another word, which is invisible when both
+    fields are read from the same source; the line then carries `desync=True`.
+    Cross-check with log_06009 (the ring order) to see which ring the screen was
+    still showing."""
+    desync = shown != art
+    session_log.emit(20008, f"idea picked {word}",
+                     word=word, art=art, index=index, shown=shown,
+                     desync=desync)
 
 
 # --- 3xxxx  word pipeline ----------------------------------------------------
@@ -503,11 +511,17 @@ def log_06008(kind, cells, health):
                      kind=kind, cells=cells, health=health)
 
 
-def log_06009(size, words):
+def log_06009(size, words, reason):
     """The resolved order of the idea-belt ring (game_screen.idea_belt), dealt
-    once at game start. `size` is how many items the ring holds and `words` the
-    word sequence in ring order -- both visible belt columns are windows onto this
-    one loop, so this line is the whole belt a session ran on (the clicks
-    themselves are log_20008)."""
-    session_log.emit(6009, f"idea belt ring ({size} items)",
-                     size=size, order=",".join(words))
+    once at game start. `size` is how many items the ring holds, `words` the word
+    sequence in ring order, and `reason` WHY it was dealt (opening / new game) --
+    both visible belt columns are windows onto this one loop, so this line is the
+    whole belt a session ran on (the clicks themselves are log_20008).
+
+    Read the reasons: exactly ONE ring should be dealt per game played. Two lines
+    back to back at startup means something re-dealt the ring under a belt that was
+    already showing the first one -- the bug where the pictures on screen belong to
+    a ring the pool has already replaced, so a click types the new ring's word for
+    that slot instead of the pictured one."""
+    session_log.emit(6009, f"idea belt ring ({size} items, {reason})",
+                     size=size, reason=reason, order=",".join(words))

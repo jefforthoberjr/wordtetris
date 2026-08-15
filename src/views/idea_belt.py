@@ -75,6 +75,9 @@ class IdeaBelt:
         self._show_word = word_rules.get(
             rules.get("idea_belt.show_word", "rule_idea_word_hidden"), False)
         self._pool = pool if pool is not None else IdeaPool()
+        # This ring has not been played yet -- see reset(), which leaves it alone
+        # the first time so a game does not open on its second ring.
+        self._unused_ring = True
 
         # How far the belt has travelled, in ITEMS (fractional). Both windows read
         # it; it only ever increases.
@@ -124,7 +127,7 @@ class IdeaBelt:
             anchor_x="center", anchor_y="top",
             color=self.WORD_COLOR, batch=self._batch)
         return {"circle": circle, "border": border, "emoji": emoji,
-                "word": word, "sprite": None, "index": None,
+                "word": word, "sprite": None, "art_file": "", "index": None,
                 "cx": cx, "cy": self._y, "shown": False}
 
     # --- motion ------------------------------------------------------------
@@ -137,9 +140,25 @@ class IdeaBelt:
         self._layout()
 
     def reset(self):
-        """New game: deal a fresh ring and rewind the belt to its start."""
-        self._pool = IdeaPool()
+        """New game: deal a fresh ring and rewind the belt to its start.
+
+        A belt that was just built and has never scrolled keeps the ring it was
+        born with: GameScreen creates the pane and then immediately starts the
+        first game, so re-dealing here would deal (and log) a second ring for a
+        game whose first one nobody had seen yet.
+
+        Every slot must also FORGET which ring item it is showing. A new ring
+        reuses the same index numbers, so a slot whose index has not changed would
+        otherwise keep the old ring's picture (_place only reloads art when the
+        index changes) while the pool hands out the new ring's word for it -- the
+        player clicks a snowflake and gets BOOK, until the belt scrolls far enough
+        for every slot to land on a fresh index."""
+        if not self._unused_ring:
+            self._pool = IdeaPool(reason="new game")
+        self._unused_ring = False
         self._scroll = 0.0
+        for slot in self._slots:
+            slot["index"] = None
         self._layout()
 
     def _layout(self):
@@ -230,10 +249,12 @@ class IdeaBelt:
             image = self._load_image(item.image)
         if image is None:
             self._drop_sprite(slot)
+            slot["art_file"] = ""
             slot["emoji"].text = item.emoji
             slot["emoji"].visible = slot["shown"]
         else:
             slot["emoji"].text = ""
+            slot["art_file"] = item.image
             self._set_sprite(slot, image)
         if self._show_word:
             slot["word"].text = item.word
@@ -272,8 +293,8 @@ class IdeaBelt:
         return self._images[name]
 
     # --- input -------------------------------------------------------------
-    def item_at(self, x, y):
-        """The belt item whose circle contains pixel (x, y), or None. Only visible
+    def slot_at(self, x, y):
+        """The belt SLOT whose circle contains pixel (x, y), or None. Only visible
         slots are tested, so the spare off-region slots are never clickable."""
         hit = None
         for slot in self._slots:
@@ -285,16 +306,37 @@ class IdeaBelt:
                 dx = x - slot["cx"]
                 dy = y - slot["cy"]
                 if dx * dx + dy * dy <= self._radius * self._radius:
-                    hit = self._pool.item_at(slot["index"])
+                    hit = slot
         return hit
+
+    def item_at(self, x, y):
+        """The belt item at pixel (x, y), or None -- what the POOL serves for the
+        slot clicked. What that slot is DRAWING is a separate read (see
+        _slot_art), so a mismatch between the two is detectable rather than
+        assumed away."""
+        slot = self.slot_at(x, y)
+        item = None
+        if slot is not None:
+            item = self._pool.item_at(slot["index"])
+        return item
+
+    def _slot_art(self, slot):
+        """What a slot is actually showing on screen, read back off its render
+        objects: the drawn emoji, or the image file the sprite carries. Compared
+        against the pool's own art in the click log."""
+        art = slot["emoji"].text
+        if slot["sprite"] is not None and not art:
+            art = slot["art_file"]
+        return art
 
     def on_mouse_press(self, x, y):
         """Route a click at (x, y). Returns True when a picture was hit (the host
         pane then consumes the click), after handing its word to on_pick."""
-        item = self.item_at(x, y)
+        slot = self.slot_at(x, y)
         consumed = False
-        if item is not None:
-            L.log_20008(item.word, item.art)
+        if slot is not None:
+            item = self._pool.item_at(slot["index"])
+            L.log_20008(item.word, item.art, slot["index"], self._slot_art(slot))
             self._on_pick(item.word)
             consumed = True
         return consumed

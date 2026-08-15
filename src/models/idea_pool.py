@@ -87,15 +87,19 @@ class IdeaPool:
     """The pre-picked ring of belt items. Build once at game start; the belt view
     then only ever reads item_at(index) and asks for its size."""
 
-    def __init__(self, size=None, deck=None):
+    def __init__(self, size=None, deck=None, reason="opening"):
         # size: how many items the ring holds (idea_belt.pool_size). deck: the
         # loaded deck rows, injected by tests; None loads the configured file.
+        # reason: why this ring was dealt (opening / new game), for the log only --
+        # two rings for one game is the signature of the belt showing a ring the
+        # pool has already replaced.
         # Read at construction, NOT in the class body -- class-level CONFIG reads
         # freeze at import time, before a game mode is applied.
         rules = CONFIG.get("rules", {})
         if size is None:
             size = rules.get("idea_belt.pool_size", 50)
         self._size = max(1, int(size))
+        self._reason = reason
         self._deck = deck if deck is not None else load_deck()
         # How an item draws (and so what counts as a duplicate).
         art_rules = {
@@ -123,7 +127,8 @@ class IdeaPool:
         candidates = self._candidates()
         candidates = self._dedupe_rule(candidates)
         self._items = self._order_rule(candidates)
-        L.log_06009(len(self._items), [item.word for item in self._items])
+        L.log_06009(len(self._items), [item.word for item in self._items],
+                    self._reason)
 
     def _candidates(self):
         """Every item the deck can offer: one per non-empty word on each row,
