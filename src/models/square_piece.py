@@ -1,6 +1,6 @@
 import math
 import pyglet
-from models.gram import gram_font_size
+from models.gram import Gram, gram_font_size
 from models.gram_picker import rule_random_letters
 from models.gram_picker import rule_scrabble_distribution
 from models.gram_picker import rule_englishcorpus_random_unigram
@@ -140,6 +140,9 @@ class SquarePiece:
         self._overlays = []
         # Base font for a single letter; multi-letter grams shrink to fit.
         base_font_size = int(cell_size * 0.6)
+        # Kept so a LIVE (unplaced) cell can be re-fitted after its gram changes
+        # under a right-click (see relabel_gram_at), exactly as it was sized here.
+        self._base_font_size = base_font_size
         
         for i, _ in enumerate(self._shapes_data):
             cell = pyglet.shapes.BorderedRectangle(
@@ -276,6 +279,43 @@ class SquarePiece:
             return (1, 1)
         return min(self._shapes_data, key=lambda o: (o[0] - 1) ** 2 + (o[1] - 1) ** 2)
     
+    def cell_index_at(self, gx, gy):
+        """Which of this piece's GRAMS sits at board coordinate (gx, gy), or None
+        when the piece doesn't cover it. One gram per coordinate on this board,
+        so it is a plain position lookup."""
+        positions = self.get_cell_positions()
+        if (gx, gy) not in positions:
+            return None
+        return positions.index((gx, gy))
+
+    def relabel_gram_at(self, gx, gy, text):
+        """Replace the gram of the cell at (gx, gy) with `text` -- the LIVE
+        (unplaced) piece's counterpart to SquareGrid.relabel_cell, so right-click
+        gram-manipulation can reach a piece before it is placed
+        (game_screen.rightclicks_on_active_piece). Re-fits the label and its hunt
+        overlay to the new length, from the same base font the constructor used.
+        Returns True when a cell matched and was relabeled; False for a
+        coordinate this piece doesn't cover, or a WILD cell (rendered as a
+        sprite, with no letters to rewrite)."""
+        i = self.cell_index_at(gx, gy)
+        if i is None or self._grams[i].is_wild:
+            return False
+        gram = Gram(text)
+        self._grams[i] = gram
+        gram_font = gram_font_size(self._base_font_size, gram)
+        label = self._labels[i]
+        label.text = text
+        label.font_size = gram_font
+        # Recolor for the NEW gram: cell_text_color's gradient keys off gram
+        # length, so a length change must re-derive the glyph color.
+        label.color = cell_text_color(gram)
+        if self._overlays[i] is not None:
+            self._overlays[i].set_text(text, gram_font)
+        # Square labels sit at the cell center with no font-scaled nudge, so this
+        # is only re-syncing the overlay to the (unchanged) label position.
+        self._update_positions()
+        return True
+
     def get_cell_data(self):
         """Returns list of (grid_x, grid_y, cell, label, gram, overlay) for each
         cell. The gram travels with the render objects so the board can record what

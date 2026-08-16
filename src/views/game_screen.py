@@ -350,6 +350,9 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # MOVES to another cell starts fresh (rare, self-heals). Collapses
         # (4 letters -> 3) do NOT advance it, so the round-trip alternates cleanly.
         self._cvk_double_side = {}
+        # The live piece whose CVK slots are currently in _cvk_double_side; when a
+        # different piece becomes live those slots are dropped (see _piece_cvk_key).
+        self._cvk_piece = None
         self._menu_open = False
         self._ingame_menu = IngameMenu(window, screen_manager, ScreenType.MAIN_MENU)
 
@@ -786,6 +789,26 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._gram_manip_in_selecting = select_rule(
             "game_screen.gram_manip_in_selecting", gram_manip_in_selecting_rules
+        )()
+
+        # WHICH thing a right-click may reshape -- two independent slots, since
+        # editing a settled cell and shaping the piece you are about to drop are
+        # different verbs (game_screen.rightclicks_on_placed_piece /
+        # ..._on_active_piece). Both evaluated once (static config); see
+        # _handle_gram_manipulate, which prefers the live piece when both match.
+        rightclick_placed_rules = {
+            "rule_rightclicks_actionable_on_placed_piece": self._rule_rightclicks_actionable_on_placed_piece,
+            "rule_rightclicks_inert_on_placed_piece": self._rule_rightclicks_inert_on_placed_piece,
+        }
+        self._rightclick_on_placed_piece = select_rule(
+            "game_screen.rightclicks_on_placed_piece", rightclick_placed_rules
+        )()
+        rightclick_active_rules = {
+            "rule_rightclicks_actionable_on_active_piece": self._rule_rightclicks_actionable_on_active_piece,
+            "rule_rightclicks_inert_on_active_piece": self._rule_rightclicks_inert_on_active_piece,
+        }
+        self._rightclick_on_active_piece = select_rule(
+            "game_screen.rightclicks_on_active_piece", rightclick_active_rules
         )()
 
         # MOVING-phase mode bundle (game_screen.mode): which moving-phase strategy

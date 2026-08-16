@@ -177,17 +177,22 @@ def log_20003(x, y, button, phase, cell):
                      x=x, y=y, button=button, phase=phase, cell=cell_s)
 
 
-def log_20004(cell, old, new, reason):
+def log_20004(cell, old, new, reason, target="placed"):
     """Outcome of a right-click gram-manipulate (game_screen._handle_gram_
     manipulate). `cell` is the board cell the MOUSE resolved to (None off-board),
     `old`/`new` the gram before/after, `reason` one of applied / off_board /
-    fossilized / empty / rule_noop. log_20003 is the raw click; this says what the
-    game DID with it, so a no-op (wrong cell under the mouse, fossilized, empty)
-    is diagnosable from the log instead of by re-simulating."""
+    fossilized / empty / rule_noop / placed_target_off / piece_refused, and
+    `target` WHICH thing was acted on -- the settled board cell ('placed') or the
+    live unplaced piece ('active'). log_20003 is the raw click; this says what the
+    game DID with it, so a no-op (wrong cell under the mouse, fossilized, empty,
+    or the target's slot turned off) is diagnosable from the log instead of by
+    re-simulating -- the gap that hid 'right-clicking the live piece does
+    nothing', which read only as `empty`."""
     cell_s = "-" if cell is None else f"{cell[0]},{cell[1]}"
     detail = f": {old}->{new}" if new is not None else ""
-    session_log.emit(20004, f"gram-manip {reason} at {cell_s}{detail}",
-                     cell=cell_s, old=old or "-", new=new or "-", reason=reason)
+    session_log.emit(20004, f"gram-manip {target} {reason} at {cell_s}{detail}",
+                     cell=cell_s, old=old or "-", new=new or "-", reason=reason,
+                     target=target)
 
 
 def log_20005(action, cell, other=None):

@@ -1305,7 +1305,9 @@ a CONSONANT throughout** (so ITY / ARY / PHY are NOT treated as VCV/CVK). Each s
 - `rightclick_cvk` (consonant-vowel-consonant, e.g. MER) — `rule_cvk_double`: double a
   consonant, ALTERNATING which one across successive clicks so both forms are
   reachable — MER → MMER → MER → MERR → MER. Each doubled form collapses back on the
-  next click. The alternation is tracked per board cell (starts on the 'back'
+  next click. The alternation is tracked per board cell — per piece CELL INDEX when the
+  target is the live piece, which moves, so sliding it around can't scramble the
+  alternation, and a fresh piece starts clean (starts on the 'back'
   consonant, MER → MERR, the corpus-favored double). Corpus-backed: ~46% of CVK
   trigrams hit real words on the back double (cal→call, les→less), ~39% on the front
   (com→comm, per→pper).
@@ -1317,6 +1319,40 @@ Every OTHER 3+ shape (CKV like "tra", VCK like "ant", CKS like "str") is an
 unconfigured no-op — the corpus showed doubling a consonant inside a real cluster
 almost never yields a spellable chunk (CKV useful ~16% and front-only; VCK ~0%; CKS
 exactly 0%), so there's no catch-all rule for them.
+
+### game_screen.rightclicks_on_placed_piece / game_screen.rightclicks_on_active_piece
+WHICH of the two things under the cursor a gram-manipulate right-click may reshape.
+Two independent slots (both on by default), because they are different game verbs:
+reshaping a SETTLED cell edits the board you already committed to, while reshaping the
+ACTIVE (unplaced) piece is part of choosing what to commit — doubling the F of a live
+SINGLE to FF *before* dropping it, so SHERI + FF spells SHERIFF, rather than only
+being able to fix it after it lands. The `rightclick_*` SHAPE rules above are shared:
+whichever target is acted on, the same doubling/collapse rules apply.
+
+The live piece WINS when both could match, because it is drawn on top of the board —
+the player is right-clicking the letter they can see. (In practice the board cell under
+a live piece is empty anyway: a piece's cells only join the board when it's placed,
+which is why an active-piece right-click used to log `empty` and do nothing.) A click
+the live piece owns is consumed even when the shape rule declines, so it never falls
+through to the cell beneath it.
+
+- `rightclicks_on_placed_piece`
+  - `rule_rightclicks_actionable_on_placed_piece` — settled board cells are reshapeable
+    (the original behavior, and the only one before the active-piece slot existed).
+  - `rule_rightclicks_inert_on_placed_piece` — once a gram is placed its letters are
+    final; right-click only reaches the live piece.
+- `rightclicks_on_active_piece`
+  - `rule_rightclicks_actionable_on_active_piece` — the live piece's gram is reshapeable
+    before it is placed. WILD (emblem) piece cells refuse — they render as a sprite with
+    no letters to rewrite. A JUMBO cell covers six coordinates but holds one gram, so a
+    right-click anywhere on it hits that gram.
+  - `rule_rightclicks_inert_on_active_piece` — gram-manipulation is board-only (the
+    original behavior).
+
+Both off makes right-click fully inert regardless of the `rightclick_*` shape slots.
+The session log's code 20004 now carries `target=placed|active` so a replay shows which
+one a click resolved to (plus the `placed_target_off` reason when the slot is the thing
+that declined).
 
 ### game_screen.gram_manip_in_selecting
 Whether the gram-manipulate button (right-click) also works during the SELECTING

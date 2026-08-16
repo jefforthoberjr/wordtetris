@@ -200,6 +200,37 @@ class GramManipMixin:
         original behavior, and the hard phase separation the timed modes want)."""
         return False
 
+    # Right-click TARGET rules -- which of the two things under the cursor a
+    # gram-manipulate click may reshape. They are independent slots (both on is
+    # the normal setup) because they are different game verbs: reshaping a
+    # SETTLED cell edits the board you already committed to, while reshaping the
+    # ACTIVE piece is part of choosing what to commit -- the difference between
+    # fixing the board and aiming the piece you are about to drop.
+    #
+    # game_screen.rightclicks_on_placed_piece
+    def _rule_rightclicks_actionable_on_placed_piece(self):
+        """Right-click reshapes the gram in a SETTLED board cell (the original
+        behavior, and the only one before the active-piece slot existed)."""
+        return True
+
+    def _rule_rightclicks_inert_on_placed_piece(self):
+        """Right-click leaves settled board cells alone -- once a gram is placed
+        its letters are final."""
+        return False
+
+    # game_screen.rightclicks_on_active_piece
+    def _rule_rightclicks_actionable_on_active_piece(self):
+        """Right-click reshapes the gram in the LIVE (unplaced) piece under the
+        cursor, so a doubling can be applied BEFORE the piece is committed -- the
+        F of a live SINGLE becomes FF while you are still choosing where it goes
+        (SHERI + FF), instead of only after it lands."""
+        return True
+
+    def _rule_rightclicks_inert_on_active_piece(self):
+        """Right-click never touches the live piece -- gram-manipulation is a
+        board-only verb (the original behavior)."""
+        return False
+
     def _try_gram_manipulate(self, x, y, button):
         """If `button` is the gram-manipulate button (right-click), transform the
         clicked cell's gram and report True (the click is consumed). Shared by the
@@ -214,23 +245,40 @@ class GramManipMixin:
         return False
 
     def _handle_gram_manipulate(self, x, y):
-        """Right-click a board cell during MOVING (controls.yaml
-        mouse.gram_manipulate): transform that cell's gram via the
-        game_screen.rightclick_* rule for its vowel/consonant SHAPE (see
-        _apply_shape_rule) or wild-ness. Empty and fossilized cells are left
-        alone, the same as the swap rules. Mode-agnostic -- the MOVING modes never
-        see this button. A rule returning None (e.g. rule_rightclick_none, or a
-        shape with no rule) is a no-op."""
+        """Right-click a cell during MOVING (controls.yaml mouse.gram_manipulate):
+        transform its gram via the game_screen.rightclick_* rule for its
+        vowel/consonant SHAPE (see _apply_shape_rule) or wild-ness. A rule
+        returning None (e.g. rule_rightclick_none, or a shape with no rule) is a
+        no-op. Mode-agnostic -- the MOVING modes never see this button.
+
+        TWO possible targets share the cursor, each with its own on/off slot:
+        the LIVE piece (game_screen.rightclicks_on_active_piece) and the SETTLED
+        board cell (game_screen.rightclicks_on_placed_piece). The live piece wins
+        when both could match, because it is drawn ON TOP of the board -- the
+        player is right-clicking the letter they can see. In practice the board
+        cell under a live piece is empty anyway (a piece's cells only join the
+        board when it is placed), which is exactly why an active-piece right-click
+        used to read as 'empty' and do nothing.
+
+        Empty and fossilized cells are left alone, the same as the swap rules."""
         cell = self._board.cell_at(x, y)
         if cell is None:
             L.log_20004(None, None, None, "off_board")
             return
+        # The live piece first -- it is on top, and it hides the board cell under
+        # it. Returns True once it owns the click (even for a no-op), so a click
+        # on the piece never falls through to the cell beneath it.
+        if self._rightclick_on_active_piece and self._manipulate_active_piece(cell):
+            return
+        if not self._rightclick_on_placed_piece:
+            L.log_20004(cell, None, None, "placed_target_off", target="placed")
+            return
         if self._is_fossilized(cell):
-            L.log_20004(cell, None, None, "fossilized")
+            L.log_20004(cell, None, None, "fossilized", target="placed")
             return
         gram = self._board.gram_at(*cell)
         if gram is None:
-            L.log_20004(cell, None, None, "empty")
+            L.log_20004(cell, None, None, "empty", target="placed")
             return
         if gram.is_wild:
             new_text = self._rightclick_rules["vowelwild"](gram.text)
@@ -241,18 +289,75 @@ class GramManipMixin:
         if new_text is None:
             # A rule that declines (e.g. rule_rightclick_none, or a shape whose
             # slot is off) -- relabel nothing, but record that the click was seen.
-            L.log_20004(cell, gram.text, None, "rule_noop")
+            L.log_20004(cell, gram.text, None, "rule_noop", target="placed")
             return
         self._board.relabel_cell(cell[0], cell[1], new_text)
-        L.log_20004(cell, gram.text, new_text, "applied")
+        L.log_20004(cell, gram.text, new_text, "applied", target="placed")
         # The gram changed under an active hunt: re-light so the new letters
         # reflect the typed word (relabel_cell already re-synced the overlay).
         if self._moving_side_pane.hunt_text():
             self._refresh_hunt_highlight()
 
-    def _apply_shape_rule(self, cell, text):
+    def _manipulate_active_piece(self, cell):
+        """Right-click target #1 (game_screen.rightclicks_on_active_piece): the
+        LIVE piece. If the piece currently under player control covers `cell`,
+        reshape THAT cell's gram with the same shape rules the board path uses and
+        return True -- the click is consumed, no-op or not, since the piece sits on
+        top of the board cell. Returns False when there is nothing to act on (no
+        live piece, the piece is already placed or hidden, or it doesn't cover
+        this coordinate), leaving the click to the board path.
+
+        The piece carries its own grams and labels until it settles, so the edit
+        goes through piece.relabel_gram_at rather than board.relabel_cell; a WILD
+        cell renders as a sprite with no letters to rewrite, so it refuses."""
+        piece = self._current_piece()
+        if piece is None or piece.placed or not getattr(piece, "visible", True):
+            return False
+        index = piece.cell_index_at(*cell)
+        if index is None:
+            return False
+        gram = piece.get_cell_data()[index][4]
+        if gram.is_wild:
+            new_text = self._rightclick_rules["vowelwild"](gram.text)
+        elif len(gram) == 1:
+            new_text = self._rightclick_rules["unigram"](gram.text)
+        else:
+            new_text = self._apply_shape_rule(
+                self._piece_cvk_key(piece, index), gram.text)
+        if new_text is None:
+            L.log_20004(cell, gram.text, None, "rule_noop", target="active")
+            return True
+        if not piece.relabel_gram_at(cell[0], cell[1], new_text):
+            # Only a wild (sprite) cell refuses at this point; record it rather
+            # than silently dropping the click.
+            L.log_20004(cell, gram.text, None, "piece_refused", target="active")
+            return True
+        L.log_20004(cell, gram.text, new_text, "applied", target="active")
+        # Same re-light as the board path: the piece's letters feed the hunt
+        # highlight too, and relabel_gram_at already re-texted its overlay.
+        if self._moving_side_pane.hunt_text():
+            self._refresh_hunt_highlight()
+        return True
+
+    def _piece_cvk_key(self, piece, index):
+        """The CVK front/back alternation key for a LIVE piece cell. Board cells
+        key by coordinate, but a live piece MOVES, so keying it that way would
+        scramble the alternation as the player slides it around -- key it by cell
+        INDEX instead. The piece slots are dropped as soon as a different piece
+        becomes live, so a fresh piece starts from the default 'back' double
+        rather than inheriting its predecessor's side."""
+        if self._cvk_piece is not piece:
+            self._cvk_piece = piece
+            for key in [k for k in self._cvk_double_side if k[0] == "piece"]:
+                del self._cvk_double_side[key]
+        return ("piece", index)
+
+    def _apply_shape_rule(self, cvk_key, text):
         """Route a right-click on a 2+ letter gram to its shape's config slot
-        (see _gram_manip_family). cc/cv/vc/vv/ck own the digrams (and the doubled
+        (see _gram_manip_family). `cvk_key` identifies the cell for the ONE
+        stateful rule below -- a board coordinate for a settled cell, or
+        ('piece', index) for a live piece cell (see _piece_cvk_key); no other
+        shape reads it. cc/cv/vc/vv/ck own the digrams (and the doubled
         3-letter forms they produce); vcv/cvk own the trigrams; any 3+ shape with
         no family (CKV, VCK, CKS, ...) is a plain no-op. A matched family whose own
         slot is off also returns None -- each shape's behavior is governed solely
@@ -267,7 +372,7 @@ class GramManipMixin:
                 return None
             rule = self._rightclick_rules["cvk"]
             if len(text) == 3:
-                return rule(text, self._advance_cvk_side(cell))
+                return rule(text, self._advance_cvk_side(cvk_key))
             return rule(text)          # 4-letter collapse; side is irrelevant
         return self._rightclick_rules[family](text)
 

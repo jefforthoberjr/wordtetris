@@ -425,6 +425,13 @@ rules:
   game_screen.rightclick_ck: rule_ck_double             # ST->SST (front only)
   # game_screen.rightclick_ck: rule_rightclick_none
 
+  # WHICH thing a right-click may reshape: the settled board cell, the live piece,
+  # or both. [ref: game_screen.rightclicks_on_placed_piece / rightclicks_on_active_piece]
+  game_screen.rightclicks_on_placed_piece: rule_rightclicks_actionable_on_placed_piece
+  # game_screen.rightclicks_on_placed_piece: rule_rightclicks_inert_on_placed_piece
+  game_screen.rightclicks_on_active_piece: rule_rightclicks_actionable_on_active_piece
+  # game_screen.rightclicks_on_active_piece: rule_rightclicks_inert_on_active_piece
+
   # Also allow gram manipulation during SELECTING. [ref: game_screen.gram_manip_in_selecting]
   game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
   # game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_disabled
