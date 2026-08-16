@@ -928,7 +928,13 @@ class BoardSetupMixin:
         per-pool worker. `kind` labels the pieces in the session log.
 
         A piece the board has no room for is DROPPED (logged, left invisible) --
-        see _position_scattered and _settle_setup_piece."""
+        see _position_scattered and _settle_setup_piece.
+
+        An empty pool (count 0 -- e.g. a mode that wants missions but no
+        obstacles) places nothing rather than reaching for a first piece that
+        isn't there."""
+        if pool.size <= 0:
+            return
         while True:
             piece = pool.current_piece()
             self._orient_rule(piece)

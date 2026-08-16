@@ -25,10 +25,13 @@ rules:
   #no special color for points
   board.cell_text_color:  rule_cell_text_plain
 
-  # game_screen.setup_formation: rule_formation_scattered
+  game_screen.setup_formation: rule_formation_scattered
   # game_screen.obstacle_count: 6
   # game_screen.mission_count: 1
-  game_screen.setup_formation: rule_formation_jumbo_mission_center_obstacle_ring
+  # game_screen.setup_formation: rule_formation_jumbo_mission_center_obstacle_ring
+
+  game_screen.obstacle_count: 0
+  game_screen.mission_count: 1
 
   game_screen.cell_health: rule_cell_health_on
   game_screen.obstacle_health: rule_obstacle_health_fixed
@@ -71,6 +74,8 @@ rules:
   game_screen.rightclick_ck: rule_rightclick_none
   game_screen.rightclick_vcv: rule_rightclick_none
   game_screen.rightclick_cvk: rule_rightclick_none
+
+  game_screen.cell_overlap_player: rule_block_moveandplace_over_player_cell
 
   #autoselect words (instead of typing)
   game_screen.word_select: rule_select_mostwords_withoverlaps_withrepeats
