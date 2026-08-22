@@ -13,6 +13,24 @@ In this game, players are spelling out words. The player manipulate 'pieces' and
 The game_screen.py transitions between "phases" (e.g. MOVING and SELECTING). The game_screen has some major ways in which its gameplay is configured (see config.yaml), including "grid" square vs. hex grid (game_screen.grid), and different game "modes" (game_screen.mode). The different game modes defines about roughly half of the logic, UI and player's controls that get used at runtime. These are the biggest aspects of the game to clarify/specify when adding new rules to the game.
 
 
+# AUDIENCES
+I am experimenting with two audience types, and some rules exist to serve one and
+not the other.
+
+The first is ADULT WORD EXPERTS. Much of my early philosophy assumed this
+audience: never reveal whether a word can still be formed, let the player
+discover it. The size of the player's dictionary is a braggable metagame element,
+so I also want to prevent players from lazily farming their dictionary.
+
+The second is YOUNG PLAYERS, still learning vocabulary and still learning to
+spell. A young player who cannot immediately think of a word would get
+discouraged and stop playing the game. For the younger players, it is more of a
+"lead a horse to water": word idea -> here's how it's spelled -> find the letters
+-> wow look how many you collected this round -> type them (and trick them into
+practicing spelling in the process). The idea belt features are focused on this
+audience, which is why the belt is allowed to break the no-word-availability-hints
+rule that still holds everywhere else.
+
 # CONFIG FILES
 YOU CAN EDIT config.yaml
 config.yaml represents a master list of all the possible rules we've developed

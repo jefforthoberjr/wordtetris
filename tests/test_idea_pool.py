@@ -94,3 +94,65 @@ def test_image_art_falls_back_to_the_emoji():
         assert [pool.item_at(0).art, pool.item_at(1).art] == ["A", "bear.png"]
     finally:
         _restore()
+
+
+def test_clearing_a_word_strikes_every_ring_copy_of_it():
+    """One word, several ring positions (deck smaller than the ring): spelling it
+    blanks them ALL, or the belt would keep prompting for a word the player has
+    just spelled. A repeated ring holds the same item object at each position, so
+    the strike is reported once and every position goes dark."""
+    deck = [{"image": "", "emoji": "A", "word1": "apple", "word2": ""},
+            {"image": "", "emoji": "B", "word1": "bear", "word2": ""}]
+    try:
+        _with_rules(idea_belt__dedupe="rule_idea_dedupe_off",
+                    idea_belt__order="rule_idea_order_deck")
+        pool = idea_pool.IdeaPool(size=4, deck=deck)
+        assert pool.clear_word("APPLE") == ["A"]
+        assert pool.active_count() == 2
+        # The ring keeps its size and its order -- struck items stay in place and
+        # simply stop drawing, so no slot re-indexes mid-scroll.
+        assert pool.size() == 4
+        assert pool.words() == ["APPLE", "BEAR", "APPLE", "BEAR"]
+        assert [pool.item_at(i).cleared for i in range(4)] == [True, False, True, False]
+    finally:
+        _restore()
+
+
+def test_clearing_the_same_word_twice_strikes_nothing_the_second_time():
+    """Idempotence is what keeps the match bonus to one payment per word: the
+    caller pays only when a strike is reported."""
+    deck = [{"image": "", "emoji": "A", "word1": "apple", "word2": ""}]
+    try:
+        _with_rules(idea_belt__order="rule_idea_order_deck")
+        pool = idea_pool.IdeaPool(size=2, deck=deck)
+        assert pool.clear_word("apple") == ["A"]   # matched case-insensitively
+        assert pool.clear_word("APPLE") == []
+        assert pool.active_count() == 0
+    finally:
+        _restore()
+
+
+def test_two_pictures_of_one_word_both_come_off():
+    """Two deck rows can name the same word with different pictures; both are
+    struck, so the belt never keeps prompting for an already-spelled word."""
+    deck = [{"image": "", "emoji": "A", "word1": "apple", "word2": ""},
+            {"image": "", "emoji": "B", "word1": "apple", "word2": ""}]
+    try:
+        _with_rules(idea_belt__dedupe="rule_idea_dedupe_off",
+                    idea_belt__order="rule_idea_order_deck")
+        pool = idea_pool.IdeaPool(size=2, deck=deck)
+        assert pool.clear_word("APPLE") == ["A", "B"]
+        assert pool.active_count() == 0
+    finally:
+        _restore()
+
+
+def test_clearing_a_word_the_ring_never_held_strikes_nothing():
+    deck = [{"image": "", "emoji": "A", "word1": "apple", "word2": ""}]
+    try:
+        _with_rules(idea_belt__order="rule_idea_order_deck")
+        pool = idea_pool.IdeaPool(size=1, deck=deck)
+        assert pool.clear_word("BEAR") == []
+        assert pool.active_count() == 1
+    finally:
+        _restore()

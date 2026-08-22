@@ -43,6 +43,12 @@ class IdeaItem:
         # rule: an image filename, or the emoji. Also the dedupe key -- two items
         # showing the same picture are duplicates whichever art mode is on.
         self.art = art
+        # Struck off the belt because the player spelled this word on the board
+        # (idea_belt.match). The item KEEPS its place on the ring -- clearing it
+        # out would slide every later item up and shuffle both columns mid-scroll
+        # -- it simply stops drawing, so the picture leaves as a moving gap and
+        # the conveyor's rhythm is untouched. Reset per game with the ring.
+        self.cleared = False
 
 
 def deck_path():
@@ -87,12 +93,15 @@ class IdeaPool:
     """The pre-picked ring of belt items. Build once at game start; the belt view
     then only ever reads item_at(index) and asks for its size."""
 
-    def __init__(self, size=None, deck=None, reason="opening"):
+    def __init__(self, size=None, deck=None, reason="opening", targets=None):
         # size: how many items the ring holds (idea_belt.pool_size). deck: the
         # loaded deck rows, injected by tests; None loads the configured file.
         # reason: why this ring was dealt (opening / new game), for the log only --
         # two rings for one game is the signature of the belt showing a ring the
-        # pool has already replaced.
+        # pool has already replaced. targets: the words the BOARD can currently
+        # make (idea_belt.deal), which a share of the ring is drawn from; None
+        # deals blind, the original behavior. The pool never scans the board
+        # itself -- it is handed the answer, so it stays a plain inventory.
         # Read at construction, NOT in the class body -- class-level CONFIG reads
         # freeze at import time, before a game mode is applied.
         rules = CONFIG.get("rules", {})
@@ -100,6 +109,14 @@ class IdeaPool:
             size = rules.get("idea_belt.pool_size", 50)
         self._size = max(1, int(size))
         self._reason = reason
+        self._targets = None
+        if targets is not None:
+            self._targets = {word.upper() for word in targets}
+        # What share of the ring is drawn from the targeted words when targeting is
+        # on (idea_belt.target_share). Below 1 the rest is dealt blind, so the belt
+        # keeps showing pictures the board cannot make yet -- the conveyor stays a
+        # set of ideas rather than becoming a solution list.
+        self._target_share = float(rules.get("idea_belt.target_share", 0.7))
         self._deck = deck if deck is not None else load_deck()
         # How an item draws (and so what counts as a duplicate).
         art_rules = {
@@ -126,9 +143,58 @@ class IdeaPool:
     def _build(self):
         candidates = self._candidates()
         candidates = self._dedupe_rule(candidates)
-        self._items = self._order_rule(candidates)
+        if self._targets is None:
+            self._items = self._order_rule(candidates)
+        else:
+            self._items = self._blend_targets(candidates)
         L.log_06009(len(self._items), [item.word for item in self._items],
                     self._reason)
+
+    def _blend_targets(self, candidates):
+        """Deal a ring that MIXES pictures the board can currently make with blind
+        picks (idea_belt.deal + idea_belt.target_share).
+
+        Two sub-rings, each dealt by the active order rule so shuffled/deck order
+        still means what it says, then INTERLEAVED rather than concatenated: the
+        ring is a conveyor the player watches a few items of at a time, so
+        appending one block to the other would give a long run of makeable
+        pictures followed by a long run of impossible ones.
+
+        The targeted side is capped at how many DISTINCT targeted pictures exist --
+        it is never cycled to fill its quota. A board that can make three deck
+        words would otherwise deal a ring of those same three pictures over and
+        over; the blind side takes the slack instead. When the board can make none
+        of them, the whole ring is blind, so the belt never goes blank."""
+        targeted = [item for item in candidates if item.word in self._targets]
+        blind = [item for item in candidates if item.word not in self._targets]
+        share = min(1.0, max(0.0, self._target_share))
+        want = min(int(round(self._size * share)), len(targeted))
+        picked = self._order_rule(targeted)[:want] if want else []
+        # The blind side fills everything the targeted side did not, cycling as
+        # usual (its candidate list is the whole deck minus the targets, so it is
+        # rarely short).
+        rest = self._order_rule(blind)[:self._size - len(picked)]
+        return self._interleave(picked, rest)
+
+    def _interleave(self, picked, rest):
+        """Spread `picked` evenly through `rest`, keeping each list's own order.
+        Walks the combined length and takes from `picked` whenever its share of the
+        positions filled so far has fallen behind, so 10 targets among 40 blind
+        picks land roughly every fourth slot instead of in one block."""
+        total = len(picked) + len(rest)
+        merged = []
+        taken = 0
+        for slot in range(total):
+            wants_target = taken * total < (slot + 1) * len(picked)
+            if wants_target and taken < len(picked):
+                merged.append(picked[taken])
+                taken = taken + 1
+            elif len(merged) - taken < len(rest):
+                merged.append(rest[len(merged) - taken])
+            elif taken < len(picked):
+                merged.append(picked[taken])
+                taken = taken + 1
+        return merged
 
     def _candidates(self):
         """Every item the deck can offer: one per non-empty word on each row,
@@ -216,3 +282,38 @@ class IdeaPool:
     def words(self):
         """The ring's words in order -- for the session log and tests."""
         return [item.word for item in self._items]
+
+    # --- board match (idea_belt.match) -------------------------------------
+    def clear_word(self, word):
+        """Strike every ring item whose word is `word` off the belt, and return
+        their art (one entry per item struck, empty when the ring was not showing
+        that word at all -- the caller's test for "did the board just answer a
+        picture prompt").
+
+        Every picture of that word goes at once: a deck can name the same word on
+        two rows (two different pictures), and leaving the second up would ask a
+        player to spell a word they had just spelled. A ring that repeats -- deck
+        smaller than pool_size -- holds the SAME item object at each of its
+        positions, so one strike blanks all of them and reports one entry.
+        Idempotent: a word cleared twice strikes nothing the second time, so a
+        repeat clear pays no second bonus."""
+        struck = []
+        for item in self._items:
+            if not item.cleared and item.word == word.upper():
+                item.cleared = True
+                struck.append(item.art)
+        return struck
+
+    def targeted_count(self):
+        """How many ring items are pictures the board could make when the ring was
+        dealt (idea_belt.deal). 0 when targeting is off -- for the deal log and
+        tests, never shown to the player."""
+        if self._targets is None:
+            return 0
+        return sum(1 for item in self._items if item.word in self._targets)
+
+    def active_count(self):
+        """How many ring items are still showing (not struck off). The belt's
+        "all prompts answered" read; also what tells a full ring from one the
+        player has picked clean."""
+        return sum(1 for item in self._items if not item.cleared)

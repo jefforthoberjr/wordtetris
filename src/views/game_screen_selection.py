@@ -17,6 +17,49 @@ class SelectionMixin:
     # _start_new_game). Only MOVING_PLANT populates it. See _rule_formation_plant.
     _stem_cells = frozenset()
 
+    # The belt widget, when game_screen.idea_belt is on (GameScreen caches the
+    # pane's one). None here so the match rule below is safe on bare __new__ test
+    # instances and in every belt-off game.
+    _idea_belt = None
+
+    # --- idea-belt match rules (idea_belt.match) ---------------------------
+    # What a cleared word does to the right pane's picture conveyor. Called from
+    # every clear sink (_clear_paths, _shooting_submit) with the words that just
+    # cleared; returns the bonus points awarded, so a caller can tell whether the
+    # score readout needs a refresh.
+    def _rule_idea_match_ignore(self, words):
+        """The belt is a pure prompt: a cleared word leaves every picture turning
+        and pays nothing. The original behavior -- the board and the belt never
+        knew about each other."""
+        return 0
+
+    def _rule_idea_match_clear_and_bonus(self, words):
+        """A cleared word the belt was showing takes its picture off the conveyor
+        and pays scoring.idea_belt_match_bonus.
+
+        This is the belt's only feedback loop: the young player sees the picture
+        they just spelled disappear, which turns the conveyor from a list of
+        suggestions into a set of targets. Paid once per matching word (see
+        Scorer.idea_belt_match_bonus_rule) and only on the FIRST clear of it --
+        IdeaPool.clear_word reports nothing the second time, so a word cleared
+        again pays nothing again."""
+        points = 0
+        if self._idea_belt is not None:
+            for word in words:
+                struck = self._idea_belt.clear_word(word)
+                if struck:
+                    award = self._scorer.idea_belt_match_bonus_rule()
+                    points = points + award
+                    L.log_30012(word, struck, award,
+                                self._idea_belt.active_count())
+        return points
+
+    # Default so every clear path works on bare __new__ test instances, which never
+    # run GameScreen.__init__'s select_rule wiring. The shipped rule, not the
+    # ignore one -- with no belt built (_idea_belt None) it is a no-op anyway, and
+    # a test that installs a belt then gets the real behavior.
+    _idea_match_rule = _rule_idea_match_clear_and_bonus
+
     def _request_select(self):
         """The player asked to open SELECTING now (the moving pane's Select
         button). Delegates to the active mode's request_select hook so each mode
@@ -307,6 +350,11 @@ class SelectionMixin:
                 self._record_cleared_word(fw.word, variation, is_new, word_obscure, points)
                 # Single sink for every clear (interactive / batch / auto).
                 L.log_30002(fw.word, fw.path, variation, is_new, word_obscure, points)
+            # Idea belt (idea_belt.match): any of these words the belt was
+            # prompting with a picture comes off it now, paying the match bonus
+            # into the same running total. Placed before the score refresh below
+            # so the readout shows the bonus in the same frame as the words.
+            self._idea_match_rule(cleared_words)
             self._moving_side_pane.add_cleared_words(
                 cleared_words, new_flags, obscure_flags, word_scores)
             self._dictionary_count_rule(self._moving_side_pane, len(self._player_dict))

@@ -100,3 +100,29 @@ def test_one_slot_hangs_off_each_end_of_the_region():
     ys = sorted(p[2] for p in belt.positions())
     assert ys[0] < 0
     assert ys[-1] > 400.0
+
+
+def _match_belt(pool):
+    """A bare belt wrapping `pool`, with no slots -- enough to exercise the
+    surface the board's match rule calls (see GameScreen's idea_belt.match rule),
+    which is where a missing passthrough shows up."""
+    belt = _belt()
+    belt._pool = pool
+    belt._slots = []
+    belt._slot_count = 0
+    return belt
+
+
+def test_the_board_match_surface_reaches_the_pool():
+    """The match rule calls clear_word() and active_count() on the BELT, but the
+    ring is the pool's -- both have to pass through. A missing passthrough threw
+    mid-clear, which pyglet swallows, so the word never listed and the score never
+    refreshed even though the picture had already gone."""
+    from models.idea_pool import IdeaPool
+    deck = [{"image": "", "emoji": "A", "word1": "apple", "word2": ""},
+            {"image": "", "emoji": "B", "word1": "bear", "word2": ""}]
+    belt = _match_belt(IdeaPool(size=2, deck=deck))
+    assert belt.active_count() == 2
+    assert belt.clear_word("APPLE") == ["A"]
+    assert belt.active_count() == 1
+    assert belt.clear_word("APPLE") == []

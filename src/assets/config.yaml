@@ -45,6 +45,7 @@ scoring:
   new_word_bonus:            15
   plant_word_multiplier:     1           # MOVING_PLANT: a word grown off the stem scores this many times as much (1 = off; the plant preset sets it)
   fill_board_bonus:          100
+  idea_belt_match_bonus:     100         # spelling a word the idea belt is showing a picture of [ref: scoring.idea_belt_match_bonus]
   time_remaining_per_second: 1
   word_score_display:        breakdown   # sum | breakdown -- per-word score readout [ref: scoring.word_score_display]
   # word_score_display:        sum         # sum | breakdown -- per-word score readout [ref: scoring.word_score_display]
@@ -259,7 +260,8 @@ rules:
   game_screen.idea_belt: rule_idea_belt_on
   idea_belt.visible_items: 6
   idea_belt.window_offset:  15
-  idea_belt.scroll_speed:   0.25
+  # idea_belt.scroll_speed:   0.25
+  idea_belt.scroll_speed:   0.05
   idea_belt.show_word:   rule_idea_word_hidden
   # idea_belt.show_word: rule_idea_word_shown
 
@@ -271,6 +273,17 @@ rules:
   # idea_belt.dedupe:    rule_idea_dedupe_off
   idea_belt.order:       rule_idea_order_shuffled
   # idea_belt.order:     rule_idea_order_deck
+
+  # Clearing a word the belt shows takes its picture off + pays the bonus. [ref: idea_belt.match]
+  idea_belt.match:       rule_idea_match_clear_and_bonus
+  # idea_belt.match:     rule_idea_match_off
+
+  # How the ring is dealt: blind, or aimed at what the board can make. [ref: idea_belt.deal]
+  # idea_belt.deal:      rule_idea_deal_blind
+  idea_belt.deal:        rule_idea_deal_board_supply
+  # idea_belt.deal:      rule_idea_deal_board_formable
+  # Share of the ring drawn from board-makeable words (0-1). [ref: idea_belt.target_share]
+  idea_belt.target_share: 1.0
 
   # Where each live player piece spawns. [ref: game_screen.spawn]
   game_screen.spawn:        rule_spawn_random_spot
@@ -471,9 +484,9 @@ rules:
   game_screen.endgame_intro_seconds: 2.0
 
   # ENDGAME TYPING BONUS: how the words to type are displayed. [ref: endgame.display]
-  # endgame.display: rule_endgame_display_page
+  endgame.display: rule_endgame_display_page
   # endgame.display: rule_endgame_display_scroll
-  endgame.display: rule_endgame_display_belt
+  # endgame.display: rule_endgame_display_belt
 
   # ENDGAME scrolling display: words on screen + words/second. [ref: endgame.display]
   endgame.scroll_visible_words: 5
@@ -489,8 +502,8 @@ rules:
   endgame.belt_min_ring:       0
 
   # ENDGAME TYPING BONUS: draw each word as plain text or as its cleared cells. [ref: endgame.render]
-  endgame.render: rule_endgame_render_text
-  # endgame.render: rule_endgame_render_cells
+  # endgame.render: rule_endgame_render_text
+  endgame.render: rule_endgame_render_cells
 
   # ENDGAME TYPING BONUS: order the words to type are presented in. [ref: endgame.order]
   endgame.order: rule_endgame_order_cleared

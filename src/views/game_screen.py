@@ -955,6 +955,25 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             {"rule_idea_belt_on": True, "rule_idea_belt_off": False},
         )
         self._idea_belt = None
+        # How the belt's ring is DEALT (idea_belt.deal): blind from the whole deck,
+        # or targeted at what the board can currently make. Resolved before the
+        # panes are built -- a targeted belt opens with an empty ring and is dealt
+        # by _deal_idea_belt once each game's formation is down. See WordFindMixin.
+        idea_deal_rules = {
+            "rule_idea_deal_blind": self._rule_idea_deal_blind,
+            "rule_idea_deal_board_supply": self._rule_idea_deal_board_supply,
+            "rule_idea_deal_board_formable": self._rule_idea_deal_board_formable,
+        }
+        self._idea_deal_rule = select_rule("idea_belt.deal", idea_deal_rules)
+        # What a cleared word does to the belt (idea_belt.match): strike the
+        # matching picture off and pay the match bonus, or leave the conveyor
+        # alone. Resolved even when the belt is off -- the rule reads
+        # self._idea_belt, which stays None there, so it is a no-op.
+        idea_match_rules = {
+            "rule_idea_match_clear_and_bonus": self._rule_idea_match_clear_and_bonus,
+            "rule_idea_match_off": self._rule_idea_match_ignore,
+        }
+        self._idea_match_rule = select_rule("idea_belt.match", idea_match_rules)
         # Cap on how many distinct cell-assemblies the constellation matcher
         # returns per submitted word (the disambiguation chooser cycles them;
         # auto-pick keeps the fewest-cell one). Ignored by the other modes.
@@ -1585,6 +1604,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # cell reveals in the fossilized fade category). A no-op for the other
         # first-word variants.
         self._fossil_first_word_seed_rule()
+
+        # Deal the idea belt's ring against the board the formation just laid
+        # (idea_belt.deal). Here because this is the first moment there IS a board
+        # to scan -- the belt's own reset() above runs before the grid is even
+        # rebuilt. A no-op with the belt off or dealing blind.
+        self._deal_idea_belt()
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,

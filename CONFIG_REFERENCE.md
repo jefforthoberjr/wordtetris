@@ -166,6 +166,19 @@ digram+trigram word ~33, an 8-letter new word over an obstacle ~75).
 | `new_word_bonus` | word is NEW to the player's lifetime dictionary |
 | `fill_board_bonus` | whole board filled ONCE (what "filled" means is mode-dependent; see `game_screen.fill_board`) |
 | `time_remaining_per_second` | per whole second left on the clock at game end |
+| `idea_belt_match_bonus` | word answered an IDEA BELT picture prompt (see `scoring.idea_belt_match_bonus`) |
+
+#### scoring.idea_belt_match_bonus
+Points for clearing a word the idea belt is showing a picture of (`idea_belt.match`
+must be on, which it is by default when the belt is up). Unlike every other weight
+in this table it is NOT part of a word's own score: it is an event the BELT reports,
+so it lands in the running total on its own and the word's `+NN` readout stays its
+plain composition. Paid ONCE per word matched, however many copies of that picture
+the ring held, and only on the first clear of that word.
+
+Note the belt hides the score readout while it is up (that is the point of belt
+mode), so a young player sees the bonus as the picture LEAVING the conveyor; the
+points themselves show up in the end-of-game total.
 
 #### scoring.during_game
 Whether points are tallied WHILE the game is being played. `enabled` is the
@@ -913,6 +926,58 @@ Ring deal order. `rule_idea_order_shuffled` shuffles the deck (drawing extra
 shuffled passes if the deck is smaller than the ring). `rule_idea_order_deck` keeps
 the file's own order, cycled to fill the ring -- a stable belt for tuning a
 hand-curated deck.
+
+### idea_belt.match
+What a cleared word does to the belt. `rule_idea_match_clear_and_bonus` treats the
+conveyor as a set of TARGETS: spell a word the belt is showing and its picture comes
+off the belt for the rest of the game, paying `scoring.idea_belt_match_bonus` (100 by
+default). Every ring copy of that picture goes at once — with `idea_belt.dedupe` off,
+or a deck smaller than the ring, one word can sit at several ring positions, and
+leaving the others up would ask the player to spell what they just spelled. The item
+keeps its PLACE on the ring rather than being spliced out (that would re-index every
+later slot mid-scroll); it simply stops drawing, so it leaves as a moving gap and the
+belt's rhythm is unchanged. `rule_idea_match_off` is the original behavior: the belt
+is a pure prompt and never reacts to the board.
+
+Applies to every clear route (the phase-end batch, clear-on-submit, botanical grows,
+shooting-gallery shots). Logged as `30012`.
+
+### idea_belt.deal
+WHICH pictures the ring is dealt from. The ring is dealt once per game, after the
+opening formation is down (the first moment there is a board to scan), and never
+re-picked during play — so this aims the belt at the board the player is *starting*
+from.
+- `rule_idea_deal_blind` — the original: deal at random from the whole deck, knowing
+  nothing about the board. The default, and what every non-belt mode keeps.
+- `rule_idea_deal_board_supply` — target the deck words the board's GRAMS can supply:
+  can the word be cut into a sequence of grams the board carries, ignoring where
+  those cells sit. The loose sense of "available" — exact in the type-anywhere modes
+  (constellation / omniswap), and elsewhere "the letters are out there". Reuses the
+  matcher behind the F3 word sample, run over the deck's few hundred words rather
+  than the dictionary.
+- `rule_idea_deal_board_formable` — target the deck words the board can spell for
+  real, by PATH (stage-1 pathfinding, filtered to the deck). Strictest, and the
+  strongest hint; on a sparse opening board it can return almost nothing, and the
+  blind share then fills the ring.
+
+Note this is the game's one deliberate exception to the never-reveal-formability
+rule: a targeted belt is telling a young player "these are things you can make right
+now", which is the point of belt mode. `idea_belt.target_share` is what keeps it from
+becoming a solution list. Logged as `06010` (deck words scanned / matched / ring
+slots targeted), immediately before the `06009` ring order.
+
+### idea_belt.target_share
+What fraction of the ring (0–1) is drawn from the board-makeable words when
+`idea_belt.deal` is targeting; the rest is dealt blind. 1.0 makes every picture
+achievable — a pure to-do list; 0.8 (the default) leaves about a fifth of the
+conveyor aspirational, so the belt still shows ideas the player cannot make yet.
+
+The targeted side is never CYCLED to meet its quota: it is capped at how many
+distinct makeable pictures exist, and the blind side takes the slack. A board that
+can make only three deck words therefore deals three targeted pictures and fills the
+rest blind, instead of showing the same three over and over. The two sides are
+interleaved, not concatenated, so targeted pictures are spread around the loop rather
+than arriving in one block.
 
 ### game_screen.spawn
 Player-piece spawn: where each single live piece appears, one at a time.

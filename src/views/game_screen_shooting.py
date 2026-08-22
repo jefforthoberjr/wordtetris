@@ -63,6 +63,10 @@ class ShootingMixin:
         pane.add_cleared_words([word], [is_new], [obscure], [display])
         pane.accept_word(word, is_new, obscure, display)
         self._dictionary_count_rule(pane, len(self._player_dict))
+        # Idea belt (idea_belt.match): the shot word may answer a picture prompt,
+        # same as any other clear route -- before the readout refresh so the bonus
+        # is in the total it shows.
+        self._idea_match_rule([word])
         self._refresh_score()
         # Any award changes the F3 formable-word sample basis; recompute lazily.
         self._dbg_words_dirty = True

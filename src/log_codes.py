@@ -373,6 +373,21 @@ def log_30011(held):
                      cells=cells)
 
 
+def log_30012(word, arts, points, remaining):
+    """A cleared word answered an idea-belt picture prompt (idea_belt.match): its
+    picture(s) came off the belt and the match bonus was paid. `arts` is what came
+    off (one entry per ring copy struck -- more than one when the same picture sat
+    at several ring positions), `points` the bonus (one payment per word, whatever
+    the copy count), and `remaining` how many ring items are still showing.
+
+    Emitted only on a real strike, so a replay can count prompts answered per game
+    by grepping this code; the word's own score is the preceding log_30002, and the
+    ring it was struck from is log_06009."""
+    session_log.emit(30012, f"idea matched {word} (+{points})",
+                     word=word, arts=";".join(arts), copies=len(arts),
+                     points=points, remaining=remaining)
+
+
 # --- 4xxxx  timers -----------------------------------------------------------
 # Per-tick countdown values are NOT logged (60/sec is pure noise); only the
 # meaningful boundaries -- the clock being (re)set to full and hitting zero.
@@ -542,6 +557,21 @@ def log_06008(kind, cells, health):
     budget the board opened with -- the per-hit lines are log_30009."""
     session_log.emit(6008, f"{kind} health {health} on {cells} cells",
                      kind=kind, cells=cells, health=health)
+
+
+def log_06010(deck_words, targets, targeted_items):
+    """The idea belt's ring was dealt against the BOARD (idea_belt.deal): how many
+    words the deck offers, how many of them the opening board can make, and how
+    many ring slots ended up holding one (the rest are blind picks, per
+    idea_belt.target_share). The ring itself is the log_06009 line that follows.
+
+    `targets` near 0 means the scan found almost nothing -- the ring is then
+    effectively blind, which is the thing to check before blaming the blend."""
+    session_log.emit(6010,
+                     f"idea belt targeted {targets}/{deck_words} deck words "
+                     f"({targeted_items} of the ring)",
+                     deck_words=deck_words, targets=targets,
+                     targeted_items=targeted_items)
 
 
 def log_06009(size, words, reason):

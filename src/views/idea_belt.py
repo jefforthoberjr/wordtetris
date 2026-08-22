@@ -22,7 +22,7 @@ import pyglet
 
 from views.shaders import get_shape_shader
 from config import CONFIG, get_color
-from models.idea_pool import IdeaPool, images_dir
+from models.idea_pool import IdeaPool, images_dir, load_deck
 import log_codes as L
 
 
@@ -43,6 +43,11 @@ class IdeaBelt:
     # configured to show few items the band grows and the gaps open up, which is
     # the "space between the icons" a sparse belt should read as.
     CIRCLE_FRACTION = 0.38
+    # Defaults so the bare __new__ instances the geometry tests build (no GL
+    # context, only the fields positions() reads) still answer the dealing
+    # questions. A real belt sets both in __init__.
+    _targeted = False
+    _deck = ()
     # Art is inset inside its circle so the ring stays visible around it: a
     # picture fits the square inscribed in the disc. Emoji are drawn as TEXT, and
     # a glyph's em box is taller than the ink inside it, so they take their own
@@ -50,13 +55,18 @@ class IdeaBelt:
     ART_FRACTION = 0.62
     EMOJI_FRACTION = 1.15
 
-    def __init__(self, x, y, width, height, on_pick, pool=None):
+    def __init__(self, x, y, width, height, on_pick, pool=None, targeted=None):
         # (x, y, width, height): the pane region the belt owns -- in practice
         # everything below the typed field / controls, i.e. the space the score,
         # cleared-word list and dictionary count used before the belt took over.
         # on_pick(word): fires when a picture is clicked; the host pane fills its
         # typed field with `word`. pool: injected by tests; None builds one from
-        # the configured deck.
+        # the configured deck. targeted: whether the ring is dealt from a scan of
+        # the BOARD -- read from idea_belt.deal when None (tests pass it directly).
+        # The board does not exist yet at pane-build time, so a targeted belt opens
+        # EMPTY and GameScreen deals it via retarget() once the opening formation is
+        # down. Read here rather than passed down from GameScreen so neither pane
+        # has to carry a flag it makes no use of.
         self._x = x
         self._y = y
         self._width = width
@@ -74,7 +84,24 @@ class IdeaBelt:
         }
         self._show_word = word_rules.get(
             rules.get("idea_belt.show_word", "rule_idea_word_hidden"), False)
-        self._pool = pool if pool is not None else IdeaPool()
+        if targeted is None:
+            targeted = (rules.get("idea_belt.deal", "rule_idea_deal_blind")
+                        != "rule_idea_deal_blind")
+        self._targeted = targeted
+        # The deck is read ONCE and handed to every ring this belt deals: a
+        # targeted belt re-deals per game, and re-reading the CSV each time would
+        # be pure I/O for a file that cannot change mid-session. It is also what
+        # deck_words() offers the board scan.
+        self._deck = load_deck()
+        if pool is not None:
+            self._pool = pool
+        elif targeted:
+            # No board to scan yet: an empty ring draws nothing (every slot hides
+            # on size 0) and is replaced by retarget() in the same tick the game
+            # starts, before the first frame.
+            self._pool = IdeaPool(deck=[], reason="awaiting board")
+        else:
+            self._pool = IdeaPool(deck=self._deck)
         # This ring has not been played yet -- see reset(), which leaves it alone
         # the first time so a game does not open on its second ring.
         self._unused_ring = True
@@ -140,26 +167,81 @@ class IdeaBelt:
         self._layout()
 
     def reset(self):
-        """New game: deal a fresh ring and rewind the belt to its start.
+        """New game: deal a fresh BLIND ring and rewind the belt to its start.
 
         A belt that was just built and has never scrolled keeps the ring it was
         born with: GameScreen creates the pane and then immediately starts the
         first game, so re-dealing here would deal (and log) a second ring for a
         game whose first one nobody had seen yet.
 
-        Every slot must also FORGET which ring item it is showing. A new ring
-        reuses the same index numbers, so a slot whose index has not changed would
-        otherwise keep the old ring's picture (_place only reloads art when the
-        index changes) while the pool hands out the new ring's word for it -- the
-        player clicks a snowflake and gets BOOK, until the belt scrolls far enough
-        for every slot to land on a fresh index."""
-        if not self._unused_ring:
-            self._pool = IdeaPool(reason="new game")
+        A TARGETED belt (idea_belt.deal) deals no ring here at all: this runs
+        before the new game's board exists, so its ring comes from retarget()
+        after the formation is down. Rewinding still happens for both."""
+        if not self._unused_ring and not self._targeted:
+            self._pool = IdeaPool(deck=self._deck, reason="new game")
         self._unused_ring = False
+        self._rewind()
+
+    def _rewind(self):
+        """Send the belt back to the start of its ring and make every slot FORGET
+        the item it is showing. Shared by reset() and retarget().
+
+        The forgetting matters: a new ring reuses the same index numbers, so a slot
+        whose index has not changed would keep drawing the old ring's picture
+        (_place only reloads art when the index changes) while the pool hands out
+        the new ring's word for it -- the player clicks a snowflake and gets BOOK,
+        until the belt scrolls far enough for every slot to land on a fresh
+        index."""
         self._scroll = 0.0
         for slot in self._slots:
             slot["index"] = None
         self._layout()
+
+    # --- board-targeted dealing (idea_belt.deal) ---------------------------
+    def deck_words(self):
+        """Every word this belt's deck can prompt with, upper-cased and
+        de-duplicated -- the candidate list the board scan filters. Scanning the
+        DECK rather than the dictionary is what keeps that scan cheap: a few
+        hundred words, not sixty thousand."""
+        words = set()
+        for row in self._deck:
+            for key in ("word1", "word2"):
+                if row.get(key):
+                    words.add(row[key].upper())
+        return sorted(words)
+
+    def retarget(self, targets):
+        """Deal this game's ring, drawing a share of it from `targets` -- the deck
+        words the board can currently make (idea_belt.deal / idea_belt.target_share)
+        -- and return how many of the ring's items came from that set.
+
+        Called by GameScreen once the opening formation is down, which is the
+        earliest moment there is a board to scan. A blind belt never calls it."""
+        self._pool = IdeaPool(deck=self._deck, targets=targets,
+                              reason="board targeted")
+        self._unused_ring = False
+        self._rewind()
+        return self._pool.targeted_count()
+
+    # --- board match (idea_belt.match) -------------------------------------
+    def clear_word(self, word):
+        """The player spelled `word` on the board: take its picture(s) off the
+        belt and report their art (empty when the ring was not showing it).
+
+        Nothing else has to happen -- _place re-reads each item's cleared flag
+        every frame, so a picture that is on screen right now blanks on the next
+        tick rather than waiting to scroll past. Sliding items out of the ring
+        instead would re-index every later slot mid-scroll; see IdeaPool.clear_word."""
+        struck = self._pool.clear_word(word)
+        if struck:
+            self._layout()
+        return struck
+
+    def active_count(self):
+        """How many ring items are still showing (not struck off) -- the belt's
+        "prompts left" read, for the match log. Straight through to the pool, which
+        owns what is on the ring; the belt only owns where it is drawn."""
+        return self._pool.active_count()
 
     def _layout(self):
         """Place both windows for the current scroll position.
@@ -189,9 +271,13 @@ class IdeaBelt:
     def _place(self, slot, index, cy):
         """Move one slot to `cy`, showing ring item `index`. Slots whose band has
         run off either end of the region are hidden rather than drawn outside the
-        pane (the spare slots at each end are always one of these)."""
+        pane (the spare slots at each end are always one of these) -- and so are
+        slots holding an item the board already answered (idea_belt.match), which
+        rides around as an empty gap on the belt."""
         shown = (cy >= self._y and cy <= self._y + self._height
                  and self._pool.size() > 0)
+        if shown and self._pool.item_at(index).cleared:
+            shown = False
         if shown != slot["shown"]:
             self._set_visible(slot, shown)
         if shown:

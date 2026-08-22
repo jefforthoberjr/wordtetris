@@ -41,6 +41,12 @@ class Scorer:
         # other mode. See word_points_breakdown_rule's stem_cells.
         self._plant_word_multiplier = cfg.get("plant_word_multiplier", 1)
         self._fill_board_bonus = cfg.get("fill_board_bonus", 0)
+        # Points for spelling a word the idea belt was showing a picture of
+        # (idea_belt.match). Not part of a word's own score: it is an event the
+        # BELT reports, so it lands via idea_belt_match_bonus_rule rather than in
+        # word_points_breakdown_rule, and the per-word "+NN" readout stays the
+        # word's own composition.
+        self._idea_belt_match_bonus = cfg.get("idea_belt_match_bonus", 0)
         self._time_remaining_per_second = cfg.get("time_remaining_per_second", 0)
         self._word_score_display = cfg.get("word_score_display", "sum")
         self._total = 0
@@ -171,6 +177,16 @@ class Scorer:
         total stays the single source of truth.) Zero with in-play scoring off
         (scoring.during_game -- filling the board is an in-play feat)."""
         return self.add_bonus(self.during_game_points_rule(self._fill_board_bonus))
+
+    def idea_belt_match_bonus_rule(self):
+        """Bonus for clearing a word the idea belt was prompting with a picture,
+        added to the total; returns it. Paid once per WORD matched, however many
+        ring copies of that picture come off the belt with it -- the feat is
+        answering the prompt, not how often the ring happened to hold it. The
+        caller owns deciding a match happened (see IdeaPool.clear_word, which only
+        reports a strike the first time). Zero with in-play scoring off
+        (scoring.during_game -- the belt only turns during a played game)."""
+        return self.add_bonus(self.during_game_points_rule(self._idea_belt_match_bonus))
 
     def add_bonus(self, points):
         """Add already-computed `points` to the running total and return them
