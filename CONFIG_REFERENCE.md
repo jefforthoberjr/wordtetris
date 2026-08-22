@@ -1291,9 +1291,15 @@ board can't supply — a quick "you haven't got that letter" cue. A supply-COUNT
 (not mere existence): the board's occupied grams are pooled into a multiset of letters
 (a wild cell counts as one of every vowel), and each occurrence of a letter in the word
 past the board's available count is reddened. So a word needing two S when the board has
-one S reddens the *second* S; a letter the board has none of reddens every copy. NO
-tiling / arrangement awareness — but the letter count is a hard upper bound on any
-tiling, so a reddened letter is provably unspellable. This is the same computation that
+one S reddens the *second* S; a letter the board has none of reddens every copy. The
+count is restricted to grams that could sit inside the word (substring grams), and it is
+unioned with a per-POSITION check — a slot no board gram can cover reddens too, even when
+the loose letter exists elsewhere. Both are necessary conditions for any tiling, so a
+reddened letter is provably unspellable. The two passes cooperate on WHICH copy reddens:
+a scarce letter's available copies are spent on the positions a gram can actually cover,
+so the surplus flag lands on a doomed slot rather than on a letter sitting inside a gram
+the player is building around (DIAGONAL against a board whose only A is inside NAL
+reddens `D`,`A`,`G`,`O` and leaves `NAL` clean). This is the same computation that
 splits the rejection into `not_on_board_missing_letter` (some letter over-demanded) vs
 `not_on_board_gram_mismatch` (supply sufficient, arrangement fails), so the highlight
 and the message/icon always agree. Rides on the ghost, so it needs

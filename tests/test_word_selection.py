@@ -1217,3 +1217,23 @@ def test_constellation_no_replenish_leaves_cells_empty():
     g._on_submit_word("cat")
     assert called == []                      # no-replenish never refills
     assert g._board.cells == {}
+
+
+def test_scarce_letter_is_spent_on_the_coverable_position():
+    # DIAGONAL on a board whose only A lives inside the NAL gram (HA's A doesn't
+    # count -- HA isn't a substring of DIAGONAL, so no tiling could place it).
+    # Supply of A is 1 against a demand of 2, but the two A positions are NOT
+    # interchangeable: index 6 is covered by NAL, index 2 is covered by nothing.
+    # The one placeable A must be spent on index 6, so only the unreachable
+    # "D...AGO" letters redden -- reddening the A of NAL would tell the player the
+    # very gram they're building around is unusable (from the 2026-08-23 session).
+    g = _game(FakeBoard({
+        (0, 0): "NAL", (1, 0): "HA", (2, 0): "I", (3, 0): "N", (4, 0): "L",
+    }))
+    g._missing_letter_highlight = True
+    g._begin_selection([(0, 0)])
+    g._on_submit_word("diagonal")
+    assert g._selecting_side_pane.reason == "not_on_board_missing_letter"
+    # D I A G O N A L -- D/A/G/O unreachable, the NAL tail (indices 5-7) intact.
+    assert g._selecting_side_pane.missing == [
+        True, False, True, True, True, False, False, False]

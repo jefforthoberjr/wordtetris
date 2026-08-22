@@ -6,6 +6,19 @@ GAME NAMES
 
 * catalyst cata LIST
 
+Throughout this whole gramming algorithm measuring exprience, I've learned there are actually fewer patterns than expected; that is, fewer clean trigrams that fit nicely into different ideating roles that I thought. So the same few grams re-appear in gameplay. Seeing the same grams over and over might get a bit old. 
+
+
+Some game modes are really only viable, if you have a large vocabulary.
+
+Dictionary page sort option, from most obscure to least obscure
+
+
+Magnets
+More of a mode to explore the dictionary and patterns.
+I move two grams near each other with a little gap, then all the possible fill in the blank space in between fills with possible ghost words.
+Player to get more points if they can actually spell out all the fillin gap words (using the magnets ghosts as a massive hint mode), but otherwise still insentivizing players to pick two magnet grams that are very well partnered, with little gapping in between.
+
 
 Lexivorous Lexivore
 -game mode where a little monster character shows up, with a gram painted on their belly. Then they eat, and grow fat bellies.
@@ -14,6 +27,7 @@ Lexivorous Lexivore
 -Optional burps out new grabs
 
 
+PECKISH => did you mean peck, puckish 
 
 
 I'd like to just hammer out a bunch of "wish" words up front, as like a set of templates that I'd like to fill in. Then reveal the pool of little glue grams (i.e. unigrams) to try and fill in my templates. So that I can idea words, then hunt and piece them together, in separate phases of the game (or at least in separte batches).

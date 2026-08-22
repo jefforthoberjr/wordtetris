@@ -604,7 +604,7 @@ class SelectionMixin:
                 counts.update(gram.text)
         return counts
 
-    def _excess_letters(self, word):
+    def _excess_letters(self, word, uncoverable=None):
         """One bool per letter of `word`: True where that OCCURRENCE outruns the board's
         PLACEABLE supply of that letter -- i.e. the word needs more of it than any tiling
         could ever lay down. The first N copies of a letter (N = placeable supply) read as
@@ -613,11 +613,23 @@ class SelectionMixin:
         board has one S, and SPONSOR's 2nd O when the only spare O's are trapped in grams
         (SHO / TION / OND) that can't tile into SPONSOR. Uses the word-restricted supply,
         not the board-wide census, so those trapped copies don't mask the shortage. Drives
-        both the reason split and the ghost highlight, so they agree."""
+        both the reason split and the ghost highlight, so they agree.
+
+        `uncoverable` (the _uncoverable_flags of the same word) makes the scarce supply
+        spend itself POSITION-AWARE: a position no gram can cover is already flagged by
+        that signal, so it neither claims a copy of the letter nor gets an excess flag
+        here. Without it the supply is handed out blindly left-to-right and the surplus
+        lands on the LAST occurrence even when that one is the placeable one -- DIAGONAL
+        on a board whose only A is inside NAL reddened the A of NAL (the gram the player
+        was building around) instead of the unreachable A of "AGO". Pass None to get the
+        original position-blind allocation."""
         avail = self._board_letter_counts_for_word(word)
         used = Counter()
         flags = []
-        for ch in word.upper():
+        for i, ch in enumerate(word.upper()):
+            if uncoverable is not None and uncoverable[i]:
+                flags.append(False)   # already flagged; don't spend supply on a dead slot
+                continue
             used[ch] += 1
             flags.append(used[ch] > avail[ch])
         return flags
@@ -667,9 +679,15 @@ class SelectionMixin:
         uncoverable (no gram carrying the letter can sit at that position -- TROGLODYTE's
         G). Both are necessary conditions any real tiling must meet, so a flag is a hard
         'this letter can't go here', and a fully-tileable word flags nothing. Drives both
-        the reason split and the ghost highlight, so the two always agree."""
-        excess = self._excess_letters(word)
+        the reason split and the ghost highlight, so the two always agree.
+
+        Uncoverable is computed FIRST and fed to the over-demand pass, so the board's
+        scarce copies of a letter are spent on the positions a gram can actually cover
+        and the surplus flag lands on a position that was doomed anyway. This never
+        changes whether ANY flag is set (an uncoverable position is itself a flag), so
+        the reason split below is unaffected -- only WHICH letters redden."""
         uncoverable = self._uncoverable_flags(word)
+        excess = self._excess_letters(word, uncoverable)
         return [e or u for e, u in zip(excess, uncoverable)]
 
     def _missing_letters(self, word):
