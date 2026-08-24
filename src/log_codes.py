@@ -559,19 +559,25 @@ def log_06008(kind, cells, health):
                      kind=kind, cells=cells, health=health)
 
 
-def log_06010(deck_words, targets, targeted_items):
-    """The idea belt's ring was dealt against the BOARD (idea_belt.deal): how many
-    words the deck offers, how many of them the opening board can make, and how
-    many ring slots ended up holding one (the rest are blind picks, per
-    idea_belt.target_share). The ring itself is the log_06009 line that follows.
+def log_06010(deck_words, matched, ring_counts):
+    """The idea belt's ring was STOCKED against the BOARD
+    (idea_belt.stock_category_weight.*): how many words the deck offers, how many
+    of them each stocking category matched on the opening board, and how many ring
+    slots each category ended up filling (every remaining slot is a blind pick).
+    The ring itself is the log_06009 line that follows.
 
-    `targets` near 0 means the scan found almost nothing -- the ring is then
-    effectively blind, which is the thing to check before blaming the blend."""
+    A category matching near 0 means its scan found almost nothing -- those slots
+    silently became blind picks, which is the thing to check before blaming the
+    weights. `spellable_multigram` is the one to watch: it is the narrowest
+    category, so it is the first to come up short on a board with few fat cells."""
+    matched_text = " ".join(f"{c}:{n}" for c, n in matched.items())
+    ring_text = " ".join(f"{c}:{n}" for c, n in ring_counts.items())
     session_log.emit(6010,
-                     f"idea belt targeted {targets}/{deck_words} deck words "
-                     f"({targeted_items} of the ring)",
-                     deck_words=deck_words, targets=targets,
-                     targeted_items=targeted_items)
+                     f"idea belt stocked from {deck_words} deck words "
+                     f"(matched {matched_text}; ring {ring_text})",
+                     deck_words=deck_words, matched=matched_text,
+                     ring=ring_text,
+                     targeted_items=sum(ring_counts.values()))
 
 
 def log_06009(size, words, reason):

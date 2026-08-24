@@ -11,7 +11,8 @@ import random
 from views.found_word import FoundWord
 from models.word_dictionary import is_word, is_prefix
 from models.wild_vowel import wild_expansions
-from starting_coverage import sample_formable_words
+from starting_coverage import sample_formable_words, sample_multigram_words
+from config import CONFIG
 import log_codes as L
 
 
@@ -261,26 +262,22 @@ class WordFindMixin:
         self._fossilize_cell(cell)
         L.log_06005(cell)
 
-    # --- idea-belt deal rules (idea_belt.deal) -----------------------------
-    # WHICH pictures the right-pane idea belt deals its ring from, called once per
-    # game by _deal_idea_belt once the opening formation is down (the earliest
-    # moment there is a board to scan). Each takes the deck's words and returns the
-    # subset the board can make -- or None for "do not target at all", which is the
-    # blind ring the belt has always dealt.
+    # --- idea-belt stocking categories (idea_belt.stock_category_weight.*) --
+    # WHICH pictures the right-pane idea belt stocks its ring with. One rule per
+    # stocking CATEGORY (models.idea_pool.STOCK_CATEGORIES); every category
+    # carrying weight is scanned once per game by _stock_idea_belt, once the
+    # opening formation is down (the earliest moment there is a board to scan).
+    # Each takes the deck's words and returns the subset that category matches on
+    # the board; the pool then blends the categories in their configured weights,
+    # with the blind category taking whatever is left.
     #
-    # NOTE these two are the game's one deliberate exception to the
-    # no-word-availability-hints rule: a targeted belt is telling a young player
+    # NOTE these are the game's one deliberate exception to the
+    # no-word-availability-hints rule: a stocked belt is telling a young player
     # "these are things you can make right now". That is the point of belt mode; it
-    # is why the blind rule stays the default everywhere else, and why
-    # idea_belt.target_share keeps some un-makeable pictures on the conveyor so the
-    # belt never reads as a complete solution list.
-    def _rule_idea_deal_blind(self, words):
-        """No scan: the ring is dealt from the whole deck at random, knowing
-        nothing about the board (the original behavior). Returns None, which the
-        pool reads as 'not targeted'."""
-        return None
-
-    def _rule_idea_deal_board_supply(self, words):
+    # is why no non-belt mode gives these any weight, and why weight on the blind
+    # category keeps some un-makeable pictures on the conveyor so the belt never
+    # reads as a complete solution list.
+    def _rule_idea_stock_category_spellable_any_gram(self, words):
         """Target the deck words the board's GRAMS can supply -- can `word` be cut
         into a sequence of grams the board actually carries, ignoring where those
         cells sit. The loose sense of "available": it holds in the type-anywhere
@@ -298,24 +295,53 @@ class WordFindMixin:
         return sample_formable_words(words, grams, self._constellation_accept(),
                                      len(words))
 
-    def _rule_idea_deal_board_formable(self, words):
+    def _rule_idea_stock_category_spellable_multigram(self, words):
+        """Target the deck words that USE the board's multigrams: same gram-supply
+        cut as spellable_any_gram, but only counting a word when one of the cuts
+        the board can actually supply leans on the fat cells -- at least one 3+
+        letter gram, or at least two digrams (starting_coverage.uses_multigrams).
+
+        This is the belt's teaching category. Players new to the game decompose
+        words letter by letter and never think to read SHARK as SH + ARK, so the
+        big cells sit on the board unused; a ring of pictures whose words only work
+        THROUGH those cells is what gets the idea going. It is deliberately
+        narrower than spellable_any_gram (every match here is also a match there),
+        which is why it claims its words first when both categories are stocked."""
+        grams = self._constellation_usable_grams()
+        if not grams:
+            return []
+        return sample_multigram_words(words, grams, self._constellation_accept(),
+                                      len(words))
+
+    def _rule_idea_stock_category_spellable_by_path(self, words):
         """Target the deck words the board can spell for real, by PATH: stage-1
         pathfinding, filtered to the deck. The strict sense of "available" -- every
-        targeted picture has a walkable word on the board right now -- which also
+        stocked picture has a walkable word on the board right now -- which also
         makes it the strongest hint, and on a sparse opening board it can come back
-        nearly empty (the blind share then fills the ring). One full pathfind, once
+        nearly empty (the blind slots then fill the ring). One full pathfind, once
         per game, at formation time."""
         wanted = set(words)
         return sorted({fw.word for fw in self._find_words() if fw.word in wanted})
 
-    def _deal_idea_belt(self):
-        """Deal this game's belt ring, after the opening formation has filled the
-        board. A no-op when the belt is off, and under the blind deal rule it only
-        confirms the ring the belt dealt itself. See views/idea_belt.retarget."""
+    def _stock_idea_belt(self):
+        """Stock this game's belt ring, after the opening formation has filled the
+        board. A no-op when the belt is off or when no stocking category carries
+        weight (the belt has already dealt itself a blind ring). Runs one scan per
+        weighted category -- each is a few-hundred-word pass, once per game.
+        See views/idea_belt.restock."""
         if self._idea_belt is None:
             return
+        rules = CONFIG.get("rules", {})
         words = self._idea_belt.deck_words()
-        targets = self._idea_deal_rule(words)
-        if targets is None:
+        stock = {}
+        for category, rule in self._idea_stock_category_rules.items():
+            key = "idea_belt.stock_category_weight." + category
+            if float(rules.get(key, 0)) > 0:
+                stock[category] = rule(words)
+        if not stock:
             return
-        L.log_06010(len(words), len(targets), self._idea_belt.retarget(targets))
+        matched = {}
+        for category, found in stock.items():
+            matched[category] = len(found)
+        L.log_06010(len(words), matched, self._idea_belt.restock(stock))
+

@@ -278,12 +278,17 @@ rules:
   idea_belt.match:       rule_idea_match_clear_and_bonus
   # idea_belt.match:     rule_idea_match_off
 
-  # How the ring is dealt: blind, or aimed at what the board can make. [ref: idea_belt.deal]
+  # Relative weights of each stocking category on the ring (0 drops one).
+  # [ref: idea_belt.stock_category_weight]
+  idea_belt.stock_category_weight.spellable_multigram: 80
+  idea_belt.stock_category_weight.spellable_any_gram:  20
+  idea_belt.stock_category_weight.spellable_by_path:    0
+  idea_belt.stock_category_weight.blind:                0
+  # SUPERSEDED by the weights above (was: one selected rule + one share knob).
   # idea_belt.deal:      rule_idea_deal_blind
-  idea_belt.deal:        rule_idea_deal_board_supply
+  # idea_belt.deal:      rule_idea_deal_board_supply
   # idea_belt.deal:      rule_idea_deal_board_formable
-  # Share of the ring drawn from board-makeable words (0-1). [ref: idea_belt.target_share]
-  idea_belt.target_share: 1.0
+  # idea_belt.target_share: 1.0
 
   # Where each live player piece spawns. [ref: game_screen.spawn]
   game_screen.spawn:        rule_spawn_random_spot

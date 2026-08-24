@@ -22,7 +22,8 @@ import pyglet
 
 from views.shaders import get_shape_shader
 from config import CONFIG, get_color
-from models.idea_pool import IdeaPool, images_dir, load_deck
+from models.idea_pool import (IdeaPool, STOCK_CATEGORIES, images_dir,
+                              load_deck)
 import log_codes as L
 
 
@@ -61,11 +62,11 @@ class IdeaBelt:
         # cleared-word list and dictionary count used before the belt took over.
         # on_pick(word): fires when a picture is clicked; the host pane fills its
         # typed field with `word`. pool: injected by tests; None builds one from
-        # the configured deck. targeted: whether the ring is dealt from a scan of
-        # the BOARD -- read from idea_belt.deal when None (tests pass it directly).
-        # The board does not exist yet at pane-build time, so a targeted belt opens
-        # EMPTY and GameScreen deals it via retarget() once the opening formation is
-        # down. Read here rather than passed down from GameScreen so neither pane
+        # the configured deck. targeted: whether the ring is stocked from a scan of
+        # the BOARD -- read from the stocking weights when None (tests pass it
+        # directly). The board does not exist yet at pane-build time, so a targeted
+        # belt opens EMPTY and GameScreen stocks it via restock() once the opening
+        # formation is down. Read here rather than passed down from GameScreen so neither pane
         # has to carry a flag it makes no use of.
         self._x = x
         self._y = y
@@ -85,8 +86,14 @@ class IdeaBelt:
         self._show_word = word_rules.get(
             rules.get("idea_belt.show_word", "rule_idea_word_hidden"), False)
         if targeted is None:
-            targeted = (rules.get("idea_belt.deal", "rule_idea_deal_blind")
-                        != "rule_idea_deal_blind")
+            # Any scanning category carrying weight means this belt waits for the
+            # board (idea_belt.stock_category_weight.*); weight on `blind` alone --
+            # or no weights at all -- is the original self-dealt ring.
+            targeted = False
+            for category in STOCK_CATEGORIES:
+                key = "idea_belt.stock_category_weight." + category
+                if float(rules.get(key, 0)) > 0:
+                    targeted = True
         self._targeted = targeted
         # The deck is read ONCE and handed to every ring this belt deals: a
         # targeted belt re-deals per game, and re-reading the CSV each time would
@@ -97,7 +104,7 @@ class IdeaBelt:
             self._pool = pool
         elif targeted:
             # No board to scan yet: an empty ring draws nothing (every slot hides
-            # on size 0) and is replaced by retarget() in the same tick the game
+            # on size 0) and is replaced by restock() in the same tick the game
             # starts, before the first frame.
             self._pool = IdeaPool(deck=[], reason="awaiting board")
         else:
@@ -174,9 +181,9 @@ class IdeaBelt:
         first game, so re-dealing here would deal (and log) a second ring for a
         game whose first one nobody had seen yet.
 
-        A TARGETED belt (idea_belt.deal) deals no ring here at all: this runs
-        before the new game's board exists, so its ring comes from retarget()
-        after the formation is down. Rewinding still happens for both."""
+        A TARGETED belt (idea_belt.stock_category_weight.*) deals no ring here at
+        all: this runs before the new game's board exists, so its ring comes from
+        restock() after the formation is down. Rewinding still happens for both."""
         if not self._unused_ring and not self._targeted:
             self._pool = IdeaPool(deck=self._deck, reason="new game")
         self._unused_ring = False
@@ -184,7 +191,7 @@ class IdeaBelt:
 
     def _rewind(self):
         """Send the belt back to the start of its ring and make every slot FORGET
-        the item it is showing. Shared by reset() and retarget().
+        the item it is showing. Shared by reset() and restock().
 
         The forgetting matters: a new ring reuses the same index numbers, so a slot
         whose index has not changed would keep drawing the old ring's picture
@@ -197,7 +204,7 @@ class IdeaBelt:
             slot["index"] = None
         self._layout()
 
-    # --- board-targeted dealing (idea_belt.deal) ---------------------------
+    # --- board-targeted stocking (idea_belt.stock_category_weight.*) -------
     def deck_words(self):
         """Every word this belt's deck can prompt with, upper-cased and
         de-duplicated -- the candidate list the board scan filters. Scanning the
@@ -210,18 +217,18 @@ class IdeaBelt:
                     words.add(row[key].upper())
         return sorted(words)
 
-    def retarget(self, targets):
-        """Deal this game's ring, drawing a share of it from `targets` -- the deck
-        words the board can currently make (idea_belt.deal / idea_belt.target_share)
-        -- and return how many of the ring's items came from that set.
+    def restock(self, stock):
+        """Stock this game's ring from `stock` -- {category -> the deck words that
+        category's board scan matched} -- blended in the configured category
+        weights, and return {category -> how many ring slots it filled}.
 
         Called by GameScreen once the opening formation is down, which is the
         earliest moment there is a board to scan. A blind belt never calls it."""
-        self._pool = IdeaPool(deck=self._deck, targets=targets,
-                              reason="board targeted")
+        self._pool = IdeaPool(deck=self._deck, stock=stock,
+                              reason="board stocked")
         self._unused_ring = False
         self._rewind()
-        return self._pool.targeted_count()
+        return self._pool.stock_counts()
 
     # --- board match (idea_belt.match) -------------------------------------
     def clear_word(self, word):

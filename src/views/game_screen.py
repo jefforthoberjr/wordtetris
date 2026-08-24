@@ -955,16 +955,19 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             {"rule_idea_belt_on": True, "rule_idea_belt_off": False},
         )
         self._idea_belt = None
-        # How the belt's ring is DEALT (idea_belt.deal): blind from the whole deck,
-        # or targeted at what the board can currently make. Resolved before the
-        # panes are built -- a targeted belt opens with an empty ring and is dealt
-        # by _deal_idea_belt once each game's formation is down. See WordFindMixin.
-        idea_deal_rules = {
-            "rule_idea_deal_blind": self._rule_idea_deal_blind,
-            "rule_idea_deal_board_supply": self._rule_idea_deal_board_supply,
-            "rule_idea_deal_board_formable": self._rule_idea_deal_board_formable,
+        # How the belt's ring is STOCKED (idea_belt.stock_category_weight.*):
+        # a weighted mix of stocking categories rather than one selected rule, so
+        # one ring can carry both multigram-using pictures and plainly spellable
+        # ones. Each category here is scanned only when its weight is above zero;
+        # weight on `blind` alone leaves the belt dealing itself a random ring.
+        # Wired before the panes are built -- a stocked belt opens with an empty
+        # ring and is filled by _stock_idea_belt once each game's formation is
+        # down. See WordFindMixin and models.idea_pool.STOCK_CATEGORIES.
+        self._idea_stock_category_rules = {
+            "spellable_multigram": self._rule_idea_stock_category_spellable_multigram,
+            "spellable_by_path": self._rule_idea_stock_category_spellable_by_path,
+            "spellable_any_gram": self._rule_idea_stock_category_spellable_any_gram,
         }
-        self._idea_deal_rule = select_rule("idea_belt.deal", idea_deal_rules)
         # What a cleared word does to the belt (idea_belt.match): strike the
         # matching picture off and pay the match bonus, or leave the conveyor
         # alone. Resolved even when the belt is off -- the rule reads
@@ -1605,11 +1608,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # first-word variants.
         self._fossil_first_word_seed_rule()
 
-        # Deal the idea belt's ring against the board the formation just laid
-        # (idea_belt.deal). Here because this is the first moment there IS a board
-        # to scan -- the belt's own reset() above runs before the grid is even
-        # rebuilt. A no-op with the belt off or dealing blind.
-        self._deal_idea_belt()
+        # Stock the idea belt's ring against the board the formation just laid
+        # (idea_belt.stock_category_weight.*). Here because this is the first
+        # moment there IS a board to scan -- the belt's own reset() above runs
+        # before the grid is even rebuilt. A no-op with the belt off, or when no
+        # stocking category carries weight.
+        self._stock_idea_belt()
 
         self._piece_pool = PiecePool(
             self.PIECE_POOL_SIZE, self._cell_size, self._piece_batch,

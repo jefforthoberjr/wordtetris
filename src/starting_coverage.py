@@ -133,6 +133,58 @@ def any_word_formable(words, grams, accept):
     return bool(sample_formable_words(words, grams, accept, 1))
 
 
+# --- multigram words (idea_belt.stock_category_weight.spellable_multigram) ---
+# A word counts as MULTIGRAM-USING when some valid cut of it leans on the board's
+# bigger cells: at least one gram of 3+ letters, or at least two digrams. That is
+# the shape a young player has the hardest time inventing on their own -- most
+# people decompose a word letter by letter and never think "SH + ARK" -- so this
+# is what the idea belt stocks pictures from when it wants to hint at the board's
+# multigrams rather than at any old spellable word.
+MULTIGRAM_TRIGRAM_MIN = 1
+MULTIGRAM_DIGRAM_MIN = 2
+
+
+def uses_multigrams(segmentation):
+    """True when this cut of a word satisfies the multigram test above. A 4+
+    letter gram counts as a trigram (3+ is one category, as everywhere else in the
+    game), never as two digrams."""
+    trigrams = 0
+    digrams = 0
+    for seg in segmentation:
+        if len(seg) >= 3:
+            trigrams = trigrams + 1
+        elif len(seg) == 2:
+            digrams = digrams + 1
+    return trigrams >= MULTIGRAM_TRIGRAM_MIN or digrams >= MULTIGRAM_DIGRAM_MIN
+
+
+def sample_multigram_words(words, grams, accept, limit):
+    """Up to `limit` words from `words` that the gram multiset `grams` can form
+    THROUGH a multigram cut (see uses_multigrams) under `accept`.
+
+    The strict-er sibling of sample_formable_words: same segmentation DP, same
+    cell-supply check, but a word only counts when one of the cuts that actually
+    fits the board's cell supply is a multigram cut. A word the board can only
+    spell letter-by-letter is therefore NOT sampled here, even though
+    sample_formable_words would take it -- the whole point is to prompt the player
+    toward the fat cells."""
+    grams = {g.upper(): c for g, c in grams.items()}
+    if not grams or limit <= 0:
+        return []
+    max_len = max(len(g) for g in grams)
+    found = []
+    for word in words:
+        w = word.upper()
+        for seg in _segmentations(w, grams, max_len):
+            if (uses_multigrams(seg) and accept(w, len(seg))
+                    and _ways(seg, grams) > 0):
+                found.append(w)
+                break
+        if len(found) >= limit:
+            break
+    return found
+
+
 def write_coverage_csv(path, words, grams, accept, sep):
     """Write the starting-coverage CSV: one line per dictionary word (sorted,
     INCLUDING zero-coverage words), columns

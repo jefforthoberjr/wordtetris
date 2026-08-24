@@ -942,42 +942,61 @@ is a pure prompt and never reacts to the board.
 Applies to every clear route (the phase-end batch, clear-on-submit, botanical grows,
 shooting-gallery shots). Logged as `30012`.
 
-### idea_belt.deal
-WHICH pictures the ring is dealt from. The ring is dealt once per game, after the
-opening formation is down (the first moment there is a board to scan), and never
-re-picked during play — so this aims the belt at the board the player is *starting*
-from.
-- `rule_idea_deal_blind` — the original: deal at random from the whole deck, knowing
-  nothing about the board. The default, and what every non-belt mode keeps.
-- `rule_idea_deal_board_supply` — target the deck words the board's GRAMS can supply:
-  can the word be cut into a sequence of grams the board carries, ignoring where
-  those cells sit. The loose sense of "available" — exact in the type-anywhere modes
-  (constellation / omniswap), and elsewhere "the letters are out there". Reuses the
-  matcher behind the F3 word sample, run over the deck's few hundred words rather
-  than the dictionary.
-- `rule_idea_deal_board_formable` — target the deck words the board can spell for
-  real, by PATH (stage-1 pathfinding, filtered to the deck). Strictest, and the
-  strongest hint; on a sparse opening board it can return almost nothing, and the
-  blind share then fills the ring.
+### idea_belt.stock_category_weight.*
+WHICH pictures the ring is stocked with, as a set of RELATIVE weights — one per
+stocking *category* — rather than a single selected rule. The ring is stocked once
+per game, after the opening formation is down (the first moment there is a board to
+scan), and never re-picked during play, so this aims the belt at the board the
+player is *starting* from.
+
+The weights are relative (they need not sum to 100) and are turned into exact slot
+quotas by largest-remainder, the same way the opening formation's gram-length mix
+is. A weight of 0 drops that category entirely, and a category is only ever
+*scanned* when its weight is above zero — so a belt-free mode pays for nothing.
+
+- `spellable_multigram` — deck words that USE the board's multigrams: the word can
+  be cut into grams the board carries AND that cut leans on the fat cells — at
+  least one 3+ letter gram, or at least two digrams. The teaching category: new
+  players decompose words letter by letter and never think to read SHARK as
+  SH + ARK, so the big cells sit unused. A ring of pictures whose words only work
+  *through* those cells is what gets the idea going.
+- `spellable_any_gram` — deck words the board's GRAMS can supply: can the word be
+  cut into a sequence of grams the board carries, ignoring where those cells sit
+  and how big they are. The loose sense of "available" — exact in the type-anywhere
+  modes (constellation / omniswap), and elsewhere "the letters are out there".
+- `spellable_by_path` — deck words the board can spell for real, by PATH (stage-1
+  pathfinding, filtered to the deck). Strictest, and the strongest hint; on a sparse
+  opening board it can return almost nothing, and the blind slots then fill the ring.
+- `blind` — no scan: slots dealt at random from the whole deck, knowing nothing
+  about the board. This is what keeps the belt from reading as a solution list —
+  give it weight and that share of the conveyor stays pictures the player cannot
+  make yet. It is also the implicit fallback: every slot a scanned category could
+  not fill becomes a blind pick, whatever this weight says.
+
+Categories overlap (every multigram-using word is also gram-supplied), so words are
+claimed MOST SPECIFIC FIRST — the order listed above. A word that is both
+multigram-using and plainly spellable is spent on the `spellable_multigram` quota
+only, so a narrow category's slots are never quietly paid out of a broad one's
+matches.
+
+No category is ever CYCLED to meet its quota: each is capped at how many distinct
+pictures it matched, and the blind slots take the slack. A board that can make only
+three deck words therefore stocks three pictures and fills the rest blind, instead
+of showing the same three over and over. The scanned picks are round-robined
+together and then interleaved through the blind ones, so they are spread around the
+loop rather than arriving in one block.
 
 Note this is the game's one deliberate exception to the never-reveal-formability
-rule: a targeted belt is telling a young player "these are things you can make right
-now", which is the point of belt mode. `idea_belt.target_share` is what keeps it from
-becoming a solution list. Logged as `06010` (deck words scanned / matched / ring
-slots targeted), immediately before the `06009` ring order.
+rule: a stocked belt is telling a young player "these are things you can make right
+now", which is the point of belt mode. Logged as `06010` (deck words scanned, per
+category matched / ring slots filled), immediately before the `06009` ring order.
 
-### idea_belt.target_share
-What fraction of the ring (0–1) is drawn from the board-makeable words when
-`idea_belt.deal` is targeting; the rest is dealt blind. 1.0 makes every picture
-achievable — a pure to-do list; 0.8 (the default) leaves about a fifth of the
-conveyor aspirational, so the belt still shows ideas the player cannot make yet.
-
-The targeted side is never CYCLED to meet its quota: it is capped at how many
-distinct makeable pictures exist, and the blind side takes the slack. A board that
-can make only three deck words therefore deals three targeted pictures and fills the
-rest blind, instead of showing the same three over and over. The two sides are
-interleaved, not concatenated, so targeted pictures are spread around the loop rather
-than arriving in one block.
+Superseded: `idea_belt.deal` (one selected rule — `rule_idea_deal_blind` /
+`rule_idea_deal_board_supply` / `rule_idea_deal_board_formable`) plus
+`idea_belt.target_share` (one 0–1 share of the ring drawn from that rule's matches).
+Both are commented out in config.yaml; the old blend survives as
+`IdeaPool._blend_targets_legacy`. The weights say the same thing with more than one
+scan on the ring at a time.
 
 ### game_screen.spawn
 Player-piece spawn: where each single live piece appears, one at a time.
