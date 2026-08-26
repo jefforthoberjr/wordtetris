@@ -265,7 +265,15 @@ rules:
   idea_belt.show_word:   rule_idea_word_hidden
   # idea_belt.show_word: rule_idea_word_shown
 
-  idea_belt.deck:        default_ideas.csv
+  idea_belt.deck:        words_emoji.csv
+  # idea_belt.deck:      default_ideas.csv
+  # Which COLUMNS the deck file carries. [ref: idea_belt.deck_format]
+  idea_belt.deck_format: rule_idea_deck_word_rows
+  # idea_belt.deck_format: rule_idea_deck_picture_rows
+  # Lowest picture/word fit a word-row deck may prompt with (1-3).
+  # [ref: idea_belt.min_fit]
+  # idea_belt.min_fit:     3    #emoji matches the word very closely
+  idea_belt.min_fit:     2
   idea_belt.pool_size:   50
   idea_belt.art:         rule_idea_art_emoji
   # idea_belt.art:       rule_idea_art_image

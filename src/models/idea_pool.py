@@ -65,28 +65,77 @@ def images_dir():
     return Path(__file__).parent.parent / "assets" / "idea_belt" / "images"
 
 
-def load_deck(path=None):
-    """Read a deck CSV into a list of {image, emoji, word1, word2} dicts.
+# --- deck formats (idea_belt.deck_format) -----------------------------------
+# Two shapes of deck file, both loaded into the SAME internal row
+# ({image, emoji, word1, word2}) so nothing downstream knows which one it got.
+#
+#   PICTURE ROWS -- the original hand-written default_ideas.csv: one row per
+#   picture, carrying up to two words that picture can prompt. ~110 rows, curated
+#   by eye, every one of them a good prompt.
+#
+#   WORD ROWS -- the generated words_emoji.csv: one row per WORD, with the emoji
+#   the classification pass assigned it and a FIT score for how honestly that
+#   picture names the word (see tools/emoji_classify). ~21,900 rows, of which
+#   ~2,800 are fit 3. Filtered by idea_belt.min_fit at load, because a fit-1 row
+#   (nonetheless -> shrug) is exactly the prompt the belt must never show a child.
+def rule_idea_deck_picture_rows(reader, min_fit):
+    """One row per picture: image, emoji, word1, word2."""
+    rows = []
+    for row in reader:
+        image = (row.get("image") or "").strip()
+        emoji = (row.get("emoji") or "").strip()
+        word1 = (row.get("word1") or "").strip()
+        word2 = (row.get("word2") or "").strip()
+        if emoji or image:
+            rows.append({"image": image, "emoji": emoji,
+                         "word1": word1, "word2": word2})
+    return rows
 
-    Lines starting with '#' are comments (the shipped deck documents its own
-    columns that way) and the header row is skipped, so the file stays readable
-    as a hand-edited inventory list."""
+
+def rule_idea_deck_word_rows(reader, min_fit):
+    """One row per word: word, image, emoji, fit. Rows below `min_fit` are dropped
+    HERE rather than filtered later, so every layer above -- the board scans, the
+    ring, deck_words() -- sees only prompts that are fair to show. A row with no
+    fit column counts as the best fit, which keeps a hand-edited word list usable
+    without one."""
+    rows = []
+    for row in reader:
+        word = (row.get("word") or "").strip()
+        emoji = (row.get("emoji") or "").strip()
+        image = (row.get("image") or "").strip()
+        fit = (row.get("fit") or "").strip()
+        keep = True
+        if fit:
+            keep = int(fit) >= min_fit
+        if word and (emoji or image) and keep:
+            rows.append({"image": image, "emoji": emoji,
+                         "word1": word, "word2": ""})
+    return rows
+
+
+def load_deck(path=None):
+    """Read the active deck file into a list of {image, emoji, word1, word2}.
+
+    Lines starting with '#' are comments (the hand-written deck documents its own
+    columns that way) and the header row is skipped, so a deck stays readable as a
+    hand-edited inventory list. Which COLUMNS are expected is the deck_format rule
+    -- resolved per call, never cached at import, so a game mode's override is
+    honored."""
     if path is None:
         path = deck_path()
-    rows = []
+    rules = CONFIG.get("rules", {})
+    min_fit = int(rules.get("idea_belt.min_fit", 3))
+    format_rules = {
+        "rule_idea_deck_picture_rows": rule_idea_deck_picture_rows,
+        "rule_idea_deck_word_rows": rule_idea_deck_word_rows,
+    }
+    format_rule = select_rule("idea_belt.deck_format", format_rules)
     with open(path, encoding="utf-8") as f:
         lines = []
         for line in f:
             if not line.strip().startswith("#"):
                 lines.append(line)
-        for row in csv.DictReader(lines):
-            image = (row.get("image") or "").strip()
-            emoji = (row.get("emoji") or "").strip()
-            word1 = (row.get("word1") or "").strip()
-            word2 = (row.get("word2") or "").strip()
-            if emoji or image:
-                rows.append({"image": image, "emoji": emoji,
-                             "word1": word1, "word2": word2})
+        rows = format_rule(csv.DictReader(lines), min_fit)
     return rows
 
 
@@ -161,6 +210,11 @@ class IdeaPool:
             "rule_idea_dedupe_off": self._rule_dedupe_off,
         }
         self._dedupe_rule = select_rule("idea_belt.dedupe", dedupe_rules)
+        # The same answer as a plain flag. The blend needs to know whether one
+        # picture may repeat, not just how to thin a list, because it claims art
+        # ACROSS categories -- see _blend_stock.
+        self._dedupe_on = (rules.get("idea_belt.dedupe", "rule_idea_dedupe_on")
+                           == "rule_idea_dedupe_on")
         # The order the ring is dealt in.
         order_rules = {
             "rule_idea_order_shuffled": self._rule_order_shuffled,
@@ -173,10 +227,14 @@ class IdeaPool:
 
     def _build(self):
         candidates = self._candidates()
-        candidates = self._dedupe_rule(candidates)
         if not self._stock:
-            self._items = self._order_rule(candidates)
+            self._items = self._order_rule(self._dedupe_rule(candidates))
         else:
+            # NOT deduped here. Dedupe keeps the FIRST word of each picture, and on
+            # a word-indexed deck (one row per word, alphabetical) that first word
+            # is arbitrary -- deduping up front would throw away the very words the
+            # board can make and keep ABACUS because it sorts early. The blend
+            # dedupes inside each category instead, once the board has had its say.
             self._items = self._blend_stock(candidates)
         L.log_06009(len(self._items), [item.word for item in self._items],
                     self._reason)
@@ -230,6 +288,10 @@ class IdeaPool:
         multigram quota only."""
         quotas = self._quotas()
         claimed = set()
+        # Pictures already spent. Only used when dedupe is on, and it spans
+        # CATEGORIES: two categories matching two different words of the same
+        # picture would otherwise put that picture on the ring twice.
+        claimed_art = set()
         per_category = []
         # Slots filled per category, recorded HERE rather than counted back off the
         # finished ring: a blind pick can land on the same word a category matched
@@ -241,25 +303,40 @@ class IdeaPool:
             if want <= 0:
                 continue
             words = self._stock.get(category, set())
-            available = []
-            for item in candidates:
-                if item.word in words and item.word not in claimed:
-                    available.append(item)
+            available = self._eligible(candidates, claimed, claimed_art, words)
             chosen = self._order_rule(available)[:min(want, len(available))]
             for item in chosen:
                 claimed.add(item.word)
+                claimed_art.add(item.art)
             per_category.append(chosen)
             self._stocked[category] = len(chosen)
         picked = self._round_robin(per_category)
-        blind = []
-        for item in candidates:
-            if item.word not in claimed:
-                blind.append(item)
+        blind = self._eligible(candidates, claimed, claimed_art, None)
         # The blind side fills everything the scanned categories did not, cycling
         # as usual (its candidate list is the whole deck minus the matches, so it
         # is rarely short).
         rest = self._order_rule(blind)[:self._size - len(picked)]
         return self._interleave(picked, rest)
+
+    def _eligible(self, candidates, claimed, claimed_art, words):
+        """The items still up for grabs: not already spent, not showing a picture
+        already spent (when dedupe is on), and -- when `words` is given -- matching
+        that category's board scan. `words` None is the blind side, which takes
+        anything left.
+
+        Deduping HERE rather than over the whole deck is what lets a word-indexed
+        deck work: the thinning happens after the board filter, so each picture is
+        represented by a word the board can actually make."""
+        available = []
+        for item in candidates:
+            if item.word in claimed:
+                continue
+            if self._dedupe_on and item.art in claimed_art:
+                continue
+            if words is not None and item.word not in words:
+                continue
+            available.append(item)
+        return self._dedupe_rule(available)
 
     def _round_robin(self, lists):
         """One list taking from each of `lists` in turn, keeping each list's own

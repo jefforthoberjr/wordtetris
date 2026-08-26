@@ -895,11 +895,39 @@ by both columns; they only differ in direction.
 themselves before clicking.
 
 ### idea_belt.deck
-Filename (under `assets/idea_belt/`) of the CSV inventory the idea belt deals from
--- the picture-prompt conveyor that replaces the score + cleared-word list in the
-right pane for young players. Columns: `image,emoji,word1,word2`; `#` lines are
-comments. A game mode can point this at a themed deck (plants, hard grams) without
-touching any other knob. See `models/idea_pool.py`.
+Filename (under `assets/idea_belt/`) of the inventory the idea belt stocks from.
+Two decks ship, and they are different SHAPES of file — see `idea_belt.deck_format`:
+
+- `words_emoji.csv` — the generated deck: 21,874 rows, one per dictionary word,
+  each with the emoji a classification pass assigned it and a fit score. Filtered
+  by `idea_belt.min_fit`, so at the default fit 3 the belt draws from **2,839**
+  words. Built by `tools/emoji_classify` (see its README).
+- `default_ideas.csv` — the original hand-written deck: ~110 rows, one per
+  picture, up to two words each. Curated by eye, so every row is a good prompt;
+  far too small to stock a board-targeted belt without falling back on blind picks.
+
+### idea_belt.deck_format
+Which COLUMNS the deck file carries. Both formats load into the same internal row,
+so nothing downstream knows which one it got.
+
+- `rule_idea_deck_word_rows` — `word,image,emoji,fit`, one row per WORD. The
+  generated deck's shape. Rows below `idea_belt.min_fit` are dropped at load, so
+  every layer above (the board scans, `deck_words()`, the ring) only ever sees
+  prompts that are fair to show. A row with no `fit` column counts as the best fit,
+  which keeps a hand-edited word list usable without one.
+- `rule_idea_deck_picture_rows` — `image,emoji,word1,word2`, one row per PICTURE.
+  The original hand-written shape.
+
+### idea_belt.min_fit
+Lowest fit a word-row deck may prompt with, 1–3. Fit is how honestly the picture
+names the word: **3** DEPICTS (shark 🦈), **2** SUGGESTS (imagine 💭), **1**
+ARBITRARY (nonetheless 🤷).
+
+Default **3**, and it should stay there for the young-player audience the belt
+exists for — a fit-1 prompt is a child staring at a shrug emoji trying to spell
+NONETHELESS, which is the one failure that discredits the whole feature. Dropping
+to 2 grows the deck from 2,839 to 12,460 words, worth trying only if a board-
+targeted belt is running out of matches. Ignored by picture-row decks.
 
 ### idea_belt.pool_size
 How many items the pre-picked belt RING holds. The ring is dealt once at game start
