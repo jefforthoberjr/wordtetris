@@ -23,6 +23,8 @@ import csv
 import json
 import os
 
+import rollup_by_emoji
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 IN_DIR = os.path.join(HERE, "run", "in")
 OUT_DIR = os.path.join(HERE, "run", "out")
@@ -166,26 +168,19 @@ def write_word_index(rows):
     return path
 
 
+# The emoji-indexed file is built by rollup_by_emoji, so the pipeline and the
+# standalone analysis tool cannot drift apart. That module is importable (its
+# main() is guarded) precisely so this delegation works.
+
+
 def write_emoji_index(rows, roster):
-    """Indexed by emoji: every dictionary word that landed on that picture, best
-    fit first then alphabetical. ~1,900 pictures over ~21,000 words, so this is
-    the file that answers "what does the belt actually have to choose from"."""
-    grouped = collections.defaultdict(list)
-    for word, emoji, fit in rows:
-        grouped[emoji].append((word, fit))
-    path = os.path.join(FINAL, "emoji_words.csv")
-    order = sorted(grouped, key=lambda e: -len(grouped[e]))
-    with open(path, "w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["emoji", "label", "word_count", "fit3_count", "words"])
-        for emoji in order:
-            words = sorted(grouped[emoji], key=lambda pair: (-pair[1], pair[0]))
-            fit3 = [w for w, fit in words if fit == 3]
-            writer.writerow([emoji,
-                             roster.get(emoji.replace("️", ""), ("", ""))[1],
-                             len(words), len(fit3),
-                             ";".join(w for w, fit in words)])
-    return path, len(grouped)
+    """Indexed by emoji: every dictionary word that landed on that picture. See
+    rollup_by_emoji, which owns the format and can also be re-run by hand against
+    a different mapping."""
+    labels = {}
+    for bare in roster:
+        labels[bare] = roster[bare][1]
+    return rollup_by_emoji.write_emoji_index(rows, labels)
 
 
 def write_cldr_compare(rows):

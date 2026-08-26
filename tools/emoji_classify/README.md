@@ -105,13 +105,60 @@ The 2,839 fit-3 words are the belt-ready set: ~26x the 110-row hand-written
 - **`words_emoji.csv`** — `word,image,emoji,fit`, alphabetical. The file the game
   reads: every stocking rule starts from a word. `image` is deliberately empty,
   ready for real icon art (thenounproject etc.) per word without a schema change.
-- **`emoji_words.csv`** — `emoji,label,word_count,fit3_count,words`, ordered by
-  how many words landed on that picture. The research view: ~21,000 words over
-  ~1,900 emoji means each picture carries ~11 words, and this is what shows which
-  ones are overloaded.
+- **`emoji_words.csv`** — `emoji,label,word_count,fit3_count,fit2_count,`
+  `fit1_count,words`, ordered by how many words landed on that picture. The
+  research view, and the answer to "show me every word that got this emoji". The
+  word list is ONE `;`-joined column, because the count per emoji is variable
+  (1 to 380) and a ragged word1..wordN row would be unreadable. No image column —
+  this file is about the emoji; per-word art belongs in the word-indexed file.
+  Built by `rollup_by_emoji.py`, which `assemble.py` calls so both routes produce
+  the same bytes. Analysis only — the game reads the word-indexed file.
 - **`cldr_compare.csv`** — `word,llm_emoji,fit,cldr_emojis,agree` over the CLDR
   words. Agreement is scored loosely (CLDR keys several emoji per word, any of
   them counts), so read it as a floor, not a grade.
+
+## Re-rolling the emoji index by hand
+
+`rollup_by_emoji.py` rebuilds `emoji_words.csv` from any word-indexed file, so a
+bigger dictionary pass or an entirely different emoji mapping can be re-rolled
+without re-running the swarm:
+
+    python tools/emoji_classify/rollup_by_emoji.py
+    # 21874 words over 1116 emoji (fit 3: 2839, fit 2: 9621, fit 1: 9414)
+    # 19.6 words per emoji on average
+    # wrote tools/emoji_classify/out/emoji_words.csv
+
+    # just the belt-ready words:
+    python tools/emoji_classify/rollup_by_emoji.py --min-fit 3
+    # 2839 words over 897 emoji -- 3.2 words per emoji on average
+
+    # a different mapping entirely:
+    python tools/emoji_classify/rollup_by_emoji.py \
+        --input some/other_mapping.csv --output some/other_rollup.csv
+
+It defaults to reading the SHIPPED `src/assets/idea_belt/words_emoji.csv` rather
+than the pipeline's copy, so it describes what the game is actually playing with.
+The CLDR label column is optional — a missing `data/emojibase_en.json` just leaves
+it blank, so a hand-built mapping still rolls up.
+
+### What the roll-up shows
+
+All 21,874 words land on **1,116 emoji — 19.6 words each on average**, but the
+distribution is wildly uneven:
+
+| emoji | label | words | of which fit-3 |
+|---|---|---|---|
+| 🚫 | prohibited | 380 | 6 |
+| ✅ | check mark button | 277 | 5 |
+| 🗣️ | speaking head | 222 | 7 |
+| 🤝 | handshake | 219 | 10 |
+| ⚖️ | balance scale | 210 | 11 |
+
+139 emoji carry exactly one word. The big buckets are abstraction sinks — 🚫 is
+where `nonrefundable`, `taboo` and `xenophobia` all end up — and they are almost
+entirely fit-1/2, which is why the belt filters on fit rather than on the emoji.
+Restricted to fit 3, the same data is 2,839 words over 897 emoji: **3.2 words per
+picture**, which is the healthy shape.
 
 ## Validation the assembler enforces
 
