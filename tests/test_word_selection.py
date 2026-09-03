@@ -519,14 +519,27 @@ def test_real_word_not_on_board_missing_letter_errors():
     assert g._selecting_side_pane.errors == ["Not enough of those letters on the board"]
 
 
-def test_real_word_not_on_board_gram_mismatch_errors():
-    # Every letter of RATE is on the board (T, E, A, R present), but the pathfinder
-    # can't trace it -- the letters are here, the arrangement isn't. Distinct class.
+def test_real_word_not_on_board_needs_rearrange_errors():
+    # Every letter of RATE is on the board as its own single-letter gram, so the
+    # grams DO tile the word -- only the physical order is wrong. Rearrange class.
     g = _game(FakeBoard({(0, 0): "T", (1, 0): "E", (2, 0): "A", (3, 0): "R"}))
     g._begin_selection([(3, 0)])
     g._on_submit_word("rate")
     assert g._selecting_side_pane.errors == [
+        "The right pieces are here -- move them together"]
+    assert g._selecting_side_pane.reason == "not_on_board_needs_rearrange"
+
+
+def test_real_word_not_on_board_gram_mismatch_errors():
+    # RAT and ATE cover every position of RATE and carry enough of each letter, so
+    # nothing is missing -- but no whole-gram tiling spells RATE (RAT leaves a bare
+    # E, ATE leaves a bare R), and no rearrangement fixes that. Mismatch class.
+    g = _game(FakeBoard({(0, 0): "RAT", (2, 0): "ATE"}))
+    g._begin_selection([(0, 0)])
+    g._on_submit_word("rate")
+    assert g._selecting_side_pane.errors == [
         "Those letters are here, but the pieces don't line up"]
+    assert g._selecting_side_pane.reason == "not_on_board_gram_mismatch"
 
 
 def test_not_on_board_letter_shortage_is_missing_not_mismatch():

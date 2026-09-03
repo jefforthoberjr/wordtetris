@@ -243,7 +243,14 @@ class _ModeGS:
         self._shooting_word_timeout_seconds = 10.0
         # The shooting preset's rule: 3+ letters, any cell count.
         self._word_length_rule = lambda text, path: len(text) >= 3
+        # game_screen.misspell_instadeath -- off by default here so the buffer tests
+        # exercise only the submit/miss paths; the instadeath test flips it on.
+        self._misspell_instadeath = False
         self.submitted = []
+        self.endgames = 0
+
+    def _enter_endgame(self):
+        self.endgames += 1
 
     def _shooting_submit(self, word, path, segments):
         self.submitted.append((word, list(path), list(segments)))
@@ -366,3 +373,30 @@ def test_buffer_resyncs_after_external_clear(monkeypatch):
     m._gs._moving_side_pane.clear_word()          # external clear
     m.on_mouse_press(1, 0, 1)
     assert m._word() == "B"                        # not "AB"
+
+
+def test_impossible_buffer_ends_the_game_under_instadeath(monkeypatch):
+    # game_screen.misspell_instadeath: once no dictionary word starts with the shot
+    # buffer, the run is forfeit -- the mode ends the game and drops the buffer.
+    monkeypatch.setattr(mm, "is_word", lambda w: False)
+    monkeypatch.setattr(mm, "is_prefix", lambda w: w == "X")
+    board = _ModeBoard({(0, 0): "X", (1, 0): "Z"})
+    m = _mode(board, live=[(0, 0), (1, 0)])
+    m._gs._misspell_instadeath = True
+    m.on_mouse_press(0, 0, 1)                     # "X" still starts words
+    assert m._gs.endgames == 0
+    m.on_mouse_press(1, 0, 1)                     # "XZ" starts none -> forfeit
+    assert m._gs.endgames == 1
+    assert m._buffer == []
+
+
+def test_impossible_buffer_survives_with_instadeath_off(monkeypatch):
+    # Same buffer, rule off: the dead-end word just sits there until the miss timeout.
+    monkeypatch.setattr(mm, "is_word", lambda w: False)
+    monkeypatch.setattr(mm, "is_prefix", lambda w: w == "X")
+    board = _ModeBoard({(0, 0): "X", (1, 0): "Z"})
+    m = _mode(board, live=[(0, 0), (1, 0)])
+    m.on_mouse_press(0, 0, 1)
+    m.on_mouse_press(1, 0, 1)
+    assert m._gs.endgames == 0
+    assert m._word() == "XZ"
