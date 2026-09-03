@@ -163,7 +163,8 @@ class IdeaPool:
     """The pre-picked ring of belt items. Build once at game start; the belt view
     then only ever reads item_at(index) and asks for its size."""
 
-    def __init__(self, size=None, deck=None, reason="opening", stock=None):
+    def __init__(self, size=None, deck=None, reason="opening", stock=None,
+                 word_art=None):
         # size: how many items the ring holds (idea_belt.pool_size). deck: the
         # loaded deck rows, injected by tests; None loads the configured file.
         # reason: why this ring was dealt (opening / new game), for the log only --
@@ -173,6 +174,11 @@ class IdeaPool:
         # board scan ran (see STOCK_CATEGORIES); None or empty stocks the whole
         # ring blind, the original behavior. The pool never scans the board
         # itself -- it is handed the answers, so it stays a plain inventory.
+        # word_art: [(word, emoji), ...] to build the ring from DIRECTLY, bypassing
+        # the deck and every stocking rule -- the hint-debug belt
+        # (idea_belt.source), which is handed the exact ideas one double-clicked
+        # cell could give. An empty list is a legitimate value: an empty ring, which
+        # is what a belt waiting for its first double click shows.
         # Read at construction, NOT in the class body -- class-level CONFIG reads
         # freeze at import time, before a game mode is applied.
         rules = CONFIG.get("rules", {})
@@ -197,6 +203,7 @@ class IdeaPool:
         for category in STOCK_CATEGORIES + [BLIND_CATEGORY]:
             key = "idea_belt.stock_category_weight." + category
             self._weights[category] = max(0.0, float(rules.get(key, 0)))
+        self._word_art = word_art
         self._deck = deck if deck is not None else load_deck()
         # How an item draws (and so what counts as a duplicate).
         art_rules = {
@@ -215,19 +222,35 @@ class IdeaPool:
         # ACROSS categories -- see _blend_stock.
         self._dedupe_on = (rules.get("idea_belt.dedupe", "rule_idea_dedupe_on")
                            == "rule_idea_dedupe_on")
+        # Whether the HINT-DEBUG ring keeps one item per picture. Its own knob
+        # rather than idea_belt.dedupe, because the two want opposite answers: the
+        # player-facing belt must not show one picture twice, while the debug list
+        # is asking "what can this cell give me", and three words sharing one emoji
+        # are three answers, not a duplicate.
+        self._hint_debug_dedupe_rule = select_rule(
+            "idea_belt.hint_debug_dedupe",
+            {"rule_idea_hint_debug_dedupe_on": self._rule_dedupe_on,
+             "rule_idea_hint_debug_dedupe_off": self._rule_dedupe_off})
         # The order the ring is dealt in.
         order_rules = {
             "rule_idea_order_shuffled": self._rule_order_shuffled,
             "rule_idea_order_deck": self._rule_order_deck,
         }
         self._order_rule = select_rule("idea_belt.order", order_rules)
+        # The same answer as a plain flag, for the rings that must NOT be cycled to
+        # fill pool_size (see _take_once).
+        self._order_shuffled = (rules.get("idea_belt.order",
+                                          "rule_idea_order_shuffled")
+                                == "rule_idea_order_shuffled")
 
         self._items = []
         self._build()
 
     def _build(self):
         candidates = self._candidates()
-        if not self._stock:
+        if self._word_art is not None:
+            self._items = self._build_word_art()
+        elif not self._stock:
             self._items = self._order_rule(self._dedupe_rule(candidates))
         else:
             # NOT deduped here. Dedupe keeps the FIRST word of each picture, and on
@@ -238,6 +261,30 @@ class IdeaPool:
             self._items = self._blend_stock(candidates)
         L.log_06009(len(self._items), [item.word for item in self._items],
                     self._reason)
+
+    def _build_word_art(self):
+        """A ring built straight from (word, emoji) pairs -- the hint-debug belt.
+
+        No deck, no candidates, no stocking blend: the caller has already decided
+        exactly which ideas belong on the conveyor, so all that is left is the
+        dedupe answer and the cap."""
+        items = []
+        for word, emoji in self._word_art:
+            if word and emoji:
+                items.append(IdeaItem(word, emoji, "", emoji))
+        return self._take_once(self._hint_debug_dedupe_rule(items))
+
+    def _take_once(self, candidates):
+        """Order `candidates` and take at most pool_size of them, WITHOUT cycling.
+
+        The ordinary order rules pad a short list by looping it, which is right for
+        a conveyor that must never run out of pictures. It is wrong for a ring that
+        IS an answer to a question: a cell offering three ideas must show three
+        pictures, not the same three seventeen times over."""
+        ordered = list(candidates)
+        if self._order_shuffled:
+            rand().shuffle(ordered)
+        return ordered[:self._size]
 
     def _quotas(self):
         """How many ring slots each stocking category gets, from the relative

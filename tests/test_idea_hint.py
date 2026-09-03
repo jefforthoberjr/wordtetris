@@ -86,6 +86,9 @@ def _screen(grams, digram="rule_idea_hint_digram_on",
         state = screen._idea_hints.pop(cell, None)
         if state is not None:
             screen._shown.append((cell, None))
+            # Mirrors the real _hide_idea_hint: a hint going away empties the
+            # hint-debug belt. A no-op when no belt is wired in.
+            screen._feed_idea_hint_belt(None, state["gram"], [])
     screen._hide_idea_hint = _hide
     return screen
 
@@ -288,5 +291,103 @@ def test_an_untouched_cell_keeps_its_hint_across_ticks():
             screen._prune_idea_hints()
         assert (1, 0) in screen._idea_hints
         assert screen._idea_hints[(1, 0)]["word"] == "SHARK"
+    finally:
+        _restore()
+
+
+# --- the hint-debug belt (idea_belt.source / idea_belt.hint_debug_refresh) ---
+class _FakeBelt:
+    """A belt in hint-debug mode, recording each ring it is handed. Only the two
+    members the hint feed touches -- the real one needs a GL context."""
+    hint_debug = True
+
+    def __init__(self):
+        self.rings = []
+
+    def show_hint_ideas(self, word_art, reason):
+        self.rings.append(sorted(word for word, _emoji in word_art))
+
+
+def _debug_screen(grams, refresh="rule_idea_hint_debug_refresh_off"):
+    _with_rules(idea_belt__source="rule_idea_source_hint_debug",
+                idea_belt__hint_debug_refresh=refresh)
+    screen = _screen(grams)
+    screen._idea_belt = _FakeBelt()
+    return screen
+
+
+def test_a_double_click_puts_that_cell_s_whole_idea_pool_on_the_belt():
+    """The hint shows ONE word on the cell; the debug belt shows every word that
+    pick could have come from, so a suspicious picture is checkable."""
+    try:
+        screen = _debug_screen({(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"})
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        ring = screen._idea_belt.rings[-1]
+        assert ring
+        # Every listed idea really is spellable through the clicked gram.
+        assert all("ARK" in word for word in ring)
+        # The word actually shown on the cell came out of that same list.
+        assert screen._shown[-1][1] in ring
+        # Toggling the hint off empties the belt -- no message, just nothing.
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        assert screen._idea_belt.rings[-1] == []
+    finally:
+        _restore()
+
+
+def test_the_debug_list_is_a_snapshot_when_refresh_is_off():
+    try:
+        screen = _debug_screen({(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"})
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        dealt = len(screen._idea_belt.rings)
+        del screen._board._grams[(0, 0)]          # the board moved on
+        assert screen._refresh_idea_hint_belt() is False
+        assert len(screen._idea_belt.rings) == dealt
+    finally:
+        _restore()
+
+
+def test_refresh_on_board_change_re_answers_for_the_board_as_it_is_now():
+    """Clearing a word elsewhere changes what THIS cell can spell without touching
+    it, so the standing list becomes a claim about a board that is gone."""
+    try:
+        screen = _debug_screen(
+            {(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"},
+            refresh="rule_idea_hint_debug_refresh_on_board_change")
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        before = screen._idea_belt.rings[-1]
+        assert any("SH" in word for word in before)
+        # An unchanged board re-scans nothing, however many frames go by.
+        assert screen._refresh_idea_hint_belt() is False
+        assert screen._refresh_idea_hint_belt() is False
+        # Take the SH cell away: every idea that leaned on it must drop off.
+        del screen._board._grams[(0, 0)]
+        assert screen._refresh_idea_hint_belt() is True
+        after = screen._idea_belt.rings[-1]
+        assert after != before
+        assert not any(word.startswith("SH") for word in after)
+        # And the new board is now the baseline -- no re-scan every frame after.
+        assert screen._refresh_idea_hint_belt() is False
+    finally:
+        _restore()
+
+
+def test_nothing_is_re_scanned_once_the_hint_is_gone():
+    """_hide_idea_hint already emptied the belt; the refresh must not keep the
+    dead cell's list alive (nor pay for a scan per frame with no hint up)."""
+    try:
+        screen = _debug_screen(
+            {(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"},
+            refresh="rule_idea_hint_debug_refresh_on_board_change")
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)          # toggled back off
+        del screen._board._grams[(0, 0)]
+        assert screen._refresh_idea_hint_belt() is False
     finally:
         _restore()

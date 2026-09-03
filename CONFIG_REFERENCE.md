@@ -1009,6 +1009,79 @@ shuffled passes if the deck is smaller than the ring). `rule_idea_order_deck` ke
 the file's own order, cycled to fill the ring -- a stable belt for tuning a
 hand-curated deck.
 
+### idea_belt.click
+What clicking a belt picture does. `rule_idea_click_types_word` replaces the pane's
+typed field with the picture's word (the belt's whole young-player point: picture ->
+word -> go and find the letters); the player still submits it themselves. 
+`rule_idea_click_off` makes the belt a pure read-out -- the click is not consumed and
+falls through to whatever sits behind the belt. Off is the honest setting for a belt
+that is showing something other than a set of prompts (see `idea_belt.source`).
+
+### idea_belt.source
+WHERE the ring comes from. `rule_idea_source_stocked` is the ordinary belt: it deals
+itself one ring per game -- blind, or board-stocked per
+`idea_belt.stock_category_weight.*` -- and runs that ring all game.
+
+`rule_idea_source_hint_debug` turns the belt into a DEVELOPMENT read-out of the
+double-click cell hint (`game_screen.idea_hint_digram` / `_trigram`) instead. The belt
+deals nothing of its own: it opens EMPTY, and every hint event replaces its whole ring
+with every idea the cell just double-clicked can give -- the full pool
+`sample_words_using_gram` returned, of which the hint itself shows exactly one at
+random, on the cell. So the belt answers "what else could that cell have said?", which
+is what makes a suspicious-looking hint checkable. The ring is capped at
+`idea_belt.pool_size` (a common digram cuts into hundreds of words) and, unlike every
+other ring, is NOT cycled to fill it -- a cell with three ideas shows three pictures,
+so the amount of belt traffic is itself part of the read. Toggling a hint off empties
+the belt, as does a cell with no ideas at all: no message, just an empty conveyor.
+
+The word list is the HINT's (`idea_hint.deck` / `idea_hint.min_fit`, fit 3 by
+default), not the belt's own (`idea_belt.deck` / `idea_belt.min_fit`, fit 2) -- the
+point is to see the pool the hint actually drew from. Words the file carries no emoji
+for are left off: they are not something the cell can OFFER as a picture. A hint-debug
+belt ignores `idea_belt.stock_category_weight.*` entirely and never restocks from the
+board.
+
+Note this belt IS a word-availability hint of the strongest kind (an enumerated list
+of words makeable through one cell), which is why it is a debug view and not a mode
+feature. Pair it with `idea_belt.show_word: rule_idea_word_shown` to read the words,
+and consider `idea_belt.click: rule_idea_click_off` if you do not want the read-out
+typing into the field.
+
+### idea_belt.hint_debug_refresh
+Whether the hint-debug list (`idea_belt.source: rule_idea_source_hint_debug`) keeps up
+with the board. What a cell can spell depends on every OTHER cell as well, so clearing
+a word somewhere else changes that cell's answer without touching the cell itself —
+and the list on the belt quietly becomes a statement about a board that no longer
+exists.
+
+`rule_idea_hint_debug_refresh_off` (the default) leaves the list as a snapshot of the
+moment it was asked for: it stays put until the next double click. That is the cheaper
+rule, and the right one when what is being checked is the pick itself.
+
+`rule_idea_hint_debug_refresh_on_board_change` re-runs the scan whenever the board's
+usable-gram multiset changes, so the belt always answers for the board as it is now —
+ideas that stopped being makeable drop off, and ones the newest cells opened up appear.
+The trigger is the gram MULTISET rather than any particular event, because cells stop
+and start supplying grams down a dozen roads (a clear, a botanical grow, a gallery
+shot, a fossilize, a partial-gram relabel) and comparing state catches all of them,
+including the ones added later; it also means a piece merely moving around does not
+re-scan. Cost is one gram gather per frame while a debug hint is up — nothing at all
+otherwise — and the full word-file scan only on a frame where that gather came back
+different.
+
+Note the on-cell hint picture itself is NOT re-picked by this: the cell keeps showing
+the word it drew (the existing prune still takes it down if that cell's own gram
+changes). Only the belt's list is recomputed.
+
+### idea_belt.hint_debug_dedupe
+Whether the hint-debug ring keeps one item per PICTURE. Its own knob rather than
+`idea_belt.dedupe` because the two want opposite answers: the player-facing belt must
+never show one picture twice, while the debug list is answering "what can this cell
+give me", and three words sharing one emoji are three answers, not a duplicate.
+`rule_idea_hint_debug_dedupe_off` (the default) shows every word;
+`rule_idea_hint_debug_dedupe_on` thins the list to distinct pictures, which is the
+read for "how much of this cell's pool is the SAME picture over and over".
+
 ### idea_belt.match
 What a cleared word does to the belt. `rule_idea_match_clear_and_bonus` treats the
 conveyor as a set of TARGETS: spell a word the belt is showing and its picture comes

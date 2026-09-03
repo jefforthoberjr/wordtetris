@@ -126,3 +126,58 @@ def test_the_board_match_surface_reaches_the_pool():
     assert belt.clear_word("APPLE") == ["A"]
     assert belt.active_count() == 1
     assert belt.clear_word("APPLE") == []
+
+
+# --- the hint-debug read-out (idea_belt.source) ------------------------------
+def _debug_belt():
+    """A bare hint-debug belt: no GL, no slots, just the ring surface the cell
+    hint feeds (see views/game_screen_ideahint._feed_idea_hint_belt)."""
+    from models.idea_pool import IdeaPool
+    belt = _belt()
+    belt._slots = []
+    belt._slot_count = 0
+    belt._hint_debug = True
+    belt._targeted = False
+    belt._unused_ring = True
+    belt._pool = IdeaPool(size=50, deck=[], word_art=[], reason="awaiting click")
+    return belt
+
+
+def test_a_hint_event_replaces_the_whole_debug_ring():
+    """The belt answers ONE cell -- the one most recently asked about -- so the
+    second double click must not leave the first cell's ideas on the conveyor."""
+    belt = _debug_belt()
+    assert belt.hint_debug is True
+    assert belt._pool.size() == 0
+    belt.show_hint_ideas([("SHARK", "A"), ("SHARE", "B")], "hint debug: SH")
+    # Set, not list: the default order rule shuffles the ring.
+    assert set(belt._pool.words()) == {"SHARK", "SHARE"}
+    belt.show_hint_ideas([("ARK", "C")], "hint debug: AR")
+    assert belt._pool.words() == ["ARK"]
+    assert belt._scroll == 0.0
+    # A hint toggled off, or a cell with nothing to say: empty, no message.
+    belt.show_hint_ideas([], "hint debug: AR")
+    assert belt._pool.size() == 0
+
+
+def test_a_hint_debug_belt_refuses_board_stocking():
+    """Its ring belongs to the last double click, so a formation-time restock
+    would only be thrown away by the first one."""
+    belt = _debug_belt()
+    belt.show_hint_ideas([("ARK", "C")], "hint debug: AR")
+    assert belt.restock({"spellable_multigram": ["APPLE"]}) == {}
+    assert belt._pool.words() == ["ARK"]
+
+
+def test_the_click_rule_decides_whether_a_picture_types_its_word():
+    """idea_belt.click off leaves the belt a pure read-out: nothing is typed, and
+    the click is NOT consumed, so it falls through to whatever is behind it."""
+    from models.idea_pool import IdeaItem
+    picked = []
+    belt = _belt()
+    belt._on_pick = picked.append
+    item = IdeaItem("SHARK", "A", "", "A")
+    assert belt._rule_idea_click_types_word(item) is True
+    assert picked == ["SHARK"]
+    assert belt._rule_idea_click_off(item) is False
+    assert picked == ["SHARK"]

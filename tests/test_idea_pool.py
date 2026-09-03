@@ -156,3 +156,58 @@ def test_clearing_a_word_the_ring_never_held_strikes_nothing():
         assert pool.active_count() == 1
     finally:
         _restore()
+
+
+# --- the hint-debug ring (idea_belt.source / idea_belt.hint_debug_dedupe) -----
+def test_hint_debug_ring_is_built_from_the_words_it_is_handed():
+    """The debug belt is a read-out, not a deal: the ring is exactly the ideas the
+    double-clicked cell offered, and NOT padded out to pool_size by cycling them
+    (how many pictures go past is part of what the view is showing)."""
+    try:
+        _with_rules(idea_belt__hint_debug_dedupe="rule_idea_hint_debug_dedupe_off",
+                    idea_belt__order="rule_idea_order_deck")
+        pool = idea_pool.IdeaPool(size=50, deck=[],
+                                  word_art=[("SHARK", "A"), ("SHARE", "B")],
+                                  reason="hint debug: SH")
+        assert pool.words() == ["SHARK", "SHARE"]
+        assert pool.size() == 2
+    finally:
+        _restore()
+
+
+def test_hint_debug_ring_is_capped_at_pool_size():
+    """A common digram cuts into hundreds of words; the belt still shows one ring's
+    worth of them."""
+    try:
+        _with_rules(idea_belt__order="rule_idea_order_deck")
+        art = [(f"W{n}", "A") for n in range(300)]
+        pool = idea_pool.IdeaPool(size=50, deck=[], word_art=art, reason="cap")
+        assert pool.size() == 50
+    finally:
+        _restore()
+
+
+def test_hint_debug_keeps_words_sharing_one_picture():
+    """Its own dedupe knob, defaulting OFF: three words behind one emoji are three
+    answers about that cell, not a duplicate picture -- the opposite of what the
+    player-facing belt (idea_belt.dedupe) wants."""
+    art = [("CAT", "A"), ("COT", "A"), ("CUT", "A")]
+    try:
+        _with_rules(idea_belt__dedupe="rule_idea_dedupe_on",
+                    idea_belt__hint_debug_dedupe="rule_idea_hint_debug_dedupe_off",
+                    idea_belt__order="rule_idea_order_deck")
+        assert idea_pool.IdeaPool(size=50, deck=[], word_art=art,
+                                  reason="dup").size() == 3
+        _with_rules(idea_belt__hint_debug_dedupe="rule_idea_hint_debug_dedupe_on")
+        assert idea_pool.IdeaPool(size=50, deck=[], word_art=art,
+                                  reason="dedupe").size() == 1
+    finally:
+        _restore()
+
+
+def test_an_empty_hint_debug_ring_draws_nothing():
+    """A belt awaiting its first double click, a hint toggled off, and a cell with
+    no ideas are all the same state: an empty conveyor, no message."""
+    pool = idea_pool.IdeaPool(size=50, deck=[], word_art=[], reason="empty")
+    assert pool.size() == 0
+    assert pool.item_at(0) is None

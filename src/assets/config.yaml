@@ -262,8 +262,8 @@ rules:
   idea_belt.window_offset:  15
   # idea_belt.scroll_speed:   0.25
   idea_belt.scroll_speed:   0.05
-  idea_belt.show_word:   rule_idea_word_hidden
-  # idea_belt.show_word: rule_idea_word_shown
+  # idea_belt.show_word:   rule_idea_word_hidden
+  idea_belt.show_word: rule_idea_word_shown
 
   idea_belt.deck:        words_emoji.csv
   # idea_belt.deck:      default_ideas.csv
@@ -281,6 +281,22 @@ rules:
   # idea_belt.dedupe:    rule_idea_dedupe_off
   idea_belt.order:       rule_idea_order_shuffled
   # idea_belt.order:     rule_idea_order_deck
+  # What clicking a belt picture does. [ref: idea_belt.click]
+  idea_belt.click:       rule_idea_click_types_word
+  # idea_belt.click:     rule_idea_click_off
+
+  # WHERE the ring comes from: the belt's own deal, or a DEBUG read-out of the
+  # double-click cell hint below. [ref: idea_belt.source]
+  # idea_belt.source:      rule_idea_source_stocked
+  idea_belt.source:    rule_idea_source_hint_debug #from the double-click hints
+  # Whether the hint-debug ring keeps one item per picture.
+  # [ref: idea_belt.hint_debug_dedupe]
+  idea_belt.hint_debug_dedupe:   rule_idea_hint_debug_dedupe_off
+  # idea_belt.hint_debug_dedupe: rule_idea_hint_debug_dedupe_on
+  # Whether the hint-debug list re-answers as the board changes.
+  # [ref: idea_belt.hint_debug_refresh]
+  # idea_belt.hint_debug_refresh:   rule_idea_hint_debug_refresh_off
+  idea_belt.hint_debug_refresh: rule_idea_hint_debug_refresh_on_board_change
 
   # Double-left-click a placed multigram cell for a faded picture of a word it
   # could help spell. Independent of the idea belt. [ref: game_screen.idea_hint]
@@ -290,7 +306,9 @@ rules:
   game_screen.idea_hint_trigram: rule_idea_hint_trigram_on
   game_screen.idea_hint_opacity: 128
   idea_hint.deck:     words_emoji.csv
-  idea_hint.min_fit:  3
+  # idea_hint.min_fit:  3 #Very literal emojis
+  # idea_hint.min_fit:  2 #half fitting emojis
+  idea_hint.min_fit:  1 #all emojis, as vague as they are
 
   # Clearing a word the belt shows takes its picture off + pays the bonus. [ref: idea_belt.match]
   idea_belt.match:       rule_idea_match_clear_and_bonus

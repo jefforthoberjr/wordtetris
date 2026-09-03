@@ -16,12 +16,19 @@ around to the up column one full lap later.
 
 This view owns motion, layout and hit-testing only; the pool owns which items and
 in what order. The host pane owns the typed field the picks land in.
+
+WHERE THE RING COMES FROM is idea_belt.source. Normally the belt deals its own ring
+once per game. Set to rule_idea_source_hint_debug it deals nothing at all and
+becomes a DEVELOPMENT read-out of the double-click cell hint instead (see
+views/game_screen_ideahint): it opens empty and every hint event replaces the whole
+ring with every idea that one cell could have offered, of which the hint itself
+shows one. Same conveyor, same drawing, different question.
 """
 import math
 import pyglet
 
 from views.shaders import get_shape_shader
-from config import CONFIG, get_color
+from config import CONFIG, get_color, select_rule
 from models.idea_pool import (IdeaPool, STOCK_CATEGORIES, images_dir,
                               load_deck)
 import log_codes as L
@@ -46,8 +53,9 @@ class IdeaBelt:
     CIRCLE_FRACTION = 0.38
     # Defaults so the bare __new__ instances the geometry tests build (no GL
     # context, only the fields positions() reads) still answer the dealing
-    # questions. A real belt sets both in __init__.
+    # questions. A real belt sets all three in __init__.
     _targeted = False
+    _hint_debug = False
     _deck = ()
     # Art is inset inside its circle so the ring stays visible around it: a
     # picture fits the square inscribed in the disc. Emoji are drawn as TEXT, and
@@ -85,6 +93,21 @@ class IdeaBelt:
         }
         self._show_word = word_rules.get(
             rules.get("idea_belt.show_word", "rule_idea_word_hidden"), False)
+        # WHERE the ring comes from (idea_belt.source). The ordinary belt deals
+        # itself a ring (blind or board-stocked) and runs it all game. The
+        # HINT-DEBUG belt deals nothing on its own: it is a read-out of the
+        # double-click cell hint (game_screen.idea_hint_*), starting empty and
+        # re-dealt from scratch on every hint event with the ideas THAT cell can
+        # give. It is a development view of the hint's word pick, not a young-player
+        # feature -- see CONFIG_REFERENCE.
+        self._hint_debug = (rules.get("idea_belt.source",
+                                      "rule_idea_source_stocked")
+                            == "rule_idea_source_hint_debug")
+        # What clicking a picture does (idea_belt.click).
+        self._click_rule = select_rule(
+            "idea_belt.click",
+            {"rule_idea_click_types_word": self._rule_idea_click_types_word,
+             "rule_idea_click_off": self._rule_idea_click_off})
         if targeted is None:
             # Any scanning category carrying weight means this belt waits for the
             # board (idea_belt.stock_category_weight.*); weight on `blind` alone --
@@ -94,7 +117,10 @@ class IdeaBelt:
                 key = "idea_belt.stock_category_weight." + category
                 if float(rules.get(key, 0)) > 0:
                     targeted = True
-        self._targeted = targeted
+        # A hint-debug belt is never board-stocked, whatever the stocking weights
+        # say: its ring answers a click, so a ring dealt at formation time would
+        # only be overwritten by the first double click anyway.
+        self._targeted = targeted and not self._hint_debug
         # The deck is read ONCE and handed to every ring this belt deals: a
         # targeted belt re-deals per game, and re-reading the CSV each time would
         # be pure I/O for a file that cannot change mid-session. It is also what
@@ -102,7 +128,13 @@ class IdeaBelt:
         self._deck = load_deck()
         if pool is not None:
             self._pool = pool
-        elif targeted:
+        elif self._hint_debug:
+            # Empty until the player double-clicks a cell. An empty ring draws
+            # nothing (every slot hides on size 0), which IS the debug read for
+            # "no hint has fired yet".
+            self._pool = IdeaPool(deck=[], word_art=[],
+                                  reason="hint debug: awaiting click")
+        elif self._targeted:
             # No board to scan yet: an empty ring draws nothing (every slot hides
             # on size 0) and is replaced by restock() in the same tick the game
             # starts, before the first frame.
@@ -184,7 +216,11 @@ class IdeaBelt:
         A TARGETED belt (idea_belt.stock_category_weight.*) deals no ring here at
         all: this runs before the new game's board exists, so its ring comes from
         restock() after the formation is down. Rewinding still happens for both."""
-        if not self._unused_ring and not self._targeted:
+        if self._hint_debug:
+            # Back to empty: last game's cell is gone, so the ideas it offered are
+            # not an answer about this board.
+            self.show_hint_ideas([], "new game")
+        elif not self._unused_ring and not self._targeted:
             self._pool = IdeaPool(deck=self._deck, reason="new game")
         self._unused_ring = False
         self._rewind()
@@ -223,12 +259,40 @@ class IdeaBelt:
         weights, and return {category -> how many ring slots it filled}.
 
         Called by GameScreen once the opening formation is down, which is the
-        earliest moment there is a board to scan. A blind belt never calls it."""
+        earliest moment there is a board to scan. A blind belt never calls it, and
+        a hint-debug belt refuses it -- its ring belongs to the last double
+        click."""
+        if self._hint_debug:
+            return {}
         self._pool = IdeaPool(deck=self._deck, stock=stock,
                               reason="board stocked")
         self._unused_ring = False
         self._rewind()
         return self._pool.stock_counts()
+
+    # --- hint debug (idea_belt.source) -------------------------------------
+    @property
+    def hint_debug(self):
+        """Whether this belt is the double-click hint's read-out rather than a
+        conveyor of its own. GameScreen's hint code asks before feeding it."""
+        return self._hint_debug
+
+    def show_hint_ideas(self, word_art, reason):
+        """REPLACE the whole ring with `word_art` -- [(word, emoji), ...], every
+        idea the cell just double-clicked can give -- and rewind to its start.
+
+        Replacing rather than adding is the point: the belt answers ONE cell, the
+        most recently asked-about one, so what is on it is always readable as
+        "these are that cell's ideas". An empty list empties the belt, which is how
+        a hint being toggled off, and a cell with no ideas at all, both read -- no
+        message, just nothing on the conveyor.
+
+        Capped at idea_belt.pool_size like any other ring (a common digram can be
+        cut into hundreds of words), and NOT cycled to fill it: the number of
+        pictures going past is itself part of the read."""
+        self._pool = IdeaPool(deck=[], word_art=word_art, reason=reason)
+        self._unused_ring = False
+        self._rewind()
 
     # --- board match (idea_belt.match) -------------------------------------
     def clear_word(self, word):
@@ -385,6 +449,20 @@ class IdeaBelt:
                 self._images[name] = None
         return self._images[name]
 
+    # --- click rules (idea_belt.click) -------------------------------------
+    # What a picture does when it is clicked. Typing the word is the belt's whole
+    # young-player point (picture -> word -> go find the letters); the off rule
+    # leaves the belt a pure read-out, which is what a debug or spectator belt
+    # wants -- the click then falls through to whatever sits behind it.
+    def _rule_idea_click_types_word(self, item):
+        """Fill the pane's typed field with the picture's word."""
+        self._on_pick(item.word)
+        return True
+
+    def _rule_idea_click_off(self, item):
+        """Look, do not touch: the picture is not clickable."""
+        return False
+
     # --- input -------------------------------------------------------------
     def slot_at(self, x, y):
         """The belt SLOT whose circle contains pixel (x, y), or None. Only visible
@@ -430,8 +508,7 @@ class IdeaBelt:
         if slot is not None:
             item = self._pool.item_at(slot["index"])
             L.log_20008(item.word, item.art, slot["index"], self._slot_art(slot))
-            self._on_pick(item.word)
-            consumed = True
+            consumed = self._click_rule(item)
         return consumed
 
     def draw(self):

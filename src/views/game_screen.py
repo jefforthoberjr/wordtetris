@@ -1887,6 +1887,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # almost every frame -- see IdeaHintMixin._prune_idea_hints for why this is
         # a sweep rather than a hook in the clear pipeline.
         self._prune_idea_hints()
+        # Keep the hint-debug belt's list answering for the board as it is now
+        # (idea_belt.hint_debug_refresh). Off by default, and a None test per frame
+        # even when on unless a debug hint is actually up.
+        self._refresh_idea_hint_belt()
         # During the opening reveal, drive the fade-in (paused while the menu is
         # open, like the moving timer below); when it finishes, hand off to the
         # active mode. No piece spawns and no timer runs until then.
