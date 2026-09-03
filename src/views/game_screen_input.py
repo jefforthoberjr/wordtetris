@@ -192,6 +192,14 @@ class InputMixin:
         cell = board.cell_at(x, y) if board is not None else None
         L.log_20003(x, y, pyglet.window.mouse.buttons_string(button),
                     self._phase.name, cell)
+        # Idea hint: two back-to-back left clicks on one placed multigram cell
+        # raise (or clear) its half-faded picture. A pure OBSERVER of the click --
+        # it never consumes one, so every mode's own click handling below runs
+        # exactly as it did before. Placed before the phase branches so it sees
+        # board clicks in MOVING and SELECTING alike; the menu/victory returns
+        # below still short-circuit their own clicks first.
+        if not self._menu_open and self._phase in (Phase.MOVING, Phase.SELECTING):
+            self._note_idea_hint_click(x, y, button)
         if self._menu_open:
             action = self._ingame_menu.on_mouse_press(x, y, button, modifiers)
             if action:

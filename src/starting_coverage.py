@@ -185,6 +185,41 @@ def sample_multigram_words(words, grams, accept, limit):
     return found
 
 
+# --- words that USE one particular cell (game_screen.idea_hint) --------------
+def sample_words_using_gram(words, grams, required, accept, limit):
+    """Up to `limit` words from `words` that the gram multiset `grams` can form
+    under `accept` AND whose forming cut USES the gram `required` as one of its
+    segments.
+
+    The idea-hint question, which neither sibling answers: not "can the board
+    spell this word" but "can the board spell this word THROUGH the cell the
+    player just asked about". A word that merely contains the letters of
+    `required` somewhere does not qualify -- SHARK counts for an ARK cell only if
+    the cut that fits the board is SH + ARK, because the point of the hint is that
+    the player can go and build it out of the cells in front of them.
+
+    `grams` must already include `required`'s own cell (it is a board cell like
+    any other), so the usual _ways supply check covers the case where the word
+    wants that gram more times than the board has it."""
+    grams = {g.upper(): c for g, c in grams.items()}
+    required = required.upper()
+    if not grams or required not in grams or limit <= 0:
+        return []
+    max_len = max(len(g) for g in grams)
+    found = []
+    for word in words:
+        w = word.upper()
+        if required not in w:
+            continue                   # cheap reject before the segmentation DP
+        for seg in _segmentations(w, grams, max_len):
+            if required in seg and accept(w, len(seg)) and _ways(seg, grams) > 0:
+                found.append(w)
+                break
+        if len(found) >= limit:
+            break
+    return found
+
+
 def write_coverage_csv(path, words, grams, accept, sep):
     """Write the starting-coverage CSV: one line per dictionary word (sorted,
     INCLUDING zero-coverage words), columns

@@ -282,6 +282,16 @@ rules:
   idea_belt.order:       rule_idea_order_shuffled
   # idea_belt.order:     rule_idea_order_deck
 
+  # Double-left-click a placed multigram cell for a faded picture of a word it
+  # could help spell. Independent of the idea belt. [ref: game_screen.idea_hint]
+  game_screen.idea_hint_digram:  rule_idea_hint_digram_off
+  # game_screen.idea_hint_digram: rule_idea_hint_digram_on
+  # game_screen.idea_hint_trigram: rule_idea_hint_trigram_off
+  game_screen.idea_hint_trigram: rule_idea_hint_trigram_on
+  game_screen.idea_hint_opacity: 128
+  idea_hint.deck:     words_emoji.csv
+  idea_hint.min_fit:  3
+
   # Clearing a word the belt shows takes its picture off + pays the bonus. [ref: idea_belt.match]
   idea_belt.match:       rule_idea_match_clear_and_bonus
   # idea_belt.match:     rule_idea_match_off

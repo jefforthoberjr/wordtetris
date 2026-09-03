@@ -246,6 +246,26 @@ def log_20008(word, art, index, shown):
                      desync=desync)
 
 
+def log_20009(action, cell, gram, word):
+    """A cell's IDEA HINT was toggled (game_screen.idea_hint): the half-faded
+    emoji behind a placed multigram cell, raised by two back-to-back left clicks.
+
+    `action` is show / hide / clear / none. "hide" is the player double-clicking
+    it away; "clear" is the BOARD taking it away, because the cell's gram was
+    cleared or changed under it (a hint outlives neither). "none" is a cell that
+    qualified but where the board could spell nothing through its gram, which
+    draws nothing and is the line to grep when a player reports the hint "not
+    working". `word` is the word
+    whose picture went up (never shown to the player, only its emoji), so a replay
+    can see WHICH idea a cell offered; the pick is seeded, so it reproduces.
+
+    Watch for a run of `none` lines on the same cell: the player is asking again
+    and again and the board has nothing, which is a tuning signal about the hint's
+    word file, not a bug."""
+    session_log.emit(20009, f"idea hint {action} {gram}",
+                     action=action, x=cell[0], y=cell[1], gram=gram, word=word)
+
+
 # --- 3xxxx  word pipeline ----------------------------------------------------
 def log_30001(word):
     """A word was submitted in the interactive SELECT phase (the normalized,

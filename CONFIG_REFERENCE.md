@@ -894,6 +894,60 @@ by both columns; they only differ in direction.
 `rule_idea_word_hidden` shows pictures only, so the player has to name the thing
 themselves before clicking.
 
+### game_screen.idea_hint_digram / game_screen.idea_hint_trigram
+Double-left-click a PLACED multigram cell and a half-faded emoji appears behind
+its letters: a picture of a word that cell could help spell. Double-click again to
+clear it. Two independent slots, one per gram size --
+`rule_idea_hint_digram_on` / `_off` and `rule_idea_hint_trigram_on` / `_off`.
+Both default OFF.
+
+They are separate because they are different teaching moments. A digram (SH, EA)
+is the cut players miss most and the one worth prompting hardest; a
+trigram-or-larger (ARK, ING) already reads as a chunk, so a mode may want the hint
+on digrams only. Unigrams never qualify under either -- one letter needs no idea.
+
+**The word is real.** The hint only offers a word the board's usable grams can
+actually spell *with the clicked cell's gram as one of the segments* (see
+`starting_coverage.sample_words_using_gram`). SHARK is offered for an ARK cell only
+because the board can cut it SH + ARK -- a word that merely contains those letters,
+or one the board lacks the other cells for, is never shown. A hint the player
+cannot go and build is a lie, and this feature exists for the audience least able
+to tell the difference.
+
+**Re-rolled every time.** Toggling a cell off and on draws a fresh word, so a
+player can click through several ideas for one gram. The draw goes through the
+Source seam, so a replay reproduces it.
+
+**The double click is not timed** -- any two back-to-back left clicks on the same
+cell, however slow. It does not CONSUME the click: both clicks still reach the
+mode underneath, so in modes where left-click selects a cell the second click
+un-selects it exactly as before *and* the hint appears. The live piece is never a
+target (left-click is how a piece is moved).
+
+Like the idea belt this breaks the never-reveal-formability rule, and harder -- the
+belt says "this word is makeable somewhere", this says "makeable THROUGH this
+cell". Both are young-player features (see AGENTS.md, AUDIENCES), which is why
+these default off. Logged as `20009` (show / hide / none).
+
+### game_screen.idea_hint_opacity
+How faded the hint picture is behind the letters, 0-255. Default **128** -- solid
+enough to read as a picture, faint enough that the gram on top stays what the eye
+lands on. Only the alpha is lowered: pyglet multiplies a label's color into the
+glyph, so the RGB channels stay at 255 or the emoji's color drains out (see
+TECH.md).
+
+### idea_hint.deck
+Filename (under `assets/idea_belt/`) of the word->emoji file the hint draws from,
+default `words_emoji.csv`. Same format as the belt's word-row deck
+(`word,image,emoji,fit`) and the same generated file today, but a **separate knob
+on purpose**: the belt is a conveyor of prompts dealt once per game, the hint is a
+lookup answered per click, and either can be repointed at its own mapping without
+disturbing the other.
+
+### idea_hint.min_fit
+Lowest fit the hint may offer, 1-3. Default **3** -- a hint whose picture does not
+depict the word teaches nothing. See `idea_belt.min_fit` for what fit means.
+
 ### idea_belt.deck
 Filename (under `assets/idea_belt/`) of the inventory the idea belt stocks from.
 Two decks ship, and they are different SHAPES of file — see `idea_belt.deck_format`:

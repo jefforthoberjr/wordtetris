@@ -95,6 +95,12 @@ def apply_game_mode(path):
     # after the mode is applied), so it always tracks the selected file.
     COLORS = load_colors()
     LOADING_ANIM = load_loading_anim()
+    # The idea-hint word file is cached on first lookup and is per-mode
+    # (idea_hint.deck / idea_hint.min_fit), so drop that cache too. Imported here
+    # rather than at module scope: models.idea_words reads CONFIG, so a top-level
+    # import would be circular.
+    from models import idea_words
+    idea_words.reset()
     _active_mode = (path.stem, label, path)
     return path.stem, label
 
