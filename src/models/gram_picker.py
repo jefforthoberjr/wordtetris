@@ -390,7 +390,11 @@ def pick_grams(rule, count):
     digram_filtered = lambda n: double_consonant_digram_rule(vowel_filtered, n)
     multigram_deduped = lambda n: gram_dedup_rule(digram_filtered, n)
     deduped = lambda n: unigram_dedup_rule(multigram_deduped, n)
-    if rule is rule_grams_greater_than_47_lengthcontrolled and _in_formation:
+    if rule is rule_grams_greater_than_47_lengthcontrolled and (_in_formation or _forced_explicit):
+        # _forced_explicit also passes OUTSIDE the opening formation: mid-game
+        # single-cell draws (constellation's replenish length rules) pin an exact
+        # length the same way, and they must not be routed to the round-robin
+        # quota path below (which is the formation's whole-board bookkeeping).
         # Region formation pinned this cell's exact length+pool -> draw it straight.
         if _forced_explicit:
             return _draw_explicit_formation(deduped, count)
@@ -631,11 +635,21 @@ def _partition_corpus_by_length():
 # weights, so they need not sum to 100 -- writing them as percentages just keeps
 # the YAML readable, and zeroing one category drops that length entirely.
 _LENGTH_CATEGORIES = [1, 2, 3]
-_LENGTH_PCT_WEIGHTS = [
-    CONFIG["rules"]["gram_length.unigram_percent"],
-    CONFIG["rules"]["gram_length.digram_percent"],
-    CONFIG["rules"]["gram_length.trigramplus_percent"],
-]
+
+
+def _length_pct_weights():
+    """The [unigram, digram, trigram+] relative shares, read from CONFIG AT CALL
+    TIME. Deliberately a function, not a module constant: this module is imported
+    before apply_game_mode swaps CONFIG, so a frozen list would pin the base
+    config's mix and silently ignore a game mode's gram_length.*_percent override
+    (the same import-order trap noted for the gram-filter rules above). Hydra mode
+    depends on this -- it opens the board at 100% unigrams."""
+    rules = CONFIG["rules"]
+    return [
+        rules["gram_length.unigram_percent"],
+        rules["gram_length.digram_percent"],
+        rules["gram_length.trigramplus_percent"],
+    ]
 
 
 def _draw_from_length_bucket(length, count):
@@ -897,7 +911,7 @@ def rule_grams_greater_than_47_lengthcontrolled(count):
         if _forced_length in (2, 3) and _forced_ideation_attr is not None:
             return _draw_from_ideation(_forced_length, _forced_ideation_attr, count)
         return _draw_from_length_bucket(_forced_length, count)
-    lengths = rand().choices(_LENGTH_CATEGORIES, weights=_LENGTH_PCT_WEIGHTS, k=count)
+    lengths = rand().choices(_LENGTH_CATEGORIES, weights=_length_pct_weights(), k=count)
     grams = []
     for length in lengths:
         grams.extend(_draw_from_length_bucket(length, 1))
@@ -929,7 +943,7 @@ def _largest_remainder_pick(keys, weights, counts):
 def _next_quota_length():
     """The length category (1 / 2 / 3+) most behind its gram_length.*_percent
     share so far. None if every length share is 0."""
-    return _largest_remainder_pick(_LENGTH_CATEGORIES, _LENGTH_PCT_WEIGHTS, _length_counts)
+    return _largest_remainder_pick(_LENGTH_CATEGORIES, _length_pct_weights(), _length_counts)
 
 
 def _next_quota_unigram_group():
@@ -1042,7 +1056,7 @@ def formation_length_sequence(count, weights=None):
     pre-computed one; mapping it row-major reproduces today's diagonal. wood_grain passes
     its own fixed weights so the grain pattern is independent of the configured mix."""
     if weights is None:
-        weights = _LENGTH_PCT_WEIGHTS
+        weights = _length_pct_weights()
     counts = {1: 0, 2: 0, 3: 0}
     seq = []
     for _ in range(count):

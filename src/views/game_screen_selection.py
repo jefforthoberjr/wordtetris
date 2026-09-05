@@ -772,12 +772,15 @@ class SelectionMixin:
         # (which is where they're really scored into the total) -- the facts must
         # be read pre-clear, and the same pure rule guarantees the same number.
         display = self._scorer.word_score_display_rule(is_new=is_new, **self._word_score_facts(found))
+        # The lengths these cells HELD, read before _clear_paths removes the grams,
+        # so the replenish length rules can grow the replacement off what cleared.
+        cleared_lengths = self._cleared_length_map([found])
         self._clear_paths([found])
         # Constellation turnover: refill or leave empty the cells this word vacated
         # (game_screen.constellation_turnover). Runs before the recompute/victory
         # checks below so a replenished board isn't read as empty.
         if self._constellation:
-            self._constellation_turnover_rule(found.path)
+            self._constellation_turnover_rule(found.path, cleared_lengths)
         self._words_submitted_this_select += 1
         self._selecting_side_pane.accept_word(word, is_new, is_obscure(word), display)
         self._dictionary_count_rule(self._selecting_side_pane, len(self._player_dict))
@@ -1006,13 +1009,14 @@ class SelectionMixin:
             # replenish rule only fills cells that actually went empty, so passing
             # overlapping / duplicate cells is safe.
             pending_cells = [cell for fw in self._pending for cell in fw.path]
+            cleared_lengths = self._cleared_length_map(self._pending)
             self._clear_paths(self._pending)
             # Constellation turnover: refill (or, under no-replenish, leave empty)
             # the vacated cells -- the batch-mode twin of the _commit_clear_now call,
             # so replenish works under rule_clear_at_phase_end too (the constellation
             # preset's timing). Inert in every other mode.
             if self._constellation:
-                self._constellation_turnover_rule(pending_cells)
+                self._constellation_turnover_rule(pending_cells, cleared_lengths)
         self._pending = []
 
     # --- select word-limit rules (game_screen.select_word_limit) -----------

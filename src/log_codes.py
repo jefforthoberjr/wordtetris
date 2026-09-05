@@ -553,15 +553,19 @@ def log_06003(piece):
                      type=_piece_type_name(piece.piece_type), cells=spec)
 
 
-def log_06006(x, y, delay):
+def log_06006(x, y, delay, length=None):
     """A vacated cell was queued to replenish after an empty-cell wait
     (game_screen.replenish_delay_seconds > 0): the cell stays
     empty for `delay` seconds, then a fresh gram is placed there and recorded as
     the matching log_06002 'fill'. Logged so a replay reproduces the empty-then-fill
     timing instead of snapping the gram in at clear time. The instant path
-    (delay <= 0) skips this and logs only the fill."""
-    session_log.emit(6006, f"replenish scheduled at {x},{y} in {delay:.2f}s",
-                     x=x, y=y, delay=round(delay, 3))
+    (delay <= 0) skips this and logs only the fill. `length` is the length category
+    (1 / 2 / 3+) a replenish length rule pinned for the refill, or None when the
+    configured picker chose freely -- it makes hydra's escalation readable in a
+    session log without diffing the fill grams."""
+    pinned = "" if length is None else f" as length {length}"
+    session_log.emit(6006, f"replenish scheduled at {x},{y} in {delay:.2f}s{pinned}",
+                     x=x, y=y, delay=round(delay, 3), length=length)
 
 
 def log_06005(cell):

@@ -1,0 +1,70 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
+# scoring, dictionary, gram picks, spell_check ...) comes from the base file.
+# mode_label is the menu display name, stripped before merge -- not a game knob.
+mode_label: "Constellation — hydra"
+
+# MINDSET
+# The board opens as ALL single letters: easy first words, no puzzle yet. Every
+# clear hands that cell back one length category longer, so digrams and then
+# trigrams silt up the board and the easy letters have to be rationed. Cut off a
+# head, two grow back.
+
+rules:
+  game_screen.mode: rule_mode_constellation
+  game_screen.phase_model: rule_single_phase
+
+  # --- the escalation -------------------------------------------------------
+  game_screen.constellation_turnover: rule_constellation_replenish
+  # 1 -> 2, 2 -> 3+, 3+ -> 1: the board recycles and never fully seizes up.
+  game_screen.replenish_length: rule_replenish_length_grow_wrap
+  # 1 -> 2, 2 -> 3+, 3+ -> 3+: one-way ratchet, the run ends in real gridlock.
+  # game_screen.replenish_length: rule_replenish_length_grow_cap
+  game_screen.replenish_delay_seconds: 1.0
+  game_screen.replenish_fade_seconds: 1.0
+
+  # --- opening board = all unigrams -----------------------------------------
+  # A percentage-driven formation, NOT the ideation region formations: those pin
+  # their trigram/digram cells explicitly and would ignore the shares below.
+  game_screen.setup_formation: rule_formation_fill_player_random
+  gram_length.unigram_percent:     100
+  gram_length.digram_percent:      0
+  gram_length.trigramplus_percent: 0
+  # An all-unigram board can't fit under the 3-copies-per-letter formation cap.
+  gram.unigram_dedup: rule_nolimit_duplicate_unigrams
+
+  # --- pacing ---------------------------------------------------------------
+  # No clock: the pressure is the board filling up, not the timer. Auto-end stays
+  # off so the player calls it (no-word-availability-hints); with grow_cap you may
+  # want rule_constellation_auto_end_on instead, since that one truly gridlocks.
+  game_screen.game_timer: rule_game_timer_off
+  game_screen.constellation_auto_end: rule_constellation_auto_end_off
+
+  # --- constellation baseline ------------------------------------------------
+  game_screen.constellation_max_paths: 24
+  game_screen.gram_usage:           rule_gram_use_whole
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.clear_timing:         rule_clear_at_phase_end
+  game_screen.select_word_limit:    rule_one_word_per_select
+  game_screen.clear_action:         rule_remove_cells
+  game_screen.victory:              rule_victory_none
+  game_screen.clear_disambiguation: rule_disambig_auto_pick
+  game_screen.word_trail:           rule_word_trail_off
+  game_screen.hunt_highlight:       rule_hunt_none
+  game_screen.spell_suggest:        rule_spell_suggest_off
+
+  # No right-click gram manipulation: the length ladder is the whole economy here.
+  game_screen.rightclick_unigram: rule_rightclick_none
+  game_screen.rightclick_cc:      rule_rightclick_none
+  game_screen.rightclick_cv:      rule_rightclick_none
+  game_screen.rightclick_vc:      rule_rightclick_none
+  game_screen.rightclick_vv:      rule_rightclick_none
+  game_screen.rightclick_ck:      rule_rightclick_none
+  game_screen.rightclick_vcv:     rule_rightclick_none
+  game_screen.rightclick_cvk:     rule_rightclick_none
+
+  game_screen.show_clear_button:  rule_hide_clear_button
+  game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button:   rule_hide_next_button

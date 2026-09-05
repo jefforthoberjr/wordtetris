@@ -1223,6 +1223,55 @@ def test_constellation_replenish_refills_only_vacated_empty_cells():
     assert all(g._board.gram_at(x, y) is not None for (x, y) in g._board.cells)
 
 
+def _replenish_length_game(board, length_rule_name):
+    """A constellation game whose replenish turnover is on and whose replenish
+    LENGTH rule is `length_rule_name`, with the placement stubbed out so a test can
+    read the length category each vacated cell was pinned to."""
+    g = _constellation_game(board)
+    g._constellation_turnover_rule = g._rule_constellation_replenish
+    g._replenish_length_rule = getattr(g, "_" + length_rule_name)
+    pinned = {}
+
+    def fake_fill(x, y, length):
+        pinned[(x, y)] = length
+        g._board.cells[(x, y)] = "Q"        # a fresh gram lands here
+
+    g._fill_replenish_gram = fake_fill
+    return g, pinned
+
+
+def test_replenish_grow_wrap_escalates_off_the_cleared_length():
+    # Hydra: the cleared CA (digram) comes back as a trigram, the cleared T
+    # (unigram) as a digram -- each cell grows one step from what IT held.
+    g, pinned = _replenish_length_game(
+        FakeBoard({(0, 0): "CA", (5, 5): "T"}), "rule_replenish_length_grow_wrap")
+    g._on_submit_word("cat")
+    assert pinned == {(0, 0): 3, (5, 5): 2}
+
+
+def test_replenish_grow_wrap_resets_a_cleared_trigram_to_a_unigram():
+    g, pinned = _replenish_length_game(
+        FakeBoard({(0, 0): "CAT", (5, 5): "S"}), "rule_replenish_length_grow_wrap")
+    g._on_submit_word("cats")
+    assert pinned == {(0, 0): 1, (5, 5): 2}
+
+
+def test_replenish_grow_cap_keeps_a_cleared_trigram_at_trigram():
+    # The one-way variant: the board ratchets up and never recycles.
+    g, pinned = _replenish_length_game(
+        FakeBoard({(0, 0): "CAT", (5, 5): "S"}), "rule_replenish_length_grow_cap")
+    g._on_submit_word("cats")
+    assert pinned == {(0, 0): 3, (5, 5): 2}
+
+
+def test_replenish_length_picker_pins_nothing():
+    # The default rule leaves the length to the configured gram-pick (None).
+    g, pinned = _replenish_length_game(
+        FakeBoard({(0, 0): "CA", (5, 5): "T"}), "rule_replenish_length_picker")
+    g._on_submit_word("cat")
+    assert pinned == {(0, 0): None, (5, 5): None}
+
+
 def test_constellation_no_replenish_leaves_cells_empty():
     g = _constellation_game(FakeBoard({(0, 0): "C", (5, 5): "A", (2, 7): "T"}))
     called = []

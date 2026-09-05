@@ -999,6 +999,20 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._constellation_turnover_rule = select_rule(
             "game_screen.constellation_turnover", constellation_turnover_rules)
+        # Replenish length (game_screen.replenish_length): given the length category
+        # the cleared cell held, what length its replacement gram gets. The default
+        # leaves it to the configured player gram-pick; the escalating rules grow
+        # the gram each time (hydra mode: a board of single letters that silts up
+        # with digrams and trigrams as the player clears). Consulted per refilled
+        # cell by _rule_constellation_replenish.
+        replenish_length_rules = {
+            "rule_replenish_length_picker": self._rule_replenish_length_picker,
+            "rule_replenish_length_match": self._rule_replenish_length_match,
+            "rule_replenish_length_grow_wrap": self._rule_replenish_length_grow_wrap,
+            "rule_replenish_length_grow_cap": self._rule_replenish_length_grow_cap,
+        }
+        self._replenish_length_rule = select_rule(
+            "game_screen.replenish_length", replenish_length_rules)
         # Seconds a replenished (vacated-then-refilled) cell fades in; 0 = instant
         # pop. Generic across modes -- constellation's replenish turnover and plant's
         # refresh clear-action both use it. Live fades tracked in _replenish_fades,

@@ -137,6 +137,13 @@ rules:
   # Any mode: seconds to wait before a replenished cell is refilled on the board. [ref: game_screen.replenish_delay_seconds]
   game_screen.replenish_delay_seconds: 5.0
 
+  # CONSTELLATION: length of a replenished gram, from the length that cleared
+  # (grow_* = hydra escalation). [ref: game_screen.replenish_length]
+  game_screen.replenish_length: rule_replenish_length_picker
+  # game_screen.replenish_length: rule_replenish_length_match
+  # game_screen.replenish_length: rule_replenish_length_grow_wrap
+  # game_screen.replenish_length: rule_replenish_length_grow_cap
+
   # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
   # game_screen.constellation_auto_end: rule_constellation_auto_end_off
   game_screen.constellation_auto_end: rule_constellation_auto_end_on

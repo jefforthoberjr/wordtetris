@@ -19,6 +19,11 @@ from collections import Counter
 from views.found_word import FoundWord
 from views.loading_animation import TimedFade
 from models.word_dictionary import is_word, all_words
+from models.gram_picker import (
+    rule_grams_greater_than_47_lengthcontrolled,
+    set_forced_formation_cell,
+    clear_forced_formation_cell,
+)
 from starting_coverage import any_word_formable, sample_formable_words
 import debug_panel
 import log_codes as L
@@ -85,49 +90,128 @@ class ConstellationMixin:
     # After a constellation word clears, what becomes of the cells it vacated.
     # Only fires in constellation mode (see _commit_clear_now); with a fossilize
     # clear-action the cells aren't empty, so replenish naturally skips them.
-    def _rule_constellation_no_replenish(self, cleared_cells):
+    def _rule_constellation_no_replenish(self, cleared_cells, cleared_lengths=None):
         """Vacated cells stay empty -- the board shrinks toward the whole-board-
         cleared endgame (pair with rule_remove_cells + rule_victory_grid_empty)."""
         pass
 
-    def _rule_constellation_replenish(self, cleared_cells):
-        """Refill each now-empty vacated cell with a fresh gram from the configured
-        player picker, so the board never empties (an endless constellation). A
-        cell still occupied -- e.g. fossilized by the clear-action -- is left
-        untouched; the new gram gets the picker's score-gradient glyph color for
-        free (built through _fill_one_player_cell's piece). A replenished cell
-        under an active hunt re-lights via the caller's recompute.
+    def _rule_constellation_replenish(self, cleared_cells, cleared_lengths=None):
+        """Refill each now-empty vacated cell with a fresh gram, so the board never
+        empties (an endless constellation). A cell still occupied -- e.g. fossilized
+        by the clear-action -- is left untouched; the new gram gets the picker's
+        score-gradient glyph color for free (built through _fill_one_player_cell's
+        piece). A replenished cell under an active hunt re-lights via the caller's
+        recompute.
+
+        WHAT length the fresh gram is comes from a second rule
+        (game_screen.replenish_length, applied here via _replenish_length_rule):
+        by default the configured player picker decides, but the escalating rules
+        grow the gram off the length that just cleared -- hydra mode. `cleared_lengths`
+        maps a cell to the length category (1 / 2 / 3+) it held before the clear;
+        omit it (or omit a cell from it) and that cell falls back to the picker.
 
         The placement is not necessarily immediate: it's routed through
         _schedule_replenish, which honors game_screen.replenish_delay_seconds
         (an empty-cell pause before the fresh gram appears)."""
+        cleared_lengths = cleared_lengths or {}
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
-                self._schedule_replenish(x, y)
+                length = self._replenish_length_rule(cleared_lengths.get((x, y)))
+                self._schedule_replenish(x, y, length)
 
-    def _schedule_replenish(self, x, y):
+    def _cleared_length_map(self, found_words):
+        """{(x, y): length category} for every cell the given FoundWords are about
+        to clear -- the length the cell HELD, read from each word's segments (the
+        exact gram taken from that cell) and capped into the picker's 1 / 2 / 3+
+        categories. Must be built BEFORE _clear_paths runs, since the grams are
+        gone afterward. Feeds the replenish length rules; harmless (and unused)
+        under the default picker rule. Overlapping cells across a held batch
+        resolve to the same length, so last-write-wins is fine."""
+        lengths = {}
+        for found in found_words:
+            for (x, y), segment in zip(found.path, found.segments):
+                lengths[(x, y)] = min(len(segment), 3)
+        return lengths
+
+    # --- replenish length rules (game_screen.replenish_length) -----------------
+    # Given the length category (1 / 2 / 3+) the cleared cell HELD, decide the
+    # length category its replacement gets. Returning None means "don't pin a
+    # length" -- the configured *_player.gram_pick draws as it always has. The
+    # escalating rules are what make hydra mode: a board that opens as all single
+    # letters and silts up with longer grams as the player clears.
+    def _rule_replenish_length_picker(self, _cleared_length):
+        """No pinning: the configured player gram-pick decides the fresh gram's
+        length, exactly as replenish behaved before this knob existed. The default."""
+        return None
+
+    def _rule_replenish_length_match(self, cleared_length):
+        """Replace like with like: a cleared unigram refills as a unigram, a digram
+        as a digram, a trigram+ as a trigram+. Holds the board's length mix steady
+        no matter which cells the player keeps eating."""
+        return cleared_length
+
+    def _rule_replenish_length_grow_wrap(self, cleared_length):
+        """HYDRA (wrapping): 1 -> 2, 2 -> 3+, 3+ -> 1. Each clear hands back a
+        longer gram, so the board silts up with digrams then trigrams and the easy
+        single letters have to be rationed -- but a cleared trigram resets that
+        cell to a fresh unigram, so the board keeps recycling and never fully
+        seizes up."""
+        return {1: 2, 2: 3, 3: 1}.get(cleared_length)
+
+    def _rule_replenish_length_grow_cap(self, cleared_length):
+        """HYDRA (one-way): 1 -> 2, 2 -> 3+, 3+ -> 3+. Same escalation, but a
+        trigram cell stays a trigram cell forever, so the board ratchets toward
+        all-trigrams and the run really does end in a gridlock the player is
+        playing against."""
+        return {1: 2, 2: 3, 3: 3}.get(cleared_length)
+
+    # Default so bare __new__ test instances (and any pre-mode construction) resolve
+    # the replenish length to "let the picker decide" without an __init__ having run
+    # select_rule; real games rebind this from game_screen.replenish_length.
+    _replenish_length_rule = _rule_replenish_length_picker
+
+    def _schedule_replenish(self, x, y, length=None):
         """Queue the just-vacated cell (x, y) to refill after
         game_screen.replenish_delay_seconds, leaving it visibly empty in the
         meantime. A zero (or negative) delay fills right away -- the original
         behavior -- so the knob turns the wait off without a separate rule. Live
         waits live in _pending_replenishes and are counted down by
         _update_pending_replenishes. Generic: constellation's replenish turnover and
-        plant's refresh clear-action both call this."""
+        plant's refresh clear-action both call this. `length` is the already-decided
+        length category to pin (None = let the picker choose), carried through the
+        wait so a delayed refill escalates the same way an instant one would."""
         if self._replenish_delay_seconds <= 0:
-            self._replenish_cell_now(x, y)
+            self._replenish_cell_now(x, y, length)
         else:
             self._pending_replenishes.append(
-                [x, y, self._replenish_delay_seconds])
-            L.log_06006(x, y, self._replenish_delay_seconds)
+                [x, y, self._replenish_delay_seconds, length])
+            L.log_06006(x, y, self._replenish_delay_seconds, length)
 
-    def _replenish_cell_now(self, x, y):
+    def _replenish_cell_now(self, x, y, length=None):
         """Put a fresh gram in the (still-empty) vacated cell and start its fade-in.
         Split out of the turnover rule so the immediate path and the delayed timer
         share one placement. Re-checks the cell is still valid and empty first: a
         delayed wait could in principle outlive the cell's usable state."""
         if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
-            self._fill_one_player_cell(x, y)
+            self._fill_replenish_gram(x, y, length)
             self._begin_replenish_fade(x, y)
+
+    def _fill_replenish_gram(self, x, y, length):
+        """Place the fresh gram, pinned to `length` (1 / 2 / 3+) when a replenish
+        length rule asked for one. Pinning reuses the region formation's explicit
+        forced-cell seam (set_forced_formation_cell), which needs the length-aware
+        picker, so that picker is passed explicitly rather than whatever
+        *_player.gram_pick is configured -- the same override the region formation
+        does. length None takes the plain configured-picker path untouched."""
+        if length is None:
+            self._fill_one_player_cell(x, y)
+            return
+        set_forced_formation_cell(length)
+        try:
+            self._fill_one_player_cell(
+                x, y, gram_pick_rule=rule_grams_greater_than_47_lengthcontrolled)
+        finally:
+            clear_forced_formation_cell()
 
     def _update_pending_replenishes(self, dt):
         """Count down each queued replenish and fill its cell when the wait elapses,
@@ -141,7 +225,7 @@ class ConstellationMixin:
         for pending in self._pending_replenishes:
             pending[2] -= dt
             if pending[2] <= 0:
-                self._replenish_cell_now(pending[0], pending[1])
+                self._replenish_cell_now(pending[0], pending[1], pending[3])
                 fired = True
         self._pending_replenishes = [p for p in self._pending_replenishes if p[2] > 0]
         if fired:

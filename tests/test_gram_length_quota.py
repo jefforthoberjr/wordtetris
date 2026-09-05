@@ -60,14 +60,41 @@ def test_formation_quota_is_stable_across_boards():
 
 def test_zero_share_category_never_drawn_in_formation():
     # Pin the trigram share to 0 and confirm the formation has no 3+ grams.
-    saved = list(gp._LENGTH_PCT_WEIGHTS)
-    gp._LENGTH_PCT_WEIGHTS[:] = [50, 50, 0]
+    # Overridden in CONFIG, not on a module constant: the shares are read at draw
+    # time (_length_pct_weights), which is what lets a game mode override them.
+    rules = CONFIG["rules"]
+    saved = {k: rules[k] for k in (
+        "gram_length.unigram_percent",
+        "gram_length.digram_percent",
+        "gram_length.trigramplus_percent")}
+    rules["gram_length.unigram_percent"] = 50
+    rules["gram_length.digram_percent"] = 50
+    rules["gram_length.trigramplus_percent"] = 0
     try:
         counts = Counter(_category(g) for g in _run_formation(40))
         assert counts[3] == 0
         assert counts[1] > 0 and counts[2] > 0
     finally:
-        gp._LENGTH_PCT_WEIGHTS[:] = saved
+        rules.update(saved)
+
+
+def test_length_shares_track_a_later_config_swap():
+    # gram_length.*_percent used to be frozen into a module constant at import,
+    # so a game mode's override (applied after import) was silently ignored --
+    # hydra mode's all-unigram opening board depends on this not regressing.
+    rules = CONFIG["rules"]
+    saved = {k: rules[k] for k in (
+        "gram_length.unigram_percent",
+        "gram_length.digram_percent",
+        "gram_length.trigramplus_percent")}
+    rules["gram_length.unigram_percent"] = 100
+    rules["gram_length.digram_percent"] = 0
+    rules["gram_length.trigramplus_percent"] = 0
+    try:
+        counts = Counter(_category(g) for g in _run_formation(40))
+        assert counts[1] == 40
+    finally:
+        rules.update(saved)
 
 
 def test_forced_length_is_cleared_after_formation():

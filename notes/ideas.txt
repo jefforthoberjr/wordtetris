@@ -11,7 +11,6 @@ A speed type alternaive, when they don't clear and get replenished, but they all
 ==
 
 
-In the end game, during the final score typing phase (victory phase?), the spell check suggestion in the right pane should be using a different algorith. Instead of the using the in-house algorithm using the full dictionaries as corpuses (the same algorithm used during the gameplay phases of the game, e.g. moving and selection phases), it should only suggest words that are part of the final list of words (i.e. it should never spell check a word that isn't one that players can type for score). Towards that end, we can use the more standard Levenshtein Distance, and just suggesting 1 word, the closest one, with a type breaker being alphabetical.
 
 
 A game more where the board starts with just single letters, replenishing, starting to get replaced with more and more high lengthed grams. digrams and then trigrams. So that players aren't presented with the challenge of the multigrams upfront, but it becomes an increasing difficulty

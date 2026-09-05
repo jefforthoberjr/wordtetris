@@ -513,6 +513,40 @@ behavior). Note this defers when the new gram becomes usable, so under constella
 it slightly lengthens the window in which `constellation_auto_end` sees a smaller
 board. (Formerly `game_screen.constellation_replenish_delay_seconds`.)
 
+### game_screen.replenish_length
+Constellation only (the `rule_constellation_replenish` turnover): given the length
+category the cleared cell HELD — 1 (unigram), 2 (digram) or 3 (trigram **and
+longer**, the picker's "3+" bucket) — what length category the gram that refills it
+gets. The length the cell held is read from the cleared word's segments *before*
+the clear removes the grams, so it reflects the actual gram, not the board's
+average. Pinning a length routes that one cell's draw through the length-aware
+picker (`rule_grams_greater_than_47_lengthcontrolled`) via the region formation's
+explicit forced-cell seam, so the configured `*_player.gram_pick` is bypassed for
+that draw only; every other draw (piece pool, opening board) is untouched.
+- `rule_replenish_length_picker` — no pinning: the configured player gram-pick
+  decides, exactly as replenish behaved before this knob existed. The default, and
+  what every pre-existing constellation mode keeps.
+- `rule_replenish_length_match` — like for like: unigram → unigram, digram →
+  digram, trigram+ → trigram+. Holds the board's length mix steady no matter which
+  cells the player keeps eating (the picker's own mix drifts, because the player
+  chooses what to clear).
+- `rule_replenish_length_grow_wrap` — **hydra, wrapping**: 1 → 2, 2 → 3+, 3+ → 1.
+  Every clear hands back something longer, so a board that opens as all single
+  letters silts up with digrams and then trigrams and the player has to ration the
+  easy letters — but clearing a trigram resets that cell to a fresh unigram, so the
+  board recycles and never fully seizes up.
+- `rule_replenish_length_grow_cap` — **hydra, one-way**: 1 → 2, 2 → 3+, 3+ → 3+.
+  Same escalation, but a trigram cell stays a trigram cell forever, so the board
+  ratchets toward all-trigrams and the run genuinely runs out of formable words.
+  Pair with `game_screen.constellation_auto_end: rule_constellation_auto_end_on` to
+  have the game call the gridlock itself, or leave it off and let the player decide
+  when to stop (the no-word-availability-hints rule).
+
+Only consulted for cells the constellation turnover refills; plant's refresh
+clear-action shares the replenish machinery but always uses the configured picker.
+Not a *_percent knob: `gram_length.*_percent` still governs the opening board and
+every unpinned draw, and the escalation runs on top of it.
+
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own
 once the remaining grams can no longer spell ANY dictionary word (the existence
