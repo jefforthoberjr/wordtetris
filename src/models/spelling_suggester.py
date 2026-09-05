@@ -204,3 +204,54 @@ def _suggest_constrained_morpheme(typed):
             best[cand] = key
     ranked = sorted(key + (cand,) for cand, key in best.items())
     return [row[3] for row in ranked[:settings["max_suggestions"]]]
+
+
+# --- closed-list nearest word (endgame.spell_suggest) ------------------------
+# The endgame typing bonus does NOT use the engines above. There the player is
+# copying words that are all on screen, from a short, known list -- so a
+# suggestion drawn from the whole dictionary would offer a word that cannot be
+# typed for score. These two functions are the whole endgame engine: plain
+# (unweighted) Levenshtein distance against a caller-supplied candidate list.
+
+def levenshtein(a, b):
+    """Plain unweighted edit distance between two strings: the number of single
+    character insertions, deletions or substitutions to turn `a` into `b`. The
+    standard two-row DP -- no letter-class costs, no transposition, none of
+    spell_check's shape constraints, because over a handful of candidates the
+    nearest one is all we need."""
+    if a == b:
+        return 0
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        for j, cb in enumerate(b, 1):
+            current.append(min(previous[j] + 1,          # delete from a
+                               current[j - 1] + 1,       # insert into a
+                               previous[j - 1] + (ca != cb)))  # substitute
+        previous = current
+    return previous[-1]
+
+
+def nearest_word(typed, words, max_distance=None):
+    """The single closest word in `words` to `typed`, or "" if there is none.
+
+    Closest = smallest Levenshtein distance, ties broken ALPHABETICALLY so the
+    same misspelling always names the same word (no frequency or exoticness
+    ranking: every candidate here is equally typable for score). `max_distance`,
+    when given, is the furthest a word may be and still be offered -- past it the
+    player has typed something too far off for a guess to be a helpful hint.
+    Comparison is case-insensitive; the returned word keeps its candidate
+    spelling."""
+    word = typed.strip().upper()
+    best = ""
+    best_distance = None
+    if word:
+        for candidate in words:
+            distance = levenshtein(word, candidate.upper())
+            if max_distance is not None and distance > max_distance:
+                continue
+            if (best_distance is None or distance < best_distance
+                    or (distance == best_distance and candidate.upper() < best.upper())):
+                best = candidate
+                best_distance = distance
+    return best

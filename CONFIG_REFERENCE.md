@@ -1778,6 +1778,31 @@ on the list can be typed at any time — so this is purely how the list reads:
 - `rule_endgame_order_score` — highest-scoring first, so the biggest prizes are at
   the top. Ties keep clear order.
 
+### endgame.spell_suggest
+The "did you mean?" offered under a MISSPELLED submission in the typing bonus. This
+is a SEPARATE engine from `game_screen.spell_suggest` (the in-play one) and must
+stay that way: in play the player is recalling any word in the dictionary, so the
+suggestion is drawn from the whole corpus; in the bonus the only words worth
+anything are the ones on screen, so a dictionary-wide suggestion would name a word
+that cannot be typed for score. The bonus therefore spell-checks against the target
+list ONLY, and offers exactly one word:
+- `rule_endgame_suggest_nearest_target` — the closest word STILL TO BE TYPED, by
+  plain (unweighted) Levenshtein distance, ties broken alphabetically so the same
+  misspelling always names the same word. None of the in-play ranking (exoticness,
+  letter-class costs, frequency) applies, because every candidate here is equally
+  typable for score. Words already banked are excluded — they are worth nothing now.
+  Bounded by `endgame.suggest_max_distance`.
+- `rule_endgame_suggest_off` — no suggestion; the miss is only echoed back. The
+  original behavior, and the one for a player who should hunt the spelling down on
+  the board themselves.
+
+### endgame.suggest_max_distance
+How many single-character edits a misspelling may be from a target word and still
+get a suggestion (`rule_endgame_suggest_nearest_target`). Past it the typed text is
+too far off for a guess to be a useful hint, and nothing is offered. Raise it to
+always name SOMETHING (a big number effectively means "the closest target, however
+far"); lower it to only correct near-misses.
+
 ### game_screen.fill_board
 Whole-board fill bonus: awards `scoring.fill_board_bonus` ONCE per game the first time
 the board is entirely filled. What "filled" means is MODE-DEPENDENT, so pick the

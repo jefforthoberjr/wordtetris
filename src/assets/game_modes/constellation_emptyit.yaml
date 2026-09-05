@@ -34,6 +34,8 @@ rules:
   game_screen.rightclick_vcv: rule_rightclick_none # ARE->ARRE
   game_screen.rightclick_cvk: rule_rightclick_none # MER->MMER/MERR (alternating)
 
+  board.cell_text_color:  rule_cell_text_plain
+
   # Board starts full, words form anywhere, every action opens word entry.
   game_screen.setup_formation:      rule_formation_fill_ideation_trigram_sidepanes_zigzag
   game_screen.word_nucleation:      rule_nucleate_anywhere

@@ -546,6 +546,12 @@ rules:
   # endgame.render: rule_endgame_render_text
   endgame.render: rule_endgame_render_cells
 
+  # ENDGAME TYPING BONUS: "did you mean?" engine, over the target words only. [ref: endgame.spell_suggest]
+  endgame.spell_suggest: rule_endgame_suggest_nearest_target
+  # endgame.spell_suggest: rule_endgame_suggest_off
+  # Furthest (Levenshtein) a miss may be and still get a suggestion. [ref: endgame.suggest_max_distance]
+  endgame.suggest_max_distance: 3
+
   # ENDGAME TYPING BONUS: order the words to type are presented in. [ref: endgame.order]
   endgame.order: rule_endgame_order_cleared
   # endgame.order: rule_endgame_order_alphabetical

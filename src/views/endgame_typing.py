@@ -23,6 +23,7 @@ import pyglet
 
 from config import CONFIG, get_color, get_string, select_rule
 from models.scoring import Scorer
+from models.spelling_suggester import nearest_word
 from views.gram_preview import parse_variation
 from views.endgame_displays import (build_page_display, build_scroll_display,
                                     build_belt_display)
@@ -74,6 +75,27 @@ def rule_endgame_display_belt(region_size, window_height):
     return build_belt_display(region_size, window_height)
 
 
+# --- spelling-suggestion rules (endgame.spell_suggest) -----------------------
+# The "did you mean?" offered after a MISSPELLED submission. This is deliberately
+# NOT the in-play engine (game_screen.spell_suggest, which scans the whole
+# dictionary): here the only words worth anything are the ones on screen, so a
+# suggestion from outside that list would point the player at a word they cannot
+# type for score. Each rule takes the typed text and the words still to be typed
+# and returns ONE word (or "" for no suggestion). Selected per run in start().
+def rule_endgame_suggest_off(typed, words, max_distance):
+    """No "did you mean?" in the bonus -- the player finds the spelling on the
+    board themselves. The original behavior (the miss is only echoed back)."""
+    return ""
+
+
+def rule_endgame_suggest_nearest_target(typed, words, max_distance):
+    """The closest word still to be typed, by plain Levenshtein distance, with
+    ties broken alphabetically -- see spelling_suggester.nearest_word. Never
+    names a word already typed (it is worth nothing now) or one outside the
+    target list."""
+    return nearest_word(typed, words, max_distance)
+
+
 class EndgameTyping:
     """One run of the typing bonus. Built per game screen and (re)started with
     start(records) at the end transition; inert (draws nothing, eats no input)
@@ -94,6 +116,9 @@ class EndgameTyping:
         self._targets = []
         self._typed = ""
         self._bonus_total = 0
+        # Suggestion engine + distance ceiling, chosen per run in start().
+        self._suggest_rule = rule_endgame_suggest_off
+        self._suggest_max_distance = 0
         # Seconds left on the hit / miss flash under the typed field (0 = hidden).
         self._flash_remaining = 0.0
         # Composition scorer -- the same rule the My Dictionary screen scores a
@@ -141,9 +166,20 @@ class EndgameTyping:
         self._display = select_rule("endgame.display", display_rules)(
             self._grid_area_size, self._window_height)
         self._display.show(self._targets)
+        # "Did you mean?" engine (endgame.spell_suggest) and how far off a typed
+        # word may be and still get one. Both read per run, like the rules above,
+        # so a mode override applies (a class-body read would freeze the base).
+        suggest_rules = {
+            "rule_endgame_suggest_off": rule_endgame_suggest_off,
+            "rule_endgame_suggest_nearest_target": rule_endgame_suggest_nearest_target,
+        }
+        self._suggest_rule = select_rule("endgame.spell_suggest", suggest_rules)
+        self._suggest_max_distance = CONFIG["rules"]["endgame.suggest_max_distance"]
         self._typed = ""
         self._bonus_total = 0
         self._flash_remaining = 0.0
+        self._flash_label.text = ""
+        self._suggest_label.text = ""
         self._active = True
         self._refresh_pane()
         L.log_50004(len(self._targets))
@@ -226,8 +262,12 @@ class EndgameTyping:
                 points = target["points"]
                 self._bonus_total += points
                 self._banked_word(target)
-        L.log_50005(typed, matched, points, self._bonus_total)
-        self._flash(typed, matched, points)
+        suggestion = ""
+        if not matched and typed:
+            suggestion = self._suggest_rule(
+                typed, self._remaining_words(), self._suggest_max_distance)
+        L.log_50005(typed, matched, points, self._bonus_total, suggestion)
+        self._flash(typed, matched, points, suggestion)
         self._refresh_pane()
         self._display.refresh(self._targets)
         done = True
@@ -237,7 +277,16 @@ class EndgameTyping:
         if done and self._active:
             self._finish()
 
-    def _flash(self, typed, matched, points):
+    def _remaining_words(self):
+        """The target words still to be typed -- the only candidates a suggestion
+        may name, since a word already banked is worth nothing now."""
+        words = []
+        for target in self._targets:
+            if not target["done"]:
+                words.append(target["word"])
+        return words
+
+    def _flash(self, typed, matched, points, suggestion=""):
         """Show the verdict on a MISS under the field: the typed text echoed back, so
         the player sees the spelling they actually entered. A HIT says nothing here --
         it already lands in the banked-word list (with its points) right below, and
@@ -258,6 +307,12 @@ class EndgameTyping:
         else:
             self._flash_label.text = ""
             self._flash_remaining = 0.0
+        # The "did you mean?" line rides under the miss and fades with it (a hit
+        # and a bare ENTER both pass "" and so clear it).
+        if suggestion:
+            self._suggest_label.text = get_string("endgame_suggest", word=suggestion)
+        else:
+            self._suggest_label.text = ""
 
     def update(self, dt):
         """Age out the hit / miss flash, and drive the board-region display (a moving
@@ -268,6 +323,7 @@ class EndgameTyping:
             if self._flash_remaining <= 0:
                 self._flash_remaining = 0.0
                 self._flash_label.text = ""
+                self._suggest_label.text = ""
         if self._display is not None:
             self._display.update(dt)
 
@@ -298,15 +354,27 @@ class EndgameTyping:
             x=x, y=top - math.floor(title_size * 2.7), anchor_x="left", anchor_y="top",
             color=get_color("endgame.hit_text"), batch=self._batch,
         )
+        # "Did you mean X?" under the miss (endgame.spell_suggest), naming a word
+        # still on the board -- so the player can go and read its spelling. This is
+        # the one pane line that is a SENTENCE plus a word rather than a word, so it
+        # is the smallest text here and the only one given a wrap width: without one
+        # a long suggestion (NODE, ABSOLUTION) ran off the right edge of the pane and
+        # was simply cut in half ("Did you mean NO").
+        self._suggest_label = pyglet.text.Label(
+            "", font_size=math.floor(title_size * 0.6),
+            x=x, y=top - math.floor(title_size * 3.5), anchor_x="left", anchor_y="top",
+            width=self._pane_width - 2 * margin, multiline=True,
+            color=get_color("endgame.suggest_text"), batch=self._batch,
+        )
         self._total_label = pyglet.text.Label(
             "", font_size=math.floor(title_size * 0.9),
-            x=x, y=top - math.floor(title_size * 3.8), anchor_x="left", anchor_y="top",
+            x=x, y=top - math.floor(title_size * 5.1), anchor_x="left", anchor_y="top",
             color=get_color("endgame.total_text"), batch=self._batch,
         )
         # Banked-word rows, pre-spawned blank and filled newest-first.
         self._row_size = math.floor(title_size * 0.75)
         self._row_height = math.floor(self._row_size * 1.35)
-        rows_top = top - math.floor(title_size * 5.2)
+        rows_top = top - math.floor(title_size * 6.5)
         self._banked_rows = []
         row_count = max(1, math.floor((rows_top - margin) / self._row_height))
         for r in range(row_count):

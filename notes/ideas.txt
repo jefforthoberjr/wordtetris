@@ -6,6 +6,20 @@ GAME NAMES
 
 * catalyst cata LIST
 
+A speed type alternaive, when they don't clear and get replenished, but they all fossilize, you can re-use folssilized words anywhere on the board. Trying to fossilize all the cells by the end of the timer. (no replenishing) ulimited re-use of cells on the board. 
+
+==
+
+
+In the end game, during the final score typing phase (victory phase?), the spell check suggestion in the right pane should be using a different algorith. Instead of the using the in-house algorithm using the full dictionaries as corpuses (the same algorithm used during the gameplay phases of the game, e.g. moving and selection phases), it should only suggest words that are part of the final list of words (i.e. it should never spell check a word that isn't one that players can type for score). Towards that end, we can use the more standard Levenshtein Distance, and just suggesting 1 word, the closest one, with a type breaker being alphabetical.
+
+
+A game more where the board starts with just single letters, replenishing, starting to get replaced with more and more high lengthed grams. digrams and then trigrams. So that players aren't presented with the challenge of the multigrams upfront, but it becomes an increasing difficulty
+
+
+
+still allow partially/mostly spellable words to be submitted, but just for less points
+
 A new movement mode, where players can click, highlighting any pieces on the board to slide and move them around. This mode, unlike the existing swap movement mode for omniswap, does not need to partner its movement with another piece, it moves one individual piece as a time. Also unlike other jigsaw modes, there is no player piece presented to the user, where they have to place that current piece. This allows the players to shuffle things around, playing with formations. Lets call this "shuffle_around" movement mode. 
 
 Throughout this whole gramming algorithm measuring exprience, I've learned there are actually fewer patterns than expected; that is, fewer clean trigrams that fit nicely into different ideating roles that I thought. So the same few grams re-appear in gameplay. Seeing the same grams over and over might get a bit old. 

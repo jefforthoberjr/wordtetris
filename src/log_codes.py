@@ -457,18 +457,22 @@ def log_50004(words):
                      words=words)
 
 
-def log_50005(typed, matched, points, total):
+def log_50005(typed, matched, points, total, suggested=""):
     """One endgame typing-bonus submission. `typed` is what the player entered;
     `matched` the target word it scored (empty on a misspelling, which costs
     nothing); `points` what it earned and `total` the bonus total after it. The
     misses are the interesting record here -- they are the typing mistakes the
-    bonus exists to surface."""
+    bonus exists to surface, and `suggested` is the "did you mean?" word the pane
+    offered for that miss (endgame.spell_suggest; empty when off, out of range,
+    or the submission was a hit)."""
     if matched:
         summary = f"endgame typed {matched}: +{points} ({total} bonus)"
+    elif suggested:
+        summary = f"endgame miss: {typed} (did you mean {suggested})"
     else:
         summary = f"endgame miss: {typed}"
     session_log.emit(50005, summary, typed=typed, matched=matched,
-                     points=points, total=total)
+                     points=points, total=total, suggested=suggested)
 
 
 def log_50006(total):

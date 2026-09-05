@@ -78,6 +78,8 @@ en:
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"
+  # "Did you mean?" under a miss, naming the closest word still to be typed
+  endgame_suggest:       "Did you mean {word}?"
   # My Dictionary screen
   words_collected:       "{count} words collected"
   dictionary_total_score: "Total Score: {count}"
@@ -160,6 +162,8 @@ es:
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"
+  # "Did you mean?" under a miss, naming the closest word still to be typed
+  endgame_suggest:       "¿Quisiste decir {word}?"
   # My Dictionary screen
   words_collected:       "{count} palabras recopiladas"
   dictionary_total_score: "Puntuación total: {count}"
