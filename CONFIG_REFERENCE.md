@@ -2209,8 +2209,16 @@ edit-distance matcher (`models/spell_check.py`).
 a silent E at the end).
 
 **Consonant-run change weights** (`consonant:`): `csk_class` (C/S/K/CK/SC), `gj_class`
-(G/J), `td_class` (T/D), `zs_class` (Z/S), `dup` (D→DD), `dedup` (DD→D), `suffix_swap`
-(T/S/C/SH confusion in a -TION/-SION/-OUS ending).
+(G/J), `td_class` (T/D), `zs_class` (Z/S), `tch_class` (T/CH/TCH), `dup` (D→DD),
+`dedup` (DD→D), `suffix_swap` (T/S/C/SH confusion in a -TION/-SION/-OUS ending).
+
+`tch_class` covers the /ch/ family, where the player hears one sound but guesses at
+which of the three spellings carries it: the dropped T (WACH→WATCH, KICHEN→KITCHEN,
+SCRACH→SCRATCH), the added T (RICH→RITCH, MUCH→MUTCH), and the bare T for the whole
+cluster (PICURE→PICTURE reads as T↔TCH only when the run lines up). Classes may
+overlap — T sits in both `td_class` and `tch_class`, and the matcher takes whichever
+applicable class is cheapest, so lowering `tch_class` below `td_class` makes T→CH the
+preferred reading of a lone T substitution.
 
 **Adjacent consonant+vowel transposition weights** (`transposition:`): `end` — the
 final two letters (CENTRE→CENTER); `elsewhere` — anywhere else (PERscripsion→

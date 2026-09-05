@@ -27,12 +27,16 @@ Two numbers come out of an accepted alignment:
 _VOWELS = set("AEIOUY")
 
 # General consonant equivalence classes: a consonant run may swap to another run
-# in the same set. {C,S,K,CK,SC} covers the /s/ and /k/ confusions incl. digraphs.
+# in the same set. {C,S,K,CK,SC} covers the /s/ and /k/ confusions incl. digraphs;
+# {T,CH,TCH} covers the /ch/ family (WACH/WATTCH -> WATCH, KICHEN -> KITCHEN).
+# A run may sit in more than one class (T is in both td_class and tch_class) --
+# consonant_run_cost collects every applicable class and the cheapest one wins.
 CONSONANT_CLASSES = [
     (set(["C", "S", "K", "CK", "SC"]), "csk_class"),
     (set(["G", "J"]), "gj_class"),
     (set(["T", "D"]), "td_class"),
     (set(["Z", "S"]), "zs_class"),
+    (set(["T", "CH", "TCH"]), "tch_class"),
 ]
 
 # Consonants that are confusable ONLY inside a recognized morpheme ending
@@ -65,6 +69,7 @@ DEFAULT_COSTS = {
         "gj_class": 3,              # G/J
         "td_class": 3,              # T/D
         "zs_class": 2,              # Z/S
+        "tch_class": 2,             # T/CH/TCH
         "dup": 1,                   # D -> DD
         "dedup": 1,                 # DD -> D
         "suffix_swap": 1,           # -TION/-SION/-CION/-OUS family confusion

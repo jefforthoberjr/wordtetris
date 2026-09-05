@@ -6,7 +6,15 @@ GAME NAMES
 
 * catalyst cata LIST
 
+
+visiually shink the size of a fossilized cell, instead of coloration.
+
+==
+
 A speed type alternaive, when they don't clear and get replenished, but they all fossilize, you can re-use folssilized words anywhere on the board. Trying to fossilize all the cells by the end of the timer. (no replenishing) ulimited re-use of cells on the board. 
+
+Do we already have enough config/rules to achieve this? Either way, let's create another subsconfig file/mode like constellation_speedtype.yaml
+let's rename the speedtype mode to "unlimited speedtype" and the new mode called "speedtype fossilize all"
 
 ==
 

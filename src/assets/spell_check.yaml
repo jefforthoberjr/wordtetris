@@ -32,6 +32,7 @@ spell_check:
     gj_class:             3   # G / J
     td_class:             3   # T / D
     zs_class:             2   # Z / S
+    tch_class:            2   # T / CH / TCH
     dup:                  1   # D  -> DD
     dedup:                1   # DD -> D
     suffix_swap:          1   # T/S/C/SH in a -TION/-SION/-OUS ending

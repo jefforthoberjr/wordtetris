@@ -29,6 +29,12 @@ def test_accepts_sc_cluster_and_c_s_swap():
     assert _ok("induse", "induce")         # S <-> C
 
 
+def test_accepts_tch_class():
+    assert _ok("wach", "watch")            # CH  -> TCH (dropped T)
+    assert _ok("kichen", "kitchen")        # CH  -> TCH mid-word
+    assert _ok("mutch", "much")            # TCH -> CH  (added T)
+
+
 def test_accepts_single_vowel_swap():
     assert _ok("buttin", "button")         # I -> O
 
@@ -88,6 +94,9 @@ def test_consonant_run_cost_classes():
     assert consonant_run_cost("S", "C", DEFAULT_COSTS, *cands)[0] == 2  # csk
     assert consonant_run_cost("G", "J", DEFAULT_COSTS, *cands)[0] == 3  # gj
     assert consonant_run_cost("L", "LL", DEFAULT_COSTS, *cands)[0] == 1  # dup
+    assert consonant_run_cost("CH", "TCH", DEFAULT_COSTS, *cands)[0] == 2  # tch
+    # T is in both td_class (3) and tch_class (2); the cheaper class wins.
+    assert consonant_run_cost("T", "CH", DEFAULT_COSTS, *cands)[0] == 2
     assert consonant_run_cost("P", "N", DEFAULT_COSTS, *cands) is None   # bad
 
 
