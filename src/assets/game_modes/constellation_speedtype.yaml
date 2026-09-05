@@ -2,7 +2,7 @@
 # apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
 # scoring, dictionary, gram picks, spell_check ...) comes from the base file.
 # mode_label is the menu display name, stripped before merge -- not a game knob.
-mode_label: "Constellation — super speed type"
+mode_label: "Constellation — unlimited speedtype"
 
 # MINDSET
 # basically as fast as you can type

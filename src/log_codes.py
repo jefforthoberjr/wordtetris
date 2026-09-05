@@ -250,7 +250,10 @@ def log_20009(action, cell, gram, word):
     """A cell's IDEA HINT was toggled (game_screen.idea_hint): the half-faded
     emoji behind a placed multigram cell, raised by two back-to-back left clicks.
 
-    `action` is show / hide / clear / none. "hide" is the player double-clicking
+    `action` is show / show_belt_only / hide / clear / none. "show_belt_only" is
+    the same raise under game_screen.idea_hint_display: rule_idea_hint_belt_only --
+    the hint exists and the belt lists it, but nothing was painted on the cell.
+    "hide" is the player double-clicking
     it away; "clear" is the BOARD taking it away, because the cell's gram was
     cleared or changed under it (a hint outlives neither). "none" is a cell that
     qualified but where the board could spell nothing through its gram, which

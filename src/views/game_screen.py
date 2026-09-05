@@ -1161,6 +1161,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # instantly) vs 1+ (every valid submit previews + confirms).
         disambig_rules = {
             "rule_disambig_auto_pick": self._rule_disambig_auto_pick,
+            "rule_disambig_auto_pick_avoid_fossils":
+                self._rule_disambig_auto_pick_avoid_fossils,
+            "rule_disambig_auto_pick_fresh_multigram":
+                self._rule_disambig_auto_pick_fresh_multigram,
             "rule_disambig_cycle_two_or_more_choices":
                 self._rule_disambig_cycle_two_or_more_choices,
             "rule_disambig_cycle_one_or_more_choices":

@@ -866,6 +866,73 @@ class SelectionMixin:
         player choice. on_confirm is unused -- the pick commits immediately."""
         return self._fewest_cell_word(options)
 
+    # The two auto-picks below exist for the FOSSILIZE modes. There, cleared cells
+    # freeze in place and stay usable forever (fossil_word_use: rule_fossil_allow),
+    # so the fewest-cell pick above quietly rots: a spelling built mostly from
+    # already-frozen cells is short, so it wins, and the frozen region stops
+    # growing. In a recorded 13-word session it spent 11 of 42 cells on re-use, and
+    # the last words were freezing 1 new cell out of 3.
+    #
+    # Both keep the ORIGINAL fewest-cell objective and only put an anti-re-use term
+    # in front of it -- MINIMIZE the fossilized cells a spelling leans on, rather
+    # than maximize the fresh ones. That distinction matters: maximizing fresh cells
+    # would make the picker prefer LONGER spellings in general, and in a mode with
+    # no fossils at all it would invert the fewest-cell rule entirely. Minimizing
+    # re-use is inert when nothing is fossilized, so these are safe anywhere.
+    #
+    # They differ only in what comes second, because "avoid re-use" and "eat the
+    # awkward fat cells while you still can" are genuinely different strategies -- a
+    # lone unfossilized trigram left at the end is far harder to place in a word
+    # than a lone letter, so spending them early may beat plain coverage. Playtest
+    # both. Ties are broken at random through the Source seam, as before.
+    def _rule_disambig_auto_pick_avoid_fossils(self, word, options, on_confirm):
+        """Keep the spelling that leans on the FEWEST already-fossilized cells; among
+        equals prefer the one taking more letters from fresh MULTIGRAM cells (a fat
+        cell spent now is one you don't have to place later), then the fewest-cell
+        spelling as the original rule did, then at random. Commits immediately --
+        on_confirm is unused, like rule_disambig_auto_pick."""
+        return self._best_scoring_word(options, lambda fw: (
+            self._reused_cell_count(fw),
+            -self._fresh_letter_count(fw, min_gram=2),
+            len(fw.path)))
+
+    def _rule_disambig_auto_pick_fresh_multigram(self, word, options, on_confirm):
+        """The same idea with the priorities swapped: spend fresh MULTIGRAM cells
+        first (most letters taken from not-yet-fossilized 2+-letter cells), and only
+        then avoid re-using fossils, then fewest cells, then at random. Clears the
+        awkward fat cells early at some cost in re-use."""
+        return self._best_scoring_word(options, lambda fw: (
+            -self._fresh_letter_count(fw, min_gram=2),
+            self._reused_cell_count(fw),
+            len(fw.path)))
+
+    def _reused_cell_count(self, found):
+        """How many of `found`'s cells are ALREADY fossilized -- the part of this
+        spelling that freezes no new board. Zero for every option when nothing is
+        fossilized, which is what makes the rules above degrade cleanly into the
+        original fewest-cell pick in the non-fossil modes."""
+        return sum(1 for cell in found.path if cell in self._fossilized_cells)
+
+    def _fresh_letter_count(self, found, min_gram=1):
+        """Letters this spelling takes from not-yet-fossilized cells whose taken
+        segment is at least `min_gram` long. min_gram=2 counts only the multigram
+        cells, so it reads as "how much fat does this spelling actually eat" rather
+        than rewarding a spelling for touching many single letters."""
+        total = 0
+        for cell, segment in zip(found.path, found.segments):
+            if cell in self._fossilized_cells or len(segment) < min_gram:
+                continue
+            total += len(segment)
+        return total
+
+    def _best_scoring_word(self, found_words, key):
+        """The FoundWord with the lowest `key` tuple, ties broken at random through
+        the Source seam so a replay reproduces the pick. The fossil-aware twin of
+        _fewest_cell_word (which stays exactly as it was -- it is also the
+        candidate-map preview the adjacency modes read)."""
+        best = min(key(fw) for fw in found_words)
+        return rand().choice([fw for fw in found_words if key(fw) == best])
+
     def _rule_disambig_cycle_two_or_more_choices(self, word, options, on_confirm):
         """Open the board chooser only when 2+ spellings exist; a lone spelling
         clears instantly (no needless prompt) -- the original ambiguity chooser.

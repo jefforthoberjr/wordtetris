@@ -238,6 +238,9 @@ rules:
   game_screen.clear_disambiguation:   rule_disambig_cycle_one_or_more_choices
   # game_screen.clear_disambiguation: rule_disambig_cycle_two_or_more_choices
   # game_screen.clear_disambiguation: rule_disambig_auto_pick
+  # Auto-picks that favor NOT-yet-fossilized cells (the fossilize modes).
+  # game_screen.clear_disambiguation: rule_disambig_auto_pick_avoid_fossils
+  # game_screen.clear_disambiguation: rule_disambig_auto_pick_fresh_multigram
   game_screen.disambig_line_thickness:          8
   game_screen.disambig_line_thickness_selected: 16
   game_screen.disambig_line_opacity:   1.0
@@ -312,6 +315,9 @@ rules:
   # game_screen.idea_hint_trigram: rule_idea_hint_trigram_off
   game_screen.idea_hint_trigram: rule_idea_hint_trigram_on
   game_screen.idea_hint_opacity: 128
+  # WHERE a raised hint shows: on the cell (+ the belt) or belt only. [ref: game_screen.idea_hint_display]
+  game_screen.idea_hint_display: rule_idea_hint_show_in_cell
+  # game_screen.idea_hint_display: rule_idea_hint_belt_only
   idea_hint.deck:     words_emoji.csv
   # idea_hint.min_fit:  3 #Very literal emojis
   # idea_hint.min_fit:  2 #half fitting emojis
@@ -522,6 +528,7 @@ rules:
   # game_screen.victory: rule_victory_missions_and_obstacles_cleared
   # game_screen.victory: rule_victory_obstacles_cleared
   # game_screen.victory: rule_victory_grid_empty
+  # game_screen.victory: rule_victory_grid_fossilized
   game_screen.victory: rule_victory_none
 
   # What happens AFTER play ends: none, or the type-the-words bonus. [ref: game_screen.endgame]

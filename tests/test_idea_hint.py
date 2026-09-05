@@ -337,6 +337,57 @@ def test_a_double_click_puts_that_cell_s_whole_idea_pool_on_the_belt():
         _restore()
 
 
+# --- where the hint shows (game_screen.idea_hint_display) ------------------
+# rule_idea_hint_belt_only splits the feature into two escalating levels: the
+# double click fills the belt and paints NOTHING on the cell. These use the real
+# _show_idea_hint (not the recording stub the other tests install) -- safe without
+# a GL context precisely because the belt-only path builds no Label.
+
+def _belt_only_screen(grams):
+    screen = _debug_screen(grams)
+    screen._idea_hint_in_cell = False        # rule_idea_hint_belt_only
+    del screen._show_idea_hint               # unstub: exercise the real branch
+    return screen
+
+
+def test_belt_only_fills_the_belt_and_paints_nothing_on_the_cell():
+    try:
+        screen = _belt_only_screen({(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"})
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        assert screen._idea_belt.rings[-1]                    # the belt got the pool
+        state = screen._idea_hints[(1, 0)]
+        assert state["label"] is None                         # nothing drawn
+        assert state["gram"] == "ARK"
+    finally:
+        _restore()
+
+
+def test_belt_only_still_toggles_off_on_a_second_double_click():
+    # The hint is recorded even with no glyph, so the second pair clears it and
+    # empties the belt exactly as the painted version does.
+    try:
+        screen = _belt_only_screen({(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"})
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        assert (1, 0) in screen._idea_hints
+        screen._note_idea_hint_click(50, 10, 1)
+        screen._note_idea_hint_click(50, 10, 1)
+        assert (1, 0) not in screen._idea_hints
+        assert screen._idea_belt.rings[-1] == []
+    finally:
+        _restore()
+
+
+def test_the_display_rule_defaults_to_painting_the_cell():
+    # The knob is opt-in: an unset config keeps the original both-at-once behavior.
+    try:
+        screen = _screen({(0, 0): "SH", (1, 0): "ARK"})
+        assert screen._idea_hint_in_cell is True
+    finally:
+        _restore()
+
+
 def test_the_debug_list_is_a_snapshot_when_refresh_is_off():
     try:
         screen = _debug_screen({(0, 0): "SH", (1, 0): "ARK", (2, 0): "P"})

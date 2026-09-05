@@ -1,0 +1,101 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
+# scoring, dictionary, gram picks, spell_check ...) comes from the base file.
+# mode_label is the menu display name, stripped before merge -- not a game knob.
+mode_label: "Constellation — speedtype fossilize all"
+
+# MINDSET
+# The speedtype twin of constellation_speedtype.yaml, but nothing leaves the board:
+# a submitted word FREEZES its cells instead of clearing them, and frozen cells stay
+# usable by later words forever. The board never shrinks and never replenishes -- the
+# whole game is spreading the frozen region until every cell is covered before the
+# timer runs out. Late game is a hunt for words that reach the last few live cells.
+
+rules:
+  game_screen.mode: rule_mode_constellation
+  game_screen.phase_model: rule_single_phase
+
+  # Fossilized cells are a light grey here, not default_colors' stone: most of the
+  # board ends up frozen, and the darker grey turned that into a wall.
+  assets.colors: fossilize_colors.yaml
+
+  # --- fossilize instead of clear -------------------------------------------
+  # A submitted word's cells freeze in place (the grams stay visible and readable).
+  game_screen.clear_action: rule_fossilize_cells
+  # Frozen cells are re-usable by later words, without limit -- but a new word must
+  # contain at least ONE not-yet-frozen cell (rule_fossil_allow's word gate), which
+  # is what keeps the frozen region growing instead of letting the player farm the
+  # same fossils forever.
+  game_screen.fossil_word_use: rule_fossil_allow
+  # No standing "must touch a fossil" requirement on top of that.
+  game_screen.fossil_requirement: rule_fossil_cell_optional
+  game_screen.fossil_requirement_first_word: rule_fossil_no_skip
+  # Nothing is ever vacated, so there is nothing to replenish. Stated rather than
+  # inherited so the intent is obvious next to the fossilize action.
+  game_screen.constellation_turnover: rule_constellation_no_replenish
+
+  # --- the goal --------------------------------------------------------------
+  # Win the moment every board cell is frozen; otherwise the timer ends the run.
+  game_screen.victory: rule_victory_grid_fossilized
+  game_screen.game_timer: rule_game_timer_on
+  game_screen.game_timer_seconds: 180
+  # Fossils count as usable grams under rule_fossil_allow, so an auto-end could
+  # never fire honestly here -- leave it off and let the clock (or the win) call it.
+  game_screen.constellation_auto_end: rule_constellation_auto_end_off
+
+  # --- constellation baseline (mirrors constellation_speedtype.yaml) ----------
+  game_screen.constellation_max_paths:  24
+  game_screen.gram_usage:           rule_gram_use_whole
+  game_screen.word_nucleation:      rule_nucleate_anywhere
+  game_screen.skip_select_isolated: rule_never_skip_select
+  game_screen.select_trigger:       rule_select_every_placement
+  game_screen.gram_manip_in_selecting: rule_gram_manip_in_selecting_enabled
+  game_screen.clear_timing:         rule_clear_at_phase_end
+  game_screen.select_word_limit:    rule_one_word_per_select
+  # Auto-pick the spelling that FREEZES THE MOST new board, not the shortest one:
+  # fossils stay usable forever here, so plain fewest-cell picks drift into
+  # re-using frozen cells and the frozen region stops growing.
+  # game_screen.clear_disambiguation: rule_disambig_auto_pick_avoid_fossils
+  game_screen.clear_disambiguation: rule_disambig_auto_pick_fresh_multigram
+  game_screen.word_trail:           rule_word_trail_off
+  game_screen.hunt_highlight:       rule_hunt_none
+  game_screen.spell_suggest:        rule_spell_suggest_off
+
+  # Board starts full; a plain diagonal fill (no ideation trigram sidepanes -- every
+  # cell has to be reachable by SOME word for the board to be fully frozen).
+  game_screen.setup_formation: rule_formation_fill_player_diagonal
+
+  # No right-click gram manipulation, same as speedtype.
+  game_screen.rightclick_unigram: rule_rightclick_none
+  game_screen.rightclick_cc:      rule_rightclick_none
+  game_screen.rightclick_cv:      rule_rightclick_none
+  game_screen.rightclick_vc:      rule_rightclick_none
+  game_screen.rightclick_vv:      rule_rightclick_none
+  game_screen.rightclick_ck:      rule_rightclick_none
+  game_screen.rightclick_vcv:     rule_rightclick_none
+  game_screen.rightclick_cvk:     rule_rightclick_none
+
+  # --- two escalating levels of hint, both opt-in by the player ---------------
+  # LEVEL 1: double-click a placed multigram cell -> the idea belt fills with every
+  # word the board can spell through that cell's gram. Nothing is painted on the
+  # cell itself (rule_idea_hint_belt_only), and the belt pictures carry no captions
+  # (rule_idea_word_hidden), so the player gets pictures to think from and still has
+  # to work out the word.
+  # LEVEL 2: click one of those belt pictures -> its word is typed into the entry
+  # field for them (rule_idea_click_types_word).
+  game_screen.idea_hint_digram:  rule_idea_hint_digram_on
+  game_screen.idea_hint_trigram: rule_idea_hint_trigram_on
+  game_screen.idea_hint_display: rule_idea_hint_belt_only
+  game_screen.idea_belt:   rule_idea_belt_on
+  # The belt must be the double-click's read-out, not its own dealt ring -- with a
+  # stocked belt the hint would have nowhere to appear.
+  idea_belt.source:        rule_idea_source_hint_debug
+  idea_belt.hint_debug_refresh: rule_idea_hint_debug_refresh_on_board_change
+  idea_belt.show_word:     rule_idea_word_hidden
+  idea_belt.click:         rule_idea_click_types_word
+  idea_belt.art:           rule_idea_art_emoji
+
+  game_screen.show_clear_button:  rule_hide_clear_button
+  game_screen.show_submit_button: rule_hide_submit_button
+  game_screen.show_next_button:   rule_hide_next_button
+  game_screen.show_end_button:    rule_hide_end_button

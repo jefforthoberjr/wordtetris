@@ -1144,6 +1144,64 @@ def test_instant_mode_routes_through_chooser():
     assert g._selecting_side_pane.accepted == []
 
 
+# --- fossil-aware auto-picks (game_screen.clear_disambiguation) --------------
+# The fossilize modes let a word re-use frozen cells forever, so the fewest-cell
+# pick drifts into re-using them and the frozen region stops growing. These rules
+# put an anti-re-use term in front of the original objective. Built straight from
+# FoundWords and a fossil set -- no board needed, the rules read nothing else.
+
+def _picker(fossilized):
+    g = gs.GameScreen.__new__(gs.GameScreen)
+    g._fossilized_cells = set(fossilized)
+    return g
+
+
+def _fw(cells, segments, word="WORD"):
+    return gs.FoundWord(path=list(cells), segments=list(segments), word=word)
+
+
+def test_avoid_fossils_prefers_the_spelling_that_re_uses_nothing():
+    # The exact shape seen in the session log: a short spelling leaning on frozen
+    # cells beats a longer all-fresh one under the plain fewest-cell rule.
+    g = _picker({(0, 0), (1, 0)})
+    reuses = _fw([(0, 0), (1, 0), (9, 9)], ["G", "AN", "G"])      # 1 fresh, 3 cells
+    all_fresh = _fw([(5, 5), (6, 5), (7, 5), (8, 5)], ["G", "A", "N", "G"])  # 4 fresh
+    assert g._rule_disambig_auto_pick_avoid_fossils("GANG", [reuses, all_fresh], None) is all_fresh
+    # ...and the original rule is what would have picked the short one.
+    assert g._fewest_cell_word([reuses, all_fresh]) is reuses
+
+
+def test_avoid_fossils_breaks_a_tie_toward_eating_a_fresh_multigram():
+    # Both freeze 2 new cells; the one that spends the fat cell wins.
+    g = _picker({(0, 0)})
+    thin = _fw([(0, 0), (1, 1), (2, 2)], ["C", "A", "T"])
+    fat = _fw([(0, 0), (3, 3), (4, 4)], ["C", "AT", "S"], word="CATS")
+    assert g._rule_disambig_auto_pick_avoid_fossils("CATS", [thin, fat], None) is fat
+
+
+def test_fresh_multigram_puts_the_fat_cell_ahead_of_avoiding_re_use():
+    # The swapped-priority rule eats the fresh trigram even though that spelling
+    # re-uses a frozen cell; the avoid-fossils rule refuses to.
+    g = _picker({(1, 1)})
+    fat = _fw([(0, 0), (1, 1)], ["ARK", "S"], word="ARKS")          # 1 re-used
+    clean = _fw([(2, 2), (3, 3), (4, 4)], ["A", "R", "K"], word="ARK")   # 0 re-used
+    assert g._rule_disambig_auto_pick_fresh_multigram("X", [fat, clean], None) is fat
+    # The avoid-fossils rule makes the opposite call, which is the point of having both.
+    assert g._rule_disambig_auto_pick_avoid_fossils("X", [fat, clean], None) is clean
+
+
+def test_with_no_fossils_both_rules_fall_back_to_fewest_cells():
+    # Nothing is fossilized, so the re-use term is 0 for every option and the
+    # original fewest-cell objective decides -- the rules are inert (and safe) in a
+    # mode that never fossilizes. Maximizing FRESH cells instead of minimizing
+    # re-used ones would have inverted this and picked the 3-cell spelling.
+    g = _picker(set())
+    short = _fw([(0, 0), (1, 1)], ["CA", "T"], word="CAT")
+    long_ = _fw([(2, 2), (3, 3), (4, 4)], ["C", "A", "T"], word="CAT")
+    assert g._rule_disambig_auto_pick_avoid_fossils("CAT", [short, long_], None) is short
+    assert g._fewest_cell_word([short, long_]) is short
+
+
 # --- Constellation mode (game_screen.mode: rule_mode_constellation) ----------
 # The typed word is assembled from grams anywhere on the board (no adjacency, no
 # nucleation); _options_for / _submission_error route through the matcher when

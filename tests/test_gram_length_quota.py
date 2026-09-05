@@ -91,8 +91,12 @@ def test_length_shares_track_a_later_config_swap():
     rules["gram_length.digram_percent"] = 0
     rules["gram_length.trigramplus_percent"] = 0
     try:
-        counts = Counter(_category(g) for g in _run_formation(40))
-        assert counts[1] == 40
+        # "QU" is drawn from the unigram bucket but is two characters long, so
+        # count by BUCKET (the picker's own convention), not by len() -- otherwise
+        # this passes or fails depending on where the shared RNG happens to be.
+        grams = _run_formation(40)
+        strays = [g.text for g in grams if _category(g) != 1 and g.text != "QU"]
+        assert not strays, strays
     finally:
         rules.update(saved)
 

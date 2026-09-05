@@ -1,0 +1,111 @@
+# FOSSILIZE-ALL color set (assets.colors: fossilize_colors.yaml). A copy of
+# default_colors.yaml with one change: fossilized cells are a much LIGHTER grey,
+# for the modes whose goal is to fossilize the whole board (see
+# game_modes/constellation_speedtype_fossilize.yaml). Values are RGB or RGBA,
+# 0-255 per channel.
+board:
+  settled_cell_fill: [255, 255, 255]   # settled cell fill (placed pieces)
+  active_piece_fill: [100, 180, 245]   # darker blue: the live/movable piece
+  placed_piece_fill: [173, 216, 230]  # light blue: pieces placed this moving phase, awaiting selection
+  cursor_fill:      [80, 80, 80]      # dark grey: the MOVING_TYPEWRITER cursor cell
+  crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
+  fossilized_fill:  [214, 214, 214]   # LIGHT grey: a fossilized cell. Lighter than default_colors' stone [165,165,165] because this set is for a mode where MOST of the board ends up fossilized -- at that density the darker stone reads as a wall of grey and the few live cells stop standing out.
+  stem_text:        [0, 0, 0, 255]    # gram text of the non-root plant stem cells (MOVING_PLANT); match the stem fill to hide them
+  stem_fill:        [140, 100, 60]    # MOVING_BOTANICAL: the vertical stem-column spine cells (woody brown)
+  leaf_fill:        [120, 190, 120]   # MOVING_BOTANICAL: leaf cells a word grows into (green)
+  pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
+  line_blast_highlight: [152, 251, 152]   # light green: cells of a completed row/column (line blast SELECT domain)
+  line_blast_floating_valid:   [144, 238, 144]  # light green: floating piece where a drop is legal (line blast)
+  line_blast_floating_invalid: [255, 153, 153]  # light red: floating piece where a drop would overlap / hang off (line blast)
+  cell_border:      [0, 0, 0]         # cell outline (square border / hex outer)
+  cell_text:        [0, 0, 0, 255]    # gram/letter glyphs (flat default; plain rule + preview)
+  cell_text_low_value:  [0, 0, 0, 255]      # low end of the board.cell_text_color score gradient
+  cell_text_high_value: [184, 134, 11, 255]  # dark gold: high end of the board.cell_text_color score gradient
+  # hunt_highlight:   [220, 20, 20, 255]  #red # MOVING-phase word-hunt: letters of the typed search word, recolored on top of cell_text
+  hunt_highlight:   [38, 171, 51, 255]
+  obstacle_fill:    [255, 204, 153]   # light orange: pre-placed obstacle cells
+  mission_fill:     [255, 153, 153]   # light red: pre-placed mission cells (the goal to clear)
+  # mission_fill:     [204, 153, 255]   # light purple: pre-placed mission cells (the goal to clear)
+  grid_line:        [200, 200, 200]   # grid lines (square + hex)
+  word_trail:       [0, 0, 0]         # cleared-word path trail (drawn at game_screen.word_trail_opacity)
+  damage_fill:      [255, 90, 90]      # light red: rising fill showing an obstacle/mission cell's damage (game_screen.obstacle_damage_display)
+  damage_dash:      [255, 255, 255]    # the dashes rule_damage_border_dashed paints over a damaged cell's outline (background = gaps; try red for red dashes)
+  disambig_line:          [135, 206, 250]   # light blue: unselected candidate paths in the "select which one" chooser
+  disambig_line_selected: [0, 0, 180]       # dark blue: the currently-highlighted candidate path
+  disambig_highlight_fill: [204, 255, 204]  # pale lime: background of the cells the selected candidate would clear (highlight display mode)
+  background:       [255, 255, 255]   # game board window background
+  mode_title:       [120, 120, 120, 255]  # grey: current game-mode title, single line across the top of the board
+
+window:
+  background:       [0, 0, 0]         # default clear color (menu / title screens)
+
+# Right pane shown during the MOVING phase: the game-long cleared-word list.
+moving_side_pane:
+  divider:          [200, 200, 200]   # vertical rule between board and side pane
+  wordlist_text:    [30, 30, 30, 255] # cleared-word list entries
+  wordlist_new_text: [30, 160, 60, 255] # green: a word new to the player's dictionary
+  wordlist_obscure_text: [235, 140, 20, 255] # orange: a NEW word from the obscure tier only
+  wordlist_score:   [110, 130, 115, 255] # muted green-grey: each word's points, right of the word
+  word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
+  phase_label:      [40, 40, 40, 255]  # "Pieces: N" countdown to the next select phase, pinned top
+  score_label:      [40, 90, 60, 255]  # running point total, shown under the timer/pieces label
+  button_text:      [40, 90, 170, 255] # clickable "Select words" label (matches selecting pane buttons)
+  hunt_prompt:      [120, 120, 120, 255] # "Hunt a word:" prompt above the hunt field
+  hunt_input:       [30, 30, 30, 255]    # the word being typed to hunt grams on the board
+  hunt_placeholder: [180, 180, 180, 255] # faint caret when the hunt field is empty
+
+# Right pane shown during the SELECTING phase: type a word to clear.
+selecting_side_pane:
+  divider:          [200, 200, 200]      # vertical rule (matches moving side pane)
+  prompt:           [120, 120, 120, 255] # "Type a word:" prompt
+  input_text:       [30, 30, 30, 255]    # the word being typed
+  placeholder:      [180, 180, 180, 255] # faint caret when input is empty
+  button_text:      [40, 90, 170, 255]   # clickable Submit / Next labels
+  error_text:       [200, 40, 40, 255]   # error messages
+  missing_letter:   [220, 30, 30, 255]   # letters of a not-on-board word absent from the board
+  word_count:       [120, 120, 120, 255] # player dictionary size, pinned bottom
+  phase_label:      [40, 40, 40, 255]    # "pick words:" header, pinned top (matches moving pane)
+  score_label:      [40, 90, 60, 255]    # running point total, shown under the header/timer
+  # (the this-phase accepted-word list reuses ScrollingWordList, which is
+  #  styled by moving_side_pane.wordlist_text)
+
+# Idea belt: the young-player picture conveyor that takes over the lower right
+# pane (game_screen.idea_belt), replacing the score + cleared-word list.
+idea_belt:
+  circle_fill:      [255, 253, 240, 255]  # the disc each picture sits on
+  circle_border:    [200, 190, 160, 255]  # ring around the disc
+  word_text:        [70, 70, 70, 255]     # optional caption under a picture (idea_belt.show_word)
+
+# "My Dictionary" screen: paged, read-only list of every word the player owns.
+dictionary:
+  background:       [255, 250, 205]       # light yellow: whole-screen background
+  title_text:      [60, 60, 40, 255]      # word-count readout
+  word_text:       [40, 40, 30, 255]      # the paged word-grid entries
+  tab_fill:        [255, 255, 255]        # inactive A-Z page tab (white)
+  tab_active:      [255, 250, 205]        # current letter's tab (matches bg, looks "open")
+  tab_border:      [150, 150, 110]        # outline around every tab
+  tab_text:        [60, 60, 40, 255]      # the A-Z letter glyph on each tab
+
+# Victory overlay shown centered on the grid when a game is won.
+victory:
+  panel:            [40, 60, 40]          # solid panel behind the VICTORY text
+  text:             [255, 215, 0, 255]    # "VICTORY" lettering (gold)
+  subtext:          [220, 220, 200, 255]  # win/lose verdict under the END GAME card
+
+# Endgame typing bonus: the player types out the words they cleared.
+endgame:
+  target_text:      [60, 60, 60, 255]     # a word still to be typed (board region)
+  target_done_text: [30, 160, 60, 255]    # a word already typed (green, matching a new-word entry)
+  prompt_text:      [120, 120, 120, 255]  # "Type the words:" heading (matches the play panes)
+  input_text:       [30, 30, 30, 255]     # the field being typed into
+  total_text:       [40, 90, 60, 255]     # running bonus total (matches the in-play score label)
+  banked_text:      [30, 160, 60, 255]    # typed-word list rows, with their points
+  hit_text:         [30, 160, 60, 255]    # flash under the field: word just typed correctly
+  miss_text:        [200, 40, 40, 255]    # flash under the field: a misspelling (no penalty)
+  suggest_text:     [120, 120, 160, 255]  # "Did you mean X?" under a miss (endgame.spell_suggest)
+  cell_done_fill:   [144, 238, 144]       # endgame.render cells: fill of a word already typed (light green)
+
+menu:
+  highlight:        [255, 255, 0, 255]   # selected menu item
+  normal:           [255, 255, 255, 255] # unselected menu item
+  panel:            [50, 50, 50]         # in-game menu panel background

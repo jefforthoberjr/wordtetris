@@ -837,6 +837,24 @@ wild-vowel expansions), how the one to clear is chosen — and whether a lone pa
 still asks to confirm.
 - `rule_disambig_auto_pick` — silently keep the fewest-cell spelling, ties broken at
   random (original; fastest, good for timer-pressured modes); no confirm step ever.
+- `rule_disambig_auto_pick_avoid_fossils` — silently keep the spelling that leans on
+  the FEWEST already-fossilized cells; among equals prefer the one taking more
+  letters from fresh **multigram** cells, then the fewest-cell spelling, then at
+  random. For the fossilize modes (`clear_action: rule_fossilize_cells` +
+  `fossil_word_use: rule_fossil_allow`), where frozen cells stay usable forever: the
+  plain fewest-cell pick rots there, because a spelling built mostly from frozen
+  cells is short and so keeps winning, and the frozen region stops growing. Observed
+  in a 13-word session: 11 of 42 cells spent on re-use, and the last words freezing
+  1 new cell out of 3. Note it MINIMIZES re-use rather than maximizing fresh cells —
+  maximizing fresh cells would bias the picker toward longer spellings in general and
+  would invert the fewest-cell rule outright in a mode with no fossils. As written
+  the first term is zero for every option when nothing is fossilized, so this is
+  inert (and safe) in the non-fossil modes.
+- `rule_disambig_auto_pick_fresh_multigram` — the same, priorities swapped: spend
+  fresh multigram cells first, then avoid re-use, then fewest cells. Trades some
+  re-use avoidance to eat the awkward fat cells early — a lone unfossilized trigram
+  left at the end is much harder to place in a word than a lone letter. Which of the
+  two wins is a playtest question, not a derivable one.
 - `rule_disambig_cycle_two_or_more_choices` — draw every candidate as a polyline on
   the board (light blue, the highlighted one dark blue), let the player cycle with
   `word_cycle_prev` / `word_cycle_next`, then confirm with `word_submit`. Only opens
@@ -969,6 +987,27 @@ enough to read as a picture, faint enough that the gram on top stays what the ey
 lands on. Only the alpha is lowered: pyglet multiplies a label's color into the
 glyph, so the RGB channels stay at 255 or the emoji's color drains out (see
 TECH.md).
+
+### game_screen.idea_hint_display
+WHERE a raised hint is shown. The double click always computes the same thing (every
+word the board can spell through the clicked cell's gram) and always feeds the
+hint-debug belt; this only decides whether the cell ALSO gets a picture painted on
+it. Independent of `idea_hint_opacity`, which tunes that picture rather than
+suppressing it.
+- `rule_idea_hint_show_in_cell` — the original behavior: the faded emoji goes behind
+  the cell's letters **and** the belt lists the whole pool. One click, both effects.
+- `rule_idea_hint_belt_only` — nothing is painted on the cell; the belt is the whole
+  hint. This splits the feature into two escalating levels the player opts into
+  separately: the belt alone says "here are words this cell could help spell", and
+  the player can then click a belt picture to type the word
+  (`idea_belt.click: rule_idea_click_types_word`) if they want the second level.
+  Pair with `idea_belt.source: rule_idea_source_hint_debug` — with a stocked belt
+  there is nowhere for the hint to appear at all.
+
+The hint is still recorded per cell either way, so a second double click toggles it
+off (emptying the belt) and `_prune_idea_hints` still drops it when the cell's gram
+changes. In a session log the belt-only raise is `log_20009` action
+`show_belt_only`.
 
 ### idea_hint.deck
 Filename (under `assets/idea_belt/`) of the word->emoji file the hint draws from,

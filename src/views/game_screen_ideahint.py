@@ -58,6 +58,11 @@ def get_idea_hint_batch():
 
 
 class IdeaHintMixin:
+    # Default so bare __new__ test instances (which never run _setup_idea_hint)
+    # resolve to the original paint-on-the-cell behavior; real games set it from
+    # game_screen.idea_hint_display.
+    _idea_hint_in_cell = True
+
     # --- which cells offer a hint (game_screen.idea_hint_digram / _trigram) ---
     # Two INDEPENDENT slots, one per gram size, because they are different
     # teaching moments. A digram (SH, EA) is the cut players miss most often and
@@ -103,6 +108,16 @@ class IdeaHintMixin:
         # solid enough to read as a picture, faint enough that the gram on top of
         # it stays the thing the eye lands on.
         self._idea_hint_opacity = int(rules.get("game_screen.idea_hint_opacity", 128))
+        # WHERE the hint is shown (game_screen.idea_hint_display). A binary knob, so
+        # it resolves to a bool rather than a pair of rule functions (the same idiom
+        # as game_screen.phase_model -> _single_phase). True paints the faded emoji
+        # on the cell AND feeds the debug belt (the original, both-at-once behavior);
+        # False paints nothing on the cell and leaves the belt as the whole hint --
+        # two escalating hint levels the player opts into rather than one.
+        self._idea_hint_in_cell = select_rule(
+            "game_screen.idea_hint_display",
+            {"rule_idea_hint_show_in_cell": True,
+             "rule_idea_hint_belt_only": False})
         # {cell -> {"label": Label, "word": str}} for every cell showing a hint.
         # The word is kept for the log and for the toggle-off line, never shown.
         self._idea_hints = {}
@@ -134,7 +149,8 @@ class IdeaHintMixin:
         that outlives the board, so dropping the dict alone would leave last game's
         pictures drawn over the new one."""
         for state in self._idea_hints.values():
-            state["label"].delete()
+            if state["label"] is not None:   # belt-only hints carry no glyph
+                state["label"].delete()
         self._idea_hints = {}
         self._idea_hint_last_cell = None
         self._idea_hint_belt_cell = None
@@ -238,7 +254,13 @@ class IdeaHintMixin:
 
     # --- the glyph ---------------------------------------------------------
     def _show_idea_hint(self, cell, word):
-        """Paint `word`'s emoji behind the cell's letters, half faded."""
+        """Raise `word` as the hint on `cell`: under game_screen.idea_hint_display's
+        show_in_cell rule that means painting the word's emoji behind the cell's
+        letters, half faded; under belt_only it means recording the hint and
+        painting nothing (the belt, already fed by the caller, IS the hint)."""
+        if not self._idea_hint_in_cell:
+            self._show_idea_hint_belt_only(cell, word)
+            return
         emoji = idea_words.emoji_for(word)
         if not emoji:
             return
@@ -259,12 +281,25 @@ class IdeaHintMixin:
                                   "gram": gram_text}
         L.log_20009("show", cell, gram_text, word)
 
+    def _show_idea_hint_belt_only(self, cell, word):
+        """The belt-only half of _show_idea_hint: record the hint with NO label, so
+        nothing is drawn on the cell but the rest of the feature behaves exactly as
+        it does with a glyph -- a second double click toggles it off (and empties the
+        belt), and _prune_idea_hints still takes it away when the cell's gram
+        changes. Unlike the painted path this cannot fail on a word with no emoji:
+        the belt already dropped those itself, and the picked `word` is only kept
+        for the log here."""
+        gram_text = self._board.gram_at(*cell).text.upper()
+        self._idea_hints[cell] = {"label": None, "word": word, "gram": gram_text}
+        L.log_20009("show_belt_only", cell, gram_text, word)
+
     def _hide_idea_hint(self, cell, action="hide"):
         """Take the hint off `cell`. `action` is what the log calls it -- a player
         toggling it off is "hide", the board taking it away is "clear"."""
         state = self._idea_hints.pop(cell, None)
         if state is not None:
-            state["label"].delete()
+            if state["label"] is not None:   # belt-only hints carry no glyph
+                state["label"].delete()
             L.log_20009(action, cell, state["gram"], state["word"])
             # The debug belt tracks the LIVE hint, so a hint going away empties it
             # rather than leaving a list of ideas about a cell nobody is asking
