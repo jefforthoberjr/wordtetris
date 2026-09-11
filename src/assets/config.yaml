@@ -74,6 +74,8 @@ rules:
   assets.colors:             default_colors.yaml
   # [ref: assets.loading_animation]
   assets.loading_animation:  default_loading_animation.yaml
+  # [ref: assets.muncher_animation]
+  assets.muncher_animation:  default_muncher_animation.yaml
 
   # Gram font sizing. [ref: gram.font_size]
   # gram.font_size:         rule_gram_font_scale_by_length
@@ -107,7 +109,7 @@ rules:
   game_screen.grid_width:       8
   game_screen.piece_pool_size:  100
 
-  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast / plant. [ref: game_screen.mode]
+  # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast / plant / muncher. [ref: game_screen.mode]
   # game_screen.mode:         rule_mode_jigsaw
   # game_screen.mode:       rule_mode_typewriter
   # game_screen.mode:       rule_mode_omniswap_vs_timer
@@ -116,6 +118,7 @@ rules:
   # game_screen.mode:       rule_mode_line_blast
   # game_screen.mode:       rule_mode_plant_vs_timer
   # game_screen.mode:       rule_mode_botanical
+  # game_screen.mode:       rule_mode_muncher
 
   # LINE BLAST: preselected piece pool size, side-pane preview count, and preview
   # size as a fraction of a board cell. [ref: game_screen.line_blast_pool_size]
@@ -170,6 +173,14 @@ rules:
   game_screen.shooting_crosshair_gap: 0.35
   # SHOOTING GALLERY: a dead-end buffer (no word starts with it) instantly ends the game. [ref: game_screen.misspell_instadeath]
   game_screen.misspell_instadeath: rule_misspell_instadeath_off
+
+  # MUNCHER: bad-word lives, shown as characters where a timer would be. [ref: game_screen.muncher_lives]
+  game_screen.muncher_lives: 3
+  # MUNCHER: cap on eating once the eaten word can no longer become a word. [ref: game_screen.muncher_dead_end]
+  game_screen.muncher_dead_end: rule_muncher_dead_end_forced_clear
+  # game_screen.muncher_dead_end: rule_muncher_dead_end_off
+  # MUNCHER: grams still allowed after that dead end, before the forced clear. [ref: game_screen.muncher_dead_end_grace]
+  game_screen.muncher_dead_end_grace: 1
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360

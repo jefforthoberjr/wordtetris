@@ -221,6 +221,13 @@ grep '\[20004\]' sessions/<id>.log   right-click gram-manipulate OUTCOME: cell,
 grep '\[20005\]' sessions/<id>.log   omniswap OUTCOME: picked / swapped / canceled
                                       / invalid_target / word_piece / ignored,
                                       with the cell and swap source.
+grep '[20010]' sessions/<id>.log   muncher walk + bite stream (mode
+                                      rule_mode_muncher): step / blocked /
+                                      off_board with the target cell, and
+                                      bite / bite_empty / bite_fossil /
+                                      bite_wild with the gram eaten. A run of
+                                      `blocked` means step_seconds is slower
+                                      than the player's hands.
 grep -E '\[0001[01]\]' sessions/<id>.log   window focus (00010) + resize (00011),
                                       each with physical size + pixel ratio. The
                                       focus timeline (a resignKey/focus_lost with

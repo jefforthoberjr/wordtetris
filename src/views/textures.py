@@ -76,6 +76,9 @@ _REASON_TO_ICON = {
     "not_on_board_gram_mismatch": "gram_mismatch",
     "too_short": "too_short",
     "already_cleared": "duplicate",
+    # The muncher's dead-end forced clear (game_screen.muncher_dead_end): the eaten
+    # letters can never become a word, which is the not-a-word artwork's message.
+    "muncher_dead_end": "not_in_dictionary",
     "already_selected_one_way": "duplicate",
     "every_way_selected": "duplicate",
 }
@@ -110,6 +113,48 @@ def wild_vowel_image(target_height):
     center-anchored, so a sprite placed at a cell's center sits centered."""
     name = _WILD_VOWEL_TEXTURES[-1][1]
     for height, candidate in _WILD_VOWEL_TEXTURES:
+        if height >= target_height:
+            name = candidate
+            break
+    if name not in _image_cache:
+        image = pyglet.image.load(os.path.join(_ASSETS, name))
+        image.anchor_x = math.floor(image.width / 2)
+        image.anchor_y = math.floor(image.height / 2)
+        _image_cache[name] = image
+    return _image_cache[name]
+
+
+# The Word Muncher character (game_screen.mode: rule_mode_muncher), one entry per
+# animation state -> its native sizes (height, filename), smallest first. Built
+# offline from the raw art by tools/make_muncher_sprites.py, which crops every
+# frame to ONE shared box and keys the black background out to alpha -- so the
+# frames are interchangeable in place and drop onto the white board cleanly.
+# Same "load the smallest size at least as tall as the target" rule as the icons
+# above, so the character always scales DOWN.
+_MUNCHER_TEXTURES = {
+    "closed_standing": [
+        (134, "sprites/muncher_closed_standing_110x134.png"),
+        (268, "sprites/muncher_closed_standing_220x268.png"),
+    ],
+    "closed_walking": [
+        (134, "sprites/muncher_closed_walking_110x134.png"),
+        (268, "sprites/muncher_closed_walking_220x268.png"),
+    ],
+    "open_standing": [
+        (134, "sprites/muncher_open_standing_110x134.png"),
+        (268, "sprites/muncher_open_standing_220x268.png"),
+    ],
+}
+
+
+def muncher_image(state, target_height):
+    """Load (and cache) the muncher frame for `state` ("closed_standing" /
+    "closed_walking" / "open_standing") at the smallest native height at least
+    `target_height` (or the largest if the target is bigger than all of them).
+    Center-anchored, so drawing it at a cell's center sits it on the cell."""
+    textures = _MUNCHER_TEXTURES[state]
+    name = textures[-1][1]
+    for height, candidate in textures:
         if height >= target_height:
             name = candidate
             break

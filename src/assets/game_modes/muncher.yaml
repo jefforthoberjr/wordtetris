@@ -1,0 +1,65 @@
+# Game mode: a PARTIAL config deep-merged onto assets/config.yaml (see config.py /
+# apply_game_mode). Only list keys that DEFINE this mode; everything else (window,
+# scoring, dictionary, gram picks, spell_check ...) comes from the base file.
+# mode_label is the menu display name, stripped before merge -- not a game knob.
+# Signature = MUNCHER PRESET in CONFIG_REFERENCE.md.
+mode_label: "Word Muncher"
+
+# MINDSET
+# A character walks a full board and EATS letters to spell with. No typing, no
+# clicking, no rearranging -- eating is the only verb. You cannot un-eat a letter
+# or abandon a word, so a careless mouthful costs a life. Three lives, no clock.
+
+rules:
+  game_screen.mode: rule_mode_muncher
+  game_screen.grid: rule_use_square_grid
+
+  # A full board to walk around in and eat your way through.
+  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
+
+  # One continuous phase: the read-only eaten word and the Submit control ride one
+  # merged pane, and the player never leaves MOVING (there is no typing / SELECT).
+  game_screen.phase_model: rule_single_phase
+
+  # Submit only. Clear MUST stay hidden: there is no abandoning a word in this
+  # mode, and the button would offer a free escape from a bad mouthful -- the one
+  # thing the lives are meant to charge for.
+  game_screen.show_submit_button: rule_show_submit_button
+  game_screen.show_clear_button:  rule_hide_clear_button
+  game_screen.show_next_button:   rule_hide_next_button
+
+  # Lives are the only end condition -- no clock, no victory. The last life hands
+  # off to the endgame typing bonus.
+  game_screen.muncher_lives: 3
+  game_screen.muncher_dead_end: rule_muncher_dead_end_forced_clear
+  game_screen.muncher_dead_end_grace: 1
+  game_screen.game_timer: rule_game_timer_off
+  game_screen.victory: rule_victory_none
+  game_screen.endgame: rule_endgame_typing_bonus
+
+  # At least two bites per word, so a lone trigram cell (e.g. "SON") cannot clear
+  # on its own -- a word must chain grams from separate cells.
+  game_screen.word_length: rule_word_min3letters_min2cells
+  game_screen.word_repeat: rule_repeat_block
+
+  # The board grows back behind him. Swap to rule_constellation_no_replenish for a
+  # board that shrinks as he eats it clean, or to one of the escalating
+  # replenish_length rules for hydra-style growth off every bite.
+  game_screen.constellation_turnover: rule_constellation_replenish
+  game_screen.replenish_delay_seconds: 3.0
+  game_screen.replenish_fade_seconds: 1.5
+  game_screen.replenish_length: rule_replenish_length_picker
+
+  # Draw the path through the cells each word was eaten from.
+  game_screen.word_trail: rule_word_trail_on
+
+  # The idea belt is OFF here, and this is not a preference -- the two do not
+  # currently fit together. Clicking a belt picture TYPES its word into the field,
+  # but in this mode the field is a read-only readout of what has been eaten, so a
+  # pick would make the readout disagree with the mode's real buffer (the buffer
+  # wins at submit time, and the player would be shown a word they never ate).
+  # Pairing the belt with the muncher needs the pick to mean something else --
+  # "here is a word to go hunt for" rather than "type this" -- which is a design
+  # decision, not a config one. Base config.yaml has the belt ON, so this line is
+  # doing real work.
+  game_screen.idea_belt: rule_idea_belt_off

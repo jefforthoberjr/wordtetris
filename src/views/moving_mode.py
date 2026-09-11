@@ -1,6 +1,7 @@
 import math
 import pyglet
-from config import select_rule, get_string
+from config import CONFIG, select_rule, get_string
+from controls import control_keys
 from source import rand
 from models.hex_grid import flattop_vertices
 from models.word_dictionary import is_word, is_prefix
@@ -9,6 +10,7 @@ from models.square_piece import ALL_PIECE_ROTATIONS, player_gram_pick_rule
 from models.gram_picker import pick_grams
 from views.shaders import get_shape_shader
 from views.rising_fill import clip_below, RisingFill
+from views.muncher_sprite import MuncherSprite
 import log_codes as L
 
 
@@ -109,6 +111,14 @@ class MovingMode:
     # word submission through the botanical placement matcher instead of the SELECT
     # clear pipeline; only BotanicalMode flips it True.
     is_botanical = False
+
+    # Whether this mode is the word muncher: a character walks the pre-filled board
+    # under discrete arrow control and EATS cells to spell a word, submitting it by
+    # hand and losing a life on a bad word (see MuncherMovingMode). The engine reads
+    # it to draw the character, to keep the typed field out of the keyboard (nothing
+    # is typed here), and -- from chunk 3 on -- to draw the lives. Only
+    # MuncherMovingMode flips it True.
+    is_muncher = False
 
     def __init__(self, game_screen):
         self._gs = game_screen
@@ -1263,6 +1273,220 @@ class ShootingGalleryMode(MovingMode):
         L.log_30003(word, "shooting_miss")
         self._buffer = []
         self._since_shot = 0.0
+
+
+class MuncherMovingMode(MovingMode):
+    """MOVING_MUNCHER -- a Word Muncher walks a pre-filled board and EATS grams.
+
+    One character stands on one cell. An arrow press steps him to a neighboring
+    cell (the per-grid geometry comes from GameScreen._muncher_step_rule, the
+    twin of the piece movement rules); the step is discrete -- one press, one
+    cell -- and the quarter-second glide is animation catching up (see
+    views/muncher_sprite.MuncherSprite). The eat key bites the cell he stands on:
+    its gram leaves the board at once and appends to the word being assembled in
+    the right pane. Nothing is typed, nothing is clicked, and nothing is
+    rearranged -- the ONLY verb is eating, and the word is read-only as it grows.
+
+    Because the grams are banked as they are eaten, a submitted word is validated
+    as a plain dictionary lookup on the buffer -- the same shape as the shooting
+    gallery, not the constellation matcher. A bad word costs a LIFE (there are
+    three, drawn in the pane where a timer would go), and the last life ends the
+    game into the endgame typing bonus.
+
+    Pairs with the MUNCHER PRESET: a filled board, rule_single_phase (the merged
+    pane holds the read-only word plus the Submit control), and replenish left to
+    the shared game_screen.constellation_turnover / replenish_* knobs so the board
+    can refill behind him or stay eaten, per mode file.
+
+    THE DEAD-END CAP (game_screen.muncher_dead_end). Because there is no way to
+    abandon a word, a player CAN deliberately eat rubbish to churn the board -- at
+    the cost of a life. What they may not do is eat forever: the moment the eaten
+    letters can no longer begin ANY dictionary word, they get
+    muncher_dead_end_grace more grams and then the word is taken away and the life
+    is spent. Eat F, then Z (the buffer is dead here -- one gram of grace left),
+    then ING and it is forced. Set the rule to rule_muncher_dead_end_off for no cap
+    at all."""
+
+    is_muncher = True
+
+    def __init__(self, game_screen):
+        super().__init__(game_screen)
+        self._sprite = None
+        self._pos = None           # the cell he stands on, updated on the KEY, not
+                                   # on the animation -- input stays crisp
+        self._buffer = []          # [(pos, gram_text)] eaten toward the current word
+        # Grams of grace left once the buffer went dead (see the class docstring);
+        # None means the buffer can still become a word, so no countdown is running.
+        self._grace_left = None
+        self._dead_end_rule = select_rule(
+            "game_screen.muncher_dead_end",
+            {"rule_muncher_dead_end_off": False,
+             "rule_muncher_dead_end_forced_clear": True})
+        self._dead_end_grace = CONFIG["rules"]["game_screen.muncher_dead_end_grace"]
+
+    def start(self):
+        gs = self._gs
+        self._clear_buffer()
+        self._sprite = MuncherSprite(gs._cell_size)
+        self._pos = self._start_cell()
+        self._sprite.place(*self._center(self._pos))
+        gs._muncher_start_lives()
+
+    def advance(self):
+        # No SELECT turn ever resolves here: a word is assembled from grams already
+        # taken off the board, so there is nothing for the select pipeline to clear.
+        pass
+
+    def update(self, dt):
+        self._sprite.tick(dt)
+
+    def active_cells(self):
+        """The cell he occupies -- the engine hides the hover preview under it, the
+        same as it does under a live piece."""
+        cells = []
+        if self._pos is not None:
+            cells.append(self._pos)
+        return cells
+
+    def draw(self):
+        """Draw the character over the board. Called from GameScreen._draw_board
+        while MOVING; a mode-owned draw, like the shooting gallery's crosshair."""
+        if self._sprite is not None:
+            self._sprite.draw()
+
+    # --- input -----------------------------------------------------------
+    def on_key_press(self, symbol, modifiers):
+        gs = self._gs
+        handled = False
+        if symbol in control_keys("game.muncher_eat"):
+            self._eat()
+            handled = True
+        elif symbol in control_keys("game.muncher_submit"):
+            self.submit()
+            handled = True
+        else:
+            target = gs._muncher_step_rule(symbol, modifiers, *self._pos)
+            if target is not None:
+                handled = True
+                self._walk_to(target)
+        return handled
+
+    # --- walking ---------------------------------------------------------
+    def _walk_to(self, target):
+        """Take one step onto `target` if he may stand there. Refused while an
+        earlier step is still traveling (step_lockout_fraction), so a mashed arrow
+        cannot outrun the animation and leave him drawn between cells.
+
+        An EMPTY cell is a perfectly good place to stand: cells he has eaten are
+        holes in the board and he walks over and rests in them freely. Only the
+        board's edge stops him."""
+        if self._sprite.stepping():
+            L.log_20010("blocked", self._pos, target)
+        elif not self._gs._board.is_valid(*target):
+            L.log_20010("off_board", self._pos, target)
+        else:
+            L.log_20010("step", self._pos, target)
+            self._pos = target
+            self._sprite.step_to(*self._center(target))
+
+    def _start_cell(self):
+        """Where he starts: the middle of the board, or the first valid cell if the
+        grid has no center (never true for the shipped grids, but the fallback keeps
+        a malformed board from crashing the mode)."""
+        board = self._gs._board
+        cell = board.center_cell()
+        if cell is None or not board.is_valid(*cell):
+            cell = self._first_valid_cell()
+        return cell
+
+    def _first_valid_cell(self):
+        found = None
+        for y in range(self._gs._board.height):
+            for x in range(self._gs._board.width):
+                if found is None and self._gs._board.is_valid(x, y):
+                    found = (x, y)
+        return found
+
+    def _center(self, pos):
+        """Pixel center to draw him at for the cell `pos` -- the VISUAL center, so
+        he stands in the middle of a triangle's ink rather than at its centroid."""
+        return self._gs._board.cell_visual_center(*pos)
+
+    # --- eating ----------------------------------------------------------
+    def _eat(self):
+        """One bite of the cell he stands on. The chew animation always plays --
+        biting thin air is still a bite, and the feedback matters -- but only an
+        occupied, edible cell yields a gram. The gram comes off the board
+        immediately and is banked in the buffer; it is never put back (a rejected
+        word does not vomit its letters onto the board, and by then the cells may
+        have been replenished anyway)."""
+        self._sprite.chew()
+        # Resync if the readout was emptied out from under the mode: the pane's
+        # Clear-word button (game_screen.show_clear_button) empties the field
+        # directly, and the muncher preset hides that button precisely because
+        # there is no abandoning a word here -- but a mode file that shows it
+        # anyway should start a fresh word rather than desync the two. Mirrors the
+        # shooting gallery's buffer resync.
+        if self._buffer and self._gs._moving_side_pane.is_empty():
+            self._clear_buffer()
+        text = self._gs._muncher_eat(self._pos)
+        if text:
+            self._buffer.append((self._pos, text))
+            self._gs._moving_side_pane.on_text(text)
+            self._check_dead_end()
+
+    def word(self):
+        """The word assembled so far -- the pane readout and the submit gate."""
+        return "".join(text for _, text in self._buffer)
+
+    # --- submitting ------------------------------------------------------
+    def submit(self):
+        """Hand the eaten word to the engine (the submit key, or the pane's Submit
+        button). The buffer empties either way: an accepted word has been banked
+        and a rejected one has already cost a life, and in neither case can the
+        letters go back on the board."""
+        word = self.word()
+        path = []
+        segments = []
+        for pos, text in self._buffer:
+            path.append(pos)
+            segments.append(text)
+        self._gs._muncher_submit(word, path, segments)
+        self._clear_buffer()
+
+    def _clear_buffer(self):
+        self._buffer = []
+        self._grace_left = None
+
+    # --- the dead-end cap (game_screen.muncher_dead_end) -------------------
+    def _check_dead_end(self):
+        """Run after every gram eaten. Once no dictionary word begins with what he
+        has eaten, start (or count down) the grace grams; when they run out the
+        word is taken away and a life goes with it.
+
+        is_prefix is true of a complete word as well (a word is a prefix of
+        itself), so a buffer that currently spells something is never a dead end --
+        which is what makes eating past a good word safe until it stops being able
+        to grow."""
+        if self._dead_end_rule:
+            if self._grace_left is None:
+                if not is_prefix(self.word()):
+                    self._grace_left = self._dead_end_grace
+                    if self._grace_left <= 0:
+                        self._force_clear()
+            else:
+                self._grace_left -= 1
+                if self._grace_left <= 0:
+                    self._force_clear()
+
+    def _force_clear(self):
+        path = []
+        segments = []
+        for pos, text in self._buffer:
+            path.append(pos)
+            segments.append(text)
+        self._gs._muncher_forced_clear(self.word(), path, segments)
+        self._clear_buffer()
 
 
 class LineBlastMovingMode(MovingMode):

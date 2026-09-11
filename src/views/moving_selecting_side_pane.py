@@ -3,6 +3,7 @@ from views.shaders import get_shape_shader
 from views.scrolling_word_list import ScrollingWordList
 from views.idea_belt import IdeaBelt
 from views.textures import error_icon_image
+from views.muncher_lives import MuncherLivesRow
 from config import get_color, get_string
 from controls import control_keys
 
@@ -62,7 +63,7 @@ class MovingSelectingSidePane:
     def __init__(self, x, y, width, height, on_submit, on_change=None,
                  on_end=None, show_end=False, show_clear=True, show_submit=True,
                  error_display="text", error_icon_keeps_suggestion=False,
-                 show_idea_belt=False):
+                 show_idea_belt=False, prompt_key="type_a_word"):
         # on_submit(word): ENTER or the Submit control. on_change(text): the live
         # hunt-highlight callback, fired after every edit (None -> no highlight).
         # on_end(): the End game control, built only when show_end (constellation).
@@ -73,6 +74,10 @@ class MovingSelectingSidePane:
         # list + dictionary count -- the stats an older player reads mid-game --
         # for the picture conveyor a young player picks words off. The typed field,
         # errors and whichever buttons the show_* flags leave on stay put.
+        # strings.yaml key for the resting prompt above the field. The default
+        # asks the player to type; a mode whose word is not typed (muncher) names
+        # its own. The rejection ghost still replaces it either way.
+        self._prompt_key = prompt_key
         self._show_idea_belt = show_idea_belt
         if show_idea_belt:
             self.MAX_ERRORS = self.BELT_MAX_ERRORS
@@ -112,6 +117,9 @@ class MovingSelectingSidePane:
         )
 
         # Top-edge status label: the moving pane's "Pieces: N" / countdown twin.
+        # Muncher life icons, which live in the same slot as the status text and
+        # replace it (see set_lives). Built on demand -- None in every other mode.
+        self._lives = None
         self._status = pyglet.text.Label(
             "", font_size=base * 0.7, x=left, y=top,
             anchor_x="left", anchor_y="top",
@@ -410,6 +418,21 @@ class MovingSelectingSidePane:
     def set_time_label(self, seconds):
         self._status.text = get_string("time_count", count=seconds)
 
+    def set_status_text(self, text):
+        """Put arbitrary text in the status row -- the slot the piece count and the
+        countdown share."""
+        self._status.text = text
+
+    def set_lives(self, count):
+        """Show `count` muncher lives in the status row, as little characters
+        rather than words (MOVING_MUNCHER, which has no clock to put there). Built
+        on first use so no other mode pays for it. Clears the status TEXT: the two
+        share one slot and must never overprint each other."""
+        if self._lives is None:
+            self._lives = MuncherLivesRow(self._left, self._status.y, self._line_h)
+        self._status.text = ""
+        self._lives.set_count(count)
+
     def set_finished_label(self):
         self._status.text = get_string("finished")
 
@@ -497,7 +520,7 @@ class MovingSelectingSidePane:
                              self.PLACEHOLDER_COLOR,
                              word=self._ghost, missing=self._ghost_missing)
         else:
-            self._set_prompt(get_string("type_a_word"), self.PROMPT_COLOR)
+            self._set_prompt(get_string(self._prompt_key), self.PROMPT_COLOR)
 
     def _set_prompt(self, text, base_color, word=None, missing=None):
         # Paint the whole prompt in base_color, then (ghost only) redden the letters
@@ -546,6 +569,8 @@ class MovingSelectingSidePane:
 
     def draw(self):
         self._batch.draw()
+        if self._lives is not None:
+            self._lives.draw()
         if self._word_list is not None:
             self._word_list.draw()
         if self._idea_belt is not None:

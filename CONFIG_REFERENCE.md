@@ -63,6 +63,11 @@ override names its own.
   time (class-level), before any mode is applied, so a mode that overrides
   `assets.colors` only affects colors resolved after the swap — the split is wired,
   but a fully per-mode palette needs those constants made instance-resolved.
+- `assets.muncher_animation` — the Word Muncher character's step / chew timing and
+  sizing (`assets/muncher_animation/`), read through `get_muncher_anim` at game
+  construction. Ignored outside `rule_mode_muncher`. Its own knobs (step_seconds,
+  chew_seconds, walk_cycle_seconds, cell_scale, life_scale ...) are documented in the
+  file itself rather than here, since it is an art-timing file, not a rules file.
 - `assets.loading_animation` — the opening-reveal fade timeline `get_loading_anim`
   resolves against. Default `default_loading_animation.yaml`. Read per game at
   construction (after the mode is applied), so it fully tracks the selected file —
@@ -362,6 +367,19 @@ mode-agnostic.
   `shooting_word_timeout_seconds` errors and clears. No typing, no board
   rearrangement, one continuous real-time phase against `game_screen.game_timer`.
   See the SHOOTING GALLERY PRESET.
+- `rule_mode_muncher` — MOVING_MUNCHER: a Word Muncher character walks a pre-filled
+  board and EATS grams to spell. One arrow press steps him exactly one cell (the
+  quarter-second glide is animation catching up — see `assets.muncher_animation`);
+  the eat key bites the cell underfoot, taking that gram off the board and appending
+  it to a READ-ONLY word in the right pane. Nothing is typed, clicked or rearranged —
+  eating is the only verb — and the word cannot be edited or abandoned, only
+  submitted (ENTER / the Submit button). The eaten letters are validated as a plain
+  dictionary word, so a bad submit costs one of `muncher_lives`; `muncher_dead_end`
+  caps how far past a hopeless buffer he may keep eating. Eaten cells go through the
+  shared replenish machinery (`constellation_turnover` + `replenish_*`), so the board
+  can stay eaten or grow back behind him. Incompatible with `game_screen.idea_belt`
+  as it stands (a belt pick types into a field this mode does not let anyone type
+  into — see the MUNCHER PRESET). See the MUNCHER PRESET.
 - `rule_mode_line_blast` — MOVING_LINE_BLAST: pieces are preselected into a finite
   pool and offered a few at a time as half-size previews in the right pane. The
   player clicks a preview to take it in hand; a copy then FLOATS on the empty board
@@ -465,6 +483,40 @@ still ends the game now (entering VICTORY stops the clock rather than waiting it
   `shooting_word_timeout_seconds` clears it as an ordinary miss (the default).
 - `rule_misspell_instadeath_on` — a dead-end buffer ends the game at once.
 Ignored by every other mode (only the shooting buffer produces impossible-word runs).
+
+### game_screen.muncher_lives
+Muncher only: how many bad words the player may submit before the game ends. Shown in
+the moving pane's status row — the slot a countdown would occupy — because this mode
+has no clock; the lives ARE the pressure. Every rejection spends one (not in the
+dictionary, too short, already cleared this game, and the dead-end forced clear
+alike): there is no free retry, no way to abandon a word, and no way to put eaten
+letters back, which is the risk the mode turns on. Losing the last one ends the game
+outright into the endgame typing bonus, exactly as a run-out clock does elsewhere.
+Dealt fresh at the start of every game.
+
+### game_screen.muncher_dead_end
+Muncher only: the cap on eating rubbish. Because a word can never be abandoned, a
+player CAN deliberately eat nonsense to churn the board — paying a life for the
+privilege, which is legitimate strategy. This rule stops that from being unbounded.
+After every gram eaten, the buffer is checked against the dictionary's prefix set; the
+moment no word begins with it, the player gets `muncher_dead_end_grace` more grams and
+then the word is taken away and the life is spent. A buffer that currently spells a
+real word is never a dead end (a word is a prefix of itself), so eating up to a word
+is always safe.
+- `rule_muncher_dead_end_forced_clear` — cap it as described (the default).
+- `rule_muncher_dead_end_off` — no cap; the player may eat the whole board into one
+  buffer and only pays when they submit it.
+The forced clear shows its own message (`err_muncher_dead_end`) rather than the plain
+not-a-word one, because "you were never going to get there" is a different thing to
+tell the player. Related: `game_screen.misspell_instadeath` is the shooting gallery's
+harsher cousin (that one ENDS the game on a dead end rather than costing one life).
+
+### game_screen.muncher_dead_end_grace
+Muncher only: how many more grams may be eaten after the buffer goes dead, before
+`muncher_dead_end` forces the clear. 1 (the default) gives the worked example: eat F,
+then Z — the buffer is dead here and one gram of grace is owed — then ING, and it is
+forced. 0 forces the clear the instant the buffer dies. Ignored entirely under
+`rule_muncher_dead_end_off`.
 
 ### game_screen.constellation_max_paths
 Constellation only: the maximum number of distinct cell-assemblies the on-submit
@@ -734,6 +786,41 @@ constellation and pathfinder word-finding both sit idle. Flip:
   (linger fully shown) / `_fade_out_seconds` / `_shot_fade_seconds`, the miss timeout
   with `_word_timeout_seconds`, and the reticle with `_crosshair_scale` / `_gap` and
   the `board.crosshair` color.
+
+### MUNCHER PRESET
+To play MOVING_MUNCHER, set `game_screen.mode` to `rule_mode_muncher` (or pick "Word
+Muncher" in the mode menu — `assets/game_modes/muncher.yaml` is this preset). A
+character walks the board and EATS grams; the word is assembled from what he has
+eaten and validated as a plain dictionary lookup on that buffer (no board assembly /
+adjacency / nucleation), so the constellation matcher and the pathfinder both sit
+idle — the same shape as the shooting gallery. Flip:
+- `game_screen.setup_formation` → any `rule_formation_fill_*` (he needs a full board
+  to walk around in and eat)
+- `game_screen.phase_model` → `rule_single_phase` (the read-only eaten word and the
+  Submit control ride one merged pane; the player never leaves MOVING)
+- `game_screen.show_submit_button` → `rule_show_submit_button`, and
+  `game_screen.show_clear_button` → `rule_hide_clear_button`. Hiding Clear is not
+  cosmetic: there is no abandoning a word in this mode, and the button would hand
+  back a free escape from a bad mouthful — the thing the lives exist to charge for.
+- `game_screen.game_timer` → `rule_game_timer_off` and `game_screen.victory` →
+  `rule_victory_none`: `muncher_lives` is the only end condition, and the lives are
+  drawn in the status row the clock would otherwise own.
+- `game_screen.endgame` → `rule_endgame_typing_bonus` (where the last life leads)
+- `game_screen.muncher_lives`, `muncher_dead_end` and `muncher_dead_end_grace` tune
+  the risk; `assets.muncher_animation` tunes the character's step / chew timing and
+  size (`assets/muncher_animation/`).
+- replenish is RECYCLED, not rebuilt: an eaten cell goes through
+  `game_screen.constellation_turnover` + `replenish_delay_seconds` /
+  `replenish_fade_seconds` / `replenish_length`, so the board either stays eaten
+  (`rule_constellation_no_replenish`, and it shrinks as he clears it) or grows back
+  behind him, hydra lengths included.
+- `game_screen.idea_belt` → `rule_idea_belt_off`. NOT a preference: a belt pick types
+  its word into the field, and this mode's field is a read-only readout of what was
+  eaten, so a pick would show the player a word they never ate while the real buffer
+  submits something else. Base `config.yaml` currently has the belt ON, so the mode
+  file has to turn it off explicitly. Pairing the two needs a belt pick to mean
+  "here is a word to go hunt for" instead of "type this" — a design decision, not a
+  config one.
 
 ### LINE BLAST PRESET
 To play MOVING_LINE_BLAST, set `game_screen.mode` to `rule_mode_line_blast` and pair:

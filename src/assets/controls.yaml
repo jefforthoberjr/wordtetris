@@ -75,6 +75,8 @@ game:
   #                                  (swap the cursor cell)
   #   rule_mode_omniswap_vs_timer -> select_open, + mouse move_primary
   #                                  (pick-then-swap)
+  #   rule_mode_muncher           -> move_* (walk the character one cell per
+  #                                  press), muncher_eat
 
   # Nudge / move the live piece. On the SQUARE grid (game_screen.grid:
   # rule_use_square_grid) these are the 4 cardinal nudges. On the HEX grid
@@ -116,6 +118,19 @@ game:
   # movement could take them. Non-letter, so the word-hunt field ignores them.
   rotate_clockwise: PERIOD
   rotate_counterclockwise: COMMA
+
+  # MOVING_MUNCHER only: EAT the gram in the cell the character is standing on.
+  # Shares SPACE with `word_clear` below without conflict -- muncher mode routes
+  # keys to the mode BEFORE the typed field (there is no typing in that mode), so
+  # the field's clear-word binding is never live while the muncher is walking.
+  # ONLY WHEN game_screen.mode: rule_mode_muncher.
+  muncher_eat: SPACE
+
+  # MOVING_MUNCHER only: SUBMIT the eaten word. Shares ENTER with `word_submit`
+  # below for the same reason muncher_eat can share SPACE -- the typed field is
+  # never live in muncher mode. (The pane's Submit button does the same thing.)
+  # ONLY WHEN game_screen.mode: rule_mode_muncher.
+  muncher_submit: [ENTER, RETURN]
 
   # Commit the active element:
   #   jigsaw     -> DROP / place the live piece

@@ -1,0 +1,53 @@
+# ============================================================================
+# default_muncher_animation.yaml -- timing + sizing for the Word Muncher
+# character (game_screen.mode: rule_mode_muncher).
+#
+# Selected per game mode by the rule assets.muncher_animation, exactly like
+# assets/colors/ and assets/loading_animation/ -- a mode can swap the whole file
+# for a slower / faster / bigger muncher without touching config.yaml. Read
+# through config.get_muncher_anim("<dotted key>") at game construction, so
+# values here take effect for the NEXT game, not mid-game.
+#
+# The sprite frames themselves are built offline from the raw art by
+# tools/make_muncher_sprites.py (see its docstring); this file only decides how
+# they are timed and how big they draw.
+# ============================================================================
+
+# Seconds for one cell-to-cell step: the character glides from the center of the
+# cell it left to the center of the cell it entered over this long, showing the
+# walking frame the whole way. Input is discrete (one key press = one cell), so
+# this is purely the travel animation. 0 = teleport (no walk animation at all).
+step_seconds: 0.25
+
+# Seconds a keypress-to-keypress step is IGNORED while an earlier step is still
+# gliding, expressed as a fraction of step_seconds. 1.0 = a step must finish
+# before the next is accepted (crisp, never queues); lower values let a held-down
+# arrow chain steps a little early. Keep at 1.0 unless movement feels sluggish.
+step_lockout_fraction: 1.0
+
+# Seconds the open-mouth frame is held for one bite. Purely cosmetic -- the gram
+# is eaten (removed from the board, appended to the word) the instant the key is
+# pressed, so a long chew never delays play.
+chew_seconds: 0.25
+
+# Seconds per walk-frame alternation while stepping. 0 (the default) holds the
+# single walking frame for the whole step, which is what the current two-frame
+# art wants. A positive value flips walking/standing back and forth on this
+# period for a marching look -- kept as a knob because it costs nothing and the
+# right answer is a playtest question.
+walk_cycle_seconds: 0
+
+# Sprite HEIGHT as a fraction of one board cell. Above 1.0 the character
+# overflows his cell (he is a character standing on the board, not a tile), which
+# reads better on a dense board; the sprite keeps its own aspect ratio and is
+# drawn centered on the cell.
+cell_scale: 1.15
+
+# Height of one LIFE icon in the right pane, as a fraction of the pane's status
+# row height. The lives are drawn from the same mouth-closed standing frame. Kept
+# just under 1.0 so the row of characters clears the score line underneath it --
+# at 1.0 their feet touch it.
+life_scale: 0.85
+
+# Horizontal gap between two life icons, as a fraction of a life icon's width.
+life_gap: 0.35

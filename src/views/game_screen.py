@@ -6,7 +6,8 @@ import pyglet
 from views.ingame_menu import IngameMenu
 from views.moving_mode import (
     JigsawMovingMode, TypewriterMovingMode, OmniswapVsTimerMode, ConstellationMode,
-    ShootingGalleryMode, LineBlastMovingMode, PlantVsTimerMode, BotanicalMode)
+    ShootingGalleryMode, LineBlastMovingMode, PlantVsTimerMode, BotanicalMode,
+    MuncherMovingMode)
 from views.found_word import FoundWord
 from views.game_phase import Phase
 from views.game_screen_wordfind import WordFindMixin
@@ -16,6 +17,7 @@ from views.game_screen_boardrules import BoardRulesMixin
 from views.game_screen_constellation import ConstellationMixin
 from views.game_screen_botanical import BotanicalMixin
 from views.game_screen_shooting import ShootingMixin
+from views.game_screen_muncher import MuncherMixin
 from views.game_screen_input import InputMixin
 from views.game_screen_piece import PieceControlMixin
 from views.game_screen_health import CellHealthMixin
@@ -210,7 +212,8 @@ _DICTIONARY_COUNT_RULES = {
 
 
 class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin,
-                 ConstellationMixin, BotanicalMixin, ShootingMixin, InputMixin,
+                 ConstellationMixin, BotanicalMixin, ShootingMixin, MuncherMixin,
+                 InputMixin,
                  PieceControlMixin, CellHealthMixin, GramManipMixin,
                  IdeaHintMixin, OverlayMixin):
     # Error-display defaults so the submission pipeline reads sane values on a bare
@@ -827,6 +830,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_mode_line_blast": LineBlastMovingMode,
             "rule_mode_plant_vs_timer": PlantVsTimerMode,
             "rule_mode_botanical": BotanicalMode,
+            "rule_mode_muncher": MuncherMovingMode,
         }
         self._moving_mode = select_rule("game_screen.mode", moving_modes)(self)
         # Constellation mode swaps stage-1 word-finding from the adjacency
@@ -898,6 +902,11 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # botanical placement matcher (_on_submit_word) instead of the clear pipeline.
         # False for every other mode.
         self._botanical = self._moving_mode.is_botanical
+        # Muncher mode: a character walks the board and EATS cells to spell a word
+        # (see MuncherMixin / MuncherMovingMode). The engine reads it to draw the
+        # character and to keep the keyboard away from the typed field -- nothing is
+        # typed in this mode. False for every other mode.
+        self._muncher = self._moving_mode.is_muncher
         # Line-blast knobs (game_screen.line_blast_*), read by LineBlastMovingMode +
         # LineBlastMovingPane; ignored by every other mode.
         self._line_blast_pool_size = CONFIG["rules"]["game_screen.line_blast_pool_size"]
@@ -1293,6 +1302,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 error_display=self._error_display,
                 error_icon_keeps_suggestion=self._error_icon_keeps_suggestion,
                 show_idea_belt=self._show_idea_belt,
+                # Muncher mode assembles its word by EATING, so "Type a word:"
+                # would be an instruction the player cannot follow -- label the
+                # field for what it actually is, a readout of what has been eaten.
+                prompt_key="muncher_eaten" if self._muncher else "type_a_word",
             )
             self._moving_side_pane = merged
             self._selecting_side_pane = merged
@@ -1850,6 +1863,10 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # hidden to match (see _sync_shooting_cursor).
         if (self._shooting and self._phase == Phase.MOVING and not self._menu_open):
             self._moving_mode.draw_crosshair()
+        # The word-muncher character, over the board cells he is standing on and
+        # eating. Drawn only in muncher mode, and only while play is live.
+        if self._muncher and self._phase == Phase.MOVING:
+            self._moving_mode.draw()
         # The right pane swaps between the opening "LOADING..." pane, the
         # game-long cleared-word list (MOVING) and the word-entry UI (SELECTING).
         if self._phase == Phase.LOADING:

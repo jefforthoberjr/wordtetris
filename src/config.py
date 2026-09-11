@@ -77,7 +77,7 @@ def apply_game_mode(path):
     each call means repeated mode switches always merge onto a clean base, never
     onto an already-merged CONFIG. `mode_label` is menu metadata, not a game knob,
     so it's stripped before the merge. Records + returns (slug, label)."""
-    global _active_mode, COLORS, LOADING_ANIM
+    global _active_mode, COLORS, LOADING_ANIM, MUNCHER_ANIM
     path = Path(path)
     override = _load_yaml(path)
     label = override.pop("mode_label", None) or path.stem
@@ -95,6 +95,7 @@ def apply_game_mode(path):
     # after the mode is applied), so it always tracks the selected file.
     COLORS = load_colors()
     LOADING_ANIM = load_loading_anim()
+    MUNCHER_ANIM = load_muncher_anim()
     # The idea-hint word file is cached on first lookup and is per-mode
     # (idea_hint.deck / idea_hint.min_fit), so drop that cache too. Imported here
     # rather than at module scope: models.idea_words reads CONFIG, so a top-level
@@ -195,6 +196,22 @@ def load_loading_anim():
 LOADING_ANIM = load_loading_anim()
 
 
+def muncher_anim_path():
+    """Resolved path of the active muncher-animation file (assets.muncher_animation)."""
+    return _asset_path(
+        "assets.muncher_animation", "muncher_animation",
+        "default_muncher_animation.yaml"
+    )
+
+
+def load_muncher_anim():
+    with open(muncher_anim_path(), encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+MUNCHER_ANIM = load_muncher_anim()
+
+
 def select_rule(slot, registry):
     """Resolve the rule name configured for `slot` (e.g. "square_player.gram_pick")
     to a function in `registry`. The YAML `rules` block is the single edit point;
@@ -218,6 +235,16 @@ def get_loading_anim(path):
     file (assets.loading_animation, default default_loading_animation.yaml) -- the
     LOADING fade-in timeline, per game mode."""
     node = LOADING_ANIM
+    for key in path.split("."):
+        node = node[key]
+    return node
+
+
+def get_muncher_anim(path):
+    """Resolve a dotted key (e.g. "step_seconds") from the active muncher file
+    (assets.muncher_animation, default default_muncher_animation.yaml) -- the Word
+    Muncher character's step / chew timing and sizing, per game mode."""
+    node = MUNCHER_ANIM
     for key in path.split("."):
         node = node[key]
     return node

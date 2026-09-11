@@ -269,6 +269,50 @@ def log_20009(action, cell, gram, word):
                      action=action, x=cell[0], y=cell[1], gram=gram, word=word)
 
 
+def log_20010(action, cell, target=None, gram=None):
+    """A word-muncher event (game_screen.mode = rule_mode_muncher) -- the whole
+    mode's play stream, since walking and eating are its only two verbs.
+
+    WALKING actions carry `target`, the cell the arrow pointed at:
+      step        he moved onto target
+      blocked     the press was dropped because the previous step was still
+                  animating (step_lockout_fraction). A run of these means the
+                  step_seconds animation is slower than the player's hands.
+      off_board   target is off the grid; he stayed put.
+
+    EATING actions carry `gram`, the letters the bitten cell held:
+      bite        the gram left the board and was banked into the word
+      bite_empty  he chewed a hole (an eaten cell, or one the formation left bare)
+      bite_fossil / bite_wild   an occupied but inedible cell (see _muncher_eat)
+
+    The running word is not logged per bite -- it is exactly the concatenation of
+    the `bite` grams since the last word resolution (log_30002 / log_30003), so a
+    replay reconstructs it, and a mismatch between the two is itself the bug."""
+    target_s = "-" if target is None else f"{target[0]},{target[1]}"
+    session_log.emit(20010, f"muncher {action} at {cell[0]},{cell[1]}",
+                     action=action, x=cell[0], y=cell[1], target=target_s,
+                     gram=gram or "-")
+
+
+def log_20011(action, lives, reason):
+    """A word-muncher LIFE event (game_screen.muncher_lives). `action` is:
+      start      lives dealt for a new game (`lives` = the full count)
+      lost       a bad word cost a life; `lives` is what remains, `reason` the
+                 rejection key (not_in_dictionary / too_short / already_cleared /
+                 muncher_dead_end)
+      out        the last life just went -- the game ends into the endgame typing
+                 bonus right after this line
+      dead_end   the forced clear fired before the reject that follows it:
+                 `reason` carries the word taken away
+      empty      a submit with nothing eaten; ignored, no life spent
+
+    Pairs with log_30003 (which records the same rejection from the word
+    pipeline's side) -- a `lost` with no neighboring 30003 means a life was spent
+    somewhere that never told the player why."""
+    session_log.emit(20011, f"muncher life {action} ({lives} left)",
+                     action=action, lives=lives, reason=reason or "-")
+
+
 # --- 3xxxx  word pipeline ----------------------------------------------------
 def log_30001(word):
     """A word was submitted in the interactive SELECT phase (the normalized,

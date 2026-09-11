@@ -1063,6 +1063,9 @@ class BoardSetupMixin:
         self._mission_piece_types = square_mission_piece_types()
         self._mission_gram_pick_rule = square_mission_gram_pick_rule()
         self._movement_rule = self._rule_square_movement
+        # MOVING_MUNCHER's twin of the movement rule: where one arrow press takes
+        # the character standing on a cell (see the muncher step rules).
+        self._muncher_step_rule = self._rule_muncher_step_square
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "|" marks a word formed on the square grid.
         self._gram_separator = "|"
@@ -1102,6 +1105,8 @@ class BoardSetupMixin:
 
         self._movement_rule = self._rule_hex_movement_holdshift
         # self._movement_rule = self._rule_hex_movement_arrows
+        # MOVING_MUNCHER's twin of the movement rule (see the muncher step rules).
+        self._muncher_step_rule = self._rule_muncher_step_hex
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "/" marks a word formed on the hex grid.
         self._gram_separator = "/"
@@ -1142,6 +1147,10 @@ class BoardSetupMixin:
         # ordinary pieces and only applies its hexagon scheme to a jumbo cell, so
         # it is correct for every triangle pool, mixed or not.
         self._movement_rule = self._rule_triangle_movement_jumbo
+        # MOVING_MUNCHER's twin of the movement rule (see the muncher step rules).
+        # No jumbo variant: the character stands on ONE small triangle whatever
+        # the piece pool holds.
+        self._muncher_step_rule = self._rule_muncher_step_triangle
         # self._movement_rule = self._rule_triangle_movement_flipkey
         # self._movement_rule = self._rule_triangle_movement_strict_updown
         # self._movement_rule = self._rule_triangle_movement_vertex_updown

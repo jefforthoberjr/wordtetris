@@ -143,6 +143,13 @@ class InputMixin:
             self._chooser_keys(symbol, modifiers)
             return True
 
+        # MOVING_MUNCHER: the character owns the keyboard outright. Its word is
+        # ASSEMBLED BY EATING and can never be typed or edited, so the pane's field
+        # must not get first refusal -- it would swallow the eat key (spacebar,
+        # which is the field's clear-word key) and, next chunk, the submit key.
+        if self._muncher:
+            return self._moving_mode.on_key_press(symbol, modifiers)
+
         # Word-hunt field: Backspace edits the typed hunt word (letters arrive via
         # on_text). Consumed only when the field handles it, so other keys fall
         # through to the moving mode.
@@ -179,6 +186,11 @@ class InputMixin:
             # SELECTING), then appends to the merged field.
             if (self._single_phase and text.isalpha() and self._disambiguating()
                     and not self._backout_disambiguation()):
+                return
+            # Muncher mode has no typing at all -- the field is a read-only
+            # readout of what has been eaten, so a stray letter key must not
+            # append to it (see on_key_press).
+            if self._muncher:
                 return
             # Typed letters feed the word-hunt field (movement/rotate keys are all
             # non-letters now, so they never leak in); highlighting updates live.

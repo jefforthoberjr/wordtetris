@@ -524,6 +524,13 @@ class SelectionMixin:
         word = typed.strip().upper()
         if not word:
             return
+        # Muncher (MOVING_MUNCHER): the field is a read-only readout of what has
+        # been EATEN, so the authority on the word is the mode's buffer, not the
+        # text passed in here -- route the Submit button to the same place the
+        # submit key goes and let the mode resolve its own buffer.
+        if self._muncher:
+            self._moving_mode.submit()
+            return
         # Botanical (MOVING_BOTANICAL): a word grows off the stem as leaf cells rather
         # than clearing existing cells, so it takes its own placement path and never
         # touches the SELECT clear pipeline / candidate recompute below.

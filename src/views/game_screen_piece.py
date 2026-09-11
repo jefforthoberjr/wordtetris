@@ -179,6 +179,67 @@ class PieceControlMixin:
             handled = False
         return handled
 
+    # --- muncher step rules (game_screen.muncher_step) ---------------------
+    # The MOVING_MUNCHER twin of the movement rules above. Same keys and the same
+    # per-grid neighbor scheme, but the thing being moved is a CHARACTER standing
+    # on one cell, not a piece made of cells -- so each rule takes the cell he is
+    # on and returns the cell the pressed key points at, or None when the key is
+    # not a movement key at all. The mode (MuncherMovingMode) decides whether the
+    # returned cell is somewhere he may stand; these rules only do geometry.
+    #
+    # Kept separate from _movement_rule rather than reusing it because that one
+    # mutates the live piece as a side effect and has no concept of "where would
+    # this land". Selected per grid alongside _movement_rule in
+    # game_screen_setup._rule_use_*_grid.
+
+    def _rule_muncher_step_square(self, symbol, modifiers, x, y):
+        """Square grid: the four cardinal neighbors."""
+        target = None
+        if symbol in self._keys["move_left"]:
+            target = (x - 1, y)
+        elif symbol in self._keys["move_right"]:
+            target = (x + 1, y)
+        elif symbol in self._keys["move_up"]:
+            target = (x, y + 1)
+        elif symbol in self._keys["move_down"]:
+            target = (x, y - 1)
+        return target
+
+    def _rule_muncher_step_hex(self, symbol, modifiers, x, y):
+        """Flat-top hex, the hold-shift scheme (the same one pieces use): LEFT and
+        RIGHT reach the UP-left / UP-right neighbors, held with
+        game.hex_down_modifier they reach the DOWN-left / down-right ones, and
+        UP / DOWN go straight up / down."""
+        shift = (modifiers & control_modifier("game.hex_down_modifier")) != 0
+        target = None
+        if symbol in self._keys["move_left"]:
+            target = hex_neighbor(x, y, HEX_DOWN_LEFT if shift else HEX_UP_LEFT)
+        elif symbol in self._keys["move_right"]:
+            target = hex_neighbor(x, y, HEX_DOWN_RIGHT if shift else HEX_UP_RIGHT)
+        elif symbol in self._keys["move_up"]:
+            target = hex_neighbor(x, y, HEX_UP)
+        elif symbol in self._keys["move_down"]:
+            target = hex_neighbor(x, y, HEX_DOWN)
+        return target
+
+    def _rule_muncher_step_triangle(self, symbol, modifiers, x, y):
+        """Triangle grid, the vertex-updown scheme (_triangle_small_movement_rule's
+        default): LEFT / RIGHT step sideways within the row, and UP / DOWN always
+        move one row toward the key -- crossing the horizontal edge or the opposite
+        vertex depending on which way the cell points. Every arrow therefore
+        moves, which matters far more for a walking character than for a piece:
+        an inert arrow reads as the game ignoring the player."""
+        target = None
+        if symbol in self._keys["move_left"]:
+            target = triangle_neighbor(x, y, TRIANGLE_LEFT)
+        elif symbol in self._keys["move_right"]:
+            target = triangle_neighbor(x, y, TRIANGLE_RIGHT)
+        elif symbol in self._keys["move_up"]:
+            target = (x, y + 1)
+        elif symbol in self._keys["move_down"]:
+            target = (x, y - 1)
+        return target
+
     def _rule_triangle_movement_jumbo(self, symbol, modifiers):
         """Triangle grid, tuned for the JUMBO_HEX cell: LEFT/RIGHT reach the
         up-left/up-right neighboring hexagon positions, holding the down modifier
