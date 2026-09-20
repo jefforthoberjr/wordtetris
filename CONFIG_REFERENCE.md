@@ -518,6 +518,84 @@ then Z — the buffer is dead here and one gram of grace is owed — then ING, a
 forced. 0 forces the clear the instant the buffer dies. Ignored entirely under
 `rule_muncher_dead_end_off`.
 
+### game_screen.muncher_spawn
+Muncher only: which cell the character materializes on at the start of a game, and
+the cell he is returned to after a lost life under `rule_muncher_life_loss_respawn`.
+The character is drawn over the cell he occupies, so his spawn cell is one the
+player has no chance to read first — which is the whole difference between these
+two rules.
+- `rule_muncher_spawn_center` — the middle of the board, via the grid's own
+  `center_cell()`. Fewest steps to anywhere, but it buries a gram in the middle of
+  the board under him from the first frame. The original behavior.
+- `rule_muncher_spawn_top_center` — the 12 o'clock cell: top row, same column the
+  center rule picks (the x formula matches `center_cell`, so an even width breaks
+  the tie identically). He starts at the board's edge with the whole board laid out
+  below him, and the single cell he hides is a corner-ish one rather than the
+  middle. Computed from the board's `width`/`height` rather than per-grid geometry,
+  so it works on every shipped grid.
+
+Independent of `game_screen.muncher_glyph_overlay`, which fixes the "what am I
+standing on" problem generally; this rule only decides where the problem starts.
+
+### game_screen.muncher_belly
+Muncher only: draw the character's stomach filling up with the letters he is
+carrying toward the current word. `..._off` (the default) keeps him one shape
+however much he has eaten; `..._on` overlays a belly whose size tracks the buffer.
+
+The size comes from `belly_letters_per_size` in the muncher animation file (3 by
+default: 1–3 letters → size 1, 4–6 → size 2, …), with an empty buffer drawing no
+belly at all. The CAP is the number of belly images the sprite ships, not a config
+number, so the art and the arithmetic cannot disagree — adding a fifth image
+raises the cap by itself.
+
+It is a true overlay, not a set of alternate frames: one belly is drawn over
+whichever standing / walking / chewing frame is showing, and it flips with him, so
+the art does not multiply. It is suppressed mid-fade, where a solid blob over a
+half-dissolved character would read as a rendering bug.
+
+The belly is recomputed from the buffer every frame rather than nudged per bite,
+so every path that empties the buffer — a submit, a forced clear
+(`game_screen.muncher_dead_end`), the pane-emptied resync — deflates him with no
+second place to remember.
+
+### game_screen.muncher_glyph_overlay
+Muncher only: re-draw the gram of the cell the character is standing on ON TOP of
+him, so his own body never hides letters the player has not read yet. `..._off`
+(the default) leaves him fully opaque; `..._on` draws the glyph over him.
+
+This is an overlay rather than a draw-order change for a hard reason: a cell's
+opaque fill rectangle shares a batch with its letters, so drawing the board after
+the character would paint the fill over him and hide him entirely. The overlay
+re-draws that ONE cell's glyph after the sprite — the same trick the word-hunt
+highlight uses — mirroring the live cell label each frame, so gram-length font
+sizing and the score-gradient color need no second copy. Wild cells are skipped
+(their "label" is a sprite, and a wild cell cannot be eaten anyway), as is a label
+the hover preview has hidden.
+
+It covers three cases, only one of which `game_screen.muncher_spawn` touches: the
+spawn cell, a cell that REPLENISHES underneath a character who has not moved
+(`rule_constellation_replenish` with a delay — the common one, since eating and
+then standing still is the normal loop), and ordinary mid-game forgetfulness.
+
+### game_screen.muncher_life_loss
+Muncher only: what happens to the CHARACTER when a bad word spends a life. The
+life icon and the error slot already say a life was lost; this rule decides
+whether the board says it too. All three run the same dissolve animation
+(`fade_seconds` in the muncher animation file) except the first.
+- `rule_muncher_life_loss_none` — nothing visible happens to him; he keeps
+  standing where he was. The original behavior.
+- `rule_muncher_life_loss_fade_in_place` — he dissolves and reforms on the cell he
+  is already on. A beat of punctuation that costs no position.
+- `rule_muncher_life_loss_respawn` — he dissolves and reforms on the spawn cell
+  (`game_screen.muncher_spawn`), so the mistake costs the walk back as well. On a
+  replenishing board the two costs compound: the trip back re-crosses cells that
+  have grown new grams in the meantime.
+
+The character is FROZEN for the whole sequence — both fades and the gap between
+them — and arrow/eat/submit keys are swallowed rather than queued, so a mashed key
+during the dissolve cannot fire the instant he reforms. Never runs on the LAST
+life: that ends the game into the endgame, which takes the screen off the board.
+
 ### game_screen.constellation_max_paths
 Constellation only: the maximum number of distinct cell-assemblies the on-submit
 matcher returns for one typed word. A scattered board can spell a word many ways;

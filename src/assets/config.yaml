@@ -181,6 +181,19 @@ rules:
   # game_screen.muncher_dead_end: rule_muncher_dead_end_off
   # MUNCHER: grams still allowed after that dead end, before the forced clear. [ref: game_screen.muncher_dead_end_grace]
   game_screen.muncher_dead_end_grace: 1
+  # MUNCHER: which cell he materializes on. [ref: game_screen.muncher_spawn]
+  game_screen.muncher_spawn: rule_muncher_spawn_center
+  # game_screen.muncher_spawn: rule_muncher_spawn_top_center
+  # MUNCHER: draw his stomach filling up with the letters eaten. [ref: game_screen.muncher_belly]
+  game_screen.muncher_belly: rule_muncher_belly_off
+  # game_screen.muncher_belly: rule_muncher_belly_on
+  # MUNCHER: re-draw the standing-on gram over the character. [ref: game_screen.muncher_glyph_overlay]
+  game_screen.muncher_glyph_overlay: rule_muncher_glyph_overlay_off
+  # game_screen.muncher_glyph_overlay: rule_muncher_glyph_overlay_on
+  # MUNCHER: what the character does when a life is spent. [ref: game_screen.muncher_life_loss]
+  game_screen.muncher_life_loss: rule_muncher_life_loss_none
+  # game_screen.muncher_life_loss: rule_muncher_life_loss_fade_in_place
+  # game_screen.muncher_life_loss: rule_muncher_life_loss_respawn
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360

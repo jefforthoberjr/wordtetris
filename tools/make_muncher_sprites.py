@@ -1,14 +1,25 @@
 """Offline: turn the raw Word Muncher art into game-ready sprite PNGs.
 
-The source frames (src/assets/sprites/original_word_muncher/*.png) are 1254x1254
-RGB with the background painted SOLID BLACK -- no alpha channel. The board draws
-on a white background, so dropped in as-is each frame would be a black square.
-This tool does the two conversions ONCE, offline, so the game never pays for them:
+The source frames (src/assets/sprites/original_word_muncher/*.png) are all
+1254x1254. The ORIGINAL walk/bite frames paint their background SOLID BLACK with
+no usable alpha; the board draws on a white background, so dropped in as-is each
+one would be a black square. The later fade frames instead ship a genuinely
+transparent background. This tool does the conversions ONCE, offline, so the game
+never pays for them:
 
-  1. COLOR KEY: every pixel at (or near) black becomes fully transparent. The
-     character's own colors (green / blue / white) are nowhere near black, so a
-     plain threshold is enough -- no edge blending to undo, because the art is
-     flat low-bit pixel art with hard edges.
+  1. BACKGROUND -> ALPHA, by one of two routes, because the art arrives in two
+     conventions (see FRAMES / ALPHA_FRAMES):
+     a. COLOR KEY (the walk/bite frames): every pixel at (or near) black becomes
+        fully transparent. The character's own colors (green / blue / white) are
+        nowhere near black, so a plain threshold is enough -- no edge blending to
+        undo, because the art is flat low-bit pixel art with hard edges. Output
+        alpha is therefore binary: 0 or 255.
+     b. ALPHA PASSTHROUGH (the fade-in frames): these already ship a real alpha
+        channel with a transparent background, and their whole point is partial
+        coverage -- the fade is a DISSOLVE, lighting up more of the character in
+        each frame. Color-keying them would force every lit pixel to alpha 255
+        and flatten the dissolve into a solid character, so their source alpha is
+        copied through untouched.
   2. CROP: the source frames are mostly empty background -- the character fills
      only the middle ~40% of the canvas. Every frame is cropped to ONE shared
      bounding box (the union across all frames, so the character never jumps
@@ -51,6 +62,30 @@ FRAMES = {
     "wordmuncher_mouthopen_standing.png": "open_standing",
 }
 
+# The same, for source frames that ALREADY carry a transparent background in a
+# real alpha channel -- converted by route (b) above (alpha passthrough, no color
+# key). The three fade frames are a dissolve, ordered least-formed to most:
+# fade_01 is the faintest scatter of pixels and fade_03 is nearly the whole
+# character, so playing 01 -> 02 -> 03 -> closed_standing materializes him and
+# the reverse dissolves him away. Both dicts share ONE crop box, so a fade frame
+# and a standing frame put the character in exactly the same place.
+ALPHA_FRAMES = {
+    "wordmuncher_fadein_01.png": "fade_01",
+    "wordmuncher_fadein_02.png": "fade_02",
+    "wordmuncher_fadein_03.png": "fade_03",
+    # BELLY overlays, smallest first: a stomach blob drawn ON TOP of whichever
+    # walk/bite frame is showing, sized by how many letters he is carrying. They
+    # are partial images by design -- just the belly, transparent everywhere else
+    # -- so they go through the alpha path for the same reason the fade frames do.
+    # Sharing the crop box is what makes them line up: the blob is already drawn
+    # in the right place on the source canvas, so cropping it identically lands it
+    # on his middle with no offset to tune.
+    "bellyoverlay_size01.png": "belly_01",
+    "bellyoverlay_size02.png": "belly_02",
+    "bellyoverlay_size03.png": "belly_03",
+    "bellyoverlay_size04.png": "belly_04",
+}
+
 # Integer downsample factors applied to the CROPPED frame. 3 and 6 give a
 # roughly cell-sized frame and a comfortable 2x for large cells / retina.
 FACTORS = [3, 6]
@@ -64,24 +99,34 @@ CROP_PAD = 6
 BLACK_THRESHOLD = 8
 
 
-def content_bounds(data, source):
+def content_bounds(data, source, alpha_keyed):
     """(left, bottom, right, top) of the non-background content in one frame, as
     inclusive source-pixel indices. Scans whole rows/columns with max() over a
     strided slice, which runs at C speed -- a per-pixel Python loop over the
-    1254^2 source would take seconds per frame."""
+    1254^2 source would take seconds per frame.
+
+    `alpha_keyed` picks which byte says "this pixel is background": the alpha
+    channel for a frame that already has one, or brightness for a black-keyed
+    frame (whose alpha is a useless 255 everywhere, so testing it would call the
+    whole canvas content). Everything here is in RGBA -- the loader normalizes
+    both conventions to four channels so the two paths share one stride."""
     width, height = data.width, data.height
+    # Which of the four bytes of a pixel decide whether it is content: alpha
+    # alone, or any of R/G/B (the brightest wins the near-black test).
+    channels = (3,) if alpha_keyed else (0, 1, 2)
     left, bottom, right, top = width, height, -1, -1
     for row in range(height):
-        start = row * width * 3
-        if max(source[start:start + width * 3]) > BLACK_THRESHOLD:
+        start = row * width * 4
+        end = start + width * 4
+        brightest = max(max(source[start + channel:end:4]) for channel in channels)
+        if brightest > BLACK_THRESHOLD:
             if bottom > row:
                 bottom = row
             top = row
     for col in range(width):
-        start = col * 3
-        # Every byte of this column's pixels: R at start, G/B follow, so step by
-        # the pixel stride three times and take the brightest of the three.
-        brightest = max(max(source[start + channel::width * 3]) for channel in range(3))
+        start = col * 4
+        # Step by the pixel-row stride, once per channel of interest.
+        brightest = max(max(source[start + channel::width * 4]) for channel in channels)
         if brightest > BLACK_THRESHOLD:
             if left > col:
                 left = col
@@ -100,10 +145,15 @@ def union_bounds(frames):
     return left, bottom, right, top
 
 
-def key_and_scale(data, source, crop, factor):
+def key_and_scale(data, source, crop, factor, alpha_keyed):
     """Return (width, height, rgba_bytes): the `crop` box of a frame, nearest-
-    sampled down by `factor`, with near-black pixels made fully transparent.
-    Touches only the sampled OUTPUT pixels, so the cost is the output size."""
+    sampled down by `factor`. Touches only the sampled OUTPUT pixels, so the cost
+    is the output size.
+
+    With `alpha_keyed` the source alpha is copied straight through (the fade
+    frames' dissolve IS their alpha -- see route (b) in the module docstring).
+    Without it, the original color-key runs: near-black becomes fully
+    transparent, everything else fully opaque."""
     left, bottom, right, top = crop
     out_w = int((right - left + 1) / factor)
     out_h = int((top - bottom + 1) / factor)
@@ -111,7 +161,7 @@ def key_and_scale(data, source, crop, factor):
     for row in range(out_h):
         src_row = bottom + row * factor
         for col in range(out_w):
-            i = (src_row * data.width + left + col * factor) * 3
+            i = (src_row * data.width + left + col * factor) * 4
             r = source[i]
             g = source[i + 1]
             b = source[i + 2]
@@ -119,7 +169,9 @@ def key_and_scale(data, source, crop, factor):
             rgba[o] = r
             rgba[o + 1] = g
             rgba[o + 2] = b
-            if r <= BLACK_THRESHOLD and g <= BLACK_THRESHOLD and b <= BLACK_THRESHOLD:
+            if alpha_keyed:
+                rgba[o + 3] = source[i + 3]
+            elif r <= BLACK_THRESHOLD and g <= BLACK_THRESHOLD and b <= BLACK_THRESHOLD:
                 rgba[o + 3] = 0
             else:
                 rgba[o + 3] = 255
@@ -127,11 +179,13 @@ def key_and_scale(data, source, crop, factor):
 
 
 def load_frame(filename):
-    """(image_data, rgb_bytes) for one source frame -- read once and reused for
-    both the bounds scan and every output size."""
+    """(image_data, rgba_bytes) for one source frame -- read once and reused for
+    both the bounds scan and every output size. Always RGBA, even for the
+    black-background originals, so the bounds scan and the sampler need only one
+    stride; those frames simply carry a uniform 255 alpha that nothing reads."""
     image = pyglet.image.load(os.path.join(SOURCE_DIR, filename))
     data = image.get_image_data()
-    return data, data.get_data("RGB", data.width * 3)
+    return data, data.get_data("RGBA", data.width * 4)
 
 
 def padded(crop, width, height):
@@ -145,21 +199,28 @@ def padded(crop, width, height):
 
 
 def main():
+    # state -> (image_data, rgba_bytes, alpha_keyed). Both source conventions go
+    # into ONE dict so the crop box below is the union over every frame of both:
+    # a fade frame and a standing frame have to land the character on the same
+    # pixels, or he would jump as the fade hands off to the idle art.
     frames = {}
-    for filename, state in FRAMES.items():
-        frames[state] = load_frame(filename)
-        print("read {0}".format(filename))
+    for source_frames, alpha_keyed in ((FRAMES, False), (ALPHA_FRAMES, True)):
+        for filename, state in source_frames.items():
+            data, source = load_frame(filename)
+            frames[state] = (data, source, alpha_keyed)
+            print("read {0}".format(filename))
     bounds = []
     for state in frames:
-        data, source = frames[state]
-        bounds.append(content_bounds(data, source))
+        data, source, alpha_keyed = frames[state]
+        bounds.append(content_bounds(data, source, alpha_keyed))
     first_data = frames[list(frames)[0]][0]
     crop = padded(union_bounds(bounds), first_data.width, first_data.height)
     print("shared crop box (l, b, r, t): {0}".format(crop))
     for state in frames:
-        data, source = frames[state]
+        data, source, alpha_keyed = frames[state]
         for factor in FACTORS:
-            width, height, rgba = key_and_scale(data, source, crop, factor)
+            width, height, rgba = key_and_scale(data, source, crop, factor,
+                                                alpha_keyed)
             out = pyglet.image.ImageData(width, height, "RGBA", rgba, pitch=width * 4)
             name = "muncher_{0}_{1}x{2}.png".format(state, width, height)
             out.save(os.path.join(OUT_DIR, name))

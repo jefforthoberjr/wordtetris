@@ -1,6 +1,6 @@
 import math
 import pyglet
-from config import CONFIG, select_rule, get_string
+from config import CONFIG, select_rule, get_string, get_muncher_anim
 from controls import control_keys
 from source import rand
 from models.hex_grid import flattop_vertices
@@ -10,7 +10,8 @@ from models.square_piece import ALL_PIECE_ROTATIONS, player_gram_pick_rule
 from models.gram_picker import pick_grams
 from views.shaders import get_shape_shader
 from views.rising_fill import clip_below, RisingFill
-from views.muncher_sprite import MuncherSprite
+from views.muncher_sprite import MuncherSprite, BELLY_IMAGES
+from views.muncher_glyph import MuncherGlyphOverlay
 import log_codes as L
 
 
@@ -1323,13 +1324,49 @@ class MuncherMovingMode(MovingMode):
             {"rule_muncher_dead_end_off": False,
              "rule_muncher_dead_end_forced_clear": True})
         self._dead_end_grace = CONFIG["rules"]["game_screen.muncher_dead_end_grace"]
+        # Which cell he materializes on at the start of a game (and returns to
+        # after a lost life, under the respawn rule).
+        self._spawn_rule = select_rule(
+            "game_screen.muncher_spawn",
+            {"rule_muncher_spawn_center": self._rule_muncher_spawn_center,
+             "rule_muncher_spawn_top_center": self._rule_muncher_spawn_top_center})
+        # What becomes of the character when a life is spent (see the rules below).
+        self._life_loss_rule = select_rule(
+            "game_screen.muncher_life_loss",
+            {"rule_muncher_life_loss_none": self._rule_muncher_life_loss_none,
+             "rule_muncher_life_loss_fade_in_place":
+                 self._rule_muncher_life_loss_fade_in_place,
+             "rule_muncher_life_loss_respawn":
+                 self._rule_muncher_life_loss_respawn})
+        # Cell he is waiting to reappear on, set while a life-loss dissolve runs and
+        # consumed by update() the moment it finishes. None = nothing pending.
+        self._respawn_to = None
+        # How full his stomach is drawn, off the letters he is carrying.
+        self._belly_rule = select_rule(
+            "game_screen.muncher_belly",
+            {"rule_muncher_belly_off": self._rule_muncher_belly_off,
+             "rule_muncher_belly_on": self._rule_muncher_belly_on})
+        self._belly_letters = get_muncher_anim("belly_letters_per_size")
+        # The standing-on glyph re-drawn over him, or None when the rule is off.
+        # Built here rather than in start() because it owns no board state -- it
+        # reads whatever cell it is pointed at, game after game.
+        self._glyph_overlay = select_rule(
+            "game_screen.muncher_glyph_overlay",
+            {"rule_muncher_glyph_overlay_off": self._rule_muncher_glyph_overlay_off,
+             "rule_muncher_glyph_overlay_on": self._rule_muncher_glyph_overlay_on})()
 
     def start(self):
         gs = self._gs
         self._clear_buffer()
         self._sprite = MuncherSprite(gs._cell_size)
+        self._respawn_to = None
         self._pos = self._start_cell()
         self._sprite.place(*self._center(self._pos))
+        # Materialize rather than pop into existence -- and, more usefully, give the
+        # player a beat to read the cell he is about to stand on before he covers
+        # it. A zero fade_seconds makes this a no-op.
+        self._sprite.fade_in()
+        L.log_20010("spawn", self._pos, self._pos)
         gs._muncher_start_lives()
 
     def advance(self):
@@ -1339,6 +1376,34 @@ class MuncherMovingMode(MovingMode):
 
     def update(self, dt):
         self._sprite.tick(dt)
+        # A life-loss dissolve has finished: put him on the cell the life-loss rule
+        # chose and materialize him there. Driven off the sprite's own state rather
+        # than a second timer here, so the two can never disagree about when the
+        # dissolve ended.
+        if (self._respawn_to is not None
+                and self._sprite.hidden() and not self._sprite.fading()):
+            self._pos = self._respawn_to
+            self._respawn_to = None
+            self._sprite.place(*self._center(self._pos))
+            self._sprite.fade_in()
+            L.log_20010("respawn", self._pos, self._pos)
+        # Re-read the cell under him every frame, not just on a step: a replenished
+        # gram can appear beneath a character who never moved, which is exactly one
+        # of the cases the overlay exists for.
+        if self._glyph_overlay is not None:
+            self._glyph_overlay.sync(self._gs._board, self._pos)
+        # Belly follows the buffer. Recomputed from the letters rather than nudged
+        # on each bite, so every path that changes the buffer -- eating, a submit,
+        # a forced clear, the pane-emptied resync -- moves the stomach with it,
+        # with no second place to remember to update. set_belly is a no-op unless
+        # the size actually changed.
+        letters = len(self.word())
+        size = self._belly_rule(letters)
+        if size != self._sprite.belly_size():
+            self._sprite.set_belly(size)
+            # Logged from HERE, after the set, so the line carries both what was
+            # asked for and what the sprite actually took -- see log_20012.
+            L.log_20012(size, letters, self._sprite.belly_size())
 
     def active_cells(self):
         """The cell he occupies -- the engine hides the hover preview under it, the
@@ -1349,15 +1414,26 @@ class MuncherMovingMode(MovingMode):
         return cells
 
     def draw(self):
-        """Draw the character over the board. Called from GameScreen._draw_board
-        while MOVING; a mode-owned draw, like the shooting gallery's crosshair."""
+        """Draw the character over the board, then the gram of the cell he is
+        standing on back over HIM. Called from GameScreen._draw_board while MOVING;
+        a mode-owned draw, like the shooting gallery's crosshair.
+
+        The order is the whole point of the overlay -- see views/muncher_glyph."""
         if self._sprite is not None:
             self._sprite.draw()
+        if self._glyph_overlay is not None:
+            self._glyph_overlay.draw()
 
     # --- input -----------------------------------------------------------
     def on_key_press(self, symbol, modifiers):
         gs = self._gs
         handled = False
+        if self._frozen():
+            # Materializing, dissolving, or waiting out a lost life: he is not on
+            # the board in a state that can act. Swallow the key rather than let it
+            # through, so a mashed arrow during the fade does not queue up a step
+            # that fires the instant he lands.
+            return True
         if symbol in control_keys("game.muncher_eat"):
             self._eat()
             handled = True
@@ -1389,15 +1465,104 @@ class MuncherMovingMode(MovingMode):
             self._pos = target
             self._sprite.step_to(*self._center(target))
 
-    def _start_cell(self):
-        """Where he starts: the middle of the board, or the first valid cell if the
-        grid has no center (never true for the shipped grids, but the fallback keeps
-        a malformed board from crashing the mode)."""
+    # --- spawn-cell rules (game_screen.muncher_spawn) --------------------
+    def _rule_muncher_spawn_center(self):
+        """The middle of the board -- the original spawn, and the one that puts him
+        the fewest steps from anywhere. Its cost is that he lands on a cell nobody
+        has read yet, hiding a gram that the player never had a chance to see (the
+        reason the top-center rule exists)."""
+        return self._gs._board.center_cell()
+
+    def _rule_muncher_spawn_top_center(self):
+        """The 12 o'clock cell: top row, same column the center rule uses, so the
+        two spawns share a column and only the row differs.
+
+        Computed from the board's own width/height rather than asking the grid for
+        it, because every shipped grid exposes both and "top row" needs no
+        per-grid geometry -- unlike center_cell, which each grid defines itself.
+        The x formula deliberately MATCHES square_grid.center_cell so an even
+        width breaks the tie the same way in both rules."""
         board = self._gs._board
-        cell = board.center_cell()
+        return math.floor((board.width - 1) / 2), board.height - 1
+
+    def _start_cell(self):
+        """Where he starts, per game_screen.muncher_spawn. Falls back to the first
+        valid cell if the rule has no answer for this board (never true for the
+        shipped grids, but the fallback keeps a malformed board from crashing the
+        mode)."""
+        board = self._gs._board
+        cell = self._spawn_rule()
         if cell is None or not board.is_valid(*cell):
             cell = self._first_valid_cell()
         return cell
+
+    # --- belly rules (game_screen.muncher_belly) --------------------------
+    def _rule_muncher_belly_off(self, letters):
+        """No stomach overlay: he looks the same however much he is carrying. The
+        original behavior."""
+        return 0
+
+    def _rule_muncher_belly_on(self, letters):
+        """Stomach size for `letters` eaten toward the current word: empty at 0,
+        then one size per belly_letters_per_size letters (at the default 3: 1-3 ->
+        size 1, 4-6 -> size 2, and so on), capped at the number of belly images.
+
+        The cap is the image count rather than a config number so the art and the
+        arithmetic can never disagree -- adding a fifth belly image raises the cap
+        by itself."""
+        size = 0
+        if letters > 0:
+            size = min(len(BELLY_IMAGES),
+                       math.ceil(letters / self._belly_letters))
+        return size
+
+    # --- standing-on glyph rules (game_screen.muncher_glyph_overlay) -----
+    def _rule_muncher_glyph_overlay_off(self):
+        """No overlay: the character covers the cell he stands on, letters and all.
+        The original behavior."""
+        return None
+
+    def _rule_muncher_glyph_overlay_on(self):
+        """Re-draw the standing-on cell's gram over the character, so his body never
+        hides letters the player has had no chance to read (see
+        views/muncher_glyph for why this is an overlay and not a draw-order fix)."""
+        return MuncherGlyphOverlay()
+
+    # --- life-loss rules (game_screen.muncher_life_loss) -----------------
+    def lose_life_effect(self):
+        """What the character does when a life is spent, per the configured rule.
+        Called from MuncherMixin._muncher_lose_life, and only while lives REMAIN --
+        the last life ends the game, and the endgame takes the screen over, so a
+        dissolve there would play against a board nobody is looking at."""
+        self._life_loss_rule()
+
+    def _rule_muncher_life_loss_none(self):
+        """Nothing visible happens to him -- the rejected word, the error slot and
+        the spent life icon carry the whole message. The original behavior, kept
+        selectable."""
+        pass
+
+    def _rule_muncher_life_loss_fade_in_place(self):
+        """He dissolves and reforms on the cell he is already standing on: a beat of
+        punctuation on the mistake that costs no position. Nothing about the board
+        changes, so this is the gentle option."""
+        self._respawn_to = self._pos
+        self._sprite.fade_out()
+
+    def _rule_muncher_life_loss_respawn(self):
+        """He dissolves and reforms on the SPAWN cell (game_screen.muncher_spawn),
+        so a bad word costs the walk back as well as the life. Note the two costs
+        compound: on a replenishing board the trip back re-crosses cells that have
+        since grown new grams."""
+        self._respawn_to = self._start_cell()
+        self._sprite.fade_out()
+
+    def _frozen(self):
+        """Whether the player may not act: any fade is running, or he is dissolved
+        away waiting to reappear. Covers the gap BETWEEN the two fades too, which
+        `fading()` alone would not."""
+        return (self._sprite.fading() or self._sprite.hidden()
+                or self._respawn_to is not None)
 
     def _first_valid_cell(self):
         found = None

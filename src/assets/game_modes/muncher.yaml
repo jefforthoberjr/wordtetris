@@ -14,8 +14,10 @@ rules:
   game_screen.mode: rule_mode_muncher
   game_screen.grid: rule_use_square_grid
 
-  # A full board to walk around in and eat your way through.
+  # A full board to walk around in and eat your way through, kept small (6x6) so
+  # the walk between bites stays short.
   game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
+  game_screen.grid_width: 6
 
   # One continuous phase: the read-only eaten word and the Submit control ride one
   # merged pane, and the player never leaves MOVING (there is no typing / SELECT).
@@ -28,9 +30,27 @@ rules:
   game_screen.show_clear_button:  rule_hide_clear_button
   game_screen.show_next_button:   rule_hide_next_button
 
+  # He materializes at 12 o'clock instead of dead center, so the board is laid
+  # out below him and the one cell he hides is an edge cell.
+  game_screen.muncher_spawn: rule_muncher_spawn_top_center
+
+  # Never hide a gram under him: the cell he stands on draws its letters back
+  # over his body. Matters most on this replenishing board, where a fresh gram
+  # appears under a character who has not moved.
+  game_screen.muncher_glyph_overlay: rule_muncher_glyph_overlay_on
+
+  # His stomach swells with the letters he is carrying: one size per 3 letters
+  # (belly_letters_per_size in the animation file), emptying when the word is
+  # submitted or taken away.
+  game_screen.muncher_belly: rule_muncher_belly_on
+
   # Lives are the only end condition -- no clock, no victory. The last life hands
   # off to the endgame typing bonus.
   game_screen.muncher_lives: 3
+  # A bad word dissolves him and reforms him back at the spawn cell -- the walk
+  # back is part of the price. rule_muncher_life_loss_fade_in_place is the
+  # gentler version; rule_muncher_life_loss_none is no reaction at all.
+  game_screen.muncher_life_loss: rule_muncher_life_loss_respawn
   game_screen.muncher_dead_end: rule_muncher_dead_end_forced_clear
   game_screen.muncher_dead_end_grace: 1
   game_screen.game_timer: rule_game_timer_off
@@ -50,8 +70,16 @@ rules:
   game_screen.replenish_fade_seconds: 1.5
   game_screen.replenish_length: rule_replenish_length_picker
 
-  # Draw the path through the cells each word was eaten from.
-  game_screen.word_trail: rule_word_trail_on
+  # No path overlay -- the eaten route is not drawn back onto the board.
+  # Swap to rule_word_trail_on to draw the path through the cells each word
+  # was eaten from.
+  game_screen.word_trail: rule_word_trail_off
+
+  # No green glyph paint. The field here is a read-only readout of what has
+  # already been eaten, not a search box, so highlighting cells that match it
+  # would point at letters the player has no reason to hunt for. Base
+  # config.yaml has the paint ON, so this line is doing real work.
+  game_screen.hunt_highlight: rule_hunt_none
 
   # The idea belt is OFF here, and this is not a preference -- the two do not
   # currently fit together. Clicking a belt picture TYPES its word into the field,

@@ -15,14 +15,44 @@ from views.game_screen import GameScreen
 # --- fakes -----------------------------------------------------------------
 class _Sprite:
     """Stand-in for MuncherSprite: records the calls the mode makes and lets a
-    test pin whether a step is still animating."""
-    def __init__(self, stepping=False):
+    test pin whether a step is still animating, or whether a fade is running."""
+    def __init__(self, stepping=False, fading=False, hidden=False):
         self.locked = stepping
         self.steps = []
         self.chews = 0
+        self.placed = []
+        self.fade_ins = 0
+        self.fade_outs = 0
+        self.belly = 0
+        self._fading = fading
+        self._hidden = hidden
 
     def stepping(self):
         return self.locked
+
+    def fading(self):
+        return self._fading
+
+    def hidden(self):
+        return self._hidden
+
+    def place(self, x, y):
+        self.placed.append((x, y))
+
+    def fade_in(self):
+        self.fade_ins += 1
+        self._fading = False
+        self._hidden = False
+
+    def fade_out(self):
+        self.fade_outs += 1
+        self._hidden = True
+
+    def set_belly(self, size):
+        self.belly = size
+
+    def belly_size(self):
+        return self.belly
 
     def step_to(self, x, y):
         self.steps.append((x, y))
@@ -46,6 +76,11 @@ class _Board:
 
     def cell_visual_center(self, x, y):
         return (x * 10.0, y * 10.0)
+
+    def center_cell(self):
+        """Mirrors SquareGrid.center_cell -- the spawn rules ask the board for its
+        own center, so the fake has to answer the same way the real grids do."""
+        return ((self.width - 1) // 2, (self.height - 1) // 2)
 
     def gram_at(self, x, y):
         text = self.grams.get((x, y))
@@ -120,6 +155,11 @@ def _mode(board, pos=(1, 1), stepping=False, dead_end=False, grace=1):
     mode._grace_left = None
     mode._dead_end_rule = dead_end
     mode._dead_end_grace = grace
+    mode._respawn_to = None
+    mode._glyph_overlay = None
+    mode._spawn_rule = mode._rule_muncher_spawn_center
+    mode._belly_rule = mode._rule_muncher_belly_off
+    mode._belly_letters = 3
     return mode
 
 
@@ -337,10 +377,23 @@ class _RejectPane(_Pane):
         self.status = text
 
 
+class _LifeLossMode:
+    """Stand-in for MuncherMovingMode where the lives code reaches back into it:
+    records each call so a test can check WHETHER the character was told to react,
+    which is the whole contract (what the reaction looks like is the mode's own
+    game_screen.muncher_life_loss rule)."""
+    def __init__(self):
+        self.reactions = 0
+
+    def lose_life_effect(self):
+        self.reactions += 1
+
+
 def _submit_game(lives=3, repeat_ok=True, long_enough=True):
     """A bare GameScreen wired with just the surface _muncher_submit touches."""
     g = GameScreen.__new__(GameScreen)
     g._moving_side_pane = _RejectPane()
+    g._moving_mode = _LifeLossMode()
     g._muncher_lives = lives
     g._word_length_rule = lambda word, path: long_enough
     g._repeat_rule = lambda word: repeat_ok
@@ -441,3 +494,199 @@ def test_lives_prefer_the_icon_row_when_the_pane_has_one():
     g._muncher_show_lives()
     assert g._moving_side_pane.icon_count == 3
     assert g._moving_side_pane.status is None
+
+
+def test_a_lost_life_tells_the_character_to_react():
+    # game_screen.muncher_life_loss: the mode is asked to dissolve/reform. What it
+    # then does is the mode's rule; the mixin's job is only to ask.
+    g = _submit_game(lives=3)
+    assert g._muncher_submit("ZZZ", [(0, 0), (1, 0)], ["Z", "ZZ"]) is False
+    assert g._moving_mode.reactions == 1
+
+
+def test_the_last_life_ends_the_game_without_a_character_reaction():
+    # The endgame has just taken the screen off the board, and a fade would freeze
+    # input as the final act of a finished game -- so the reaction is skipped.
+    g = _submit_game(lives=1)
+    assert g._muncher_submit("ZZZ", [(0, 0), (1, 0)], ["Z", "ZZ"]) is False
+    assert g.ended == [True]
+    assert g._moving_mode.reactions == 0
+
+
+# --- spawn cell (game_screen.muncher_spawn) ---------------------------------
+def test_top_center_spawn_is_the_top_row_of_the_center_column():
+    # 12 o'clock: the center rule's column, the top row. The x formula matches
+    # center_cell, so an even width breaks the tie the same way in both.
+    mode = _mode(_Board(width=6, height=6))
+    assert mode._rule_muncher_spawn_top_center() == (2, 5)
+    assert mode._rule_muncher_spawn_center() == (2, 2)
+
+
+def test_top_center_spawn_tracks_the_board_size():
+    mode = _mode(_Board(width=9, height=4))
+    assert mode._rule_muncher_spawn_top_center() == (4, 3)
+
+
+# --- the life-loss fade (game_screen.muncher_life_loss) ---------------------
+def test_life_loss_respawn_dissolves_him_and_queues_the_spawn_cell():
+    mode = _mode(_Board(width=6, height=6), pos=(0, 0))
+    mode._life_loss_rule = mode._rule_muncher_life_loss_respawn
+    mode._spawn_rule = mode._rule_muncher_spawn_top_center
+    mode.lose_life_effect()
+    assert mode._sprite.fade_outs == 1
+    assert mode._respawn_to == (2, 5)
+
+
+def test_life_loss_in_place_queues_the_cell_he_is_already_on():
+    mode = _mode(_Board(width=6, height=6), pos=(4, 1))
+    mode._life_loss_rule = mode._rule_muncher_life_loss_fade_in_place
+    mode.lose_life_effect()
+    assert mode._sprite.fade_outs == 1
+    assert mode._respawn_to == (4, 1)
+
+
+def test_life_loss_none_leaves_him_alone():
+    mode = _mode(_Board(width=6, height=6), pos=(4, 1))
+    mode._life_loss_rule = mode._rule_muncher_life_loss_none
+    mode.lose_life_effect()
+    assert mode._sprite.fade_outs == 0
+    assert mode._respawn_to is None
+
+
+def test_a_finished_dissolve_moves_him_and_fades_him_back_in():
+    mode = _mode(_Board(width=6, height=6), pos=(0, 0))
+    mode._life_loss_rule = mode._rule_muncher_life_loss_respawn
+    mode._spawn_rule = mode._rule_muncher_spawn_top_center
+    mode.lose_life_effect()
+    # The dissolve is still running: he has not moved yet.
+    mode._sprite._fading = True
+    mode.update(0.1)
+    assert mode._pos == (0, 0)
+    # It finishes (hidden, no longer fading) -- now he reforms on the spawn cell.
+    mode._sprite._fading = False
+    mode.update(0.1)
+    assert mode._pos == (2, 5)
+    assert mode._respawn_to is None
+    assert mode._sprite.fade_ins == 1
+
+
+# --- the freeze gate --------------------------------------------------------
+def test_keys_are_swallowed_while_a_fade_runs():
+    # Swallowed, not passed through: a mashed arrow during the dissolve must not
+    # queue a step that fires the instant he reforms.
+    mode = _mode(_Board(width=6, height=6), pos=(1, 1))
+    mode._sprite._fading = True
+    assert mode.on_key_press(0, 0) is True
+    assert mode._sprite.steps == []
+    assert mode._buffer == []
+
+
+def test_keys_are_swallowed_while_he_is_dissolved_away():
+    mode = _mode(_Board(width=6, height=6), pos=(1, 1))
+    mode._sprite._hidden = True
+    assert mode.on_key_press(0, 0) is True
+    assert mode._sprite.steps == []
+
+
+# --- the dissolve animation (views/muncher_sprite) --------------------------
+def test_the_fade_plays_forward_in_and_backward_out():
+    """One animation, both directions: fade_in materializes him and fade_out is the
+    same frames reversed, ending with him off the board entirely."""
+    from views.muncher_sprite import MuncherSprite, FADE_FRAMES
+
+    sprite = MuncherSprite(60)
+    step = sprite._fade_seconds / len(FADE_FRAMES)
+
+    sprite.fade_in()
+    seen = []
+    for _ in range(len(FADE_FRAMES)):
+        seen.append(sprite._frame())
+        sprite.tick(step)
+    assert seen == list(FADE_FRAMES)
+    # A finished fade-IN hands off to the ordinary frames and leaves him visible.
+    assert sprite.fading() is False
+    assert sprite.hidden() is False
+    assert sprite._frame() == "closed_standing"
+
+    sprite.fade_out()
+    seen = []
+    for _ in range(len(FADE_FRAMES)):
+        seen.append(sprite._frame())
+        sprite.tick(step)
+    assert seen == list(reversed(FADE_FRAMES))
+    # A finished fade-OUT leaves him HIDDEN -- draw() puts nothing on the board.
+    assert sprite.fading() is False
+    assert sprite.hidden() is True
+
+
+# --- belly size (game_screen.muncher_belly) ---------------------------------
+def test_belly_size_steps_once_per_band_and_caps():
+    from views.muncher_sprite import BELLY_IMAGES
+
+    mode = _mode(_Board())
+    belly = mode._rule_muncher_belly_on
+    # An empty buffer wears no belly at all -- size 0 is "no overlay", not an image.
+    assert belly(0) == 0
+    # 3 letters per size: 1-3 -> 1, 4-6 -> 2, 7-9 -> 3, 10-12 -> 4.
+    assert [belly(n) for n in (1, 2, 3)] == [1, 1, 1]
+    assert [belly(n) for n in (4, 5, 6)] == [2, 2, 2]
+    assert [belly(n) for n in (7, 8, 9)] == [3, 3, 3]
+    assert [belly(n) for n in (10, 11, 12)] == [4, 4, 4]
+    # The cap is the image count, so a long word keeps him at his fattest rather
+    # than indexing off the end of the art.
+    assert belly(40) == len(BELLY_IMAGES)
+
+
+def test_belly_band_width_is_configurable():
+    mode = _mode(_Board())
+    mode._belly_letters = 1
+    assert [mode._rule_muncher_belly_on(n) for n in (0, 1, 2, 3)] == [0, 1, 2, 3]
+
+
+def test_belly_off_stays_empty_however_much_he_eats():
+    mode = _mode(_Board())
+    assert [mode._rule_muncher_belly_off(n) for n in (0, 1, 9, 99)] == [0, 0, 0, 0]
+
+
+def test_the_belly_tracks_the_buffer_through_eating_and_submitting():
+    # Recomputed from the letters every frame, so the buffer is the single source
+    # of truth -- no per-bite bookkeeping to fall out of step.
+    board = _Board(grams={(1, 1): "STR", (1, 2): "ING"})
+    mode = _mode(board, pos=(1, 1))
+    mode._belly_rule = mode._rule_muncher_belly_on
+    mode.update(0.1)
+    assert mode._sprite.belly == 0
+
+    mode._eat()
+    mode.update(0.1)
+    assert mode._sprite.belly == 1          # STR -> 3 letters
+
+    mode._pos = (1, 2)
+    mode._eat()
+    mode.update(0.1)
+    assert mode._sprite.belly == 2          # STRING -> 6 letters
+
+    # Emptying the buffer deflates him, whatever emptied it.
+    mode._clear_buffer()
+    mode.update(0.1)
+    assert mode._sprite.belly == 0
+
+
+def test_the_belly_sprite_really_has_geometry_to_draw():
+    """Regression: the belly was first switched off with pyglet's
+    `sprite.visible = False`, which collapses all four vertices onto the origin --
+    and _get_vertices keeps returning zeros while the flag is False, so the sprite
+    never drew again no matter what image or position was set afterwards. The rule
+    was asking for the right size every frame and nothing appeared.
+
+    Size 0 is expressed by NOT DRAWING (the guard in draw()), never by switching
+    the sprite off, so the quad must stay non-degenerate at every size."""
+    from views.muncher_sprite import MuncherSprite, BELLY_IMAGES
+
+    sprite = MuncherSprite(60)
+    sprite.place(100, 100)
+    for size in range(len(BELLY_IMAGES) + 1):
+        sprite.set_belly(size)
+        sprite.tick(0.016)
+        corners = list(sprite._belly._vertex_list.position[:])
+        assert any(c != 0 for c in corners), f"belly collapsed at size {size}"

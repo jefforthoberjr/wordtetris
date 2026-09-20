@@ -144,6 +144,45 @@ _MUNCHER_TEXTURES = {
         (134, "sprites/muncher_open_standing_110x134.png"),
         (268, "sprites/muncher_open_standing_220x268.png"),
     ],
+    # The materialize dissolve, faintest first. Unlike the three frames above
+    # these are PARTIALLY TRANSPARENT by design -- the character is drawn in
+    # pieces, more of him in each frame -- so they read as a fade even though no
+    # sprite opacity is being touched. Played forward he appears; played backward
+    # (fade_03 -> fade_01) he dissolves away. See MuncherSprite's fade states and
+    # tools/make_muncher_sprites.py (they skip the black color-key).
+    "fade_01": [
+        (134, "sprites/muncher_fade_01_110x134.png"),
+        (268, "sprites/muncher_fade_01_220x268.png"),
+    ],
+    "fade_02": [
+        (134, "sprites/muncher_fade_02_110x134.png"),
+        (268, "sprites/muncher_fade_02_220x268.png"),
+    ],
+    "fade_03": [
+        (134, "sprites/muncher_fade_03_110x134.png"),
+        (268, "sprites/muncher_fade_03_220x268.png"),
+    ],
+    # The BELLY overlays, smallest first. These are not frames of the character --
+    # they are a stomach blob drawn OVER whichever frame is showing, so the same
+    # belly rides the standing, walking and chewing art. They share the crop box
+    # with every frame above, which is the whole alignment story: drawn at the same
+    # place and the same size as the character, the blob lands on his middle.
+    "belly_01": [
+        (134, "sprites/muncher_belly_01_110x134.png"),
+        (268, "sprites/muncher_belly_01_220x268.png"),
+    ],
+    "belly_02": [
+        (134, "sprites/muncher_belly_02_110x134.png"),
+        (268, "sprites/muncher_belly_02_220x268.png"),
+    ],
+    "belly_03": [
+        (134, "sprites/muncher_belly_03_110x134.png"),
+        (268, "sprites/muncher_belly_03_220x268.png"),
+    ],
+    "belly_04": [
+        (134, "sprites/muncher_belly_04_110x134.png"),
+        (268, "sprites/muncher_belly_04_220x268.png"),
+    ],
 }
 
 

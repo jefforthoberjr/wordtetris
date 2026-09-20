@@ -273,6 +273,13 @@ def log_20010(action, cell, target=None, gram=None):
     """A word-muncher event (game_screen.mode = rule_mode_muncher) -- the whole
     mode's play stream, since walking and eating are its only two verbs.
 
+    PLACEMENT actions carry `target` equal to `cell` -- he arrived without walking
+    there, so there is no "from" to record:
+      spawn       he materialized at the start of a game (game_screen.muncher_spawn)
+      respawn     he reformed after a lost life, once the dissolve finished
+                  (game_screen.muncher_life_loss). Absent under the "none" rule,
+                  which leaves him where he stood.
+
     WALKING actions carry `target`, the cell the arrow pointed at:
       step        he moved onto target
       blocked     the press was dropped because the previous step was still
@@ -311,6 +318,27 @@ def log_20011(action, lives, reason):
     somewhere that never told the player why."""
     session_log.emit(20011, f"muncher life {action} ({lives} left)",
                      action=action, lives=lives, reason=reason or "-")
+
+
+def log_20012(size, letters, drawn):
+    """The word muncher's BELLY changed size (game_screen.muncher_belly). `size` is
+    the stomach size the rule asked for, `letters` the buffer length it was
+    computed from, and `drawn` the size the sprite reports actually holding.
+
+    Logged on CHANGE only -- the size is recomputed every frame, and a per-frame
+    line would bury the log.
+
+    `drawn` exists because the two can disagree, and that gap is the whole reason
+    this code was added: the first build asked for the right size every frame and
+    drew nothing, because the belly sprite had been switched off with
+    pyglet's `visible = False` (which collapses its vertices permanently) and the
+    log showed only the bites, so nothing distinguished "the rule is wrong" from
+    "the rule is right and the draw is broken". A line where `size` and `drawn`
+    differ means the sprite refused the size; a `size` that does not match
+    `letters` under the configured belly_letters_per_size means the rule is wrong;
+    no line at all after a bite means the mode never asked."""
+    session_log.emit(20012, f"muncher belly size {size} ({letters} letters eaten)",
+                     size=size, letters=letters, drawn=drawn)
 
 
 # --- 3xxxx  word pipeline ----------------------------------------------------

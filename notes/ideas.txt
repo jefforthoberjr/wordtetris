@@ -7,7 +7,25 @@ GAME NAMES
 * catalyst cata LIST
 
 
+As you are typing on the end game mode, highlight the individual cells as you are typing? Like immediate feedback for touch typers? (Rather than a large submit event at the end?)
+
+
+A pyramid layout for the board
+the top of the pyramid includes the harder multigrams
+the bottom of the pyramid includes vowels (bottom most), then succesive layers of mroe rare consonants
+
+
+growing belly for the sprites
+
+
 visiually shink the size of a fossilized cell, instead of coloration.
+
+
+A syllable pronunciation wheel. The idea to test out how many vowel variations exist with a given syllambe
+
+ST*L => stool, stale, stall, still, steel, steal, stole, style, ..
+*(ST*L) => install, instill, ... 
+Somehow player drag different vowels. Some diplay like a radar graph? Some display of a
 
 ==
 

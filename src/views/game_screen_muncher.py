@@ -115,6 +115,14 @@ class MuncherMixin:
         if self._muncher_lives <= 0:
             L.log_20011("out", 0, reason)
             self._enter_endgame()
+        else:
+            # Let the character react (game_screen.muncher_life_loss: dissolve and
+            # reform, in place or back at the spawn cell). Deliberately NOT on the
+            # last life: _enter_endgame has just taken the screen away from the
+            # board, so an animation there would play to nobody -- and the mode
+            # freezes input for the length of a fade, which must never be the last
+            # thing a finished game does.
+            self._moving_mode.lose_life_effect()
 
     # --- submitting the eaten word -----------------------------------------
     def _muncher_submit(self, word, path, segments):
