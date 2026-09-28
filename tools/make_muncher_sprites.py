@@ -36,7 +36,8 @@ Run from the repo root, with the venv active:
 
     python tools/make_muncher_sprites.py
 
-Writes src/assets/sprites/muncher_<state>_<size>.png. Rerunnable; overwrites.
+Writes src/assets/sprites/<set>/muncher_<state>_<size>.png, one directory per
+sprite set (see SETS). Rerunnable; overwrites.
 Pure pyglet + stdlib, no numpy / PIL (they are not project dependencies).
 """
 
@@ -48,9 +49,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import pyglet
 
 
-SOURCE_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "assets",
-                          "sprites", "original_word_muncher")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "assets", "sprites")
+SPRITES_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "assets",
+                           "sprites")
+
+# SPRITE SETS: the character has more than one skin, and a game mode picks one by
+# name (the rule assets.muncher_sprites). Each entry maps the SET NAME -- which is
+# both the config value and the output directory under assets/sprites/ -- to the
+# raw-art directory it is built from.
+#
+# Add a skin by dropping its raw frames in a new directory (same filenames as the
+# ones below) and adding one line here. No game code changes: views/textures
+# resolves the directory from config at load time.
+SETS = {
+    "word_muncher": "original_word_muncher",
+    "blueeyed_word_muncher": "blueeyed_word_muncher",
+}
+
+# Art shared by every set unless a set ships its own copy of the file. The belly
+# blobs are body-colored, and the skins so far differ only in the face, so one set
+# of bellies serves them all; a skin that recolors the body can simply drop its
+# own bellyoverlay_*.png in and this falls back to that automatically.
+SHARED_ART_DIR = "original_word_muncher"
 
 # Source frame -> the state name the game addresses it by. "mouthopen_walking"
 # is deliberately absent: the current design never shows an open mouth in
@@ -178,12 +197,21 @@ def key_and_scale(data, source, crop, factor, alpha_keyed):
     return out_w, out_h, bytes(rgba)
 
 
+def source_path(set_dir, filename):
+    """Where a set's copy of `filename` lives: its own directory when it ships one,
+    otherwise the shared art (see SHARED_ART_DIR)."""
+    own = os.path.join(SPRITES_DIR, set_dir, filename)
+    if not os.path.exists(own):
+        own = os.path.join(SPRITES_DIR, SHARED_ART_DIR, filename)
+    return own
+
+
 def load_frame(filename):
     """(image_data, rgba_bytes) for one source frame -- read once and reused for
     both the bounds scan and every output size. Always RGBA, even for the
     black-background originals, so the bounds scan and the sampler need only one
     stride; those frames simply carry a uniform 255 alpha that nothing reads."""
-    image = pyglet.image.load(os.path.join(SOURCE_DIR, filename))
+    image = pyglet.image.load(filename)
     data = image.get_image_data()
     return data, data.get_data("RGBA", data.width * 4)
 
@@ -198,33 +226,54 @@ def padded(crop, width, height):
     return left, bottom, right, top
 
 
-def main():
-    # state -> (image_data, rgba_bytes, alpha_keyed). Both source conventions go
-    # into ONE dict so the crop box below is the union over every frame of both:
-    # a fade frame and a standing frame have to land the character on the same
-    # pixels, or he would jump as the fade hands off to the idle art.
+def read_set(set_dir):
+    """state -> (image_data, rgba_bytes, alpha_keyed) for one sprite set. Both
+    source conventions go into ONE dict so the crop box is the union over every
+    frame of both: a fade frame and a standing frame have to land the character on
+    the same pixels, or he would jump as the fade hands off to the idle art."""
     frames = {}
     for source_frames, alpha_keyed in ((FRAMES, False), (ALPHA_FRAMES, True)):
         for filename, state in source_frames.items():
-            data, source = load_frame(filename)
+            path = source_path(set_dir, filename)
+            data, source = load_frame(path)
             frames[state] = (data, source, alpha_keyed)
-            print("read {0}".format(filename))
+            print("  read {0}".format(os.path.relpath(path, SPRITES_DIR)))
+    return frames
+
+
+def main():
+    # Read every set FIRST, then crop them all to one box. The box is shared
+    # ACROSS SETS, not just within one: the sets are meant to be interchangeable
+    # skins, so a set whose art sat a few pixels differently would otherwise get a
+    # different crop, and switching skins would shift the character on the board
+    # and resize him against the cell (cell_scale measures the image height, so a
+    # taller crop silently shrinks him). One box means swapping skins changes
+    # nothing but the pixels.
+    sets = {}
+    for name in SETS:
+        print("set {0}:".format(name))
+        sets[name] = read_set(SETS[name])
     bounds = []
-    for state in frames:
-        data, source, alpha_keyed = frames[state]
-        bounds.append(content_bounds(data, source, alpha_keyed))
-    first_data = frames[list(frames)[0]][0]
+    for frames in sets.values():
+        for data, source, alpha_keyed in frames.values():
+            bounds.append(content_bounds(data, source, alpha_keyed))
+    first_data = list(sets[list(sets)[0]].values())[0][0]
     crop = padded(union_bounds(bounds), first_data.width, first_data.height)
-    print("shared crop box (l, b, r, t): {0}".format(crop))
-    for state in frames:
-        data, source, alpha_keyed = frames[state]
-        for factor in FACTORS:
-            width, height, rgba = key_and_scale(data, source, crop, factor,
-                                                alpha_keyed)
-            out = pyglet.image.ImageData(width, height, "RGBA", rgba, pitch=width * 4)
-            name = "muncher_{0}_{1}x{2}.png".format(state, width, height)
-            out.save(os.path.join(OUT_DIR, name))
-            print("wrote {0}".format(name))
+    print("shared crop box across all sets (l, b, r, t): {0}".format(crop))
+    for name in sets:
+        out_dir = os.path.join(SPRITES_DIR, name)
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir)
+        for state in sets[name]:
+            data, source, alpha_keyed = sets[name][state]
+            for factor in FACTORS:
+                width, height, rgba = key_and_scale(data, source, crop, factor,
+                                                    alpha_keyed)
+                out = pyglet.image.ImageData(width, height, "RGBA", rgba,
+                                             pitch=width * 4)
+                filename = "muncher_{0}_{1}x{2}.png".format(state, width, height)
+                out.save(os.path.join(out_dir, filename))
+                print("wrote {0}/{1}".format(name, filename))
 
 
 main()

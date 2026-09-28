@@ -537,6 +537,31 @@ two rules.
 Independent of `game_screen.muncher_glyph_overlay`, which fixes the "what am I
 standing on" problem generally; this rule only decides where the problem starts.
 
+### assets.muncher_sprites
+Which muncher SKIN to draw: the name of a directory under `assets/sprites/`
+holding one converted frame set. Shipped skins:
+- `word_muncher` — the original: white eyes, dark pupils, dark maw.
+- `blueeyed_word_muncher` — baby-blue pupils and a light pink maw. Built to fix a
+  readability problem the glyph overlay exposed: with the original face, the dark
+  pupils and dark maw sat against the dark glyph drawn over him
+  (`game_screen.muncher_glyph_overlay`) and the letters vanished into those
+  pockets. Lightening exactly those two features separates them from the glyph
+  without touching the body color.
+
+Adding a skin is art plus one line: drop the raw frames into a new directory under
+`assets/sprites/` using the same source filenames, add it to `SETS` in
+`tools/make_muncher_sprites.py`, and rerun the tool. No game code changes —
+`views/textures.muncher_image` resolves the directory from this rule at load time,
+and the skin name rides in its image cache key so two skins never collide.
+
+Every skin is cropped to ONE box shared ACROSS SETS, not per set, so all skins
+ship the same state names at the same pixel sizes. That is what makes them true
+drop-in swaps: switching skins cannot shift the character on the board or resize
+him against the cell (`cell_scale` measures the image height, so a per-set crop
+would silently rescale him). Belly overlays are shared from `original_word_muncher`
+unless a skin ships its own `bellyoverlay_*.png`, since the blobs are body-colored
+and the skins so far differ only in the face.
+
 ### game_screen.muncher_belly
 Muncher only: draw the character's stomach filling up with the letters he is
 carrying toward the current word. `..._off` (the default) keeps him one shape

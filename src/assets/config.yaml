@@ -76,6 +76,9 @@ rules:
   assets.loading_animation:  default_loading_animation.yaml
   # [ref: assets.muncher_animation]
   assets.muncher_animation:  default_muncher_animation.yaml
+  # Which muncher SKIN (a directory under assets/sprites/). [ref: assets.muncher_sprites]
+  assets.muncher_sprites:    word_muncher
+  # assets.muncher_sprites:  blueeyed_word_muncher
 
   # Gram font sizing. [ref: gram.font_size]
   # gram.font_size:         rule_gram_font_scale_by_length

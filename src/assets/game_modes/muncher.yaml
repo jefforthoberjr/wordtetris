@@ -34,6 +34,12 @@ rules:
   # out below him and the one cell he hides is an edge cell.
   game_screen.muncher_spawn: rule_muncher_spawn_top_center
 
+  # The blue-eyed skin, not the original. The glyph overlay below draws a dark
+  # letter across his face, and the original's dark pupils and dark maw swallowed
+  # it -- pale blue eyes and a pink maw keep the letter readable wherever it
+  # lands. Swap to word_muncher for the original face.
+  assets.muncher_sprites: blueeyed_word_muncher
+
   # Never hide a gram under him: the cell he stands on draws its letters back
   # over his body. Matters most on this replenishing board, where a fresh gram
   # appears under a character who has not moved.
