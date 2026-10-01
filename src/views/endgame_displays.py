@@ -14,7 +14,7 @@ import math
 import pyglet
 
 from config import CONFIG, get_color
-from views.gram_preview import GramPreview
+from views.gram_preview import GramPreview, parse_variation
 
 
 class PageDisplay:
@@ -159,6 +159,25 @@ class _WordView:
         self._color = get_color("endgame.target_text")
         self._left = 0.0
         self._center = 0.0
+        # The live typing highlight (endgame.type_highlight): how many leading
+        # letters the player has typed correctly, and the index of the one letter
+        # they got wrong (-1 for none). Both come off the target dict; a display
+        # that never sets them shows the word plainly, as before.
+        self._lit = 0
+        self._typo = -1
+        self._alpha = 255
+        self._lit_color = get_color("endgame.target_lit_text")
+        self._typo_color = get_color("endgame.target_typo_text")
+        self._lit_fill = get_color("endgame.cell_lit_fill")
+        self._typo_fill = get_color("endgame.cell_typo_fill")
+        # How finely a CELL row shows the highlight (endgame.highlight_grain): whole
+        # cells filled, or the individual letters inside them recolored. Read live
+        # per view, like the render mode, so a game mode's choice applies.
+        self._letter_grain = letter_grain_rule()
+        # Letters per cell of the row currently built, left to right -- how a letter
+        # index in the word maps onto a cell to light up (a gram can hold several
+        # letters, so the two are not the same list).
+        self._gram_lengths = []
         if cells:
             # No backing rect: the cells ARE the word here, with nothing underneath
             # to hide (the dictionary screen's preview pops up over a text label).
@@ -173,24 +192,40 @@ class _WordView:
             self._preview = None
             self._done_preview = None
             self._active = None
-            self._label = pyglet.text.Label(
-                "", font_size=font_size, x=0, y=0,
-                anchor_x="left", anchor_y="center",
-                color=self._color, batch=batch,
+            # A FORMATTED document rather than a plain Label: the typing highlight
+            # colors individual letters of the word (green prefix, one red typo),
+            # which a Label -- one color for the whole string -- cannot express.
+            self._font_size = font_size
+            self._document = pyglet.text.document.FormattedDocument("")
+            self._label = pyglet.text.DocumentLabel(
+                self._document, x=0, y=0,
+                anchor_x="left", anchor_y="center", batch=batch,
             )
 
     def set_target(self, target):
         """Show `target` (a blank ring slot shows nothing). Cheap when the word and
         its typed state are unchanged."""
         word = target["word"]
-        state = (word, target["done"])
+        lit = target.get("lit", 0)
+        typo = target.get("typo", -1)
+        state = (word, target["done"], lit, typo)
         if state != self._word:
+            rebuild = self._word is None or state[:2] != self._word[:2]
             self._word = state
+            self._lit = lit
+            self._typo = typo
             self._color = _target_color(target)
             if self._cells:
-                self._set_cells(target)
+                # Only a new WORD (or its typed state) needs the row rebuilt; a
+                # highlight change is a repaint of cells already on screen, which is
+                # what keeps a keystroke cheap with a page of words up.
+                if rebuild:
+                    self._set_cells(target)
+                self._apply_cell_highlight()
             else:
-                self._label.text = word
+                if rebuild:
+                    self._document.text = word
+                self._apply_text_style()
 
     def _set_cells(self, target):
         """(Re)build the cell row: the done row is a separate preview so the two
@@ -202,9 +237,13 @@ class _WordView:
             self._active = self._preview
         self._preview.hide()
         self._done_preview.hide()
+        self._gram_lengths = []
         if target["word"] and target["variation"]:
             self._active.show(target["variation"], self._left, self._center,
                               cover_width=0)
+            _shape, grams = parse_variation(target["variation"])
+            for text, _obstacle, _mission, _wild in grams:
+                self._gram_lengths.append(len(text))
         else:
             self._active = None
 
@@ -219,13 +258,14 @@ class _WordView:
     def place(self, left_x, center_y, alpha=255):
         """Move the word so its left edge sits at left_x, vertically centered on
         center_y, at the given opacity (the moving displays' edge fade)."""
+        self._alpha = alpha
         if self._cells:
             if self._active is not None:
                 self._active.move_by(left_x - self._left, center_y - self._center)
         else:
             self._label.x = left_x
             self._label.y = center_y
-            self._label.color = (self._color[0], self._color[1], self._color[2], alpha)
+            self._apply_text_style()
         self._left = left_x
         self._center = center_y
 
@@ -233,6 +273,78 @@ class _WordView:
         """Re-apply the current target's color where the word already sits -- what a
         static display needs after a word is typed and turns green."""
         self.place(self._left, self._center, alpha)
+
+    def _apply_text_style(self):
+        """Color the word's letters: the base (or done) color throughout, then the
+        typed prefix in the lit color and the one mistyped letter in the typo color,
+        all at the current opacity (the moving displays' edge fade).
+
+        Styling RANGES of the document is the whole reason this is a formatted
+        document -- it is re-applied on every move as well as every keystroke, since
+        the fade changes the alpha of all three runs together."""
+        text = self._document.text
+        if not text:
+            return None
+        base = (self._color[0], self._color[1], self._color[2], self._alpha)
+        self._document.set_style(0, len(text), {"font_size": self._font_size,
+                                                "color": base})
+        lit = min(self._lit, len(text))
+        if lit > 0:
+            self._document.set_style(0, lit, {"color": (
+                self._lit_color[0], self._lit_color[1], self._lit_color[2],
+                self._alpha)})
+        if 0 <= self._typo < len(text):
+            self._document.set_style(self._typo, self._typo + 1, {"color": (
+                self._typo_color[0], self._typo_color[1], self._typo_color[2],
+                self._alpha)})
+        return None
+
+    def _apply_cell_highlight(self):
+        """The cell-row equivalent: fill the cells the typed prefix covers, and the
+        one cell the mistyped letter lands in.
+
+        This is the WHOLE-CELL grain (endgame.highlight_grain) -- a gram can hold
+        several letters ("CH") and half a box cannot be lit, so a cell goes lit only
+        once the prefix covers ALL of its letters; the lit run never claims a letter
+        the player has not typed yet. A cell only part-way covered when the typo
+        lands in it is painted as the typo instead. The letter grain, which does not
+        have to round like this, is _apply_letter_highlight below."""
+        if self._active is None:
+            return None
+        if self._letter_grain:
+            return self._apply_letter_highlight()
+        colors = []
+        start = 0
+        for length in self._gram_lengths:
+            end = start + length
+            if self._lit >= end:
+                colors.append(self._lit_fill)
+            elif start <= self._typo < end:
+                colors.append(self._typo_fill)
+            else:
+                colors.append(None)
+            start = end
+        self._active.recolor_cells(colors)
+        return None
+
+    def _apply_letter_highlight(self):
+        """The letter-grained cell highlight: recolor the individual letters inside
+        the boxes rather than filling whole boxes.
+
+        Typing is a per-LETTER act, so this follows it exactly -- a "CH" cell can
+        show the C typed and the H not, which the whole-cell grain has to round off
+        (it cannot light half a box, so it waits for both letters). The fills are
+        left alone here; the letters carry the whole signal."""
+        colors = []
+        for i in range(len(self._word[0])):
+            if i < self._lit:
+                colors.append(self._lit_color)
+            elif i == self._typo:
+                colors.append(self._typo_color)
+            else:
+                colors.append(None)
+        self._active.recolor_letters(colors)
+        return None
 
     def draw(self):
         """Cell rows own their own batch, so they draw here; a text word is already
@@ -243,7 +355,8 @@ class _WordView:
 
 # A gap on the belt: a ring slot carrying no word. Drawn as empty text and never
 # typeable, it exists only to space the real words out (see _build_ring).
-_BLANK = {"word": "", "variation": "", "points": 0, "done": False}
+_BLANK = {"word": "", "variation": "", "points": 0, "done": False,
+          "lit": 0, "typo": -1}
 
 
 class _MovingWords:
@@ -494,6 +607,16 @@ def render_cells_rule():
     so the active game mode's choice applies. Unknown values fall back to text."""
     return CONFIG.get("rules", {}).get(
         "endgame.render", "rule_endgame_render_text") == "rule_endgame_render_cells"
+
+
+def letter_grain_rule():
+    """Whether a CELL row shows the typing highlight letter by letter rather than a
+    whole box at a time (endgame.highlight_grain). Read from the live config at call
+    time, like every knob here. Irrelevant in text render, where the highlight is
+    per-letter already. Unknown values fall back to the whole-cell grain."""
+    return CONFIG.get("rules", {}).get(
+        "endgame.highlight_grain",
+        "rule_endgame_highlight_grain_cell") == "rule_endgame_highlight_grain_letter"
 
 
 def build_page_display(region_size, window_height):

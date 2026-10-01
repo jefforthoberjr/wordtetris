@@ -593,6 +593,14 @@ rules:
   # Furthest (Levenshtein) a miss may be and still get a suggestion. [ref: endgame.suggest_max_distance]
   endgame.suggest_max_distance: 3
 
+  # ENDGAME TYPING BONUS: light up the words letter-by-letter as the player types. [ref: endgame.type_highlight]
+  endgame.type_highlight: rule_endgame_type_highlight_prefix
+  # endgame.type_highlight: rule_endgame_type_highlight_off
+
+  # ENDGAME TYPING BONUS (cell render only): highlight whole cells or single letters. [ref: endgame.highlight_grain]
+  endgame.highlight_grain: rule_endgame_highlight_grain_letter
+  # endgame.highlight_grain: rule_endgame_highlight_grain_cell
+
   # ENDGAME TYPING BONUS: order the words to type are presented in. [ref: endgame.order]
   endgame.order: rule_endgame_order_cleared
   # endgame.order: rule_endgame_order_alphabetical

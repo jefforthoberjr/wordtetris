@@ -7,6 +7,9 @@ GAME NAMES
 * catalyst cata LIST
 
 
+morpheme / deflection based suffixes should always be displayed on the right side of the board. Keeps the visual auto-complete easier
+
+
 As you are typing on the end game mode, highlight the individual cells as you are typing? Like immediate feedback for touch typers? (Rather than a large submit event at the end?)
 
 

@@ -75,6 +75,18 @@ class GramPreview:
         # Holds the live shapes/labels so they aren't garbage-collected (which
         # would drop their vertex lists out of the batch).
         self._shapes = []
+        # The one fill shape per gram, in left-to-right order, each paired with the
+        # fill it was built with -- what recolor_cells() repaints and restores. Kept
+        # apart from _shapes (which is everything, including borders and labels) so a
+        # recolor can never touch a border or a letter.
+        self._fill_shapes = []
+        self._base_fills = []
+        # One entry per gram, in left-to-right order: (label, start, length) -- the
+        # cell's letter label and where its letters sit in the WORD. What
+        # recolor_letters() styles, and how a letter index finds its glyph. A wild
+        # cell draws an emblem instead of letters, so its label is None.
+        self._letter_runs = []
+        self._letters_placed = 0
         self._visible = False
         self._cell_fill = get_color("board.settled_cell_fill")
         self._obstacle_fill = get_color("board.obstacle_fill")
@@ -98,6 +110,10 @@ class GramPreview:
         shape, grams = parse_variation(variation)
         self._batch = pyglet.graphics.Batch()
         self._shapes = []
+        self._fill_shapes = []
+        self._base_fills = []
+        self._letter_runs = []
+        self._letters_placed = 0
         if shape == "hex":
             row_width = self._hex_row_width(len(grams))
         elif shape == "triangle":
@@ -130,6 +146,58 @@ class GramPreview:
             element.x += dx
             element.y += dy
 
+    def recolor_cells(self, colors):
+        """Repaint individual cells of the row built by the last show(): `colors` is
+        one entry per gram, left to right, each either an RGB(A) fill or None to
+        restore the fill that gram was built with. A short list leaves the rest of
+        the row alone.
+
+        Used by the endgame typing bonus to light up the cells the player has typed
+        so far (endgame.type_highlight) without rebuilding the row -- the rebuild is
+        the expensive part, and this runs on every keystroke for every word on
+        screen."""
+        for i, shape in enumerate(self._fill_shapes):
+            if i < len(colors):
+                color = colors[i]
+            else:
+                color = None
+            if color is None:
+                color = self._base_fills[i]
+            shape.color = color
+
+    def recolor_letters(self, colors):
+        """Repaint INDIVIDUAL LETTERS of the row built by the last show(): `colors`
+        is one entry per letter of the word, left to right, each either an RGB(A)
+        text color or None to restore the normal cell text color.
+
+        The finer-grained sibling of recolor_cells(): a gram holding several letters
+        ("CH") can show one of them typed and the other not, which a fill -- one
+        color for the whole box -- cannot say. A wild cell draws its emblem rather
+        than letters, so the letters it stands for are simply skipped."""
+        for label, start, length in self._letter_runs:
+            if label is None:
+                continue
+            for i in range(length):
+                if start + i < len(colors):
+                    color = colors[start + i]
+                else:
+                    color = None
+                if color is None:
+                    color = self._text_color
+                label.document.set_style(i, i + 1, {"color": tuple(color)})
+
+    def _track_letters(self, text, label):
+        """Remember one cell's letters and the label drawing them (None for a wild
+        emblem), so recolor_letters() can find a letter of the word on screen."""
+        self._letter_runs.append((label, self._letters_placed, len(text)))
+        self._letters_placed += len(text)
+
+    def _track_fill(self, shape):
+        """Remember a just-built cell fill (and the color it started with) so
+        recolor_cells() can repaint and restore it."""
+        self._fill_shapes.append(shape)
+        self._base_fills.append(shape.color)
+
     def _fill_for(self, is_obstacle, is_mission):
         if self._fill_override is not None:
             color = self._fill_override
@@ -156,14 +224,19 @@ class GramPreview:
         return math.floor(self._cell_size * 0.6)
 
     def _add_label(self, text, cx, cy, font_size):
-        label = pyglet.text.Label(
-            text,
-            font_size=font_size,
-            weight="bold",
+        """The letters of one cell. A FORMATTED document rather than a plain Label so
+        a single letter inside a multi-letter gram can be recolored (see
+        recolor_letters); the styling is otherwise exactly the old Label's."""
+        document = pyglet.text.document.FormattedDocument(text)
+        document.set_style(0, len(text), {
+            "font_size": font_size, "weight": "bold", "color": self._text_color})
+        label = pyglet.text.DocumentLabel(
+            document,
             x=cx, y=cy, anchor_x="center", anchor_y="center",
-            color=self._text_color, batch=self._batch,
+            batch=self._batch,
         )
         self._shapes.append(label)
+        return label
 
     def _add_wild_sprite(self, cx, cy, target_height):
         # A wild cell re-renders as the vowel emblem (centered over the fill),
@@ -186,12 +259,15 @@ class GramPreview:
                 border_color=self._border_color, batch=self._batch,
             )
             self._shapes.append(rect)
+            self._track_fill(rect)
             cx = x + math.floor(cell / 2)
             if is_wild:
                 self._add_wild_sprite(cx, center_y, cell * 0.9)
+                label = None
             else:
                 font_size = gram_font_size(self._label_base(), Gram(text))
-                self._add_label(text, cx, center_y, font_size)
+                label = self._add_label(text, cx, center_y, font_size)
+            self._track_letters(text, label)
 
     def _hex_size(self):
         # Point-up hex sized so its height (2*size) matches the square box.
@@ -224,8 +300,10 @@ class GramPreview:
                 color=self._fill_for(is_obstacle, is_mission), batch=self._batch,
             )
             self._shapes.append(inner)
+            self._track_fill(inner)
             if is_wild:
                 self._add_wild_sprite(cx, center_y, size)
+                label = None
             else:
                 # A lone letter has the hex's narrower middle to itself; the
                 # square base font overfills it, so trim single-letter grams
@@ -233,7 +311,8 @@ class GramPreview:
                 font_size = gram_font_size(self._label_base(), Gram(text))
                 if len(text) == 1:
                     font_size = math.floor(font_size * 0.7)
-                self._add_label(text, cx, center_y, font_size)
+                label = self._add_label(text, cx, center_y, font_size)
+            self._track_letters(text, label)
 
     def _triangle_side(self):
         # Side length whose triangle height matches the square box, so a triangle
@@ -273,13 +352,16 @@ class GramPreview:
                 color=self._fill_for(is_obstacle, is_mission), batch=self._batch,
             )
             self._shapes.append(inner)
+            self._track_fill(inner)
             if is_wild:
                 self._add_wild_sprite(cx, cy, side / SQRT3)
+                label = None
             else:
                 # A triangle's usable room is its inscribed circle -- tighter than
                 # the hex's narrow middle, so trim harder than the hex row does.
                 font_size = gram_font_size(self._label_base(), Gram(text))
-                self._add_label(text, cx, cy, math.floor(font_size * 0.6))
+                label = self._add_label(text, cx, cy, math.floor(font_size * 0.6))
+            self._track_letters(text, label)
 
     def _triangle_verts(self, side, cx, cy, points_up):
         # Flat coordinate list (x1, y1, x2, y2, x3, y3) for pyglet's Triangle,

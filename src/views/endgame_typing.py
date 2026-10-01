@@ -96,6 +96,66 @@ def rule_endgame_suggest_nearest_target(typed, words, max_distance):
     return nearest_word(typed, words, max_distance)
 
 
+# --- live typing highlight rules (endgame.type_highlight) --------------------
+# What the board-region word list does WHILE the player types, before they submit.
+# Each takes the text typed so far and the target list, and writes two keys onto
+# every target: "lit" (how many leading letters to show as typed) and "typo" (the
+# index of the one letter to show as mistyped, or -1). The displays read those keys
+# and color the word; nothing else in the bonus depends on them.
+def rule_endgame_type_highlight_off(typed, targets):
+    """No live highlight -- the words sit unchanged until one is submitted. The
+    original behavior, and the one for a player who should be recalling the
+    spelling rather than following it letter by letter."""
+    for target in targets:
+        target["lit"] = 0
+        target["typo"] = -1
+
+
+def rule_endgame_type_highlight_prefix(typed, targets):
+    """Follow the typing along the words: every word still to be typed that STARTS
+    with what has been typed lights up that many letters, so the player can watch
+    the word they are copying fill in without looking back at the field.
+
+    The typo case is the point of it. Once the typed text stops being a prefix of
+    anything, the longest prefix that still matched (n letters) stays lit on the
+    words that had it, and their next letter -- the one the player got wrong -- is
+    marked as the typo. That highlight then holds while the player keeps typing
+    wrong letters, and lifts the moment they backspace to n.
+
+    Nothing matching the very first letter means nothing lights up at all, which is
+    deliberately silent: it says the letter is wrong without saying which words are
+    still available (see AGENTS.md on word-availability hints -- the words here are
+    all on screen already, so following a spelling gives nothing away)."""
+    for target in targets:
+        target["lit"] = 0
+        target["typo"] = -1
+    words = []
+    for target in targets:
+        if not target["done"]:
+            words.append(target)
+    # The longest prefix of the typed text that any un-typed word still starts with.
+    # Everything past it is the mistyped tail.
+    matched = 0
+    for n in range(1, len(typed) + 1):
+        hit = False
+        for target in words:
+            if target["word"].startswith(typed[:n]):
+                hit = True
+        if hit:
+            matched = n
+        else:
+            break
+    if matched > 0:
+        prefix = typed[:matched]
+        for target in words:
+            if target["word"].startswith(prefix):
+                target["lit"] = matched
+                # A typo only has a letter to mark if the word runs on past the
+                # prefix; typing PLANTS at PLANT simply leaves the word fully lit.
+                if matched < len(typed) and matched < len(target["word"]):
+                    target["typo"] = matched
+
+
 class EndgameTyping:
     """One run of the typing bonus. Built per game screen and (re)started with
     start(records) at the end transition; inert (draws nothing, eats no input)
@@ -119,6 +179,9 @@ class EndgameTyping:
         # Suggestion engine + distance ceiling, chosen per run in start().
         self._suggest_rule = rule_endgame_suggest_off
         self._suggest_max_distance = 0
+        # Live per-letter highlight of the target words as they are typed
+        # (endgame.type_highlight), chosen per run in start().
+        self._highlight_rule = rule_endgame_type_highlight_off
         # Seconds left on the hit / miss flash under the typed field (0 = hidden).
         self._flash_remaining = 0.0
         # Composition scorer -- the same rule the My Dictionary screen scores a
@@ -147,6 +210,10 @@ class EndgameTyping:
                 "variation": variation,
                 "points": self._word_points(variation),
                 "done": False,
+                # Live typing highlight, rewritten on every keystroke by the
+                # endgame.type_highlight rule (see _rehighlight).
+                "lit": 0,
+                "typo": -1,
             })
         # Presentation order (endgame.order). Read per run, not at import, so the
         # active game mode's override is the one that applies.
@@ -156,6 +223,13 @@ class EndgameTyping:
             "rule_endgame_order_score": rule_endgame_order_score,
         }
         self._targets = select_rule("endgame.order", order_rules)(self._targets)
+        # Live typing highlight (endgame.type_highlight), read per run like the rest
+        # so a game mode's override applies.
+        highlight_rules = {
+            "rule_endgame_type_highlight_off": rule_endgame_type_highlight_off,
+            "rule_endgame_type_highlight_prefix": rule_endgame_type_highlight_prefix,
+        }
+        self._highlight_rule = select_rule("endgame.type_highlight", highlight_rules)
         # Board-region display (endgame.display), also read per run so a mode swap
         # takes effect. It owns the whole left region; this view keeps the pane.
         display_rules = {
@@ -391,7 +465,16 @@ class EndgameTyping:
         """Record a just-typed word for the pane list (newest first)."""
         self._banked.insert(0, target["word"] + "  +" + str(target["points"]))
 
+    def _rehighlight(self):
+        """Re-run the live typing highlight over the targets and push it to the
+        board-region display. Called wherever the typed text changes -- this is the
+        one funnel for it, so no keystroke route can forget."""
+        self._highlight_rule(self._typed, self._targets)
+        if self._display is not None:
+            self._display.refresh(self._targets)
+
     def _refresh_pane(self):
+        self._rehighlight()
         self._input_label.text = self._typed + "_"
         self._total_label.text = get_string("endgame_total", count=self._bonus_total)
         for r, row in enumerate(self._banked_rows):

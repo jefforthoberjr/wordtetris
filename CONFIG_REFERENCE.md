@@ -2029,6 +2029,63 @@ player who remembers a word may type it before it has ever appeared; that is all
 and rewarded. The moving displays are therefore a memory/pressure knob, never a way
 to lose points.
 
+### endgame.type_highlight
+What the board-region word list does WHILE the player types, before they submit.
+
+Why: the words are on the LEFT of the screen and the field being typed into is on
+the RIGHT. A player learning to spell pauses part-way through a word to check they
+have it right, and that check is a look all the way across the screen and back —
+several times per word. Following the typing along the word itself removes the
+round trip: the player keeps their eyes on the word they are copying and watches it
+fill in.
+
+- `rule_endgame_type_highlight_off` — nothing happens until a word is submitted.
+  The original behavior. Right when the player should be recalling the spelling
+  rather than reading it off a guide.
+- `rule_endgame_type_highlight_prefix` — every word still to be typed that STARTS
+  with the text typed so far lights that many letters (`endgame.target_lit_text`,
+  or `endgame.cell_lit_fill` in cell render). Several words can be lit at once
+  early on (CAT / CATCH share C, CA, CAT) and the field narrows to one as the
+  player types.
+
+  The typo case is the point of it. Once what has been typed stops being a prefix
+  of anything, the longest prefix that still matched stays lit on the words that
+  had it and their NEXT letter — the one the player got wrong — is marked in
+  `endgame.target_typo_text` / `endgame.cell_typo_fill`. That holds while the
+  player keeps typing wrong letters and lifts as soon as they backspace to the
+  matching prefix, so the mistake is visible at the moment it is made instead of at
+  submit.
+
+  A first letter that matches nothing lights nothing at all. No hint is leaked by
+  any of this: every word here is already printed on screen, so following a
+  spelling tells the player nothing they cannot read (contrast the in-play
+  no-word-availability rule).
+
+In CELL render (`endgame.render`) how finely this is drawn is its own knob — whole
+boxes filling in, or the individual letters inside them recoloring. See
+`endgame.highlight_grain`.
+
+### endgame.highlight_grain
+How finely the live typing highlight (`endgame.type_highlight`) is shown when words
+are drawn as CELLS (`endgame.render: rule_endgame_render_cells`). Ignored in text
+render, where the highlight is per-letter already.
+
+- `rule_endgame_highlight_grain_cell` — whole boxes fill in
+  (`endgame.cell_lit_fill` / `endgame.cell_typo_fill`). A cell lights only once the
+  typed prefix covers ALL of its letters, so a "CH" cell waits for both. Reads as
+  the piece-by-piece structure the word was built from, which is the thing cell
+  render exists to show.
+- `rule_endgame_highlight_grain_letter` — the LETTERS inside the boxes recolor
+  instead (`endgame.target_lit_text` / `endgame.target_typo_text`), one at a time;
+  the fills are left alone. Typing is a per-letter act, so this tracks it exactly:
+  a "CH" cell shows the C typed while the H is still to come, which the whole-cell
+  grain has to round off. The closer match for a player watching their own typing;
+  the finer detail is also smaller to see.
+
+A wild cell draws its vowel emblem rather than letters, so under the letter grain
+the letters it stands for are simply not highlighted (the whole-cell grain still
+fills it).
+
 ### endgame.order
 Order the typing-bonus targets are presented in (`rule_endgame_typing_bonus`). The
 board-region display and the order a word can be typed in are unaffected — any word

@@ -95,6 +95,10 @@ endgame:
   miss_text:        [200, 40, 40, 255]    # flash under the field: a misspelling (no penalty)
   suggest_text:     [120, 120, 160, 255]  # "Did you mean X?" under a miss (endgame.spell_suggest)
   cell_done_fill:   [144, 238, 144]       # endgame.render cells: fill of a word already typed (light green)
+  target_lit_text:  [30, 160, 60, 255]    # letters typed correctly so far (endgame.type_highlight)
+  target_typo_text: [200, 40, 40, 255]    # the one mistyped letter (endgame.type_highlight)
+  cell_lit_fill:    [176, 226, 176]       # endgame.render cells: cell whose letters are typed
+  cell_typo_fill:   [240, 150, 150]       # endgame.render cells: cell holding the mistyped letter
 
 menu:
   highlight:        [255, 255, 0, 255]   # selected menu item
