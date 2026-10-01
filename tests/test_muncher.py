@@ -159,7 +159,9 @@ def _mode(board, pos=(1, 1), stepping=False, dead_end=False, grace=1):
     mode._glyph_overlay = None
     mode._spawn_rule = mode._rule_muncher_spawn_center
     mode._belly_rule = mode._rule_muncher_belly_off
+    mode._belly_first = 2
     mode._belly_letters = 3
+    mode._belly_max = 0
     return mode
 
 
@@ -627,11 +629,13 @@ def test_belly_size_steps_once_per_band_and_caps():
     belly = mode._rule_muncher_belly_on
     # An empty buffer wears no belly at all -- size 0 is "no overlay", not an image.
     assert belly(0) == 0
-    # 3 letters per size: 1-3 -> 1, 4-6 -> 2, 7-9 -> 3, 10-12 -> 4.
-    assert [belly(n) for n in (1, 2, 3)] == [1, 1, 1]
-    assert [belly(n) for n in (4, 5, 6)] == [2, 2, 2]
-    assert [belly(n) for n in (7, 8, 9)] == [3, 3, 3]
-    assert [belly(n) for n in (10, 11, 12)] == [4, 4, 4]
+    # One letter is too small a mouthful to show (belly_first_letters: 2).
+    assert belly(1) == 0
+    # Then 3 letters per size: 2-4 -> 1, 5-7 -> 2, 8-10 -> 3, 11-13 -> 4.
+    assert [belly(n) for n in (2, 3, 4)] == [1, 1, 1]
+    assert [belly(n) for n in (5, 6, 7)] == [2, 2, 2]
+    assert [belly(n) for n in (8, 9, 10)] == [3, 3, 3]
+    assert [belly(n) for n in (11, 12, 13)] == [4, 4, 4]
     # The cap is the image count, so a long word keeps him at his fattest rather
     # than indexing off the end of the art.
     assert belly(40) == len(BELLY_IMAGES)
@@ -639,8 +643,31 @@ def test_belly_size_steps_once_per_band_and_caps():
 
 def test_belly_band_width_is_configurable():
     mode = _mode(_Board())
+    mode._belly_first = 1
     mode._belly_letters = 1
     assert [mode._rule_muncher_belly_on(n) for n in (0, 1, 2, 3)] == [0, 1, 2, 3]
+
+
+def test_belly_first_letters_is_configurable():
+    """How long he stays looking empty is a knob of its own: at 1 the original
+    any-letter-at-all behavior comes back, at 4 a short word never shows."""
+    mode = _mode(_Board())
+    mode._belly_first = 1
+    assert [mode._rule_muncher_belly_on(n) for n in (0, 1, 3, 4)] == [0, 1, 1, 2]
+    mode._belly_first = 4
+    assert [mode._rule_muncher_belly_on(n) for n in (0, 3, 4, 7)] == [0, 0, 1, 2]
+
+
+def test_belly_max_size_caps_him_below_the_art():
+    """belly_max_size: 0 means "as fat as the art allows"; a positive number caps
+    him lower, and one above the image count cannot index off the end."""
+    from views.muncher_sprite import BELLY_IMAGES
+
+    mode = _mode(_Board())
+    mode._belly_max = 2
+    assert [mode._rule_muncher_belly_on(n) for n in (2, 5, 8, 40)] == [1, 2, 2, 2]
+    mode._belly_max = 99
+    assert mode._rule_muncher_belly_on(40) == len(BELLY_IMAGES)
 
 
 def test_belly_off_stays_empty_however_much_he_eats():
@@ -664,7 +691,7 @@ def test_the_belly_tracks_the_buffer_through_eating_and_submitting():
     mode._pos = (1, 2)
     mode._eat()
     mode.update(0.1)
-    assert mode._sprite.belly == 2          # STRING -> 6 letters
+    assert mode._sprite.belly == 2          # STRING -> 6 letters (band 5-7)
 
     # Emptying the buffer deflates him, whatever emptied it.
     mode._clear_buffer()

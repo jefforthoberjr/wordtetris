@@ -335,7 +335,8 @@ def log_20012(size, letters, drawn):
     log showed only the bites, so nothing distinguished "the rule is wrong" from
     "the rule is right and the draw is broken". A line where `size` and `drawn`
     differ means the sprite refused the size; a `size` that does not match
-    `letters` under the configured belly_letters_per_size means the rule is wrong;
+    `letters` under the configured belly_first_letters / belly_letters_per_size /
+    belly_max_size means the rule is wrong;
     no line at all after a bite means the mode never asked."""
     session_log.emit(20012, f"muncher belly size {size} ({letters} letters eaten)",
                      size=size, letters=letters, drawn=drawn)
@@ -532,14 +533,20 @@ def log_50004(words):
                      words=words)
 
 
-def log_50005(typed, matched, points, total, suggested=""):
+def log_50005(typed, matched, points, total, suggested="", source="enter"):
     """One endgame typing-bonus submission. `typed` is what the player entered;
     `matched` the target word it scored (empty on a misspelling, which costs
     nothing); `points` what it earned and `total` the bonus total after it. The
     misses are the interesting record here -- they are the typing mistakes the
     bonus exists to surface, and `suggested` is the "did you mean?" word the pane
     offered for that miss (endgame.spell_suggest; empty when off, out of range,
-    or the submission was a hit)."""
+    or the submission was a hit).
+
+    `source` is what committed it: "enter" for the key, "auto" for a word that
+    banked itself the instant it was fully typed (endgame.auto_submit). Worth
+    reading on a replay that looks like it skipped a keystroke -- and an "auto"
+    line whose `matched` is empty would mean the auto-submit rule fired on text
+    that was not a target, which it must never do."""
     if matched:
         summary = f"endgame typed {matched}: +{points} ({total} bonus)"
     elif suggested:
@@ -547,7 +554,8 @@ def log_50005(typed, matched, points, total, suggested=""):
     else:
         summary = f"endgame miss: {typed}"
     session_log.emit(50005, summary, typed=typed, matched=matched,
-                     points=points, total=total, suggested=suggested)
+                     points=points, total=total, suggested=suggested,
+                     source=source)
 
 
 def log_50006(total):

@@ -45,13 +45,26 @@ walk_cycle_seconds: 0
 # disappears, which is how the mode behaved before the frames existed.
 fade_seconds: 0.6
 
-# BELLY: how many eaten letters each stomach size is worth, under
-# game_screen.muncher_belly. 3 (the default) gives 1-3 letters a size-1 belly, 4-6
-# a size-2, and so on; an empty buffer draws no belly at all. The CAP is the number
-# of belly images the sprite ships (four), not a number here -- past the last one
-# he simply stays at his fattest. Lower this for a stomach that reacts to every
-# bite; raise it for one that only shows on a long word.
+# BELLY: how many eaten letters it takes before the FIRST stomach shows at all,
+# under game_screen.muncher_belly. 2 (the default) means one letter in his mouth
+# leaves him looking empty -- a single bite is too small a mouthful to read as a
+# full stomach -- and the size-1 belly appears on the second. 1 restores the
+# original "any letter at all swells him" behavior; 0 is treated as 1 (an empty
+# buffer never draws a belly).
+belly_first_letters: 2
+
+# BELLY: how many further eaten letters each stomach size AFTER the first is
+# worth. 3 (the default), paired with belly_first_letters: 2, gives 2-4 letters a
+# size-1 belly, 5-7 a size-2, and so on. Lower this for a stomach that reacts to
+# nearly every bite; raise it for one that only grows on a long word.
 belly_letters_per_size: 3
+
+# BELLY: the largest stomach size he can reach. 0 (the default) means "as many as
+# the art ships" -- the cap is then the number of belly images the sprite has
+# (four), so the arithmetic can never ask for a picture that does not exist.
+# A positive number caps him lower than the art allows; anything above the image
+# count is clamped back down to it.
+belly_max_size: 0
 
 # Sprite HEIGHT as a fraction of one board cell. Above 1.0 the character
 # overflows his cell (he is a character standing on the board, not a tile), which

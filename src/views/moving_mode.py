@@ -1346,7 +1346,12 @@ class MuncherMovingMode(MovingMode):
             "game_screen.muncher_belly",
             {"rule_muncher_belly_off": self._rule_muncher_belly_off,
              "rule_muncher_belly_on": self._rule_muncher_belly_on})
+        # Belly arithmetic, all three numbers from the animation file: how many
+        # letters buy the FIRST stomach, how many buy each one after it, and how
+        # fat he is allowed to get (0 = as fat as the art allows).
+        self._belly_first = max(1, get_muncher_anim("belly_first_letters"))
         self._belly_letters = get_muncher_anim("belly_letters_per_size")
+        self._belly_max = get_muncher_anim("belly_max_size")
         # The standing-on glyph re-drawn over him, or None when the rule is off.
         # Built here rather than in start() because it owns no board state -- it
         # reads whatever cell it is pointed at, game after game.
@@ -1503,17 +1508,22 @@ class MuncherMovingMode(MovingMode):
         return 0
 
     def _rule_muncher_belly_on(self, letters):
-        """Stomach size for `letters` eaten toward the current word: empty at 0,
-        then one size per belly_letters_per_size letters (at the default 3: 1-3 ->
-        size 1, 4-6 -> size 2, and so on), capped at the number of belly images.
+        """Stomach size for `letters` eaten toward the current word: nothing at all
+        until belly_first_letters are in him, then one further size per
+        belly_letters_per_size letters (at the defaults 2 and 3: 0-1 -> no belly,
+        2-4 -> size 1, 5-7 -> size 2, and so on).
 
-        The cap is the image count rather than a config number so the art and the
-        arithmetic can never disagree -- adding a fifth belly image raises the cap
-        by itself."""
+        Capped by belly_max_size, itself never allowed past the number of belly
+        images the sprite ships, so a config number can make him thinner than the
+        art but can never ask for a picture that does not exist -- adding a fifth
+        belly image raises the ceiling by itself (at belly_max_size: 0)."""
+        cap = len(BELLY_IMAGES)
+        if self._belly_max > 0:
+            cap = min(cap, self._belly_max)
         size = 0
-        if letters > 0:
-            size = min(len(BELLY_IMAGES),
-                       math.ceil(letters / self._belly_letters))
+        if letters >= self._belly_first:
+            grown = (letters - self._belly_first) // self._belly_letters
+            size = min(cap, 1 + grown)
         return size
 
     # --- standing-on glyph rules (game_screen.muncher_glyph_overlay) -----

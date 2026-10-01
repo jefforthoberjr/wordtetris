@@ -45,9 +45,10 @@ rules:
   # appears under a character who has not moved.
   game_screen.muncher_glyph_overlay: rule_muncher_glyph_overlay_on
 
-  # His stomach swells with the letters he is carrying: one size per 3 letters
-  # (belly_letters_per_size in the animation file), emptying when the word is
-  # submitted or taken away.
+  # His stomach swells with the letters he is carrying: nothing on the first
+  # letter, then one size per 3 after that (belly_first_letters /
+  # belly_letters_per_size / belly_max_size in the animation file), emptying when
+  # the word is submitted or taken away.
   game_screen.muncher_belly: rule_muncher_belly_on
 
   # Lives are the only end condition -- no clock, no victory. The last life hands
@@ -62,6 +63,11 @@ rules:
   game_screen.game_timer: rule_game_timer_off
   game_screen.victory: rule_victory_none
   game_screen.endgame: rule_endgame_typing_bonus
+  # A word banks itself the moment it is fully typed -- no ENTER to remember at
+  # the end of each word. ..._unambiguous holds off when the finished word also
+  # starts a longer word still to be typed (CAT / CATCH); swap to ..._exact to
+  # commit every finished word, or back to ..._off for ENTER only.
+  endgame.auto_submit: rule_endgame_auto_submit_unambiguous
 
   # At least two bites per word, so a lone trigram cell (e.g. "SON") cannot clear
   # on its own -- a word must chain grams from separate cells.

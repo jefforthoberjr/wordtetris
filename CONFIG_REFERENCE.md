@@ -567,11 +567,19 @@ Muncher only: draw the character's stomach filling up with the letters he is
 carrying toward the current word. `..._off` (the default) keeps him one shape
 however much he has eaten; `..._on` overlays a belly whose size tracks the buffer.
 
-The size comes from `belly_letters_per_size` in the muncher animation file (3 by
-default: 1–3 letters → size 1, 4–6 → size 2, …), with an empty buffer drawing no
-belly at all. The CAP is the number of belly images the sprite ships, not a config
-number, so the art and the arithmetic cannot disagree — adding a fifth image
-raises the cap by itself.
+Three numbers in the muncher animation file decide how he grows:
+
+- `belly_first_letters` (2) — how many letters must be in him before any belly is
+  drawn. One bite is too small a mouthful to read as a full stomach, so a lone
+  letter leaves him looking empty; 1 restores the original
+  any-letter-at-all swelling. An empty buffer never draws a belly.
+- `belly_letters_per_size` (3) — how many further letters each size after the
+  first is worth. With the two defaults: 0–1 → no belly, 2–4 → size 1, 5–7 →
+  size 2, 8–10 → size 3, …
+- `belly_max_size` (0) — the fattest he may get, where 0 means “as fat as the art
+  allows”. The hard ceiling is always the number of belly images the sprite ships,
+  so a config number can make him thinner than the art but can never ask for a
+  picture that does not exist — adding a fifth image raises the ceiling by itself.
 
 It is a true overlay, not a set of alternate frames: one belly is drawn over
 whichever standing / walking / chewing frame is showing, and it flips with him, so
@@ -2064,6 +2072,31 @@ fill in.
 In CELL render (`endgame.render`) how finely this is drawn is its own knob — whole
 boxes filling in, or the individual letters inside them recoloring. See
 `endgame.highlight_grain`.
+
+### endgame.auto_submit
+Endgame typing bonus: whether a word that has been fully typed banks ITSELF, with
+no ENTER. `..._off` (the default) keeps the explicit submit; `..._exact` commits
+the instant the typed text equals a word still to be typed; `..._unambiguous`
+does the same but holds off while the finished word is also the start of another
+word still to be typed.
+
+Auto-submit is the young-player setting: one less key to remember at the end of
+every word, and the field empties itself for the next one. The reason it is not
+the default is the prefix case — with CAT and CATCH both still to type, `..._exact`
+banks CAT on the third keystroke and the player must start CATCH over.
+`..._unambiguous` is the middle ground: it waits for ENTER in exactly that
+situation and auto-submits everywhere else, at the price of a rule that sometimes
+submits for the player and sometimes does not. Note that it only inspects targets
+still to be typed, so once CATCH is banked, CAT auto-submits again.
+
+Only a letter going IN can fire it — backspacing onto a complete word does not —
+so a player who overtypes can always edit their way back. The commit runs the same
+path as ENTER (same scoring, same miss flash, same finish check); the only
+difference downstream is `source=auto` on the `50005` log line.
+
+Pairs naturally with `endgame.type_highlight: rule_endgame_type_highlight_prefix`,
+which shows the word filling in as it is typed — so the bank lands on the
+keystroke that completes the lit word.
 
 ### endgame.highlight_grain
 How finely the live typing highlight (`endgame.type_highlight`) is shown when words

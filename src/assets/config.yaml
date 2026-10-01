@@ -597,6 +597,11 @@ rules:
   endgame.type_highlight: rule_endgame_type_highlight_prefix
   # endgame.type_highlight: rule_endgame_type_highlight_off
 
+  # ENDGAME TYPING BONUS: bank a word the moment it is fully typed, with no ENTER. [ref: endgame.auto_submit]
+  endgame.auto_submit: rule_endgame_auto_submit_off
+  # endgame.auto_submit: rule_endgame_auto_submit_exact
+  # endgame.auto_submit: rule_endgame_auto_submit_unambiguous
+
   # ENDGAME TYPING BONUS (cell render only): highlight whole cells or single letters. [ref: endgame.highlight_grain]
   endgame.highlight_grain: rule_endgame_highlight_grain_letter
   # endgame.highlight_grain: rule_endgame_highlight_grain_cell

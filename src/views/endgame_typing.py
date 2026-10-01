@@ -96,6 +96,51 @@ def rule_endgame_suggest_nearest_target(typed, words, max_distance):
     return nearest_word(typed, words, max_distance)
 
 
+# --- auto-submit rules (endgame.auto_submit) ---------------------------------
+# Whether a word that has been fully typed submits ITSELF, with no ENTER. Each
+# takes the text typed so far and the target list and answers "submit now?"; the
+# field is scored and cleared exactly as a manual submit would be, so nothing
+# downstream has to know which way it arrived. Selected per run in start().
+def rule_endgame_auto_submit_off(typed, targets):
+    """Nothing submits itself -- every word is banked with ENTER. The original
+    behavior, and the one that lets the player fix a typo before committing."""
+    return False
+
+
+def rule_endgame_auto_submit_exact(typed, targets):
+    """Submit the moment the typed text IS one of the words still to be typed.
+    The gentlest flow for a young player: type the word, watch it bank, start the
+    next one -- no key to remember at the end of each word.
+
+    The cost is the prefix case the manual submit exists for: with CAT and CATCH
+    both still to type, the C-A-T keystrokes bank CAT and the player must start
+    CATCH over. Use rule_endgame_auto_submit_unambiguous to hold off in exactly
+    that situation."""
+    hit = False
+    for target in targets:
+        if not target["done"] and target["word"] == typed:
+            hit = True
+    return hit
+
+
+def rule_endgame_auto_submit_unambiguous(typed, targets):
+    """Auto-submit, but only when the finished word cannot be the start of another
+    word still to be typed: CAT banks itself while CATCH is done or absent, and
+    waits for ENTER while CATCH is still on the board.
+
+    So the player never loses a longer word to its own prefix, at the price of a
+    rule that sometimes submits for them and sometimes does not."""
+    hit = False
+    longer = False
+    for target in targets:
+        if not target["done"]:
+            if target["word"] == typed:
+                hit = True
+            elif target["word"].startswith(typed):
+                longer = True
+    return hit and not longer
+
+
 # --- live typing highlight rules (endgame.type_highlight) --------------------
 # What the board-region word list does WHILE the player types, before they submit.
 # Each takes the text typed so far and the target list, and writes two keys onto
@@ -182,6 +227,9 @@ class EndgameTyping:
         # Live per-letter highlight of the target words as they are typed
         # (endgame.type_highlight), chosen per run in start().
         self._highlight_rule = rule_endgame_type_highlight_off
+        # Whether a fully typed word banks itself without ENTER
+        # (endgame.auto_submit), chosen per run in start().
+        self._auto_submit_rule = rule_endgame_auto_submit_off
         # Seconds left on the hit / miss flash under the typed field (0 = hidden).
         self._flash_remaining = 0.0
         # Composition scorer -- the same rule the My Dictionary screen scores a
@@ -230,6 +278,15 @@ class EndgameTyping:
             "rule_endgame_type_highlight_prefix": rule_endgame_type_highlight_prefix,
         }
         self._highlight_rule = select_rule("endgame.type_highlight", highlight_rules)
+        # Auto-submit (endgame.auto_submit), read per run for the same reason.
+        auto_submit_rules = {
+            "rule_endgame_auto_submit_off": rule_endgame_auto_submit_off,
+            "rule_endgame_auto_submit_exact": rule_endgame_auto_submit_exact,
+            "rule_endgame_auto_submit_unambiguous":
+                rule_endgame_auto_submit_unambiguous,
+        }
+        self._auto_submit_rule = select_rule("endgame.auto_submit",
+                                             auto_submit_rules)
         # Board-region display (endgame.display), also read per run so a mode swap
         # takes effect. It owns the whole left region; this view keeps the pane.
         display_rules = {
@@ -296,10 +353,16 @@ class EndgameTyping:
     # --- input -------------------------------------------------------------
     def on_text(self, text):
         """Append a typed letter. Non-letters (and anything typed once the bonus is
-        over) are ignored; the field is uppercase to match the display."""
+        over) are ignored; the field is uppercase to match the display.
+
+        The last letter of a word may bank it by itself (endgame.auto_submit) --
+        checked only here, on a letter going IN, so a backspace back onto a
+        complete word never fires it."""
         if self._active and text.isalpha():
             self._typed += text.upper()
             self._refresh_pane()
+            if self._auto_submit_rule(self._typed, self._targets):
+                self._submit(source="auto")
 
     def on_key_press(self, symbol, modifiers, keys):
         """Backspace edits, ENTER submits. `keys` is GameScreen's control map, so
@@ -319,12 +382,17 @@ class EndgameTyping:
                 used = True
         return used
 
-    def _submit(self):
+    def _submit(self, source="enter"):
         """Score the typed word if it matches an un-typed target, then clear the
         field either way. A misspelling simply scores nothing -- the player retypes
-        it (mistakes are part of the exercise, so there is no penalty). Submitting
-        is explicit (ENTER) rather than on-match, because one target word can be a
-        prefix of another (CAT / CATCH)."""
+        it (mistakes are part of the exercise, so there is no penalty).
+
+        Submitting is explicit (ENTER) by default, because one target word can be a
+        prefix of another (CAT / CATCH); endgame.auto_submit hands the same path a
+        word the moment it is fully typed instead, passing source="auto" so the log
+        can tell the two apart. Everything after the match is identical either way
+        -- the scoring, the flash, the finish check -- so nothing downstream has to
+        know which key (or no key) committed the word."""
         typed = self._typed
         self._typed = ""
         matched = ""
@@ -340,7 +408,8 @@ class EndgameTyping:
         if not matched and typed:
             suggestion = self._suggest_rule(
                 typed, self._remaining_words(), self._suggest_max_distance)
-        L.log_50005(typed, matched, points, self._bonus_total, suggestion)
+        L.log_50005(typed, matched, points, self._bonus_total, suggestion,
+                    source=source)
         self._flash(typed, matched, points, suggestion)
         self._refresh_pane()
         self._display.refresh(self._targets)
