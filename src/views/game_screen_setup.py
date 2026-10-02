@@ -46,6 +46,7 @@ from models.gram_picker import (
     set_forced_formation_length,
     set_forced_formation_cell,
     clear_forced_formation_cell,
+    set_forced_unigram_class,
     rule_grams_greater_than_47_lengthcontrolled,
     ideation_grade,
     set_unigram_vowel_guarantee,
@@ -681,6 +682,98 @@ class BoardSetupMixin:
         _split_sidepane_trigrams_zigzag."""
         self._fill_ideation_trigram_sidepanes_mixed(self._split_sidepane_trigrams_zigzag)
 
+    def _rule_formation_fill_vowel_core_consonant_shell(self):
+        """Lay the opening board by LETTER CLASS in space: VOWEL unigrams packed in a
+        rough disc at board CENTER, CONSONANT unigrams filling the surrounding RIM, and
+        every multigram (digram / trigram+) pulled out to the four CORNERS -- trigram+
+        in the most-cornered cells, digrams in the ring just inside them.
+
+        Why: a word snaked through the middle always has vowels within reach, so the
+        board reads as a core you spell THROUGH rather than a uniform mush, and the
+        long/awkward multigram cells sit where a path is most likely to start or end.
+        Trigram+ cells still split by *fix the way the side-pane formations do -- the
+        two LEFT corners draw from the prefix pool, the two RIGHT corners from the
+        combined midfix/suffix pool -- so a prefix tends to open a path and a suffix
+        to close it. Digrams take any *fix.
+
+        Counts of each length come from gram_length.*_percent; the vowel share of the
+        remaining unigram cells from game_screen.vowel_core_percent. Lays settled
+        single-cell player pieces and no obstacle/mission pieces (pair with
+        game_screen.victory: rule_victory_none). Draws are forced through the
+        length-controlled picker regardless of the configured *_player.gram_pick, and
+        deduped like any other formation. Grid-agnostic: every zone is cut from pixel
+        centers, so square / hex / triangle boards all work."""
+        cells = [(x, y)
+                 for y in range(self._board.height)
+                 for x in range(self._board.width)
+                 if self._board.is_valid(x, y)]
+        n_uni, n_di, n_tri = self._region_length_counts(len(cells))
+
+        # Multigrams claim the corners first (most-cornered = trigram+), unigrams get
+        # what is left -- so the vowel core is cut from the board's MIDDLE, never from
+        # a cell a corner multigram already took.
+        by_corner = self._cells_by_corner_distance(cells)
+        tri = by_corner[:n_tri]
+        digrams = by_corner[n_tri:n_tri + n_di]
+        inner = by_corner[n_tri + n_di:]
+
+        tri_left, tri_right = self._split_left_right(tri)
+        vowel_cells, consonant_cells = self._split_vowel_core(inner)
+
+        self._place_region_cells(tri_left, 3, "prefix")   # trigram+ prefix -> left corners
+        self._place_region_cells(tri_right, 3, "midsuf")  # trigram+ mid/suffix -> right corners
+        self._place_region_cells(digrams, 2, None)        # digrams, any *fix
+        self._arm_vowel_guarantee(len(vowel_cells))
+        self._place_region_cells(vowel_cells, 1, None, unigram_class="vowel")
+        # Disarm before the shell: a still-missing required vowel forced into a RIM
+        # cell would put a vowel outside the core, which is the one thing this layout
+        # exists to prevent. The core cells are all vowels, so the coverage guarantee
+        # has already had every chance it needs.
+        self._arm_vowel_guarantee(0)
+        self._place_region_cells(consonant_cells, 1, None, unigram_class="consonant")
+
+    def _cells_by_corner_distance(self, cells):
+        """`cells` ordered by distance from the NEAREST board corner, closest first --
+        so a prefix of the list is the four corners growing inward together. Corners are
+        the extremes of the cells' own pixel centers, so the ranking is grid-agnostic
+        (and a ragged/hex board's real corners, not an assumed rectangle). Deterministic:
+        geometry only, no rand()."""
+        centers = {c: self._board.cell_center(c[0], c[1]) for c in cells}
+        xs = [px for px, _py in centers.values()]
+        ys = [py for _px, py in centers.values()]
+        corners = [(x, y) for x in (min(xs), max(xs)) for y in (min(ys), max(ys))]
+
+        def corner_dist(cell):
+            px, py = centers[cell]
+            return min((px - qx) ** 2 + (py - qy) ** 2 for qx, qy in corners)
+
+        return sorted(cells, key=lambda c: (corner_dist(c), centers[c]))
+
+    def _split_left_right(self, cells):
+        """Split `cells` into (left, right) halves about the board's center pixel-x --
+        how the corner trigram+ cells pick their ideation pool (prefix vs midsuf),
+        mirroring the side-pane formations' left/right convention."""
+        cx = self._board.cell_center(*self._board.center_cell())[0]
+        left = [c for c in cells if self._board.cell_center(c[0], c[1])[0] < cx]
+        right = [c for c in cells if self._board.cell_center(c[0], c[1])[0] >= cx]
+        return left, right
+
+    def _split_vowel_core(self, cells):
+        """Split the (non-multigram) `cells` into (vowel_core, consonant_shell): the
+        game_screen.vowel_core_percent share of them NEAREST board center become the
+        vowel core (a rough disc), the rest the consonant rim. Deterministic."""
+        pct = CONFIG["rules"]["game_screen.vowel_core_percent"]
+        n_vowel = min(len(cells), max(0, round(len(cells) * pct / 100.0)))
+        cx, cy = self._board.cell_center(*self._board.center_cell())
+
+        def center_dist(cell):
+            px, py = self._board.cell_center(cell[0], cell[1])
+            return (px - cx) ** 2 + (py - cy) ** 2
+
+        ordered = sorted(cells, key=lambda c: (center_dist(c),
+                                               self._board.cell_center(c[0], c[1])))
+        return ordered[:n_vowel], ordered[n_vowel:]
+
     def _fill_ideation_trigram_sidepanes_mixed(self, split_rule):
         """Shared body of the no-digram-region side-pane formations: `split_rule`
         carves the trigram+ cells off the two edges (straight column vs zigzag), then
@@ -870,20 +963,25 @@ class BoardSetupMixin:
             n_di = max(0, n - n_uni)
         return n_uni, n_di, n - n_uni - n_di
 
-    def _place_region_cells(self, cells, length, attr):
+    def _place_region_cells(self, cells, length, attr, unigram_class=None):
         """Fill each of `cells` with a settled player piece whose gram is the given
         `length` (and ideation pool `attr`, if any), forced per cell through the
-        length-controlled picker. Deduped like every other formation draw. Records the
+        length-controlled picker. `unigram_class` ("vowel" / "consonant", length-1
+        cells only) additionally pins which half of the unigram bucket to draw from
+        -- for rule_formation_fill_vowel_core_consonant_shell; None draws from the
+        whole bucket as before. Deduped like every other formation draw. Records the
         *fix the gram was BINNED for (prefix pool -> prefix; midsuf pool -> suffix or
         midfix per the placed gram) so the fade categorizers honor that as its primary
         *fix; digram/unigram pools (attr None) leave no tag (-> priority fallback)."""
         for x, y in cells:
             set_forced_formation_cell(length, attr)
+            set_forced_unigram_class(unigram_class)
             try:
                 self._fill_one_player_cell(
                     x, y, gram_pick_rule=rule_grams_greater_than_47_lengthcontrolled)
             finally:
                 clear_forced_formation_cell()
+                set_forced_unigram_class(None)
             if attr == "prefix":
                 self._formation_fix_tags[(x, y)] = "prefix"
             elif attr == "midsuf":

@@ -677,7 +677,8 @@ it slightly lengthens the window in which `constellation_auto_end` sees a smalle
 board. (Formerly `game_screen.constellation_replenish_delay_seconds`.)
 
 ### game_screen.replenish_length
-Constellation only (the `rule_constellation_replenish` turnover): given the length
+Any mode running the `rule_constellation_replenish` turnover (constellation and
+muncher — a bite replenishes exactly like a cleared cell): given the length
 category the cleared cell HELD — 1 (unigram), 2 (digram) or 3 (trigram **and
 longer**, the picker's "3+" bucket) — what length category the gram that refills it
 gets. The length the cell held is read from the cleared word's segments *before*
@@ -709,6 +710,36 @@ Only consulted for cells the constellation turnover refills; plant's refresh
 clear-action shares the replenish machinery but always uses the configured picker.
 Not a *_percent knob: `gram_length.*_percent` still governs the opening board and
 every unpinned draw, and the escalation runs on top of it.
+
+This is the EARLY rule — the one in force until the escalation gate below opens.
+
+### game_screen.replenish_length_escalated
+The LATE replenish length rule: what refills use once `game_screen.replenish_escalation`
+has opened the gate. Same four choices as `game_screen.replenish_length` above, with the
+same meanings, so a mode can escalate from like-for-like into growth (the muncher's
+`rule_replenish_length_match` → `rule_replenish_length_grow_cap`), or from the plain
+picker into anything else. Ignored entirely while the gate is shut, so it is harmless to
+leave set on a mode with escalation off.
+
+### game_screen.replenish_escalation
+Which of the two length rules is live right now. Checked PER REFILLED CELL, so the
+switch lands on the very next refill (in muncher mode, the next bite) rather than at a
+phase boundary, and once open it stays open for the rest of the game.
+- `rule_replenish_escalate_off` — gate welded shut: `game_screen.replenish_length` is
+  used forever, exactly as replenish behaved before this knob existed. The default, and
+  what every pre-existing mode keeps.
+- `rule_replenish_escalate_after_words` — opens once the player has cleared
+  `game_screen.replenish_escalation_words` words this game. Lets a mode open gentle (the
+  muncher: a board of single letters refilling as single letters) and only start silting
+  up with longer grams after the player has shown they can bank words. Not a difficulty
+  curve the player is told about — the board simply starts coming back heavier, which
+  they discover by biting it.
+
+### game_screen.replenish_escalation_words
+How many words must clear before `rule_replenish_escalate_after_words` opens the gate.
+Counts every cleared word, repeats included (the same per-game tally the fossil
+first-word skip reads), so it means "words banked", not "distinct words". Ignored by
+`rule_replenish_escalate_off`.
 
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own
@@ -1492,11 +1523,33 @@ many pieces of each it lays down.
   — outer column on even rows, inner column on odd rows, one cell per row — so the
   multigrams alternate left/right as they descend instead of packing one straight
   edge column. Same counts and left/right split.
+- `rule_formation_fill_vowel_core_consonant_shell` — laid out by LETTER CLASS instead
+  of by *fix: VOWEL unigrams (A E I O U Y — Y counts as a vowel, matching the wild-vowel
+  set) packed in a rough disc at board CENTER, CONSONANT unigrams filling the rim around
+  them, and every multigram pulled out to the four CORNERS — trigram+ in the most-cornered
+  cells, digrams in the ring just inside. So a path snaked through the middle always has
+  vowels within reach, and the long/awkward cells sit where a path is most likely to start
+  or end. The corner trigram+ cells still split by *fix the side-pane way — the two LEFT
+  corners draw the prefix pool, the two RIGHT corners the combined midfix/suffix pool —
+  and digrams take any *fix. Counts of each length from `gram_length.*_percent`; the vowel
+  share of the remaining cells from `game_screen.vowel_core_percent`. The vowel class pin
+  OVERRIDES the common/uncommon unigram sub-bin (`gram_length.unigram_common_percent`) —
+  one bucket cannot honor both splits — and `game_screen.formation_vowel_coverage` is
+  disarmed before the consonant rim is filled, so a still-missing required vowel can never
+  be forced outside the core. Zones are cut from pixel centers, so square / hex / triangle
+  boards all work.
 
 The ideation layouts: how many of each length comes from `gram_length.*`; the
 left/right trigram split from `gram_ideation.trigramplus.*` (prefix : midfix+suffix).
 Force the length-controlled picker regardless of `*_player.gram_pick`; pair with
 `game_screen.victory: rule_victory_none`.
+
+### game_screen.vowel_core_percent
+What share (percent) of `rule_formation_fill_vowel_core_consonant_shell`'s UNIGRAM cells
+become the center vowel core; the rest are the consonant rim. Counted against the
+unigram cells only — the corner multigram cells are carved off first — so raising it
+grows the vowel disc outward without touching the corners. 0 fills the whole board's
+unigram cells with consonants; 100 makes every unigram cell a vowel (no rim).
 
 ### game_screen.obstacle_count / mission_count
 How many obstacle / mission pieces `rule_formation_scattered` lays down. The ring

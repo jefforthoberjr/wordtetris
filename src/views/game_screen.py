@@ -633,6 +633,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
                 self._rule_formation_fill_ideation_trigram_sidepanes,
             "rule_formation_fill_ideation_trigram_sidepanes_zigzag":
                 self._rule_formation_fill_ideation_trigram_sidepanes_zigzag,
+            "rule_formation_fill_vowel_core_consonant_shell":
+                self._rule_formation_fill_vowel_core_consonant_shell,
             "rule_formation_plant": self._rule_formation_plant,
             "rule_formation_botanical": self._rule_formation_botanical,
         }
@@ -1022,6 +1024,22 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         }
         self._replenish_length_rule = select_rule(
             "game_screen.replenish_length", replenish_length_rules)
+        # The LATE length rule, used once the escalation gate below has opened. Same
+        # four choices as the early rule above (so a mode can escalate into matching,
+        # or from matching into growth); only consulted when the gate is open.
+        self._replenish_length_escalated_rule = select_rule(
+            "game_screen.replenish_length_escalated", replenish_length_rules)
+        # Escalation gate (game_screen.replenish_escalation): whether refills use the
+        # early rule or the escalated one. Off = early forever; the after-words rule
+        # opens the gate once game_screen.replenish_escalation_words words have
+        # cleared, so a mode can open as all single letters and only grow longer grams
+        # after the player has banked a few words. See _replenish_length_for.
+        replenish_escalation_rules = {
+            "rule_replenish_escalate_off": self._rule_replenish_escalate_off,
+            "rule_replenish_escalate_after_words": self._rule_replenish_escalate_after_words,
+        }
+        self._replenish_escalation_rule = select_rule(
+            "game_screen.replenish_escalation", replenish_escalation_rules)
         # Seconds a replenished (vacated-then-refilled) cell fades in; 0 = instant
         # pop. Generic across modes -- constellation's replenish turnover and plant's
         # refresh clear-action both use it. Live fades tracked in _replenish_fades,

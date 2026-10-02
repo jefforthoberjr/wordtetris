@@ -27,7 +27,7 @@ from models.gram_picker import (
 from starting_coverage import any_word_formable, sample_formable_words
 import debug_panel
 import log_codes as L
-from config import get_string
+from config import CONFIG, get_string
 
 
 class ConstellationMixin:
@@ -104,7 +104,9 @@ class ConstellationMixin:
         recompute.
 
         WHAT length the fresh gram is comes from a second rule
-        (game_screen.replenish_length, applied here via _replenish_length_rule):
+        (game_screen.replenish_length, applied here via _replenish_length_for --
+        which may hand the decision to the LATE rule once the escalation gate has
+        opened; see game_screen.replenish_escalation):
         by default the configured player picker decides, but the escalating rules
         grow the gram off the length that just cleared -- hydra mode. `cleared_lengths`
         maps a cell to the length category (1 / 2 / 3+) it held before the clear;
@@ -116,7 +118,7 @@ class ConstellationMixin:
         cleared_lengths = cleared_lengths or {}
         for (x, y) in cleared_cells:
             if self._board.is_valid(x, y) and self._board.gram_at(x, y) is None:
-                length = self._replenish_length_rule(cleared_lengths.get((x, y)))
+                length = self._replenish_length_for(cleared_lengths.get((x, y)))
                 self._schedule_replenish(x, y, length)
 
     def _cleared_length_map(self, found_words):
@@ -165,10 +167,46 @@ class ConstellationMixin:
         playing against."""
         return {1: 2, 2: 3, 3: 3}.get(cleared_length)
 
-    # Default so bare __new__ test instances (and any pre-mode construction) resolve
-    # the replenish length to "let the picker decide" without an __init__ having run
-    # select_rule; real games rebind this from game_screen.replenish_length.
+    # --- replenish escalation (game_screen.replenish_escalation) ---------------
+    # A gate IN FRONT of the two length rules above: until it opens, refills use
+    # game_screen.replenish_length (the EARLY rule); once it opens, they use
+    # game_screen.replenish_length_escalated (the LATE rule) instead. That is what
+    # lets a mode open gentle -- every cell a single letter, refilling as single
+    # letters -- and only start silting up with digrams/trigrams once the player has
+    # proven they can clear words. Each rule answers one question: is the gate open
+    # right now? They are consulted per refilled cell, so the switch takes effect on
+    # the very next refill (in muncher mode, the next BITE) rather than at a phase
+    # boundary.
+    def _rule_replenish_escalate_off(self):
+        """Gate welded shut: every refill uses game_screen.replenish_length forever,
+        exactly as replenish behaved before this knob existed. The default."""
+        return False
+
+    def _rule_replenish_escalate_after_words(self):
+        """Gate opens once the player has cleared game_screen.replenish_escalation_words
+        words this game, and stays open for the rest of the run. Counts every cleared
+        word, repeats included (the same tally the fossil first-word skip reads), so
+        the threshold means 'words banked', not 'distinct words'."""
+        threshold = CONFIG["rules"]["game_screen.replenish_escalation_words"]
+        return self._words_cleared_this_game >= threshold
+
+    def _replenish_length_for(self, cleared_length):
+        """The length category a refill should get: ask the escalation gate which of
+        the two length rules is live (early vs escalated), then ask that rule. The one
+        choke point every replenish length decision goes through."""
+        escalated = self._replenish_escalation_rule()
+        rule = (self._replenish_length_escalated_rule if escalated
+                else self._replenish_length_rule)
+        return rule(cleared_length)
+
+    # Defaults so bare __new__ test instances (and any pre-mode construction) resolve
+    # the replenish length without an __init__ having run select_rule: the picker
+    # decides, and the escalation gate is shut (so the escalated rule is never
+    # reached). Real games rebind all three from game_screen.replenish_length /
+    # replenish_length_escalated / replenish_escalation.
     _replenish_length_rule = _rule_replenish_length_picker
+    _replenish_length_escalated_rule = _rule_replenish_length_grow_cap
+    _replenish_escalation_rule = _rule_replenish_escalate_off
 
     def _schedule_replenish(self, x, y, length=None):
         """Queue the just-vacated cell (x, y) to refill after

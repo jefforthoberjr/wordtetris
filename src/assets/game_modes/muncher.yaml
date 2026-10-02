@@ -16,7 +16,13 @@ rules:
 
   # A full board to walk around in and eat your way through, kept small (6x6) so
   # the walk between bites stays short.
-  game_screen.setup_formation: rule_formation_fill_ideation_trigram_sidepanes_zigzag
+  # Laid out by LETTER CLASS: a vowel core at board center, a consonant rim around
+  # it, multigrams out in the four corners -- so wherever he is walking in the
+  # middle there is a vowel within a step or two, and the long cells that end a
+  # word sit at the edges of his route. Swap back to
+  # rule_formation_fill_ideation_trigram_sidepanes_zigzag for the *fix side panes.
+  game_screen.setup_formation: rule_formation_fill_vowel_core_consonant_shell
+  game_screen.vowel_core_percent: 35
   game_screen.grid_width: 6
 
   # One continuous phase: the read-only eaten word and the Submit control ride one
@@ -74,13 +80,32 @@ rules:
   game_screen.word_length: rule_word_min3letters_min2cells
   game_screen.word_repeat: rule_repeat_block
 
+  # SINGLE LETTERS ONLY to open with: no digrams, no trigrams anywhere on the
+  # starting board. Every bite is one letter, so the first words are spelled a
+  # letter at a time and nothing on the board is a surprise mouthful. (This also
+  # empties the vowel-core layout's corner multigram zones -- with no multigrams to
+  # place, the layout is just the vowel disc and its consonant rim.)
+  gram_length.unigram_percent:     100
+  gram_length.digram_percent:      0
+  gram_length.trigramplus_percent: 0
+
   # The board grows back behind him. Swap to rule_constellation_no_replenish for a
-  # board that shrinks as he eats it clean, or to one of the escalating
-  # replenish_length rules for hydra-style growth off every bite.
+  # board that shrinks as he eats it clean.
   game_screen.constellation_turnover: rule_constellation_replenish
   game_screen.replenish_delay_seconds: 3.0
   game_screen.replenish_fade_seconds: 1.5
-  game_screen.replenish_length: rule_replenish_length_picker
+  # EARLY game: like for like, so an eaten single letter grows back as a single
+  # letter and the board stays all-unigram however long he grazes.
+  game_screen.replenish_length: rule_replenish_length_match
+  # ...until he has banked 5 words, when the gate opens and the escalated rule takes
+  # over: 1 -> 2 -> 3+ one-way, so from then on every bite hands that cell back a
+  # LONGER gram and the board silts up with digrams and trigrams behind him. Set
+  # rule_replenish_escalate_off to keep the gentle all-unigram board forever, or
+  # rule_replenish_length_grow_wrap as the late rule to let a bitten trigram reset to
+  # a single letter (board recycles instead of ratcheting).
+  game_screen.replenish_escalation: rule_replenish_escalate_after_words
+  game_screen.replenish_escalation_words: 5
+  game_screen.replenish_length_escalated: rule_replenish_length_grow_cap
 
   # No path overlay -- the eaten route is not drawn back onto the board.
   # Swap to rule_word_trail_on to draw the path through the cells each word

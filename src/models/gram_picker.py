@@ -80,6 +80,15 @@ _forced_ideation_attr = None
 # suffix) used for that formation's right side; see _partition_corpus_ideation.
 _forced_explicit = False
 
+# A FOURTH pin, on the UNIGRAM formation cells: their VOWEL vs CONSONANT class
+# (rule_formation_fill_vowel_core_consonant_shell, which wants vowels packed at board
+# center and consonants out at the rim). _forced_unigram_class, when set to "vowel" /
+# "consonant", pulls the draw from that half of the unigram bucket instead of the whole
+# bucket (or the common/uncommon sub-bin, which it overrides). Y counts as a VOWEL here,
+# matching the wild-vowel set (wild_vowel.is_vowel); "QU" -- the one digram binned as a
+# unigram -- counts as a consonant. Cleared per draw by the formation.
+_forced_unigram_class = None
+
 # Unigram vowel-coverage guarantee (game_screen.formation_vowel_coverage). A formation
 # arms this with the required vowels + how many unigram cells it will place; the picker
 # draws those unigrams normally and only FORCES a still-missing vowel into the final
@@ -715,6 +724,41 @@ def _draw_from_unigram_group(group, count):
     return [Gram(text) for text in picks]
 
 
+# --- unigram letter classes (vowel vs consonant) ------------------------
+# A third way to cut the unigram bucket, used by the vowel-core/consonant-shell
+# formation: every length-1 corpus gram is either a VOWEL (A E I O U Y -- Y included
+# to match the wild-vowel set, see wild_vowel.is_vowel) or a CONSONANT ("QU", the one
+# digram the corpus bins as a unigram, lands here). WITHIN a class the corpus's own
+# frequencies still apply, so vowel cells lean E/A/I and consonant cells lean T/R/N.
+# Lazily built: {"vowel": (grams, weights), "consonant": (...)}.
+_unigram_classes = None
+
+
+def _partition_unigrams_into_classes():
+    global _unigram_classes
+    if _unigram_classes is not None:
+        return
+    _partition_corpus_by_length()
+    classes = {"vowel": ([], []), "consonant": ([], [])}
+    for gram, weight in zip(*_corpus_by_length[1]):
+        key = "vowel" if all(is_vowel(ch) for ch in gram.upper()) else "consonant"
+        classes[key][0].append(gram)
+        classes[key][1].append(weight)
+    _unigram_classes = classes
+
+
+def _draw_from_unigram_class(unigram_class, count):
+    """Draw `count` unigrams from one letter class ("vowel" / "consonant"), weighted by
+    the corpus's own frequencies within the class. A class the corpus somehow left empty
+    falls back to the whole unigram bucket rather than failing the fill."""
+    _partition_unigrams_into_classes()
+    items, weights = _unigram_classes[unigram_class]
+    if not items:
+        return _draw_from_length_bucket(1, count)
+    picks = rand().choices(items, weights=weights, k=count)
+    return [Gram(text) for text in picks]
+
+
 # --- ideation-strength sub-lists (gram_ideation.*) ---------------------
 # Built from the SAME corpus grams/weights as the length buckets, joined with the
 # y/m/n ideation grades in jpo_allGramsGreaterThan47InFreq_cleaned3.csv. Only 'y'
@@ -906,6 +950,10 @@ def rule_grams_greater_than_47_lengthcontrolled(count):
     """
     _partition_corpus_by_length()
     if _forced_length is not None:
+        if _forced_length == 1 and _forced_unigram_class is not None:
+            # Vowel/consonant class wins over the common/uncommon sub-bin: a
+            # layout that places letters BY class cannot honor both splits at once.
+            return _draw_from_unigram_class(_forced_unigram_class, count)
         if _forced_length == 1 and _forced_unigram_group is not None:
             return _draw_from_unigram_group(_forced_unigram_group, count)
         if _forced_length in (2, 3) and _forced_ideation_attr is not None:
@@ -1015,12 +1063,24 @@ def set_forced_formation_cell(length, attr=None):
     _forced_explicit = True
 
 
+def set_forced_unigram_class(unigram_class):
+    """Pin the next formation UNIGRAM draw to a letter class -- "vowel" (A E I O U Y)
+    or "consonant" (everything else, QU included) -- or clear with None. For
+    rule_formation_fill_vowel_core_consonant_shell, which decides which cells get
+    vowels. Ignored on digram / trigram+ draws."""
+    global _forced_unigram_class
+    _forced_unigram_class = unigram_class
+
+
 def clear_forced_formation_cell():
-    """Undo set_forced_formation_cell so later draws resume normally."""
+    """Undo set_forced_formation_cell (and any unigram class pin) so later draws
+    resume normally."""
     global _forced_formation_length, _forced_ideation_attr, _forced_explicit
+    global _forced_unigram_class
     _forced_formation_length = None
     _forced_ideation_attr = None
     _forced_explicit = False
+    _forced_unigram_class = None
 
 
 def _draw_explicit_formation(deduped, count):
