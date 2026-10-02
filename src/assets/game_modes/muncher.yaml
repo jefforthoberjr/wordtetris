@@ -98,14 +98,16 @@ rules:
   # letter and the board stays all-unigram however long he grazes.
   game_screen.replenish_length: rule_replenish_length_match
   # ...until he has banked 5 words, when the gate opens and the escalated rule takes
-  # over: 1 -> 2 -> 3+ one-way, so from then on every bite hands that cell back a
-  # LONGER gram and the board silts up with digrams and trigrams behind him. Set
-  # rule_replenish_escalate_off to keep the gentle all-unigram board forever, or
-  # rule_replenish_length_grow_wrap as the late rule to let a bitten trigram reset to
-  # a single letter (board recycles instead of ratcheting).
+  # over: 1 -> 2 -> 3+ -> 1, WRAPPING. From then on every bite hands that cell back a
+  # longer gram, so the board silts up with digrams and trigrams behind him -- but
+  # eating a trigram resets that cell to a single letter, so the board recycles and
+  # never seizes up into an unspellable grid (he has no clock, only lives, so a
+  # gridlocked board would strand him). Set rule_replenish_escalate_off to keep the
+  # gentle all-unigram board forever, or rule_replenish_length_grow_cap as the late
+  # rule for the one-way ratchet where a trigram cell stays a trigram cell.
   game_screen.replenish_escalation: rule_replenish_escalate_after_words
   game_screen.replenish_escalation_words: 5
-  game_screen.replenish_length_escalated: rule_replenish_length_grow_cap
+  game_screen.replenish_length_escalated: rule_replenish_length_grow_wrap
 
   # No path overlay -- the eaten route is not drawn back onto the board.
   # Swap to rule_word_trail_on to draw the path through the cells each word

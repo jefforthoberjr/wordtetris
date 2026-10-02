@@ -46,7 +46,8 @@ def test_gate_closed_below_the_threshold_then_open_at_it():
 
 def test_muncher_preset_opens_all_unigrams_and_escalates_after_five():
     """The shipped muncher mode file: single letters only to start, like-for-like
-    refills, then one-way growth once 5 words have banked."""
+    refills, then WRAPPING growth once 5 words have banked (a bitten trigram comes
+    back as a single letter, so the board recycles rather than gridlocking)."""
     try:
         config.apply_game_mode(config._GAME_MODES_DIR / "muncher.yaml")
         rules = config.CONFIG["rules"]
@@ -59,8 +60,19 @@ def test_muncher_preset_opens_all_unigrams_and_escalates_after_five():
         assert rules["game_screen.replenish_length"] == "rule_replenish_length_match"
         assert rules["game_screen.replenish_escalation"] == "rule_replenish_escalate_after_words"
         assert rules["game_screen.replenish_escalation_words"] == 5
-        assert rules["game_screen.replenish_length_escalated"] == "rule_replenish_length_grow_cap"
+        assert rules["game_screen.replenish_length_escalated"] == \
+            "rule_replenish_length_grow_wrap"
     finally:
         # Restore the base so this mode swap does not leak into other tests.
         config.CONFIG.clear()
         config.CONFIG.update(config.load_config())
+
+
+def test_escalated_wrap_sends_a_trigram_back_to_a_single_letter():
+    """The muncher's late rule: 1 -> 2, 2 -> 3+, and 3+ WRAPS back to 1, so eating a
+    trigram reopens that cell as a single letter."""
+    gs = _screen("rule_replenish_length_match", "rule_replenish_length_grow_wrap",
+                 "rule_replenish_escalate_after_words", 5, words_cleared=5)
+    assert gs._replenish_length_for(1) == 2
+    assert gs._replenish_length_for(2) == 3
+    assert gs._replenish_length_for(3) == 1
