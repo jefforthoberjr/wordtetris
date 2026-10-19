@@ -564,6 +564,16 @@ def log_50006(total):
     session_log.emit(50006, f"endgame bonus complete: +{total}", total=total)
 
 
+def log_50007(font_size, columns):
+    """The endgame PAGE display laid its words out (endgame.page_layout).
+    `font_size` is the page's base font; `columns` maps a column count to how many
+    words were placed in that many columns, e.g. {2: 18, 1: 6}."""
+    split = " ".join(f"{count}w@{cols}col" for cols, count in sorted(columns.items(),
+                                                                     reverse=True))
+    session_log.emit(50007, f"endgame page layout: font {font_size}, {split}",
+                     font=font_size, split=split)
+
+
 # --- 6xxxx  setup / random-source outcomes -----------------------------------
 def _gram_text(gram):
     """Render one gram for a log field: '*' for a wild vowel, '_' for an empty

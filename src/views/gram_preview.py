@@ -42,6 +42,21 @@ def parse_variation(variation):
     return shape, grams
 
 
+def cell_row_width(shape, count, cell_size):
+    """How wide a row of `count` cells of `shape` draws at `cell_size` -- the one
+    copy of the row geometry, so a caller laying rows out (the endgame page) can
+    measure a row before building it and get the same answer show() will."""
+    if shape == "hex":
+        # Point-up hexes of size cell/2, stepped by their full width (edge-to-edge).
+        width = count * SQRT3 * (cell_size / 2)
+    elif shape == "triangle":
+        # Neighbours share a slanted edge: n cells span (n + 1) half-sides.
+        width = (count + 1) * (cell_size * 2 / SQRT3) / 2
+    else:
+        width = count * cell_size
+    return width
+
+
 class GramPreview:
     """A single, movable re-render of one collected word's gram grouping, shown
     over a word on the dictionary screen while it is hovered.
@@ -114,12 +129,7 @@ class GramPreview:
         self._base_fills = []
         self._letter_runs = []
         self._letters_placed = 0
-        if shape == "hex":
-            row_width = self._hex_row_width(len(grams))
-        elif shape == "triangle":
-            row_width = self._triangle_row_width(len(grams))
-        else:
-            row_width = len(grams) * self._cell_size
+        row_width = cell_row_width(shape, len(grams), self._cell_size)
         self._row_width = row_width
         if self._backing:
             self._build_backing(left_x, center_y, max(cover_width, row_width))
@@ -276,7 +286,7 @@ class GramPreview:
     def _hex_row_width(self, count):
         # A point-up hex has vertical left/right edges, so stepping centers by
         # exactly the hex width puts neighbours edge-to-edge (no gap).
-        return count * SQRT3 * self._hex_size()
+        return cell_row_width("hex", count, self._cell_size)
 
     def _build_hex_row(self, grams, left_x, center_y):
         # Point-up hexagons (a vertex straight up), laid left to right and spaced
@@ -322,7 +332,7 @@ class GramPreview:
     def _triangle_row_width(self, count):
         # Neighbours overlap by half a triangle (they share a slanted edge), so a
         # row of n cells spans (n + 1) half-sides.
-        return (count + 1) * self._triangle_side() / 2
+        return cell_row_width("triangle", count, self._cell_size)
 
     def _build_triangle_row(self, grams, left_x, center_y):
         # Alternating point-up / point-down equilateral triangles laid left to

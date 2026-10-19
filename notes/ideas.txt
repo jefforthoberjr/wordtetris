@@ -7,6 +7,26 @@ GAME NAMES
 * catalyst cata LIST
 
 
+
+When muncher dies, I'd like to still see the recent word that killed me, for some extra time to spot check how I misspelled it.
+
+When I'm spelling a log word, and I die in the middle (for example I was trying to spell purfume, but I started the PERF...) I didn't get a chance to spell the rest of it, and I didn't know where I went wrong.
+
+Corvid wasn't in the dictionary...
+
+
+The UI of the final typing screen needs some scalability work, when there is too many words
+
+
+"embleism" should have suggested "embolism (like a dark L leeway is needed)
+
+
+"scrum" was not in the dictionary?
+
+Maybe add an appeal process option, click a button (1 or 2 appeals per game). You type a sentence or two why you think this is a word"
+"scrum" like the rugby term, and like used in business to descrive a type of meeting
+
+
 Maybe a limited number of * wilds that the player could choose to use in a game
 EX*ERNAL
 

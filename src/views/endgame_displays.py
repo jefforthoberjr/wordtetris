@@ -14,7 +14,83 @@ import math
 import pyglet
 
 from config import CONFIG, get_color
-from views.gram_preview import GramPreview, parse_variation
+from views.gram_preview import GramPreview, cell_row_width, parse_variation
+import log_codes as L
+
+
+# --- page layout rules (endgame.page_layout) ---------------------------------
+# How the PAGE display arranges its words. Each takes the page, the targets in
+# endgame.order and the usable area, and returns (font_size, columns, slots): the
+# base font size, how many words sit in each column count (for the log), and one
+# (column_left_offset, row_index) per target. PageDisplay turns rows into pixels.
+# Selected per page in build_page_display, from the live config.
+def rule_endgame_page_layout_columns(page, targets, usable_w, usable_h):
+    """As many equal top-to-bottom columns as the list needs, every column as wide
+    as the page's longest word. The original page layout."""
+    best = None
+    size = page.max_font_size()
+    while size >= page.min_font_size() and best is None:
+        rows = max(1, math.floor(usable_h / page.row_height(size)))
+        columns = max(1, math.ceil(len(targets) / rows))
+        col_width = math.floor(usable_w / columns)
+        if page.widest(targets, size) <= page.column_room(col_width):
+            best = size
+        else:
+            size -= 1
+    if best is None:
+        best = page.min_font_size()
+    rows = max(1, math.floor(usable_h / page.row_height(best)))
+    columns = max(1, math.ceil(len(targets) / rows))
+    col_width = math.floor(usable_w / columns)
+    slots = []
+    for i in range(len(targets)):
+        col = math.floor(i / rows)
+        slots.append((col * col_width, i - col * rows))
+    return best, {columns: len(targets)}, slots
+
+
+def rule_endgame_page_layout_two_then_one(page, targets, usable_w, usable_h):
+    """Two columns, read top-to-bottom, for as long as the words fit half the page;
+    from the first word too wide for a half column on, every word gets a full-width
+    row of its own beneath them. Pairs with endgame.order's length rule: the short
+    words fill the two columns and the long tail runs down one.
+
+    The font is the largest at which the whole arrangement fits the height (a
+    bigger font pushes more words into the one-column tail, which costs rows)."""
+    best = None
+    size = page.max_font_size()
+    while size >= page.min_font_size() and best is None:
+        split = _two_column_split(page, targets, size, usable_w)
+        rows = math.ceil(split / 2) + (len(targets) - split)
+        fits_height = rows * page.row_height(size) <= usable_h
+        fits_width = page.widest(targets, size) <= page.column_room(usable_w)
+        if fits_height and fits_width:
+            best = size
+        else:
+            size -= 1
+    if best is None:
+        best = page.min_font_size()
+    split = _two_column_split(page, targets, best, usable_w)
+    half = math.floor(usable_w / 2)
+    paired_rows = math.ceil(split / 2)
+    slots = []
+    for i in range(len(targets)):
+        if i < split:
+            col = math.floor(i / paired_rows)
+            slots.append((col * half, i - col * paired_rows))
+        else:
+            slots.append((0, paired_rows + (i - split)))
+    return best, {2: split, 1: len(targets) - split}, slots
+
+
+def _two_column_split(page, targets, size, usable_w):
+    """How many leading targets fit a half-width column at `size`: everything up to
+    (not including) the first one that does not."""
+    room = page.column_room(math.floor(usable_w / 2))
+    split = 0
+    while split < len(targets) and page.word_width(targets[split], size) <= room:
+        split += 1
+    return split
 
 
 class PageDisplay:
@@ -42,11 +118,14 @@ class PageDisplay:
     CELL_FONT_SCALE = 0.75
     CELL_ROW_SPACING = 1.5
 
-    def __init__(self, region_size, window_height, cells=False):
+    def __init__(self, region_size, window_height, cells=False,
+                 layout_rule=rule_endgame_page_layout_columns):
         self._region_size = region_size
         self._window_height = window_height
         # Draw each word as its cleared CELLS rather than as text (endgame.render).
         self._cells = cells
+        # How the words are arranged on the page (endgame.page_layout).
+        self._layout_rule = layout_rule
         self._batch = pyglet.graphics.Batch()
         self._views = []
 
@@ -62,25 +141,60 @@ class PageDisplay:
         margin = math.floor(self._region_size / 16)
         usable_w = self._region_size - 2 * margin
         usable_h = self._window_height - 2 * margin
-        longest = 0
-        for target in targets:
-            if len(target["word"]) > longest:
-                longest = len(target["word"])
-        font_size, rows, col_width = self._fit(len(targets), longest, usable_w, usable_h)
-        # A cell row is taller and wider than the same word in text, so give it a
-        # smaller base size to keep the page inside the region.
-        if self._cells:
-            font_size = math.floor(font_size * self.CELL_FONT_SCALE)
-        row_height = math.floor(font_size * self.LINE_SPACING * self._row_spacing())
+        font_size, columns, slots = self._layout_rule(self, targets, usable_w, usable_h)
+        L.log_50007(font_size, columns)
+        row_height = self.row_height(font_size)
         top = self._window_height - margin
-        for i, target in enumerate(targets):
-            col = math.floor(i / rows)
-            row = i - col * rows
-            view = _WordView(self._cells, font_size, self._batch)
+        for target, (left, row) in zip(targets, slots):
+            view = _WordView(self._cells, self._drawn_font_size(font_size), self._batch)
             view.set_target(target)
-            view.place(margin + col * col_width,
-                       top - row * row_height - math.floor(row_height / 2))
+            view.place(margin + left, top - row * row_height - math.floor(row_height / 2))
             self._views.append(view)
+
+    # --- measurement, shared by the layout rules -----------------------------
+    # Every size here is the page's BASE font size; cell mode scales it down by
+    # CELL_FONT_SCALE when drawing, and these measure what is actually drawn at
+    # that scaled size -- a cell row's real width and row spacing, not the text
+    # estimate (fitting in text units and drawing cells overflowed the page).
+    def max_font_size(self):
+        return math.floor(self._region_size * self.MAX_FONT_FRACTION)
+
+    def min_font_size(self):
+        return max(6, math.floor(self._region_size * self.MIN_FONT_FRACTION))
+
+    def row_height(self, size):
+        """Distance between word rows at base font `size`."""
+        return math.floor(self._drawn_font_size(size) * self.LINE_SPACING
+                          * self._row_spacing())
+
+    def word_width(self, target, size):
+        """How wide `target` draws at base font `size`: its cell row (the same
+        geometry GramPreview builds) or its text, by the ~0.62 em glyph estimate."""
+        drawn = self._drawn_font_size(size)
+        if self._cells and target["variation"]:
+            shape, grams = parse_variation(target["variation"])
+            # _WordView sizes its preview cells at 1.25x the drawn font.
+            width = cell_row_width(shape, len(grams), drawn * 1.25)
+        else:
+            width = len(target["word"]) * drawn * self.CHAR_WIDTH
+        return width
+
+    def widest(self, targets, size):
+        widest = 0
+        for target in targets:
+            widest = max(widest, self.word_width(target, size))
+        return widest
+
+    def column_room(self, col_width):
+        """How much of a column a word may fill, leaving the gap to the next."""
+        return col_width * (1 - self.COLUMN_GAP)
+
+    def _drawn_font_size(self, size):
+        """The font a word actually draws at: cell rows are bigger than the same
+        word in text -- each letter gets a box -- so cell mode draws smaller."""
+        if self._cells:
+            size = math.floor(size * self.CELL_FONT_SCALE)
+        return size
 
     def _row_spacing(self):
         """Extra line spacing in cell mode, where each row is a strip of boxes."""
@@ -89,36 +203,6 @@ class PageDisplay:
         else:
             spacing = 1.0
         return spacing
-
-    def _fit(self, count, longest, usable_w, usable_h):
-        """The largest font size at which `count` words -- the longest of them
-        `longest` characters -- fit the region in top-to-bottom columns, with the
-        (font_size, rows_per_column, column_width) that go with it.
-
-        Walks sizes down from MAX_FONT_FRACTION: at each size the rows per column
-        follow from the height, the column count from the rows, and the fit test is
-        whether the longest word still fits its column's width. The smallest size is
-        returned whether or not it fits, so a pathological list still draws (just
-        tight) rather than vanishing."""
-        best = None
-        size = math.floor(self._region_size * self.MAX_FONT_FRACTION)
-        floor_size = max(6, math.floor(self._region_size * self.MIN_FONT_FRACTION))
-        while size >= floor_size and best is None:
-            row_height = math.floor(size * self.LINE_SPACING)
-            rows = max(1, math.floor(usable_h / row_height))
-            columns = max(1, math.ceil(count / rows))
-            col_width = math.floor(usable_w / columns)
-            text_width = longest * size * self.CHAR_WIDTH
-            if text_width <= col_width * (1 - self.COLUMN_GAP) and rows * columns >= count:
-                best = (size, rows, col_width)
-            else:
-                size -= 1
-        if best is None:
-            row_height = math.floor(floor_size * self.LINE_SPACING)
-            rows = max(1, math.floor(usable_h / row_height))
-            columns = max(1, math.ceil(count / rows))
-            best = (floor_size, rows, math.floor(usable_w / columns))
-        return best
 
     def refresh(self, targets):
         """After a word was typed: done words turn green (text) or fill green (cell
@@ -619,9 +703,23 @@ def letter_grain_rule():
         "rule_endgame_highlight_grain_cell") == "rule_endgame_highlight_grain_letter"
 
 
+def page_layout_rule():
+    """The PAGE display's arrangement (endgame.page_layout), read from the live
+    config at call time like every knob here. Unknown values fall back to the
+    original equal columns."""
+    rules = {
+        "rule_endgame_page_layout_columns": rule_endgame_page_layout_columns,
+        "rule_endgame_page_layout_two_then_one": rule_endgame_page_layout_two_then_one,
+    }
+    name = CONFIG.get("rules", {}).get("endgame.page_layout",
+                                       "rule_endgame_page_layout_columns")
+    return rules.get(name, rule_endgame_page_layout_columns)
+
+
 def build_page_display(region_size, window_height):
-    """A PageDisplay in the configured render mode (see endgame.display)."""
-    return PageDisplay(region_size, window_height, cells=render_cells_rule())
+    """A PageDisplay in the configured render mode and layout (see endgame.display)."""
+    return PageDisplay(region_size, window_height, cells=render_cells_rule(),
+                       layout_rule=page_layout_rule())
 
 
 def build_scroll_display(region_size, window_height):

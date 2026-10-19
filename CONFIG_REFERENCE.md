@@ -2183,6 +2183,25 @@ on the list can be typed at any time — so this is purely how the list reads:
   display.
 - `rule_endgame_order_score` — highest-scoring first, so the biggest prizes are at
   the top. Ties keep clear order.
+- `rule_endgame_order_length` — shortest first, ties kept in clear order (never
+  alphabetical). The pairing for `endgame.page_layout: rule_endgame_page_layout_two_then_one`.
+
+### endgame.page_layout
+How the PAGE display (`endgame.display: rule_endgame_display_page`) arranges its
+words; ignored by the moving displays. Both measure each word as it is actually
+drawn — in cell render that is the cell row's real width and row spacing — and pick
+the largest font at which everything fits the region.
+- `rule_endgame_page_layout_columns` — as many equal top-to-bottom columns as the
+  list needs, every column as wide as the page's longest word. The original layout:
+  one long word narrows the font for the whole page.
+- `rule_endgame_page_layout_two_then_one` — two top-to-bottom columns for as long as
+  the words fit half the page width; from the first word that does not, every word
+  gets a full-width row of its own beneath them. Follows `endgame.order` as given
+  (the split is at the first too-wide word), so it reads best with
+  `rule_endgame_order_length`: short words two to a row, the long tail one per row.
+  A larger font pushes more words into the tail, which costs rows; the font chosen
+  is the largest at which the whole arrangement still fits the height.
+The chosen font and split are logged (50007) so a replay log shows the layout.
 
 ### endgame.spell_suggest
 The "did you mean?" offered under a MISSPELLED submission in the typing bonus. This

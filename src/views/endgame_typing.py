@@ -53,6 +53,13 @@ def rule_endgame_order_score(targets):
     return sorted(targets, key=lambda t: -t["points"])
 
 
+def rule_endgame_order_length(targets):
+    """Shortest first, ties kept in clear order (sorted is stable). The pairing
+    for endgame.page_layout's two-then-one rule: the short words share the two
+    columns and the long ones run down a single full-width column after them."""
+    return sorted(targets, key=lambda t: len(t["word"]))
+
+
 # --- display rules (endgame.display) -----------------------------------------
 # How the words to type are shown over the board region play has finished with.
 # Each builds one of the interchangeable displays in views/endgame_displays.py,
@@ -269,6 +276,7 @@ class EndgameTyping:
             "rule_endgame_order_cleared": rule_endgame_order_cleared,
             "rule_endgame_order_alphabetical": rule_endgame_order_alphabetical,
             "rule_endgame_order_score": rule_endgame_order_score,
+            "rule_endgame_order_length": rule_endgame_order_length,
         }
         self._targets = select_rule("endgame.order", order_rules)(self._targets)
         # Live typing highlight (endgame.type_highlight), read per run like the rest

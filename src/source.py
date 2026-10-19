@@ -49,6 +49,15 @@ class Source:
     def shuffle(self, seq):
         random.shuffle(seq)
 
+    def timing_gate(self, name, live):
+        """A decision that hangs on frame timing rather than on the RNG -- e.g. the
+        muncher refusing a step while his last one is still animating. Live play
+        answers from the game's own clock (`live`); a replay source hands back the
+        RECORDED answer instead, since replay cannot reproduce the original frame
+        cadence (a 31fps run lags its animation behind the wall clock) and an
+        off-by-one-frame answer walks the replay off the recorded path."""
+        return live
+
 
 # The active source. One stable object the whole game draws through; replay
 # swaps it via set_active() before a game is built. Accessed through rand() so

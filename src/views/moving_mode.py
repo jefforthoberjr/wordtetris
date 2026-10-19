@@ -1461,7 +1461,7 @@ class MuncherMovingMode(MovingMode):
         An EMPTY cell is a perfectly good place to stand: cells he has eaten are
         holes in the board and he walks over and rests in them freely. Only the
         board's edge stops him."""
-        if self._sprite.stepping():
+        if rand().timing_gate("muncher_step_blocked", self._sprite.stepping()):
             L.log_20010("blocked", self._pos, target)
         elif not self._gs._board.is_valid(*target):
             L.log_20010("off_board", self._pos, target)

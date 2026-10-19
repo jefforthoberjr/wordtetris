@@ -26,6 +26,8 @@ import yaml
 
 import config
 import replay_log
+# Only imports `random` -- safe before the config patch (unlike game modules).
+import source
 
 # config globals must be patched BEFORE game_screen (and its transitive imports)
 # read them at import time, so pyglet/game modules are imported lazily in run().
@@ -104,9 +106,58 @@ def build_game(log, visible=True, player_dict_path=None, coverage_sim_seconds=No
     # showing CALCULATING, but never recomputes or rewrites the file.
     gs._coverage_sim_seconds = coverage_sim_seconds
     source.reset()
+    source.set_active(ReplaySource(log))
     random.seed(log.rng_seed)
     gs.on_enter()
     return win, gs
+
+
+# --- recorded timing gates ---------------------------------------------------
+# Walk outcomes the recording logged right after a key press: which gate each
+# decides, and how to read the gate's answer off the logged action.
+_TIMING_GATE_ACTIONS = {
+    20010: ("muncher_step_blocked", ("step", "blocked", "off_board"),
+            lambda action: action == "blocked"),
+}
+# How far after its key press a gate's outcome line may sit (they are logged in
+# the same handler, so in practice the same millisecond).
+_TIMING_GATE_WINDOW = 0.05
+
+
+def recorded_timing_gates(log):
+    """{id(key event): {gate name: recorded answer}} for every key press whose
+    handler logged a timing-gated outcome (see Source.timing_gate)."""
+    gates = {}
+    events = log.events
+    for i, ev in enumerate(events):
+        if ev.code != 20001:
+            continue
+        j = i + 1
+        while (j < len(events) and events[j].code != 20001
+               and events[j].t - ev.t < _TIMING_GATE_WINDOW):
+            outcome = events[j]
+            spec = _TIMING_GATE_ACTIONS.get(outcome.code)
+            if spec is not None and outcome.fields.get("action") in spec[1]:
+                gates.setdefault(id(ev), {})[spec[0]] = spec[2](outcome.fields["action"])
+            j += 1
+    return gates
+
+
+class ReplaySource(source.Source):
+    """Replay's random source: the seeded RNG as normal, but timing gates answer
+    from the recording. dispatch() arms the gates recorded for each key press just
+    before handing it to the game; a gate with no recorded answer (or a key the
+    game consumed some other way) falls back to the live clock."""
+
+    def __init__(self, log):
+        self._by_event = recorded_timing_gates(log)
+        self._armed = {}
+
+    def arm(self, event):
+        self._armed = dict(self._by_event.get(id(event), {}))
+
+    def timing_gate(self, name, live):
+        return self._armed.pop(name, live)
 
 
 # --- input decoding (record -> pyglet call) ----------------------------------
@@ -133,7 +184,12 @@ def dispatch(gs, event):
         if f.get("mods", "-") != "-":
             for name in f["mods"].split("+"):
                 modifiers |= mod_map.get(name, 0)
+        active = source.rand()
+        if isinstance(active, ReplaySource):
+            active.arm(event)
         gs.on_key_press(symbol, modifiers)
+        if isinstance(active, ReplaySource):
+            active.arm(None)
     elif event.code == 20002:                     # text typed
         text = f.get("text", "").replace("\\n", "\n").replace("\\r", "\r").replace("_", " ")
         gs.on_text(text)
@@ -182,11 +238,9 @@ def run(path, speed=1.0, visible=True):
         # user closes it.
         if state["done"]:
             return
+        start = state["t"]
         state["t"] += dt * speed
-        while state["i"] < len(inputs) and inputs[state["i"]].t <= state["t"]:
-            dispatch(gs, inputs[state["i"]])
-            state["i"] += 1
-        gs.update(dt * speed)
+        state["i"] = advance_to(gs, inputs, state["i"], start, state["t"])
         # Played out: the game reached its end state, or we ran several seconds
         # past the last recorded event (left-screen endings).
         ended = getattr(gs, "_phase", None) is not None and gs._phase.name == "VICTORY"
@@ -200,6 +254,31 @@ def run(path, speed=1.0, visible=True):
     pyglet.clock.schedule_interval(tick, 1.0 / config.CONFIG["game"]["ups"])
     pyglet.app.run()
     return 0
+
+
+def advance_to(gs, inputs, i, t_from, t_to):
+    """Advance the game from sim time t_from to t_to, dispatching every input due
+    in between AT ITS OWN recorded timestamp: the game is updated up to each
+    input's time, the input fires, and the remainder of the span is updated after.
+    Returns the index of the next undispatched input.
+
+    Batching a tick's inputs ahead of one update (the original loop) replays them
+    all against the state at the START of the tick. That is harmless for most
+    modes, but timing-gated input then diverges -- the muncher refuses a step while
+    his last one is still animating, so two arrows a fraction of a second apart
+    landed in one tick (constantly, at a coarse export fps) and the second came
+    out `blocked`, walking him off the recorded path."""
+    t = t_from
+    while i < len(inputs) and inputs[i].t <= t_to:
+        due = max(inputs[i].t, t)
+        if due > t:
+            gs.update(due - t)
+            t = due
+        dispatch(gs, inputs[i])
+        i += 1
+    if t_to > t:
+        gs.update(t_to - t)
+    return i
 
 
 # --- video export ------------------------------------------------------------
@@ -281,17 +360,14 @@ def export_run(path, out_path, speed=1.0, fps=30, scale=1.0):
         win.flip()
 
     # Play the recorded timeline on a fixed timestep -- one output frame per
-    # step. Mirrors run()'s tick ordering (advance clock, dispatch due inputs,
-    # update) so the rendered state matches a normal replay at each instant.
+    # step. Shares run()'s advance_to (each input dispatched at its recorded
+    # time), so the rendered state matches a normal replay at each instant.
     i = 0
     t = cov_seconds
     frames = 0
     while t <= last_t:
+        i = advance_to(gs, inputs, i, t, t + dt)
         t += dt
-        while i < len(inputs) and inputs[i].t <= t:
-            dispatch(gs, inputs[i])
-            i += 1
-        gs.update(dt)
         write_frame()
         frames += 1
 
