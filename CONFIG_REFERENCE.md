@@ -2201,7 +2201,23 @@ the largest font at which everything fits the region.
   `rule_endgame_order_length`: short words two to a row, the long tail one per row.
   A larger font pushes more words into the tail, which costs rows; the font chosen
   is the largest at which the whole arrangement still fits the height.
-The chosen font and split are logged (50007) so a replay log shows the layout.
+- `rule_endgame_page_layout_two_then_one_paged` — the same two-then-one arrangement
+  at a FIXED size, spread over as many pages as the list needs. The size comes from
+  `endgame.page_rows` and never shrinks for a long list; a long list gets more pages
+  instead. When every word on a page is typed, the next page replaces it (no going
+  back), and a "Page 2 / 3" label sits in the bottom margin. Typing, the live
+  highlight, auto-submit and "did you mean?" all work over the CURRENT page only, so
+  a word on a later page cannot score early or make a word on this page ambiguous
+  (CAT on page 1 auto-submits even if CATCH is waiting on page 2).
+The chosen font and split are logged (50007) for each page as it goes up, so a
+replay log shows the layout and every page turn.
+
+### endgame.page_rows
+Word rows per page for `rule_endgame_page_layout_two_then_one_paged`; this is what
+fixes the word size: the font is the largest at which this many rows fill the page
+height, so it depends only on the window, never on the word count. 8 draws the
+words at about twice the size an autosized 33-word page shrank to. Fewer rows means
+bigger words and more pages. Ignored by the other layouts.
 
 ### endgame.spell_suggest
 The "did you mean?" offered under a MISSPELLED submission in the typing bonus. This

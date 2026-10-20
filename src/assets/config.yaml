@@ -635,6 +635,9 @@ rules:
   # ENDGAME page display: equal columns, or two columns then a one-column long tail. [ref: endgame.page_layout]
   endgame.page_layout: rule_endgame_page_layout_columns
   # endgame.page_layout: rule_endgame_page_layout_two_then_one
+  # endgame.page_layout: rule_endgame_page_layout_two_then_one_paged
+  # ENDGAME paged layout: word rows per page -- sets the fixed word size. [ref: endgame.page_rows]
+  endgame.page_rows: 8
 
   # Whole-board fill bonus; match variant to the mode. [ref: game_screen.fill_board]
   game_screen.fill_board: rule_fill_board_all_fossilized

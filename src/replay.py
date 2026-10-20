@@ -143,21 +143,52 @@ def recorded_timing_gates(log):
     return gates
 
 
+def recorded_replenish_fills(log):
+    """{"replenish_due:x,y": [fill time, ...]} -- when each scheduled refill
+    (06006) actually landed: the first 06002 fill of that cell after it. In order,
+    so a cell eaten again later queues its next refill behind the first."""
+    fills = {}
+    events = log.events
+    for i, ev in enumerate(events):
+        if ev.code != 6006:
+            continue
+        cell = f"{ev.fields.get('x')},{ev.fields.get('y')}"
+        for later in events[i + 1:]:
+            if (later.code == 6002 and later.fields.get("kind") == "fill"
+                    and later.fields.get("cells", "").startswith(cell + ":")):
+                fills.setdefault(f"replenish_due:{cell}", []).append(later.t)
+                break
+    return fills
+
+
 class ReplaySource(source.Source):
     """Replay's random source: the seeded RNG as normal, but timing gates answer
-    from the recording. dispatch() arms the gates recorded for each key press just
-    before handing it to the game; a gate with no recorded answer (or a key the
-    game consumed some other way) falls back to the live clock."""
+    from the recording. Two kinds:
+      * per key press -- dispatch() arms the gates recorded for each key just
+        before handing it to the game (the muncher's step lockout);
+      * per sim time -- a refill is due once replay time reaches the time the
+        recording placed it (advance_to keeps `now` current).
+    A gate with no recorded answer falls back to the live clock."""
 
     def __init__(self, log):
         self._by_event = recorded_timing_gates(log)
         self._armed = {}
+        self._fill_times = recorded_replenish_fills(log)
+        self.now = 0.0
 
     def arm(self, event):
         self._armed = dict(self._by_event.get(id(event), {}))
 
     def timing_gate(self, name, live):
-        return self._armed.pop(name, live)
+        if name in self._armed:
+            return self._armed.pop(name)
+        times = self._fill_times.get(name)
+        if times:
+            due = self.now >= times[0]
+            if due:
+                times.pop(0)
+            return due
+        return live
 
 
 # --- input decoding (record -> pyglet call) ----------------------------------
@@ -272,13 +303,22 @@ def advance_to(gs, inputs, i, t_from, t_to):
     while i < len(inputs) and inputs[i].t <= t_to:
         due = max(inputs[i].t, t)
         if due > t:
-            gs.update(due - t)
+            _update_until(gs, t, due)
             t = due
         dispatch(gs, inputs[i])
         i += 1
     if t_to > t:
-        gs.update(t_to - t)
+        _update_until(gs, t, t_to)
     return i
+
+
+def _update_until(gs, t_from, t_to):
+    """One game update covering t_from..t_to, with the replay source's clock set
+    to t_to first so time-based gates (recorded refills) see the update's end."""
+    active = source.rand()
+    if isinstance(active, ReplaySource):
+        active.now = t_to
+    gs.update(t_to - t_from)
 
 
 # --- video export ------------------------------------------------------------

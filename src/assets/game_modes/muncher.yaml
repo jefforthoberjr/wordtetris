@@ -76,7 +76,10 @@ rules:
   endgame.auto_submit: rule_endgame_auto_submit_unambiguous
   # Shortest words first, two to a row; the long ones get a full-width row each.
   endgame.order: rule_endgame_order_length
-  endgame.page_layout: rule_endgame_page_layout_two_then_one
+  # endgame.page_layout: rule_endgame_page_layout_two_then_one
+  # Fixed-size words (8 rows fill the page); a long list spreads over pages.
+  endgame.page_layout: rule_endgame_page_layout_two_then_one_paged
+  endgame.page_rows: 8
 
   # At least two bites per word, so a lone trigram cell (e.g. "SON") cannot clear
   # on its own -- a word must chain grams from separate cells.

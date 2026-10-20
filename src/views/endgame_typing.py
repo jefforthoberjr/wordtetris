@@ -369,7 +369,7 @@ class EndgameTyping:
         if self._active and text.isalpha():
             self._typed += text.upper()
             self._refresh_pane()
-            if self._auto_submit_rule(self._typed, self._targets):
+            if self._auto_submit_rule(self._typed, self._typeable_targets()):
                 self._submit(source="auto")
 
     def on_key_press(self, symbol, modifiers, keys):
@@ -405,7 +405,7 @@ class EndgameTyping:
         self._typed = ""
         matched = ""
         points = 0
-        for target in self._targets:
+        for target in self._typeable_targets():
             if not target["done"] and target["word"] == typed:
                 target["done"] = True
                 matched = target["word"]
@@ -432,10 +432,21 @@ class EndgameTyping:
         """The target words still to be typed -- the only candidates a suggestion
         may name, since a word already banked is worth nothing now."""
         words = []
-        for target in self._targets:
+        for target in self._typeable_targets():
             if not target["done"]:
                 words.append(target["word"])
         return words
+
+    def _typeable_targets(self):
+        """The targets the player can type right now. A paged display
+        (endgame.page_layout's paged rule) limits this to the page on screen, so
+        a word on a later page neither scores early nor makes a word on this page
+        ambiguous for auto-submit; every other display offers the whole list."""
+        targets = self._targets
+        display = getattr(self, "_display", None)
+        if display is not None and hasattr(display, "typeable"):
+            targets = display.typeable(self._targets)
+        return targets
 
     def _flash(self, typed, matched, points, suggestion=""):
         """Show the verdict on a MISS under the field: the typed text echoed back, so
@@ -546,7 +557,7 @@ class EndgameTyping:
         """Re-run the live typing highlight over the targets and push it to the
         board-region display. Called wherever the typed text changes -- this is the
         one funnel for it, so no keystroke route can forget."""
-        self._highlight_rule(self._typed, self._targets)
+        self._highlight_rule(self._typed, self._typeable_targets())
         if self._display is not None:
             self._display.refresh(self._targets)
 

@@ -7,6 +7,8 @@ GAME NAMES
 * catalyst cata LIST
 
 
+To be able to type in words you want to be "on deck". Like you know you just need 1 or 2 more letters to refresh and appear, but you don't want to forget about them. Maybe they auto trigger if they appear. Maybe the ability to put upto 3 words "on deck" or "on watch"
+
 
 When muncher dies, I'd like to still see the recent word that killed me, for some extra time to spot check how I misspelled it.
 

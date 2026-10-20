@@ -77,6 +77,7 @@ en:
   # Endgame typing bonus (right pane)
   endgame_prompt:        "Type the words:"
   endgame_total:         "Bonus: {count}"
+  endgame_page:          "Page {page} / {count}"
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"
@@ -167,6 +168,7 @@ es:
   # Endgame typing bonus (right pane)
   endgame_prompt:        "Escribe las palabras:"
   endgame_total:         "Bonificación: {count}"
+  endgame_page:          "Página {page} / {count}"
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"

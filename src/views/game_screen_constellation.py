@@ -27,6 +27,7 @@ from models.gram_picker import (
 from starting_coverage import any_word_formable, sample_formable_words
 import debug_panel
 import log_codes as L
+from source import rand
 from config import CONFIG, get_string
 
 
@@ -260,12 +261,21 @@ class ConstellationMixin:
         if not self._pending_replenishes:
             return
         fired = False
+        waiting = []
         for pending in self._pending_replenishes:
             pending[2] -= dt
-            if pending[2] <= 0:
+            # Due by the game's own countdown -- except in a replay, where the
+            # recording says when this refill landed (Source.timing_gate): a refill
+            # a few ms off swaps order with a bite, and the recompute below then
+            # draws the RNG a different number of times.
+            due = rand().timing_gate(
+                f"replenish_due:{pending[0]},{pending[1]}", pending[2] <= 0)
+            if due:
                 self._replenish_cell_now(pending[0], pending[1], pending[3])
                 fired = True
-        self._pending_replenishes = [p for p in self._pending_replenishes if p[2] > 0]
+            else:
+                waiting.append(pending)
+        self._pending_replenishes = waiting
         if fired:
             self._recompute_candidates()
 

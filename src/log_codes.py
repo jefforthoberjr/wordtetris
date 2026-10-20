@@ -564,14 +564,15 @@ def log_50006(total):
     session_log.emit(50006, f"endgame bonus complete: +{total}", total=total)
 
 
-def log_50007(font_size, columns):
-    """The endgame PAGE display laid its words out (endgame.page_layout).
-    `font_size` is the page's base font; `columns` maps a column count to how many
-    words were placed in that many columns, e.g. {2: 18, 1: 6}."""
+def log_50007(font_size, columns, page=1, pages=1):
+    """The endgame PAGE display put a page of words up (endgame.page_layout) -- at
+    the start, and again each time it turns to the next page. `font_size` is the
+    page's base font; `columns` maps a column count to how many words were placed
+    in that many columns, e.g. {2: 18, 1: 6}; `page` of `pages` is which page."""
     split = " ".join(f"{count}w@{cols}col" for cols, count in sorted(columns.items(),
                                                                      reverse=True))
-    session_log.emit(50007, f"endgame page layout: font {font_size}, {split}",
-                     font=font_size, split=split)
+    session_log.emit(50007, f"endgame page {page}/{pages} layout: font {font_size}, {split}",
+                     font=font_size, split=split, page=page, pages=pages)
 
 
 # --- 6xxxx  setup / random-source outcomes -----------------------------------

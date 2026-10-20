@@ -13,17 +13,19 @@ A target is the dict EndgameTyping builds: {"word", "variation", "points", "done
 import math
 import pyglet
 
-from config import CONFIG, get_color
+from config import CONFIG, get_color, get_string
 from views.gram_preview import GramPreview, cell_row_width, parse_variation
 import log_codes as L
 
 
 # --- page layout rules (endgame.page_layout) ---------------------------------
 # How the PAGE display arranges its words. Each takes the page, the targets in
-# endgame.order and the usable area, and returns (font_size, columns, slots): the
-# base font size, how many words sit in each column count (for the log), and one
-# (column_left_offset, row_index) per target. PageDisplay turns rows into pixels.
-# Selected per page in build_page_display, from the live config.
+# endgame.order and the usable area, and returns a list of PAGES, each a tuple
+# (font_size, columns, indices, slots): the base font size, how many words sit in
+# each column count (for the log), which targets (by index) are on that page, and
+# one (column_left_offset, row_index) per word on it. A rule that fits everything
+# on one page returns a single page. PageDisplay turns rows into pixels and turns
+# the page once its words are all typed. Selected in build_page_display.
 def rule_endgame_page_layout_columns(page, targets, usable_w, usable_h):
     """As many equal top-to-bottom columns as the list needs, every column as wide
     as the page's longest word. The original page layout."""
@@ -46,7 +48,7 @@ def rule_endgame_page_layout_columns(page, targets, usable_w, usable_h):
     for i in range(len(targets)):
         col = math.floor(i / rows)
         slots.append((col * col_width, i - col * rows))
-    return best, {columns: len(targets)}, slots
+    return [(best, {columns: len(targets)}, list(range(len(targets))), slots)]
 
 
 def rule_endgame_page_layout_two_then_one(page, targets, usable_w, usable_h):
@@ -70,7 +72,42 @@ def rule_endgame_page_layout_two_then_one(page, targets, usable_w, usable_h):
             size -= 1
     if best is None:
         best = page.min_font_size()
-    split = _two_column_split(page, targets, best, usable_w)
+    columns, slots = _two_then_one_slots(page, targets, best, usable_w)
+    return [(best, columns, list(range(len(targets))), slots)]
+
+
+def rule_endgame_page_layout_two_then_one_paged(page, targets, usable_w, usable_h):
+    """The two-then-one arrangement at a FIXED size, over as many pages as the
+    list needs. The size comes from endgame.page_rows (how many word rows fill the
+    page height), so it never shrinks for a long list -- a long list gets more
+    pages instead. Each page takes as many of the next words as its rows hold; the
+    display turns to the next page once every word on this one is typed."""
+    size = page.fixed_font_size(usable_h)
+    rows_per_page = max(1, math.floor(usable_h / page.row_height(size)))
+    pages = []
+    start = 0
+    while start < len(targets):
+        end = start + 1
+        while (end < len(targets) and _two_then_one_rows(
+                page, targets[start:end + 1], size, usable_w) <= rows_per_page):
+            end += 1
+        columns, slots = _two_then_one_slots(page, targets[start:end], size, usable_w)
+        pages.append((size, columns, list(range(start, end)), slots))
+        start = end
+    return pages
+
+
+def _two_then_one_rows(page, targets, size, usable_w):
+    """Rows the two-then-one arrangement of `targets` takes at `size`."""
+    split = _two_column_split(page, targets, size, usable_w)
+    return math.ceil(split / 2) + (len(targets) - split)
+
+
+def _two_then_one_slots(page, targets, size, usable_w):
+    """(columns, slots) for the two-then-one arrangement of `targets` at `size`:
+    the leading words that fit half the width go down two columns, the rest one
+    full-width row each beneath them."""
+    split = _two_column_split(page, targets, size, usable_w)
     half = math.floor(usable_w / 2)
     paired_rows = math.ceil(split / 2)
     slots = []
@@ -80,7 +117,7 @@ def rule_endgame_page_layout_two_then_one(page, targets, usable_w, usable_h):
             slots.append((col * half, i - col * paired_rows))
         else:
             slots.append((0, paired_rows + (i - split)))
-    return best, {2: split, 1: len(targets) - split}, slots
+    return {2: split, 1: len(targets) - split}, slots
 
 
 def _two_column_split(page, targets, size, usable_w):
@@ -119,43 +156,91 @@ class PageDisplay:
     CELL_ROW_SPACING = 1.5
 
     def __init__(self, region_size, window_height, cells=False,
-                 layout_rule=rule_endgame_page_layout_columns):
+                 layout_rule=rule_endgame_page_layout_columns, page_rows=8):
         self._region_size = region_size
         self._window_height = window_height
         # Draw each word as its cleared CELLS rather than as text (endgame.render).
         self._cells = cells
         # How the words are arranged on the page (endgame.page_layout).
         self._layout_rule = layout_rule
+        # Word rows per page for the fixed-size paged layout (endgame.page_rows).
+        self._page_rows = page_rows
         self._batch = pyglet.graphics.Batch()
         self._views = []
+        # The layout's pages (see the layout rules) and which one is up. A
+        # one-page layout simply never turns.
+        self._targets = []
+        self._pages = []
+        self._page = 0
+        self._page_label = None
 
     def show(self, targets):
-        """(Re)build the page for `targets`, in the order given. A fresh batch each
-        call releases the previous page's labels."""
+        """Lay `targets` out (in the order given) and show the first page."""
+        self._targets = targets
+        self._pages = []
+        self._page = 0
+        if targets:
+            margin = self._margin()
+            self._pages = self._layout_rule(
+                self, targets, self._region_size - 2 * margin,
+                self._window_height - 2 * margin)
+        self._show_page()
+
+    def _margin(self):
+        return math.floor(self._region_size / 16)
+
+    def _show_page(self):
+        """Build the current page's words. A fresh batch each call releases the
+        previous page's labels."""
         self._batch = pyglet.graphics.Batch()
         self._views = []
-        if targets:
-            self._build(targets)
-
-    def _build(self, targets):
-        margin = math.floor(self._region_size / 16)
-        usable_w = self._region_size - 2 * margin
-        usable_h = self._window_height - 2 * margin
-        font_size, columns, slots = self._layout_rule(self, targets, usable_w, usable_h)
-        L.log_50007(font_size, columns)
+        self._page_label = None
+        if not self._pages:
+            return
+        font_size, columns, indices, slots = self._pages[self._page]
+        L.log_50007(font_size, columns, self._page + 1, len(self._pages))
+        margin = self._margin()
         row_height = self.row_height(font_size)
         top = self._window_height - margin
-        for target, (left, row) in zip(targets, slots):
+        for index, (left, row) in zip(indices, slots):
             view = _WordView(self._cells, self._drawn_font_size(font_size), self._batch)
-            view.set_target(target)
+            view.set_target(self._targets[index])
             view.place(margin + left, top - row * row_height - math.floor(row_height / 2))
             self._views.append(view)
+        if len(self._pages) > 1:
+            # "Page 2 / 3" in the bottom margin, so the player knows more is coming.
+            self._page_label = pyglet.text.Label(
+                get_string("endgame_page", page=self._page + 1, count=len(self._pages)),
+                font_size=math.floor(self._region_size / 40),
+                x=self._region_size - margin, y=math.floor(margin / 2),
+                anchor_x="right", anchor_y="center",
+                color=get_color("endgame.prompt_text"), batch=self._batch,
+            )
+
+    def typeable(self, targets):
+        """The targets the player can type right now: the ones on the current page.
+        Typing, the live highlight and auto-submit all work over these only, so a
+        word on a later page can never make a word on this one ambiguous."""
+        typeable = []
+        if self._pages:
+            for index in self._pages[self._page][2]:
+                typeable.append(targets[index])
+        return typeable
 
     # --- measurement, shared by the layout rules -----------------------------
     # Every size here is the page's BASE font size; cell mode scales it down by
     # CELL_FONT_SCALE when drawing, and these measure what is actually drawn at
     # that scaled size -- a cell row's real width and row spacing, not the text
     # estimate (fitting in text units and drawing cells overflowed the page).
+    def fixed_font_size(self, usable_h):
+        """The paged layout's FIXED base font: the largest at which page_rows word
+        rows fill the usable height. Depends only on the window, never on how many
+        words there are."""
+        size = math.floor(usable_h / max(1, self._page_rows))
+        while size > 6 and self.row_height(size) * self._page_rows > usable_h:
+            size -= 1
+        return size
+
     def max_font_size(self):
         return math.floor(self._region_size * self.MAX_FONT_FRACTION)
 
@@ -206,10 +291,20 @@ class PageDisplay:
 
     def refresh(self, targets):
         """After a word was typed: done words turn green (text) or fill green (cell
-        rows), so the page fills in as the player works through it."""
-        for target, view in zip(targets, self._views):
+        rows), so the page fills in as the player works through it. Once every
+        word on this page is typed, turn to the next page with words left (there is
+        no turning back -- the finished page is done)."""
+        if self._pages and self._page < len(self._pages) - 1:
+            if all(t["done"] for t in self.typeable(targets)):
+                while (self._page < len(self._pages) - 1
+                       and all(t["done"] for t in self.typeable(targets))):
+                    self._page += 1
+                self._show_page()
+                return None
+        for target, view in zip(self.typeable(targets), self._views):
             view.set_target(target)
             view.restyle()
+        return None
 
     def update(self, dt):
         """Nothing moves on a page."""
@@ -710,6 +805,8 @@ def page_layout_rule():
     rules = {
         "rule_endgame_page_layout_columns": rule_endgame_page_layout_columns,
         "rule_endgame_page_layout_two_then_one": rule_endgame_page_layout_two_then_one,
+        "rule_endgame_page_layout_two_then_one_paged":
+            rule_endgame_page_layout_two_then_one_paged,
     }
     name = CONFIG.get("rules", {}).get("endgame.page_layout",
                                        "rule_endgame_page_layout_columns")
@@ -719,7 +816,8 @@ def page_layout_rule():
 def build_page_display(region_size, window_height):
     """A PageDisplay in the configured render mode and layout (see endgame.display)."""
     return PageDisplay(region_size, window_height, cells=render_cells_rule(),
-                       layout_rule=page_layout_rule())
+                       layout_rule=page_layout_rule(),
+                       page_rows=_rule_int("endgame.page_rows", 8))
 
 
 def build_scroll_display(region_size, window_height):
