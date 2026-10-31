@@ -689,7 +689,33 @@ in-game menu is open, like the mode timer; once a wait fires the gram is placed 
 then fades in per `replenish_fade_seconds`. `0` fills instantly (the original
 behavior). Note this defers when the new gram becomes usable, so under constellation
 it slightly lengthens the window in which `constellation_auto_end` sees a smaller
-board. (Formerly `game_screen.constellation_replenish_delay_seconds`.)
+board. (Formerly `game_screen.constellation_replenish_delay_seconds`.) Only used by
+`rule_replenish_wait_seconds`; see `game_screen.replenish_wait`.
+
+### game_screen.replenish_wait
+Any mode that replenishes vacated cells: what a vacated cell waits on before its fresh
+gram is placed. Each cell keeps its own wait, and the placed gram still fades in per
+`replenish_fade_seconds`.
+- `rule_replenish_wait_seconds` — wait `game_screen.replenish_delay_seconds` of play
+  time. The default, and the original behavior.
+- `rule_replenish_wait_words` — wait until `game_screen.replenish_wait_words` words have
+  been submitted after the cell was vacated. The clock plays no part, so a player who
+  stops submitting gets no cells back.
+
+What counts as a submitted word: any non-empty word that reaches the submit path, valid
+or not. A muncher dead-end forced clear also counts, since it costs the same as
+submitting. In muncher mode, bites happen before their word is submitted, so that word's
+own submit counts as the first of the wait. In typed modes the cell is vacated by the
+submit itself, so the wait starts with the next word.
+
+Muncher risk: the empty-submit gate ignores a submit with nothing eaten, so if every
+cell on the board were waiting and the buffer were empty, no submit could be made and
+the wait would never end. A high `replenish_wait_words` on a small board can reach that
+state, and there is no way out of it short of the in-game menu.
+
+### game_screen.replenish_wait_words
+How many submitted words `rule_replenish_wait_words` waits for. `0` fills instantly.
+Ignored by `rule_replenish_wait_seconds`.
 
 ### game_screen.replenish_length
 Any mode running the `rule_constellation_replenish` turnover (constellation and
@@ -760,6 +786,41 @@ How many words must clear before `rule_replenish_escalate_after_words` opens the
 Counts every cleared word, repeats included (the same per-game tally the fossil
 first-word skip reads), so it means "words banked", not "distinct words". Ignored by
 `rule_replenish_escalate_off`.
+
+### game_screen.replenish_ramp
+How fast escalation lands once `game_screen.replenish_escalation` has opened the gate.
+Without it, every refill switches to the escalated length rule at once, which is the
+sudden wave of trigrams.
+- `rule_replenish_ramp_off` — every refill takes the escalated rule as soon as the gate
+  opens. The default, and the original behavior.
+- `rule_replenish_ramp_on` — round robin over refills: 1 of every 3 takes the escalated
+  rule, then 2 of every 3, then all of them. The rest use the early rule
+  (`game_screen.replenish_length`), so under `rule_replenish_length_match` a held-back
+  cell comes back at the length it held. The first refill after the gate opens is held.
+
+The ramp only acts behind an open gate, so it does nothing under
+`rule_replenish_escalate_off`. To ramp a mode that grows from the first bite (hydra, with
+a grow rule as its `replenish_length`), use `rule_replenish_escalate_after_words` with
+`replenish_escalation_words: 0`, `rule_replenish_length_match` as the early rule and the
+grow rule as `replenish_length_escalated`.
+
+Holding back applies to every step of the length path, including the wrap back to a
+single letter: under a wrapping rule at 1 of 3, a bitten trigram usually stays a trigram.
+So the early stages also recycle trigram cells more slowly.
+
+A refill's length is decided when the cell is vacated, not when the gram appears, so
+under `rule_replenish_wait_words` or a long `replenish_delay_seconds`, a new stage shows
+on the board a little after its milestone.
+
+### game_screen.replenish_ramp_milestone
+What moves `rule_replenish_ramp_on` to its next stage. Both clocks start when the gate
+opens and restart at each milestone, so a full ramp takes two milestones. Ignored by
+`rule_replenish_ramp_off`.
+- `rule_replenish_ramp_after_seconds` — after `game_screen.replenish_ramp_milestone_seconds`
+  of play time, paused with the in-game menu. The difficulty climbs even if the player
+  stalls.
+- `rule_replenish_ramp_after_words` — after `game_screen.replenish_ramp_milestone_words`
+  more words have cleared. Rejected words do not count, unlike `replenish_wait_words`.
 
 ### game_screen.constellation_auto_end
 Constellation only: after each word clears, whether the game finishes on its own

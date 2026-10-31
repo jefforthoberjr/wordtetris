@@ -174,6 +174,8 @@ class ReplaySource(source.Source):
         self._by_event = recorded_timing_gates(log)
         self._armed = {}
         self._fill_times = recorded_replenish_fills(log)
+        self._fill_times["replenish_ramp_milestone"] = [
+            ev.t for ev in log.events if ev.code == 6011]
         self.now = 0.0
 
     def arm(self, event):

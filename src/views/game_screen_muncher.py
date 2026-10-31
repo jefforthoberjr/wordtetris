@@ -145,6 +145,7 @@ class MuncherMixin:
         if not word:
             L.log_20011("empty", self._muncher_lives, "")
         else:
+            self._note_word_submitted()
             reason = ""
             if not is_word(word):
                 reason = "not_in_dictionary"
@@ -183,4 +184,5 @@ class MuncherMixin:
         identically; the reason gets its own string because "you were never going
         to get there" is a different message from "that is not a word"."""
         L.log_20011("dead_end", self._muncher_lives, word)
+        self._note_word_submitted()
         self._muncher_reject(word, "muncher_dead_end")

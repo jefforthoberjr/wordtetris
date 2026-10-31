@@ -531,6 +531,7 @@ class SelectionMixin:
         if self._muncher:
             self._moving_mode.submit()
             return
+        self._note_word_submitted()
         # Botanical (MOVING_BOTANICAL): a word grows off the stem as leaf cells rather
         # than clearing existing cells, so it takes its own placement path and never
         # touches the SELECT clear pipeline / candidate recompute below.

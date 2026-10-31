@@ -658,10 +658,11 @@ def log_06003(piece):
                      type=_piece_type_name(piece.piece_type), cells=spec)
 
 
-def log_06006(x, y, delay, length=None):
+def log_06006(x, y, delay, length=None, unit="seconds"):
     """A vacated cell was queued to replenish after an empty-cell wait
-    (game_screen.replenish_delay_seconds > 0): the cell stays
-    empty for `delay` seconds, then a fresh gram is placed there and recorded as
+    (game_screen.replenish_wait, with a wait > 0): the cell stays
+    empty for `delay` seconds or submitted words (`unit`), then a fresh gram is placed
+    there and recorded as
     the matching log_06002 'fill'. Logged so a replay reproduces the empty-then-fill
     timing instead of snapping the gram in at clear time. The instant path
     (delay <= 0) skips this and logs only the fill. `length` is the length category
@@ -669,8 +670,17 @@ def log_06006(x, y, delay, length=None):
     configured picker chose freely -- it makes hydra's escalation readable in a
     session log without diffing the fill grams."""
     pinned = "" if length is None else f" as length {length}"
-    session_log.emit(6006, f"replenish scheduled at {x},{y} in {delay:.2f}s{pinned}",
-                     x=x, y=y, delay=round(delay, 3), length=length)
+    wait = f"{delay:.2f}s" if unit == "seconds" else f"{delay} words"
+    session_log.emit(6006, f"replenish scheduled at {x},{y} in {wait}{pinned}",
+                     x=x, y=y, delay=round(delay, 3), length=length, unit=unit)
+
+
+def log_06011(stage, final_stage):
+    """The replenish ramp (game_screen.replenish_ramp) reached a milestone: `stage` of
+    every `final_stage` refills now take the escalated length rule. A replay reads
+    these times back, since a time-based milestone cannot be recomputed exactly."""
+    session_log.emit(6011, f"replenish ramp now {stage} of every {final_stage} refills",
+                     stage=stage, final_stage=final_stage)
 
 
 def log_06005(cell):

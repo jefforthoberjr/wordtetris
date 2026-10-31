@@ -6,6 +6,12 @@ GAME NAMES
 
 * catalyst cata LIST
 
+
+Double letter forgiveness in the spell check?
+
+I could re-introduce some diagram, but only a few; consonant clusters, or true digraphs
+
+
 The digrams are making make only 4 letter words; the trigrams induce longer words.
 Should I eleminate digrams altogether? This could make sense, since a fuller syllable helps with auto complete more.
 

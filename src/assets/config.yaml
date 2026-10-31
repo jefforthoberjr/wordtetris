@@ -146,6 +146,13 @@ rules:
   # Any mode: seconds to wait before a replenished cell is refilled on the board. [ref: game_screen.replenish_delay_seconds]
   game_screen.replenish_delay_seconds: 5.0
 
+  # Any mode: a vacated cell waits on seconds, or on submitted words. [ref: game_screen.replenish_wait]
+  game_screen.replenish_wait: rule_replenish_wait_seconds
+  # game_screen.replenish_wait: rule_replenish_wait_words
+
+  # Words submitted (valid or not) before rule_replenish_wait_words refills a cell. [ref: game_screen.replenish_wait_words]
+  game_screen.replenish_wait_words: 3
+
   # CONSTELLATION: length of a replenished gram, from the length that cleared
   # (grow_* = hydra escalation). [ref: game_screen.replenish_length]
   game_screen.replenish_length: rule_replenish_length_picker
@@ -170,6 +177,18 @@ rules:
   # Words cleared before rule_replenish_escalate_after_words opens the gate.
   # [ref: game_screen.replenish_escalation_words]
   game_screen.replenish_escalation_words: 5
+
+  # Once the gate is open: every refill escalates, or ramp 1/3 -> 2/3 -> all. [ref: game_screen.replenish_ramp]
+  game_screen.replenish_ramp: rule_replenish_ramp_off
+  # game_screen.replenish_ramp: rule_replenish_ramp_on
+
+  # What moves the ramp to its next stage. [ref: game_screen.replenish_ramp_milestone]
+  game_screen.replenish_ramp_milestone: rule_replenish_ramp_after_seconds
+  # game_screen.replenish_ramp_milestone: rule_replenish_ramp_after_words
+
+  # Size of one ramp stage, for each milestone rule. [ref: game_screen.replenish_ramp_milestone]
+  game_screen.replenish_ramp_milestone_seconds: 120
+  game_screen.replenish_ramp_milestone_words: 6
 
   # CONSTELLATION: auto-finish when no word can be formed from the remaining grams. [ref: game_screen.constellation_auto_end]
   # game_screen.constellation_auto_end: rule_constellation_auto_end_off

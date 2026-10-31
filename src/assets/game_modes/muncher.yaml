@@ -103,6 +103,11 @@ rules:
   # The board grows back behind him. Swap to rule_constellation_no_replenish for a
   # board that shrinks as he eats it clean.
   game_screen.constellation_turnover: rule_constellation_replenish
+  # A bitten cell stays empty until 3 more words have been submitted, good or bad, so
+  # the board thins out while he works and comes back in waves at each submit. Swap to
+  # rule_replenish_wait_seconds to grow back on a timer instead.
+  game_screen.replenish_wait: rule_replenish_wait_words
+  game_screen.replenish_wait_words: 3
   game_screen.replenish_delay_seconds: 3.0
   game_screen.replenish_fade_seconds: 1.5
   # EARLY game: like for like, so an eaten single letter grows back as a single
@@ -121,6 +126,13 @@ rules:
   game_screen.replenish_escalation: rule_replenish_escalate_after_words
   game_screen.replenish_escalation_words: 5
   game_screen.replenish_length_escalated: rule_replenish_length_skip_digram_wrap
+  # Trigrams arrive gradually, not as a wave when the gate opens: 1 of every 3 refills
+  # escalates, then 2 of every 3 after 6 more banked words, then all of them after 6
+  # more. The rest stay like for like. Swap to rule_replenish_ramp_off for the full
+  # switch at the gate.
+  game_screen.replenish_ramp: rule_replenish_ramp_on
+  game_screen.replenish_ramp_milestone: rule_replenish_ramp_after_words
+  # game_screen.replenish_ramp_milestone: rule_replenish_ramp_after_seconds
   # A trigram here is literally 3 letters: no 4-letter mouthfuls.
   gram_length.trigram_allow_longer: rule_trigram_allow_longer_off
 

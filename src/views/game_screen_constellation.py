@@ -28,7 +28,7 @@ from starting_coverage import any_word_formable, sample_formable_words
 import debug_panel
 import log_codes as L
 from source import rand
-from config import CONFIG, get_string
+from config import CONFIG, get_string, select_rule
 
 
 class ConstellationMixin:
@@ -199,9 +199,10 @@ class ConstellationMixin:
 
     def _replenish_length_for(self, cleared_length):
         """The length category a refill should get: ask the escalation gate which of
-        the two length rules is live (early vs escalated), then ask that rule. The one
-        choke point every replenish length decision goes through."""
-        escalated = self._replenish_escalation_rule()
+        the two length rules is live (early vs escalated), let the ramp hold this cell
+        back on the early rule, then ask that rule. The one choke point every replenish
+        length decision goes through."""
+        escalated = self._replenish_escalation_rule() and self._replenish_ramp_admits()
         rule = (self._replenish_length_escalated_rule if escalated
                 else self._replenish_length_rule)
         return rule(cleared_length)
@@ -215,22 +216,140 @@ class ConstellationMixin:
     _replenish_length_escalated_rule = _rule_replenish_length_grow_cap
     _replenish_escalation_rule = _rule_replenish_escalate_off
 
+    # --- replenish ramp (game_screen.replenish_ramp) ----------------------------
+    # A filter BEHIND the escalation gate: once the gate is open, only some refills
+    # take the escalated length rule and the rest stay on the early one, round robin.
+    # The share climbs a stage at each milestone: 1 of 3, then 2 of 3, then all 3. The
+    # gate decides WHEN escalation starts and the ramp decides HOW FAST it lands, so
+    # the two mix freely. The on/off rules answer with the stage a game opens at.
+    _REPLENISH_RAMP_FINAL_STAGE = 3
+
+    def _rule_replenish_ramp_off(self):
+        """Open at the final stage: every refill takes the escalated rule the moment
+        the gate opens, as escalation behaved before this knob existed. The default."""
+        return self._REPLENISH_RAMP_FINAL_STAGE
+
+    def _rule_replenish_ramp_on(self):
+        """Open at 1 of every 3 refills and climb at each milestone."""
+        return 1
+
+    # --- replenish ramp milestones (game_screen.replenish_ramp_milestone) -------
+    # Has the current stage run its course? Both clocks start when the gate opens and
+    # restart at each milestone.
+    def _rule_replenish_ramp_after_seconds(self):
+        """Next stage after game_screen.replenish_ramp_milestone_seconds of play time."""
+        limit = CONFIG["rules"]["game_screen.replenish_ramp_milestone_seconds"]
+        return self._replenish_ramp_seconds >= limit
+
+    def _rule_replenish_ramp_after_words(self):
+        """Next stage after game_screen.replenish_ramp_milestone_words more words have
+        CLEARED (the same tally as the escalation gate, so rejected words do not count)."""
+        limit = CONFIG["rules"]["game_screen.replenish_ramp_milestone_words"]
+        return self._words_cleared_this_game - self._replenish_ramp_words_base >= limit
+
+    def _bind_replenish_ramp_rules(self):
+        """Resolve the ramp's two rules. Called from GameScreen.__init__."""
+        self._replenish_ramp_rule = select_rule("game_screen.replenish_ramp", {
+            "rule_replenish_ramp_off": self._rule_replenish_ramp_off,
+            "rule_replenish_ramp_on": self._rule_replenish_ramp_on,
+        })
+        self._replenish_ramp_milestone_rule = select_rule("game_screen.replenish_ramp_milestone", {
+            "rule_replenish_ramp_after_seconds": self._rule_replenish_ramp_after_seconds,
+            "rule_replenish_ramp_after_words": self._rule_replenish_ramp_after_words,
+        })
+        self._reset_replenish_ramp()
+
+    def _reset_replenish_ramp(self):
+        """Fresh per game: back to the opening stage, with neither clock started."""
+        self._replenish_ramp_stage = self._replenish_ramp_rule()
+        self._replenish_ramp_refills = 0
+        self._replenish_ramp_seconds = 0.0
+        self._replenish_ramp_words_base = None
+
+    def _replenish_ramp_admits(self):
+        """Should this refill take the escalated rule? Round robin over every refill
+        since the gate opened: within each group of 3, the LAST `stage` refills do, so
+        the first refill after the gate opens is still held back."""
+        slot = self._replenish_ramp_refills % self._REPLENISH_RAMP_FINAL_STAGE
+        self._replenish_ramp_refills += 1
+        return slot >= self._REPLENISH_RAMP_FINAL_STAGE - self._replenish_ramp_stage
+
+    def _update_replenish_ramp(self, dt):
+        """Run the current stage's clocks and climb a stage at its milestone. Does
+        nothing until the gate opens or after the final stage. Whether the milestone
+        landed goes through Source.timing_gate, because a replay's clock can drift
+        across a stage boundary and hand a bite a different length than the recording."""
+        if (self._replenish_ramp_stage >= self._REPLENISH_RAMP_FINAL_STAGE
+                or not self._replenish_escalation_rule()):
+            return
+        if self._replenish_ramp_words_base is None:
+            self._replenish_ramp_words_base = self._words_cleared_this_game
+        self._replenish_ramp_seconds += dt
+        if rand().timing_gate("replenish_ramp_milestone", self._replenish_ramp_milestone_rule()):
+            self._replenish_ramp_stage += 1
+            self._replenish_ramp_seconds = 0.0
+            self._replenish_ramp_words_base = self._words_cleared_this_game
+            L.log_06011(self._replenish_ramp_stage, self._REPLENISH_RAMP_FINAL_STAGE)
+
+    # Defaults so bare __new__ test instances run with the ramp off, without an __init__.
+    _replenish_ramp_rule = _rule_replenish_ramp_off
+    _replenish_ramp_milestone_rule = _rule_replenish_ramp_after_seconds
+    _replenish_ramp_stage = _REPLENISH_RAMP_FINAL_STAGE
+    _replenish_ramp_refills = 0
+
+    # --- replenish wait rules (game_screen.replenish_wait) ----------------------
+    # What a vacated cell waits on before it refills. Each rule answers with the
+    # wait's size and its unit; _update_pending_replenishes counts down "seconds"
+    # waits and _note_word_submitted counts down "words" waits.
+    def _rule_replenish_wait_seconds(self):
+        """Wait game_screen.replenish_delay_seconds of play time. The default."""
+        return self._replenish_delay_seconds, "seconds"
+
+    def _rule_replenish_wait_words(self):
+        """Wait until game_screen.replenish_wait_words more words have been submitted,
+        valid or not. The clock plays no part, so a player who stops submitting gets
+        no cells back."""
+        return CONFIG["rules"]["game_screen.replenish_wait_words"], "words"
+
+    def _bind_replenish_wait_rule(self):
+        """Resolve game_screen.replenish_wait. Called from GameScreen.__init__."""
+        self._replenish_wait_rule = select_rule("game_screen.replenish_wait", {
+            "rule_replenish_wait_seconds": self._rule_replenish_wait_seconds,
+            "rule_replenish_wait_words": self._rule_replenish_wait_words,
+        })
+
+    # Defaults so bare __new__ test instances keep the timer, with nothing waiting,
+    # without an __init__.
+    _replenish_wait_rule = _rule_replenish_wait_seconds
+    _pending_replenishes = ()
+
+    def _note_word_submitted(self):
+        """One word was submitted, valid or not: count down every "words" wait. Only
+        marks the wait; the refill itself lands on the next play tick, in
+        _update_pending_replenishes, so it cannot change the board under the word
+        being resolved. A cell this same submit vacates is queued afterward, so this
+        submit does not count toward its wait."""
+        for pending in self._pending_replenishes:
+            if pending[4] == "words":
+                pending[2] -= 1
+
     def _schedule_replenish(self, x, y, length=None):
-        """Queue the just-vacated cell (x, y) to refill after
-        game_screen.replenish_delay_seconds, leaving it visibly empty in the
-        meantime. A zero (or negative) delay fills right away -- the original
+        """Queue the just-vacated cell (x, y) to refill after the wait
+        game_screen.replenish_wait chooses, leaving it visibly empty in the
+        meantime. A zero (or negative) wait fills right away -- the original
         behavior -- so the knob turns the wait off without a separate rule. Live
         waits live in _pending_replenishes and are counted down by
-        _update_pending_replenishes. Generic: constellation's replenish turnover and
+        _update_pending_replenishes (seconds) or _note_word_submitted (words).
+        Generic: constellation's replenish turnover and
         plant's refresh clear-action both call this. `length` is the already-decided
         length category to pin (None = let the picker choose), carried through the
         wait so a delayed refill escalates the same way an instant one would."""
-        if self._replenish_delay_seconds <= 0:
+        wait, unit = self._replenish_wait_rule()
+        if wait <= 0:
             self._replenish_cell_now(x, y, length)
         else:
-            self._pending_replenishes.append(
-                [x, y, self._replenish_delay_seconds, length])
-            L.log_06006(x, y, self._replenish_delay_seconds, length)
+            self._pending_replenishes.append([x, y, wait, length, unit])
+            L.log_06006(x, y, wait, length, unit)
 
     def _replenish_cell_now(self, x, y, length=None):
         """Put a fresh gram in the (still-empty) vacated cell and start its fade-in.
@@ -264,12 +383,14 @@ class ConstellationMixin:
         immediate path got for free -- fill before the caller's recompute). Called
         each play tick from GameScreen.update (paused with the menu). Cheap no-op
         when nothing is waiting, i.e. all non-replenish or zero-delay play."""
+        self._update_replenish_ramp(dt)
         if not self._pending_replenishes:
             return
         fired = False
         waiting = []
         for pending in self._pending_replenishes:
-            pending[2] -= dt
+            if pending[4] == "seconds":
+                pending[2] -= dt
             # Due by the game's own countdown -- except in a replay, where the
             # recording says when this refill landed (Source.timing_gate): a refill
             # a few ms off swaps order with a bite, and the recompute below then

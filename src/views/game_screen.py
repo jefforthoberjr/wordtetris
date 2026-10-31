@@ -1055,6 +1055,8 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         self._replenish_delay_seconds = CONFIG["rules"][
             "game_screen.replenish_delay_seconds"]
         self._pending_replenishes = []
+        self._bind_replenish_wait_rule()
+        self._bind_replenish_ramp_rules()
         # Constellation auto-end (game_screen.constellation_auto_end): after a word
         # clears, optionally finish the game once the remaining grams can spell no
         # dictionary word. Off by default (an auto-finish reveals board exhaustion,
@@ -1601,6 +1603,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         # first-word skip for the fossil requirement (rule_fossil_skip_first_word);
         # 0 means the opening word hasn't landed yet.
         self._words_cleared_this_game = 0
+        self._reset_replenish_ramp()
         # Fresh per game: the whole-board fill bonus fires at most once (see
         # _check_board_fill / game_screen.fill_board).
         self._fill_board_awarded = False
