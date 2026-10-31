@@ -575,15 +575,16 @@ def log_50007(font_size, columns, page=1, pages=1):
                      font=font_size, split=split, page=page, pages=pages)
 
 
-def log_50008(render, base_font, drawn_font, page=1, pages=1):
+def log_50008(render, base_font, drawn_font, page=1, pages=1, row_height=0):
     """The size the words on that page really draw at, logged right after 50007,
     whose font is the size BEFORE scaling. `render` is "text" or "cells" (endgame.render);
-    `drawn_font` is after endgame.page_text_scale (text) or the cell scale (cells)."""
+    `drawn_font` is after endgame.page_text_scale (text) or the cell scale (cells);
+    `row_height` is the distance between word rows (endgame.page_text_line_spacing)."""
     session_log.emit(50008,
                      f"endgame page {page}/{pages} words drawn: {render} at font "
-                     f"{drawn_font} (base {base_font})",
+                     f"{drawn_font} (base {base_font}), rows {row_height} apart",
                      render=render, base=base_font, drawn=drawn_font,
-                     page=page, pages=pages)
+                     page=page, pages=pages, row=row_height)
 
 
 # --- 6xxxx  setup / random-source outcomes -----------------------------------

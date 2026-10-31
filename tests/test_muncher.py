@@ -368,12 +368,18 @@ class _RejectPane(_Pane):
         self.cleared = 0
         self.errors = []
         self.status = None
+        self.ghost = None
 
     def clear_word(self):
         self.cleared += 1
 
     def show_errors(self, messages, reason=None):
         self.errors.append((list(messages), reason))
+
+    def reject(self, word, messages, reason=None, missing=None):
+        self.ghost = word
+        self.cleared += 1
+        self.show_errors(messages, reason)
 
     def set_status_text(self, text):
         self.status = text
@@ -391,12 +397,15 @@ class _LifeLossMode:
         self.reactions += 1
 
 
-def _submit_game(lives=3, repeat_ok=True, long_enough=True):
+def _submit_game(lives=3, repeat_ok=True, long_enough=True, ghost=True,
+                 suggestions=()):
     """A bare GameScreen wired with just the surface _muncher_submit touches."""
     g = GameScreen.__new__(GameScreen)
     g._moving_side_pane = _RejectPane()
     g._moving_mode = _LifeLossMode()
     g._muncher_lives = lives
+    g._reject_ghost = ghost
+    g._spell_suggest_rule = lambda word: list(suggestions)
     g._word_length_rule = lambda word, path: long_enough
     g._repeat_rule = lambda word: repeat_ok
     g.banked = []
@@ -457,6 +466,37 @@ def test_the_forced_clear_costs_a_life_with_its_own_reason():
     g._muncher_forced_clear("FZING", [(0, 0)], ["FZING"])
     assert g._moving_side_pane.errors[0][1] == "muncher_dead_end"
     assert g._muncher_lives == 2
+
+
+def test_a_rejected_non_word_is_echoed_with_its_suggestions():
+    g = _submit_game(suggestions=["CATCH", "LATCH"])
+    g._muncher_submit("CATHC", [(0, 0)], ["CATHC"])
+    assert g._moving_side_pane.ghost == "CATHC"
+    messages = g._moving_side_pane.errors[0][0]
+    assert "CATCH, LATCH" in messages[1]
+
+
+def test_a_forced_clear_is_echoed_with_its_suggestions():
+    g = _submit_game(suggestions=["FIZZING"])
+    g._muncher_forced_clear("FZZING", [(0, 0)], ["FZZING"])
+    assert g._moving_side_pane.ghost == "FZZING"
+    assert "FIZZING" in g._moving_side_pane.errors[0][0][1]
+
+
+def test_a_real_word_rejected_gets_the_echo_but_no_suggestion():
+    # An already-cleared word is spelled correctly, so "did you mean?" is wrong.
+    g = _submit_game(repeat_ok=False, suggestions=["BAT"])
+    g._muncher_submit("CAT", [(0, 0)], ["CAT"])
+    assert g._moving_side_pane.ghost == "CAT"
+    assert len(g._moving_side_pane.errors[0][0]) == 1
+
+
+def test_reject_ghost_off_clears_without_an_echo_but_keeps_the_suggestion():
+    g = _submit_game(ghost=False, suggestions=["CATCH"])
+    g._muncher_submit("CATHC", [(0, 0)], ["CATHC"])
+    assert g._moving_side_pane.ghost is None
+    assert g._moving_side_pane.cleared == 1
+    assert "CATCH" in g._moving_side_pane.errors[0][0][1]
 
 
 def test_lives_are_dealt_fresh_and_shown_at_game_start():

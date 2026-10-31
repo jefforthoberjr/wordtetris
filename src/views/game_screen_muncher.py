@@ -168,12 +168,23 @@ class MuncherMixin:
     def _muncher_reject(self, word, reason):
         """Spit the word out: clear the readout, show the reason (as an icon under
         game_screen.error_display: rule_error_icon, as text otherwise -- the same
-        error slot every other mode rejects into), and spend a life."""
+        error slot every other mode rejects into), and spend a life.
+
+        The eaten letters are gone from the readout by now, so the player needs
+        telling what they actually spelled: game_screen.reject_ghost echoes the word
+        as "You typed: ...", and a non-word also gets the game_screen.spell_suggest
+        "did you mean?" line. The buffer empties either way (the letters cannot go
+        back), so reject_ghost off here means no echo, not a word left in the field."""
         pane = self._moving_side_pane
-        pane.clear_word()
-        messages = [get_string(f"err_{reason}")]
-        pane.show_errors(messages, reason)
         L.log_30003(word, reason)
+        messages = [get_string(f"err_{reason}")]
+        if not is_word(word):
+            messages.extend(self._spell_suggestion_lines(word))
+        if self._reject_ghost:
+            pane.reject(word, messages, reason)
+        else:
+            pane.clear_word()
+            pane.show_errors(messages, reason)
         self._muncher_lose_life(reason)
 
     def _muncher_forced_clear(self, word, path, segments):

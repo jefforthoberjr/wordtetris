@@ -1177,18 +1177,26 @@ class SelectionMixin:
         Shown together in the selecting pane's multiline error area."""
         messages = [self._submission_error(word)]
         if not is_word(word):
-            suggestions = self._spell_suggest_rule(word)
-            # Whether the player will actually see the hint: text mode always shows
-            # it; icon mode shows it only when error_icon_keeps_suggestion is on
-            # (the not_in_dictionary reason always carries an icon). Logged for
-            # debugging which hints reach the player -- see log_30005.
-            shown = bool(suggestions) and (
-                self._error_display == "text" or self._error_icon_keeps_suggestion)
-            L.log_30005(word, suggestions, shown)
-            if suggestions:
-                joined = ", ".join(suggestions)
-                messages.append(get_string("did_you_mean", words=joined))
+            messages.extend(self._spell_suggestion_lines(word))
         return messages
+
+    def _spell_suggestion_lines(self, word):
+        """The 'did you mean?' line for a non-dictionary `word`, as a list holding
+        that one line, or empty when the engine found nothing close. Shared with
+        the muncher's reject (MuncherMixin._muncher_reject)."""
+        lines = []
+        suggestions = self._spell_suggest_rule(word)
+        # Whether the player will actually see the hint: text mode always shows
+        # it; icon mode shows it only when error_icon_keeps_suggestion is on
+        # (the not_in_dictionary reason always carries an icon). Logged for
+        # debugging which hints reach the player -- see log_30005.
+        shown = bool(suggestions) and (
+            self._error_display == "text" or self._error_icon_keeps_suggestion)
+        L.log_30005(word, suggestions, shown)
+        if suggestions:
+            joined = ", ".join(suggestions)
+            lines.append(get_string("did_you_mean", words=joined))
+        return lines
 
     # --- Player word-piece rules (game_screen.player_word_piece) -----------
     # Clicking a cleared word in the right pane (MOVING) swaps the live piece for

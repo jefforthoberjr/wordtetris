@@ -664,6 +664,8 @@ rules:
   endgame.page_rows: 8
   # ENDGAME page display, text render: word size as a share of its row. [ref: endgame.page_text_scale]
   endgame.page_text_scale: 0.5
+  # ENDGAME page display, text render: row height as a multiple of the font (0 = original wide rows). [ref: endgame.page_text_line_spacing]
+  endgame.page_text_line_spacing: 1.6
 
   # Whole-board fill bonus; match variant to the mode. [ref: game_screen.fill_board]
   game_screen.fill_board: rule_fill_board_all_fossilized

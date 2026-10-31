@@ -166,7 +166,7 @@ class PageDisplay:
 
     def __init__(self, region_size, window_height, cells=False,
                  layout_rule=rule_endgame_page_layout_columns, page_rows=8,
-                 text_scale=1.0):
+                 text_scale=1.0, text_line_spacing=0):
         self._region_size = region_size
         self._window_height = window_height
         # Draw each word as its cleared CELLS rather than as text (endgame.render).
@@ -177,6 +177,8 @@ class PageDisplay:
         self._page_rows = page_rows
         # Text size against the row it sits in (endgame.page_text_scale).
         self._text_scale = text_scale
+        # Text row height against the drawn font (endgame.page_text_line_spacing).
+        self._text_line_spacing = text_line_spacing
         # Measured text widths at MEASURE_FONT_SIZE, by word (see _text_width).
         self._measure_label = None
         self._text_widths = {}
@@ -213,11 +215,12 @@ class PageDisplay:
         if not self._pages:
             return
         font_size, columns, indices, slots = self._pages[self._page]
+        row_height = self.row_height(font_size)
         L.log_50007(font_size, columns, self._page + 1, len(self._pages))
         L.log_50008("cells" if self._cells else "text", font_size,
-                    self._drawn_font_size(font_size), self._page + 1, len(self._pages))
+                    self._drawn_font_size(font_size), self._page + 1, len(self._pages),
+                    row_height)
         margin = self._margin()
-        row_height = self.row_height(font_size)
         top = self._window_height - margin
         for index, (left, row) in zip(indices, slots):
             view = _WordView(self._cells, self._drawn_font_size(font_size), self._batch)
@@ -225,12 +228,20 @@ class PageDisplay:
             view.place(margin + left, top - row * row_height - math.floor(row_height / 2))
             self._views.append(view)
         if len(self._pages) > 1:
-            # "Page 2 / 3" in the bottom margin, so the player knows more is coming.
+            # Centered in the bottom margin, and it says outright when more words are
+            # coming: the original bare "Page 1 / 2" at the right went unnoticed, and
+            # the next page came as a surprise. The last page has nothing more to say.
+            # ORIGINAL placement, kept for reference:
+            #   x=self._region_size - margin, anchor_x="right"
+            if self._page < len(self._pages) - 1:
+                key = "endgame_page_more"
+            else:
+                key = "endgame_page"
             self._page_label = pyglet.text.Label(
-                get_string("endgame_page", page=self._page + 1, count=len(self._pages)),
+                get_string(key, page=self._page + 1, count=len(self._pages)),
                 font_size=math.floor(self._region_size / 40),
-                x=self._region_size - margin, y=math.floor(margin / 2),
-                anchor_x="right", anchor_y="center",
+                x=math.floor(self._region_size / 2), y=math.floor(margin / 2),
+                anchor_x="center", anchor_y="center",
                 color=get_color("endgame.prompt_text"), batch=self._batch,
             )
 
@@ -254,7 +265,7 @@ class PageDisplay:
         rows fill the usable height. Depends only on the window, never on how many
         words there are."""
         size = math.floor(usable_h / max(1, self._page_rows))
-        while size > 6 and self.row_height(size) * self._page_rows > usable_h:
+        while size > 6 and self._sized_row_height(size) * self._page_rows > usable_h:
             size -= 1
         return size
 
@@ -265,7 +276,18 @@ class PageDisplay:
         return max(6, math.floor(self._region_size * self.MIN_FONT_FRACTION))
 
     def row_height(self, size):
-        """Distance between word rows at base font `size`."""
+        """Distance between word rows at base font `size`. Text rows close up to
+        endgame.page_text_line_spacing; 0 leaves them at the sized row height."""
+        if self._cells or not self._text_line_spacing:
+            height = self._sized_row_height(size)
+        else:
+            height = math.floor(self._drawn_font_size(size) * self._text_line_spacing)
+        return height
+
+    def _sized_row_height(self, size):
+        """The row a word's size is worked out from (endgame.page_rows). Kept apart
+        from row_height so tightening the text rows fits more words on a page rather
+        than making them bigger."""
         return math.floor(self._drawn_font_size(size) * self.LINE_SPACING
                           * self._row_spacing())
 
@@ -855,7 +877,9 @@ def build_page_display(region_size, window_height):
     return PageDisplay(region_size, window_height, cells=render_cells_rule(),
                        layout_rule=page_layout_rule(),
                        page_rows=_rule_int("endgame.page_rows", 8),
-                       text_scale=_rule_float("endgame.page_text_scale", 1.0))
+                       text_scale=_rule_float("endgame.page_text_scale", 1.0),
+                       text_line_spacing=_rule_float(
+                           "endgame.page_text_line_spacing", 0))
 
 
 def build_scroll_display(region_size, window_height):

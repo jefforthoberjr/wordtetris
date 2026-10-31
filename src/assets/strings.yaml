@@ -78,6 +78,7 @@ en:
   endgame_prompt:        "Type the words:"
   endgame_total:         "Bonus: {count}"
   endgame_page:          "Page {page} / {count}"
+  endgame_page_more:     "Page {page} / {count} - more words next"
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"
@@ -169,6 +170,7 @@ es:
   endgame_prompt:        "Escribe las palabras:"
   endgame_total:         "Bonificación: {count}"
   endgame_page:          "Página {page} / {count}"
+  endgame_page_more:     "Página {page} / {count} - siguen más palabras"
   # Verdict flashed under the field after each submission
   endgame_hit:           "{word} +{count}"
   endgame_miss:          "{word}?"

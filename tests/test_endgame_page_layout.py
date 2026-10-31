@@ -3,7 +3,8 @@
 A stand-in page supplies the measurements, since the real PageDisplay measures text
 with a live GL context; that part is left to in-app playtesting.
 """
-from views.endgame_displays import rule_endgame_page_layout_two_then_one_paged
+from views.endgame_displays import (PageDisplay,
+                                    rule_endgame_page_layout_two_then_one_paged)
 
 
 class _Page:
@@ -64,3 +65,23 @@ def test_every_page_shares_the_shrunken_font():
 def test_font_stops_shrinking_at_the_minimum():
     font_size, _columns, _indices, _slots = _layout("A" * 100)[0]
     assert font_size == 6
+
+
+def _real_page(line_spacing):
+    """A real PageDisplay's sizing, without the __init__ that needs a GL context."""
+    page = PageDisplay.__new__(PageDisplay)
+    page._cells = False
+    page._page_rows = 8
+    page._text_scale = 0.5
+    page._text_line_spacing = line_spacing
+    return page
+
+
+def test_tight_text_rows_keep_the_word_size():
+    assert _real_page(1.6).fixed_font_size(1032) == _real_page(0).fixed_font_size(1032)
+
+
+def test_tight_text_rows_are_closer_than_the_original_rows():
+    size = _real_page(0).fixed_font_size(1032)
+    assert _real_page(0).row_height(size) == 129
+    assert _real_page(1.6).row_height(size) == 68

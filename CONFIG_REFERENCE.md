@@ -1828,6 +1828,10 @@ retyping and clears on the next accept / Clear word.
 - `rule_reject_ghost_on` — clear the field, show the ghost echo.
 - `rule_reject_ghost_off` — leave the failed word in the field (original).
 
+Muncher mode honors this too, for both a submitted bad word and a dead-end forced
+clear. Its eaten buffer always empties on a reject, so `_off` there means no echo
+rather than the word staying in the field.
+
 ### game_screen.error_display
 How a rejected submission surfaces its reason in the right pane's error slot. The
 stable reason key that the submission-error logic already logs (`not_in_dictionary`,
@@ -2302,22 +2306,35 @@ The chosen font and split are logged (50007) for each page as it goes up, so a
 replay log shows the layout and every page turn.
 
 ### endgame.page_rows
-Word rows per page for `rule_endgame_page_layout_two_then_one_paged`; this is what
-fixes the word size: the font is the largest at which this many rows fill the page
+What fixes the word size for `rule_endgame_page_layout_two_then_one_paged`: the font is
+the largest at which this many rows, at the original wide spacing, fill the page
 height, so it depends only on the window, not on the word count (a word too long for
 a full-width row is the one thing that lowers it). 8 draws the
-words at about twice the size an autosized 33-word page shrank to. Fewer rows means
-bigger words and more pages. Ignored by the other layouts.
+words at about twice the size an autosized 33-word page shrank to. Fewer means bigger
+words and more pages. It is the true row count only in cell render or with
+`endgame.page_text_line_spacing: 0`; tighter text rows fit more words on the page at
+this same size. Ignored by the other layouts.
 
 ### endgame.page_text_scale
 How big a word in TEXT render (`rule_endgame_render_text`) draws on the page display,
-as a share of the font its row was sized for. Only the letters change: the rows stay
-where they are, so a page holds the same number of words. At 0.5 the letters are
+as a share of the font its row was sized for. At 0.5 the letters are
 somewhat larger than the ones inside `rule_endgame_render_cells`, while the word as a
 whole is narrower than its cell row; 1.0 fills the row height, which reads as far too
 big. Log code 50007 reports the font BEFORE this scale, and 50008 right after it
 reports the size the words really draw at. Ignored
 by cell render and by the scroll and belt displays.
+
+### endgame.page_text_line_spacing
+Distance between word rows in TEXT render on the page display, as a multiple of the
+font the words draw at. 1.6 reads like a normal printed list, because pyglet's font
+size in points draws a line about that many pixels tall. Tighter rows leave the word
+size alone and fit more words on each page, so a long list takes fewer pages; the
+auto-sized layouts (`rule_endgame_page_layout_columns`, `..._two_then_one`) grow their
+font into the extra room instead. 0 restores the original wide rows, where rows are
+spaced for the unscaled font (3x the drawn font at `endgame.page_text_scale: 0.5`), and
+scaling the text leaves the rows where they are. Log code 50008 reports the resulting
+row height. Ignored by cell render, which needs the room for its boxes, and by the
+scroll and belt displays.
 
 ### endgame.spell_suggest
 The "did you mean?" offered under a MISSPELLED submission in the typing bonus. This
