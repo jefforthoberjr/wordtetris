@@ -2,6 +2,7 @@
 rule (game_screen.replenish_length) for the LATE one
 (game_screen.replenish_length_escalated) once enough words have cleared."""
 import config
+from models import gram_picker
 from views.game_screen import GameScreen
 
 
@@ -14,6 +15,7 @@ def _screen(early, late, escalation, threshold, words_cleared):
         "rule_replenish_length_match": gs._rule_replenish_length_match,
         "rule_replenish_length_grow_wrap": gs._rule_replenish_length_grow_wrap,
         "rule_replenish_length_grow_cap": gs._rule_replenish_length_grow_cap,
+        "rule_replenish_length_skip_digram_wrap": gs._rule_replenish_length_skip_digram_wrap,
         "rule_replenish_escalate_off": gs._rule_replenish_escalate_off,
         "rule_replenish_escalate_after_words": gs._rule_replenish_escalate_after_words,
     }
@@ -46,8 +48,9 @@ def test_gate_closed_below_the_threshold_then_open_at_it():
 
 def test_muncher_preset_opens_all_unigrams_and_escalates_after_five():
     """The shipped muncher mode file: single letters only to start, like-for-like
-    refills, then WRAPPING growth once 5 words have banked (a bitten trigram comes
-    back as a single letter, so the board recycles rather than gridlocking)."""
+    refills, then unigram <-> exact-3 trigram wrapping once 5 words have banked (a
+    bitten trigram comes back as a single letter, so the board recycles rather than
+    gridlocking)."""
     try:
         config.apply_game_mode(config._GAME_MODES_DIR / "muncher.yaml")
         rules = config.CONFIG["rules"]
@@ -61,7 +64,8 @@ def test_muncher_preset_opens_all_unigrams_and_escalates_after_five():
         assert rules["game_screen.replenish_escalation"] == "rule_replenish_escalate_after_words"
         assert rules["game_screen.replenish_escalation_words"] == 5
         assert rules["game_screen.replenish_length_escalated"] == \
-            "rule_replenish_length_grow_wrap"
+            "rule_replenish_length_skip_digram_wrap"
+        assert rules["gram_length.trigram_allow_longer"] == "rule_trigram_allow_longer_off"
     finally:
         # Restore the base so this mode swap does not leak into other tests.
         config.CONFIG.clear()
@@ -69,10 +73,37 @@ def test_muncher_preset_opens_all_unigrams_and_escalates_after_five():
 
 
 def test_escalated_wrap_sends_a_trigram_back_to_a_single_letter():
-    """The muncher's late rule: 1 -> 2, 2 -> 3+, and 3+ WRAPS back to 1, so eating a
+    """grow_wrap as a late rule: 1 -> 2, 2 -> 3+, and 3+ WRAPS back to 1, so eating a
     trigram reopens that cell as a single letter."""
     gs = _screen("rule_replenish_length_match", "rule_replenish_length_grow_wrap",
                  "rule_replenish_escalate_after_words", 5, words_cleared=5)
     assert gs._replenish_length_for(1) == 2
     assert gs._replenish_length_for(2) == 3
     assert gs._replenish_length_for(3) == 1
+
+
+def test_skip_digram_wrap_alternates_unigram_and_trigram():
+    """The muncher's late rule: 1 -> 3, 3 -> 1, and a stray digram joins the cycle."""
+    gs = _screen("rule_replenish_length_match", "rule_replenish_length_skip_digram_wrap",
+                 "rule_replenish_escalate_after_words", 5, words_cleared=5)
+    assert gs._replenish_length_for(1) == 3
+    assert gs._replenish_length_for(3) == 1
+    assert gs._replenish_length_for(2) == 3
+
+
+def test_trigram_allow_longer_controls_quadgrams_in_every_length_three_draw():
+    """Off: bucket and ideation draws are exactly 3 letters. On: quadgrams appear."""
+    rules = config.CONFIG["rules"]
+    saved = rules["gram_length.trigram_allow_longer"]
+    try:
+        gram_picker._partition_corpus_by_length()
+        rules["gram_length.trigram_allow_longer"] = "rule_trigram_allow_longer_off"
+        drawn = gram_picker._draw_from_length_bucket(3, 2000)
+        for attr in gram_picker._IDEATION_ATTRS + ["midsuf"]:
+            drawn += gram_picker._draw_from_ideation(3, attr, 500)
+        assert {len(gram.text) for gram in drawn} == {3}
+        rules["gram_length.trigram_allow_longer"] = "rule_trigram_allow_longer_on"
+        drawn = gram_picker._draw_from_length_bucket(3, 2000)
+        assert {len(gram.text) for gram in drawn} == {3, 4}
+    finally:
+        rules["gram_length.trigram_allow_longer"] = saved

@@ -1021,11 +1021,12 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
             "rule_replenish_length_match": self._rule_replenish_length_match,
             "rule_replenish_length_grow_wrap": self._rule_replenish_length_grow_wrap,
             "rule_replenish_length_grow_cap": self._rule_replenish_length_grow_cap,
+            "rule_replenish_length_skip_digram_wrap": self._rule_replenish_length_skip_digram_wrap,
         }
         self._replenish_length_rule = select_rule(
             "game_screen.replenish_length", replenish_length_rules)
         # The LATE length rule, used once the escalation gate below has opened. Same
-        # four choices as the early rule above (so a mode can escalate into matching,
+        # choices as the early rule above (so a mode can escalate into matching,
         # or from matching into growth); only consulted when the gate is open.
         self._replenish_length_escalated_rule = select_rule(
             "game_screen.replenish_length_escalated", replenish_length_rules)

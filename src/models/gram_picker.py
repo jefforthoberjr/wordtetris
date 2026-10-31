@@ -373,6 +373,38 @@ _ONLY_VOWEL_DIGRAM_RULES = {
 }
 
 
+# --- trigram length rule (gram_length.trigram_allow_longer) ---------------------
+# Decides what the "3" length category may draw: 3+ letters (the corpus tops out at
+# quadgrams) or exactly 3. Takes a (grams, weights) pool of length-3-category grams
+# and returns the pool to draw from. Resolved per draw in _trigram_category_pool, not
+# when the pools are cached, so a game mode's override is honored (the same
+# import-order trap noted for the gram-filter rules above).
+def rule_trigram_allow_longer_on(grams, weights):
+    """The "3" category means 3+: quadgrams stay in the pool (the original behavior)."""
+    return grams, weights
+
+
+def rule_trigram_allow_longer_off(grams, weights):
+    """The "3" category means exactly 3 letters: anything longer is dropped."""
+    kept = [(gram, weight) for gram, weight in zip(grams, weights) if len(gram) == 3]
+    return [gram for gram, _ in kept], [weight for _, weight in kept]
+
+
+_TRIGRAM_ALLOW_LONGER_RULES = {
+    "rule_trigram_allow_longer_on": rule_trigram_allow_longer_on,
+    "rule_trigram_allow_longer_off": rule_trigram_allow_longer_off,
+}
+
+
+def _trigram_category_pool(length, grams, weights):
+    """The pool to draw from for a length category: the "3" category passes through
+    gram_length.trigram_allow_longer; unigram and digram pools are returned as is."""
+    if length != 3:
+        return grams, weights
+    return select_rule("gram_length.trigram_allow_longer", _TRIGRAM_ALLOW_LONGER_RULES)(
+        grams, weights)
+
+
 def pick_grams(rule, count):
     """The single choke point every piece's grams pass through: apply the active
     gram.dedup (multigram) rule, the gram.unigram_dedup (unigram) rule, and the two
@@ -664,7 +696,7 @@ def _length_pct_weights():
 def _draw_from_length_bucket(length, count):
     """Draw `count` grams of the given length category (1 / 2 / 3+) from the
     corpus, weighted by the corpus's own frequencies within that bucket."""
-    bucket_grams, bucket_weights = _corpus_by_length[length]
+    bucket_grams, bucket_weights = _trigram_category_pool(length, *_corpus_by_length[length])
     picks = rand().choices(bucket_grams, weights=bucket_weights, k=count)
     return [Gram(text) for text in picks]
 
@@ -881,7 +913,7 @@ def _draw_from_ideation(length, attr, count):
     """Draw `count` grams of `length` (2 / 3+) that carry ideation `attr` (graded
     y), weighted by corpus frequency within that sub-list."""
     _partition_corpus_ideation()
-    grams_list, weights = _ideation_by_length_attr[length][attr]
+    grams_list, weights = _trigram_category_pool(length, *_ideation_by_length_attr[length][attr])
     if not grams_list:  # no gram of this length carries the attr -- fall back
         return _draw_from_length_bucket(length, count)
     picks = rand().choices(grams_list, weights=weights, k=count)

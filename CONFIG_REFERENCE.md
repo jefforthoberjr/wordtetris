@@ -720,6 +720,11 @@ that draw only; every other draw (piece pool, opening board) is untouched.
   Pair with `game_screen.constellation_auto_end: rule_constellation_auto_end_on` to
   have the game call the gridlock itself, or leave it off and let the player decide
   when to stop (the no-word-availability-hints rule).
+- `rule_replenish_length_skip_digram_wrap` — **hydra, no digrams**: 1 → 3, 3 → 1. A
+  cell alternates between a single letter and a trigram, and this rule never grows a
+  digram. A digram already on the board (from the opening formation or an earlier
+  rule) joins the cycle at 3. Pair with `gram_length.trigram_allow_longer:
+  rule_trigram_allow_longer_off` for literal 3-letter trigrams, as the muncher does.
 
 Only consulted for cells the constellation turnover refills; plant's refresh
 clear-action shares the replenish machinery but always uses the configured picker.
@@ -730,9 +735,9 @@ This is the EARLY rule — the one in force until the escalation gate below open
 
 ### game_screen.replenish_length_escalated
 The LATE replenish length rule: what refills use once `game_screen.replenish_escalation`
-has opened the gate. Same four choices as `game_screen.replenish_length` above, with the
+has opened the gate. Same choices as `game_screen.replenish_length` above, with the
 same meanings, so a mode can escalate from like-for-like into growth (the muncher's
-`rule_replenish_length_match` → `rule_replenish_length_grow_cap`), or from the plain
+`rule_replenish_length_match` → `rule_replenish_length_skip_digram_wrap`), or from the plain
 picker into anything else. Ignored entirely while the gate is shut, so it is harmless to
 leave set on a mode with escalation off.
 
@@ -2435,6 +2440,18 @@ self-averages over 100+ pieces.)
 
 Keys: `gram_length.unigram_percent`, `gram_length.digram_percent`,
 `gram_length.trigramplus_percent`.
+
+### gram_length.trigram_allow_longer
+What the "3" length category may draw from the JPO corpus, wherever a length-aware draw
+lands in it: the opening board, the piece pool, the replenish length rules, and the
+ideation pools the formations steer toward.
+- `rule_trigram_allow_longer_on` — 3 means 3+: 3-letter grams and quadgrams (the corpus
+  has 27 quadgrams and tops out there). The default, and the original behavior.
+- `rule_trigram_allow_longer_off` — 3 means exactly 3 letters.
+
+Does not touch `rule_grams_greater_than_47`, which has no length categories and keeps
+the corpus's natural 1-4 letter blend, or the plant-mode root pool, which is its own
+3+ suffix list. `rule_trigram_equalweight` is already 3 letters only.
 
 ### gram_length.unigram_common_percent / unigram_uncommon_percent
 Within the OPENING BOARD's unigrams, a second quota splits single letters into two

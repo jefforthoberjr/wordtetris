@@ -168,6 +168,12 @@ class ConstellationMixin:
         playing against."""
         return {1: 2, 2: 3, 3: 3}.get(cleared_length)
 
+    def _rule_replenish_length_skip_digram_wrap(self, cleared_length):
+        """HYDRA (no digrams): 1 -> 3, 3 -> 1, so a cell alternates between a single
+        letter and a trigram and this rule never grows a digram. A digram already on
+        the board (opening formation, an earlier rule) joins the cycle at 3."""
+        return {1: 3, 2: 3, 3: 1}.get(cleared_length)
+
     # --- replenish escalation (game_screen.replenish_escalation) ---------------
     # A gate IN FRONT of the two length rules above: until it opens, refills use
     # game_screen.replenish_length (the EARLY rule); once it opens, they use

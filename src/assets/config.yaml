@@ -152,6 +152,7 @@ rules:
   # game_screen.replenish_length: rule_replenish_length_match
   # game_screen.replenish_length: rule_replenish_length_grow_wrap
   # game_screen.replenish_length: rule_replenish_length_grow_cap
+  # game_screen.replenish_length: rule_replenish_length_skip_digram_wrap
 
   # The LATE replenish length rule, live once the escalation gate below opens.
   # [ref: game_screen.replenish_length_escalated]
@@ -159,6 +160,7 @@ rules:
   # game_screen.replenish_length_escalated: rule_replenish_length_match
   # game_screen.replenish_length_escalated: rule_replenish_length_grow_wrap
   game_screen.replenish_length_escalated: rule_replenish_length_grow_cap
+  # game_screen.replenish_length_escalated: rule_replenish_length_skip_digram_wrap
 
   # When refills switch from the early length rule to the escalated one.
   # [ref: game_screen.replenish_escalation]
@@ -707,6 +709,10 @@ rules:
   gram_length.unigram_percent:     50
   gram_length.digram_percent:      20
   gram_length.trigramplus_percent: 15
+
+  # May the "3" length category draw 4+ letter grams, or exactly 3? [ref: gram_length.trigram_allow_longer]
+  gram_length.trigram_allow_longer: rule_trigram_allow_longer_on
+  # gram_length.trigram_allow_longer: rule_trigram_allow_longer_off
 
   # Opening-board unigram split: common glue vs uncommon flavor. [ref: gram_length.unigram_common_percent]
   gram_length.unigram_common_percent:   60
