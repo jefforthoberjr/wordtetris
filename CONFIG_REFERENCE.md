@@ -2228,6 +2228,16 @@ a full-width row is the one thing that lowers it). 8 draws the
 words at about twice the size an autosized 33-word page shrank to. Fewer rows means
 bigger words and more pages. Ignored by the other layouts.
 
+### endgame.page_text_scale
+How big a word in TEXT render (`rule_endgame_render_text`) draws on the page display,
+as a share of the font its row was sized for. Only the letters change: the rows stay
+where they are, so a page holds the same number of words. At 0.5 the letters are
+somewhat larger than the ones inside `rule_endgame_render_cells`, while the word as a
+whole is narrower than its cell row; 1.0 fills the row height, which reads as far too
+big. Log code 50007 reports the font BEFORE this scale, and 50008 right after it
+reports the size the words really draw at. Ignored
+by cell render and by the scroll and belt displays.
+
 ### endgame.spell_suggest
 The "did you mean?" offered under a MISSPELLED submission in the typing bonus. This
 is a SEPARATE engine from `game_screen.spell_suggest` (the in-play one) and must

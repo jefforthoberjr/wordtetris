@@ -7,6 +7,20 @@ GAME NAMES
 * catalyst cata LIST
 
 
+Try a hexagon board, with an overall hexagon shape (i.e. the corners of the board have no pieces)
+
+
+Currently, when the multigrams appear the game shifts dramatically
+	the game shifts between, just simple autocomplete, casual
+	to very hard, vocabulary search in my mind, then a scramble to reverse engineer the spelling (does the spelling fit? no; like 60% of the time I toss out a vocabulary idea).
+
+
+A whole new mode idea: like when row of soda cans are laid flat in a fridge, and you grab one and the whole row rolls forward. The whole 2d board of grams is actually shown as one long flat set of soda rows.
+All the 1 grams, could be arranged in alphabetical order (or my own grouping order, like consonats clustered on the left, vowels clustered in the center, and some more consonants clustered on the right).
+When a multigram appears (like just 1 or 2 at a time), they appear at the bottom, and they have to pull from the soda racks to spell a word with it.
+Maybe they aren't strict lanes for each letter (since showing 26 lanes is hard to show on screen?) but instead like 12 lanes, roughtly grouped, siloed by consonant / vowel, and each lane can just have a random mix of that type.
+
+
 I only get excited / nucleate for a multigram, if I see another multigram that it can pair with. Then the odds of actually finding all of letters on the board is within reach, then I'm just completing the gaps. Seeing the 2 multi grams also naturally triggers the auto complete more
 
 What about the letters for multigrams being displayed on a diagonal?

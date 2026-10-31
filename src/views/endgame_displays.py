@@ -165,7 +165,8 @@ class PageDisplay:
     MEASURE_FONT_SIZE = 100
 
     def __init__(self, region_size, window_height, cells=False,
-                 layout_rule=rule_endgame_page_layout_columns, page_rows=8):
+                 layout_rule=rule_endgame_page_layout_columns, page_rows=8,
+                 text_scale=1.0):
         self._region_size = region_size
         self._window_height = window_height
         # Draw each word as its cleared CELLS rather than as text (endgame.render).
@@ -174,6 +175,8 @@ class PageDisplay:
         self._layout_rule = layout_rule
         # Word rows per page for the fixed-size paged layout (endgame.page_rows).
         self._page_rows = page_rows
+        # Text size against the row it sits in (endgame.page_text_scale).
+        self._text_scale = text_scale
         # Measured text widths at MEASURE_FONT_SIZE, by word (see _text_width).
         self._measure_label = None
         self._text_widths = {}
@@ -211,6 +214,8 @@ class PageDisplay:
             return
         font_size, columns, indices, slots = self._pages[self._page]
         L.log_50007(font_size, columns, self._page + 1, len(self._pages))
+        L.log_50008("cells" if self._cells else "text", font_size,
+                    self._drawn_font_size(font_size), self._page + 1, len(self._pages))
         margin = self._margin()
         row_height = self.row_height(font_size)
         top = self._window_height - margin
@@ -303,17 +308,22 @@ class PageDisplay:
 
     def _drawn_font_size(self, size):
         """The font a word actually draws at: cell rows are bigger than the same
-        word in text -- each letter gets a box -- so cell mode draws smaller."""
+        word in text -- each letter gets a box -- so cell mode draws smaller. Text
+        draws at endgame.page_text_scale."""
         if self._cells:
             size = math.floor(size * self.CELL_FONT_SCALE)
+        else:
+            size = math.floor(size * self._text_scale)
         return size
 
     def _row_spacing(self):
-        """Extra line spacing in cell mode, where each row is a strip of boxes."""
+        """Extra line spacing in cell mode, where each row is a strip of boxes. Text
+        spacing undoes endgame.page_text_scale, so scaling the words leaves the rows
+        where they are and a page holds the same number of words."""
         if self._cells:
             spacing = self.CELL_ROW_SPACING
         else:
-            spacing = 1.0
+            spacing = 1.0 / self._text_scale
         return spacing
 
     def refresh(self, targets):
@@ -844,7 +854,8 @@ def build_page_display(region_size, window_height):
     """A PageDisplay in the configured render mode and layout (see endgame.display)."""
     return PageDisplay(region_size, window_height, cells=render_cells_rule(),
                        layout_rule=page_layout_rule(),
-                       page_rows=_rule_int("endgame.page_rows", 8))
+                       page_rows=_rule_int("endgame.page_rows", 8),
+                       text_scale=_rule_float("endgame.page_text_scale", 1.0))
 
 
 def build_scroll_display(region_size, window_height):

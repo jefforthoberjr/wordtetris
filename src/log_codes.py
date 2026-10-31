@@ -575,6 +575,17 @@ def log_50007(font_size, columns, page=1, pages=1):
                      font=font_size, split=split, page=page, pages=pages)
 
 
+def log_50008(render, base_font, drawn_font, page=1, pages=1):
+    """The size the words on that page really draw at, logged right after 50007,
+    whose font is the size BEFORE scaling. `render` is "text" or "cells" (endgame.render);
+    `drawn_font` is after endgame.page_text_scale (text) or the cell scale (cells)."""
+    session_log.emit(50008,
+                     f"endgame page {page}/{pages} words drawn: {render} at font "
+                     f"{drawn_font} (base {base_font})",
+                     render=render, base=base_font, drawn=drawn_font,
+                     page=page, pages=pages)
+
+
 # --- 6xxxx  setup / random-source outcomes -----------------------------------
 def _gram_text(gram):
     """Render one gram for a log field: '*' for a wild vowel, '_' for an empty
