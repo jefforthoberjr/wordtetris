@@ -134,6 +134,8 @@ class HexGrid:
         shape_shader = get_shape_shader()
         for row in range(self._rows):
             for col in range(self._cols):
+                if not self.is_valid(col, row):
+                    continue
                 cx, cy = self._rule_flattop_cell_center(col, row)
                 verts = self._rule_flattop_vertices(cx, cy)
                 for i in range(6):
@@ -219,6 +221,8 @@ class HexGrid:
         limit_sq = self._hex_size * self._hex_size
         for row in range(self._rows):
             for col in range(self._cols):
+                if not self.is_valid(col, row):
+                    continue
                 cx, cy = self.cell_center(col, row)
                 offset_x = px - cx
                 offset_y = py - cy

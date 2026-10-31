@@ -279,10 +279,15 @@ class HexPiece:
             positions.append(hex_neighbor(self._grid_x, self._grid_y, d))
         return positions
 
+    def _cell_center(self, col, row):
+        """Pixel center of a board cell. Must match the grid this piece sits on, so
+        a grid with its own origin supplies a subclass (hexagon_board_piece_class)."""
+        return flattop_cell_center(self._hex_size, col, row)
+
     def _update_positions(self):
         positions = self._cell_grid_positions()
         for i, (col, row) in enumerate(positions):
-            cx, cy = flattop_cell_center(self._hex_size, col, row)
+            cx, cy = self._cell_center(col, row)
             # Each polygon anchors at its own first vertex (+radius on x).
             self._outers[i].position = (cx + self._hex_size, cy)
             self._inners[i].position = (cx + self._inner_size, cy)
@@ -419,3 +424,14 @@ class HexPiece:
             data.append((gx, gy, self._cell_shapes[i], self._labels[i],
                          self._grams[i], self._overlays[i]))
         return data
+
+
+def hexagon_board_piece_class(origin):
+    """A HexPiece that sits on a HexagonHexGrid: the same piece, shifted by that
+    board's origin. A class (not an instance) because the pools and spawners build
+    pieces through game_screen's _piece_class."""
+    class HexagonBoardPiece(HexPiece):
+        def _cell_center(self, col, row):
+            cx, cy = flattop_cell_center(self._hex_size, col, row)
+            return cx + origin[0], cy + origin[1]
+    return HexagonBoardPiece

@@ -107,9 +107,12 @@ rules:
   game_screen.grid:         rule_use_hex_grid
   # game_screen.grid:       rule_use_square_grid
   # game_screen.grid:       rule_use_triangle_grid
+  # game_screen.grid:       rule_use_hexagon_hex_grid
 
   # Board columns (grid is square) + player piece-pool size. [ref: game_screen.grid_width]
   game_screen.grid_width:       8
+  # Hexagon board only: point-to-point cell count, odd. [ref: game_screen.hexagon_diameter]
+  game_screen.hexagon_diameter: 7
   game_screen.piece_pool_size:  100
 
   # MOVING-phase strategy: jigsaw / typewriter / omniswap / constellation / shooting_gallery / line_blast / plant / muncher. [ref: game_screen.mode]

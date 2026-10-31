@@ -12,7 +12,8 @@ mode_label: "Word Muncher"
 
 rules:
   game_screen.mode: rule_mode_muncher
-  game_screen.grid: rule_use_square_grid
+  # game_screen.grid: rule_use_square_grid
+  game_screen.grid: rule_use_hexagon_hex_grid
 
   # A full board to walk around in and eat your way through, kept small (6x6) so
   # the walk between bites stays short.

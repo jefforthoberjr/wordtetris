@@ -20,6 +20,7 @@ from models.square_piece import (
 )
 from models.hex_piece import (
     HexPiece,
+    hexagon_board_piece_class,
     player_piece_types as hex_player_piece_types,
     obstacle_piece_types as hex_obstacle_piece_types,
     obstacle_gram_pick_rule as hex_obstacle_gram_pick_rule,
@@ -54,6 +55,7 @@ from models.gram_picker import (
 )
 from models.square_grid import SquareGrid
 from models.hex_grid import HexGrid
+from models.hexagon_hex_grid import HexagonHexGrid, hexagon_board_hex_size
 from models.triangle_grid import TriangleGrid
 from models.piece_placement import place_piece_cells
 from models.word_dictionary import (
@@ -73,6 +75,9 @@ from source import rand
 _GRID_SHAPES = {
     "rule_use_square_grid": ("square", "|"),
     "rule_use_hex_grid": ("hex", "/"),
+    # Same cells, adjacency and piece sets as the hex rectangle, so it shares the
+    # hex_* config keys and records its words as hex words.
+    "rule_use_hexagon_hex_grid": ("hex", "/"),
     "rule_use_triangle_grid": ("triangle", "^"),
 }
 
@@ -1184,11 +1189,30 @@ class BoardSetupMixin:
             hex_size, self._grid_area_size, self._grid_area_size,
             self._board_batch
         )
+        self._piece_class = HexPiece
+        self._wire_hex_cell_rules(board, hex_size)
+        return board
+
+    def _rule_use_hexagon_hex_grid(self, window):
+        """Build a hex board whose overall shape is a regular hexagon, sized from
+        game_screen.hexagon_diameter rather than GRID_WIDTH. The corners of the
+        grid area stay blank (see HexagonHexGrid)."""
+        diameter = CONFIG["rules"]["game_screen.hexagon_diameter"]
+        hex_size = hexagon_board_hex_size(diameter, self._grid_area_size)
+        board = HexagonHexGrid(
+            diameter, hex_size, self._grid_area_size, self._board_batch
+        )
+        self._piece_class = hexagon_board_piece_class(board.origin)
+        self._wire_hex_cell_rules(board, hex_size)
+        return board
+
+    def _wire_hex_cell_rules(self, board, hex_size):
+        """What every flat-top hex board shares: piece sizing, piece sets, movement
+        and the dictionary separator."""
         # Keep the float hex_size: the piece must use the exact same value as
         # the grid, or it drifts off the cells across the board.
         self._cell_size = hex_size
         self._board_height = board.height
-        self._piece_class = HexPiece
         self._player_piece_types = hex_player_piece_types()
         # Single-cell shape a clicked-word piece uses on this grid (see
         # _swap_to_word_piece / game_screen.player_word_piece).
@@ -1208,7 +1232,6 @@ class BoardSetupMixin:
         # Gram separator a cleared word is recorded with in the player dictionary
         # (see _encode_variation): "/" marks a word formed on the hex grid.
         self._gram_separator = "/"
-        return board
 
     def _rule_use_triangle_grid(self, window):
         """Build an equilateral-triangle board and set piece sizing to match.

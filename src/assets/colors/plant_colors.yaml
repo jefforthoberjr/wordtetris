@@ -10,6 +10,8 @@ board:
   cursor_fill:      [80, 80, 80]      # dark grey: the MOVING_TYPEWRITER cursor cell
   crosshair:        [139, 0, 0]       # dark red: the MOVING_SHOOTING_GALLERY aiming reticle
   fossilized_fill:  [80, 150, 80]     # plant green: the stem trunk + grown branches (fossilized cells)
+  stem_fill:        [140, 100, 60]    # MOVING_BOTANICAL: the vertical stem-column spine cells (woody brown)
+  leaf_fill:        [120, 190, 120]   # MOVING_BOTANICAL: leaf cells a word grows into (green)
   stem_text:        [225, 240, 225, 255]  # non-root stem gram text: soft near-white on the green trunk; set to [80,150,80] to hide the repeated root
   pending_word_fill: [144, 238, 144]  # light green: cells of a word selected to clear at phase end (batch mode)
   line_blast_highlight: [152, 251, 152]   # light green: cells of a completed row/column (line blast SELECT domain)
@@ -104,3 +106,8 @@ menu:
   highlight:        [255, 255, 0, 255]   # selected menu item
   normal:           [255, 255, 255, 255] # unselected menu item
   panel:            [50, 50, 50]         # in-game menu panel background
+
+idea_belt:
+  circle_fill:      [255, 253, 240, 255]  # the disc each picture sits on
+  circle_border:    [200, 190, 160, 255]  # ring around the disc
+  word_text:        [70, 70, 70, 255]     # optional caption under a picture (idea_belt.show_word)

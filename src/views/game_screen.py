@@ -1560,6 +1560,7 @@ class GameScreen(WordFindMixin, BoardRulesMixin, BoardSetupMixin, SelectionMixin
         grid_rules = {
             "rule_use_square_grid": self._rule_use_square_grid,
             "rule_use_hex_grid": self._rule_use_hex_grid,
+            "rule_use_hexagon_hex_grid": self._rule_use_hexagon_hex_grid,
             "rule_use_triangle_grid": self._rule_use_triangle_grid,
         }
         self._board = select_rule("game_screen.grid", grid_rules)(self._window)

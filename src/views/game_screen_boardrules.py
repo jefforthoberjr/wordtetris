@@ -77,9 +77,9 @@ class BoardRulesMixin:
     # differs by mode. Consulted by _check_board_fill after every clear / settle;
     # the bonus fires once per game (see _fill_board_awarded).
     def _all_board_cells(self):
-        """Every valid board cell coordinate (the whole rectangle; both grids'
-        is_valid is a plain bounds check, so no cell is masked out). The same walk
-        the uniform-fill formation uses."""
+        """Every valid board cell coordinate (the whole rectangle, less any cells the
+        board masks off, such as the hexagon board's corners). The same walk the
+        uniform-fill formation uses."""
         return [(x, y)
                 for y in range(self._board.height)
                 for x in range(self._board.width)

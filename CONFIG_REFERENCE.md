@@ -320,7 +320,15 @@ digram if the picker can't produce a fresh one in budget.
 - `rule_allow_only_vowel_digrams` — disable.
 
 ### game_screen.grid
-`rule_use_hex_grid`, `rule_use_square_grid`, or `rule_use_triangle_grid`.
+`rule_use_hex_grid`, `rule_use_square_grid`, `rule_use_triangle_grid`, or
+`rule_use_hexagon_hex_grid`.
+
+The hexagon board uses the hex board's flat-top cells, but its overall silhouette is
+also a regular hexagon: points at 12 and 6 o'clock, straight columns on the left and
+right, and blank background in the corners of the grid area. A corner is not a cell,
+so pieces can't enter or hang over it, clicks miss, and word paths can't cross it. It
+shares the `hex_*` config keys and the `/` dictionary separator with the hex board.
+Size it with `game_screen.hexagon_diameter`; `game_screen.grid_width` doesn't apply.
 
 The triangle board tiles equilateral triangles, rows alternating point-up and
 point-down (the orientation of a cell is the parity of `col + row`, so it is one
@@ -338,6 +346,13 @@ as the gram separator (`|` square, `/` hex).
 `grid_width` is the number of columns (the grid area is a square, so cell size
 derives from it). `piece_pool_size` is how many player pieces the pool pre-builds
 for a game.
+
+### game_screen.hexagon_diameter
+Only used by `rule_use_hexagon_hex_grid`. The board's point-to-point diameter in
+cells: the length of the center column, and also the number of columns. Must be odd
+and at least 3, or the game raises an error at board build. Total cells are
+`(3d² + 1) / 4`, so 7 gives 37, 9 gives 61, and 11 gives 91. Cells are sized to fill
+the grid area, so a smaller diameter means larger cells.
 
 ### game_screen.mode
 MOVING-phase mode bundle: which moving-phase strategy runs. The mode owns how the
