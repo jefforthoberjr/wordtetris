@@ -7,6 +7,34 @@ GAME NAMES
 * catalyst cata LIST
 
 
+I only get excited / nucleate for a multigram, if I see another multigram that it can pair with. Then the odds of actually finding all of letters on the board is within reach, then I'm just completing the gaps. Seeing the 2 multi grams also naturally triggers the auto complete more
+
+What about the letters for multigrams being displayed on a diagonal?
+
+
+Bad: oh crap, I ate a wrong letter, feeling
+
+
+The ability to stash a half eaten word already?
+
+
+The multigrams need to be used 2 or 3 times to dissapear. (maybe like little bites are shown accumulating on the multigram?)
+
+Additional restrictions, like, muncher must use a specific
+
+
+Why are the pieces in a 2d square? When the spatial relation doesn't matter?
+I could be 1 giant 1d line for all I care, right?
+Proximity or pieces means nothing, adds no benefits or challenges.
+-time wasted, my eyes scanning around looking for a particular letter
+Seeing the 2d space does make my brain try some autocomplete stuff, happenstance clustered letters nucleate my ideas for words I want to spell
+My autocomplete eyes, don't really look beyond a 3x3 square
+
+
+Sometimes I want to write out a word, or sounds it out, or see it typed, to double check my spelling understanding
+(does correlate have 1 r or 2... typing it out or seeing it help refined it, otherwise there is some upfront stress to not knowing how to spell it)
+
+
 To be able to type in words you want to be "on deck". Like you know you just need 1 or 2 more letters to refresh and appear, but you don't want to forget about them. Maybe they auto trigger if they appear. Maybe the ability to put upto 3 words "on deck" or "on watch"
 
 

@@ -948,6 +948,8 @@ idle — the same shape as the shooting gallery. Flip:
   `rule_victory_none`: `muncher_lives` is the only end condition, and the lives are
   drawn in the status row the clock would otherwise own.
 - `game_screen.endgame` → `rule_endgame_typing_bonus` (where the last life leads)
+- `endgame.render` → `rule_endgame_render_text` (the words to type show as flat text,
+  for sight-word learning, rather than as the gram cells they were eaten from)
 - `game_screen.muncher_lives`, `muncher_dead_end` and `muncher_dead_end_grace` tune
   the risk; `assets.muncher_animation` tunes the character's step / chew timing and
   size (`assets/muncher_animation/`).
@@ -2053,7 +2055,11 @@ Whether each word in the typing bonus is drawn as plain TEXT or as the CELLS it 
 cleared with. Independent of `endgame.display` — either render works in all three
 displays (page, scrolling, conveyor).
 - `rule_endgame_render_text` — plain uppercase text. The plainest, and the fastest to
-  read at a glance.
+  read at a glance. Also the one for a young speller: the word keeps its whole printed
+  shape for sight-word learning, where the gram boxes space letters unevenly and split
+  the word into chunks. Letters use the font's normal spacing, without pair kerning
+  (pyglet's default text shaping on macOS adds none), so AV sits a little looser than
+  in print. The page layout measures this text in the real font.
 - `rule_endgame_render_cells` — the word re-renders as the row of pieces the player
   actually built it from, exactly as the My Dictionary screen re-renders a collected
   word (`views/gram_preview.py`): the grid's own shape (square boxes / point-up
@@ -2204,7 +2210,9 @@ the largest font at which everything fits the region.
 - `rule_endgame_page_layout_two_then_one_paged` — the same two-then-one arrangement
   at a FIXED size, spread over as many pages as the list needs. The size comes from
   `endgame.page_rows` and never shrinks for a long list; a long list gets more pages
-  instead. When every word on a page is typed, the next page replaces it (no going
+  instead. The one exception is a single word too long for a full-width row: all the
+  pages then draw small enough to hold it, so the size stays the same from page to
+  page. When every word on a page is typed, the next page replaces it (no going
   back), and a "Page 2 / 3" label sits in the bottom margin. Typing, the live
   highlight, auto-submit and "did you mean?" all work over the CURRENT page only, so
   a word on a later page cannot score early or make a word on this page ambiguous
@@ -2215,7 +2223,8 @@ replay log shows the layout and every page turn.
 ### endgame.page_rows
 Word rows per page for `rule_endgame_page_layout_two_then_one_paged`; this is what
 fixes the word size: the font is the largest at which this many rows fill the page
-height, so it depends only on the window, never on the word count. 8 draws the
+height, so it depends only on the window, not on the word count (a word too long for
+a full-width row is the one thing that lowers it). 8 draws the
 words at about twice the size an autosized 33-word page shrank to. Fewer rows means
 bigger words and more pages. Ignored by the other layouts.
 

@@ -81,8 +81,15 @@ def rule_endgame_page_layout_two_then_one_paged(page, targets, usable_w, usable_
     list needs. The size comes from endgame.page_rows (how many word rows fill the
     page height), so it never shrinks for a long list -- a long list gets more
     pages instead. Each page takes as many of the next words as its rows hold; the
-    display turns to the next page once every word on this one is typed."""
+    display turns to the next page once every word on this one is typed.
+
+    The one exception to the fixed size: a word too long for a full-width row. Every
+    page then draws small enough to hold it, so the size still stays the same from
+    page to page and no word runs off the board."""
     size = page.fixed_font_size(usable_h)
+    while (size > page.min_font_size()
+           and page.widest(targets, size) > page.column_room(usable_w)):
+        size -= 1
     rows_per_page = max(1, math.floor(usable_h / page.row_height(size)))
     pages = []
     start = 0
@@ -154,6 +161,8 @@ class PageDisplay:
     # so cell mode starts from a smaller font and leaves more room between rows.
     CELL_FONT_SCALE = 0.75
     CELL_ROW_SPACING = 1.5
+    # The font size a word's text is measured at once; other sizes scale from it.
+    MEASURE_FONT_SIZE = 100
 
     def __init__(self, region_size, window_height, cells=False,
                  layout_rule=rule_endgame_page_layout_columns, page_rows=8):
@@ -165,6 +174,9 @@ class PageDisplay:
         self._layout_rule = layout_rule
         # Word rows per page for the fixed-size paged layout (endgame.page_rows).
         self._page_rows = page_rows
+        # Measured text widths at MEASURE_FONT_SIZE, by word (see _text_width).
+        self._measure_label = None
+        self._text_widths = {}
         self._batch = pyglet.graphics.Batch()
         self._views = []
         # The layout's pages (see the layout rules) and which one is up. A
@@ -254,15 +266,30 @@ class PageDisplay:
 
     def word_width(self, target, size):
         """How wide `target` draws at base font `size`: its cell row (the same
-        geometry GramPreview builds) or its text, by the ~0.62 em glyph estimate."""
+        geometry GramPreview builds) or its text, as measured in the real font."""
         drawn = self._drawn_font_size(size)
         if self._cells and target["variation"]:
             shape, grams = parse_variation(target["variation"])
             # _WordView sizes its preview cells at 1.25x the drawn font.
             width = cell_row_width(shape, len(grams), drawn * 1.25)
         else:
-            width = len(target["word"]) * drawn * self.CHAR_WIDTH
+            # ORIGINAL estimate, kept for reference. Real uppercase text draws up to
+            # ~1.6x this wide, so words ran off the board into the right pane:
+            #   width = len(target["word"]) * drawn * self.CHAR_WIDTH
+            width = self._text_width(target["word"]) * drawn / self.MEASURE_FONT_SIZE
         return width
+
+    def _text_width(self, word):
+        """`word`'s real width at MEASURE_FONT_SIZE. Measured once per word and
+        scaled from there, since the layout rules ask about every word at many
+        candidate font sizes and building a label for each would stall the screen."""
+        if word not in self._text_widths:
+            if self._measure_label is None:
+                self._measure_label = pyglet.text.Label(
+                    "", font_size=self.MEASURE_FONT_SIZE)
+            self._measure_label.text = word
+            self._text_widths[word] = self._measure_label.content_width
+        return self._text_widths[word]
 
     def widest(self, targets, size):
         widest = 0
