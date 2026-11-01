@@ -74,6 +74,14 @@ class _Board:
     def is_valid(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
 
+    def neighbors(self, x, y):
+        steps = ((1, 0), (-1, 0), (0, 1), (0, -1))
+        return [(x + dx, y + dy) for dx, dy in steps if self.is_valid(x + dx, y + dy)]
+
+    def cell_at(self, px, py):
+        # The test's "pixels" are just the cell coordinates.
+        return (px, py) if self.is_valid(px, py) else None
+
     def cell_visual_center(self, x, y):
         return (x * 10.0, y * 10.0)
 
@@ -117,6 +125,7 @@ class _GS:
         self._board = board
         self._moving_side_pane = _Pane()
         self._cell_size = 10
+        self._buttons = {"move_primary": "LEFT"}
         self.eaten = []
         self.submitted = []
         self.forced = []
@@ -757,3 +766,148 @@ def test_the_belly_sprite_really_has_geometry_to_draw():
         sprite.tick(0.016)
         corners = list(sprite._belly._vertex_list.position[:])
         assert any(c != 0 for c in corners), f"belly collapsed at size {size}"
+
+
+# --- click to walk (game_screen.muncher_click) ------------------------------
+def _click_mode(grams=None, pos=(0, 0)):
+    mode = _mode(_Board(grams=grams), pos=pos)
+    mode._click_rule = mode._rule_muncher_click_walk_and_eat
+    mode._click_walk_reset()
+    return mode
+
+
+def _run_walk(mode, frames=20):
+    for _ in range(frames):
+        mode._click_walk_tick()
+
+
+def test_click_off_rule_leaves_him_alone():
+    mode = _click_mode()
+    mode._click_rule = mode._rule_muncher_click_off
+    mode.on_mouse_press(3, 2, "LEFT")
+    _run_walk(mode)
+    assert mode._pos == (0, 0)
+    assert mode._gs.eaten == []
+
+
+def test_click_walks_a_shortest_route_and_bites_on_arrival():
+    mode = _click_mode({(3, 2): "T"})
+    mode.on_mouse_press(3, 2, "LEFT")
+    _run_walk(mode)
+    assert mode._pos == (3, 2)
+    assert len(mode._sprite.steps) == 5
+    assert mode._gs.eaten == [(3, 2)]
+    assert mode.word() == "T"
+
+
+def test_click_on_his_own_cell_bites_without_walking():
+    mode = _click_mode({(0, 0): "A"})
+    mode.on_mouse_press(0, 0, "LEFT")
+    _run_walk(mode)
+    assert mode._sprite.steps == []
+    assert mode.word() == "A"
+
+
+def test_no_step_until_the_current_glide_lands():
+    mode = _click_mode()
+    mode._sprite.locked = True
+    mode.on_mouse_press(1, 0, "LEFT")
+    _run_walk(mode)
+    assert mode._pos == (0, 0)
+    mode._sprite.locked = False
+    _run_walk(mode)
+    assert mode._pos == (1, 0)
+
+
+def test_clicks_queue_and_eat_in_click_order():
+    mode = _click_mode({(1, 0): "C", (3, 0): "A", (2, 2): "T"})
+    for x, y in ((1, 0), (3, 0), (2, 2)):
+        mode.on_mouse_press(x, y, "LEFT")
+    _run_walk(mode)
+    assert mode.word() == "CAT"
+
+
+def test_double_click_queues_one_bite():
+    mode = _click_mode({(1, 0): "C"})
+    mode.on_mouse_press(1, 0, "LEFT")
+    mode.on_mouse_press(1, 0, "LEFT")
+    _run_walk(mode)
+    assert mode._gs.eaten == [(1, 0)]
+
+
+def test_click_off_the_board_or_while_frozen_is_ignored():
+    mode = _click_mode()
+    mode.on_mouse_press(99, 99, "LEFT")
+    assert mode._click_targets == []
+    mode._sprite._fading = True
+    mode.on_mouse_press(1, 0, "LEFT")
+    assert mode._click_targets == []
+
+
+def test_other_buttons_do_not_walk():
+    mode = _click_mode()
+    mode.on_mouse_press(1, 0, "RIGHT")
+    assert mode._click_targets == []
+
+
+def test_submit_during_a_walk_waits_for_the_last_bite():
+    mode = _click_mode({(1, 0): "C", (2, 0): "A"})
+    mode.on_mouse_press(1, 0, "LEFT")
+    mode.on_mouse_press(2, 0, "LEFT")
+    mode.submit()
+    assert mode._gs.submitted == []
+    _run_walk(mode)
+    assert [entry[0] for entry in mode._gs.submitted] == ["CA"]
+    assert mode.word() == ""
+
+
+def test_click_is_ignored_once_a_submit_is_waiting():
+    mode = _click_mode({(1, 0): "C", (2, 0): "A"})
+    mode.on_mouse_press(1, 0, "LEFT")
+    mode.submit()
+    mode.on_mouse_press(2, 0, "LEFT")
+    _run_walk(mode)
+    assert [entry[0] for entry in mode._gs.submitted] == ["C"]
+
+
+def test_arrow_key_cancels_the_route_and_a_waiting_submit():
+    mode = _click_mode()
+    mode.on_mouse_press(3, 0, "LEFT")
+    mode.submit()
+    mode.on_key_press((0, 1), 0)
+    assert mode._pos == (0, 1)
+    _run_walk(mode)
+    assert mode._pos == (0, 1)
+    assert mode._gs.submitted == []
+
+
+def test_forced_clear_drops_the_rest_of_the_route():
+    # No dictionary word begins with this gram, so the very first bite is forced.
+    mode = _click_mode({(1, 0): "ZQX", (2, 0): "A"})
+    mode._dead_end_rule = True
+    mode._dead_end_grace = 0
+    mode.on_mouse_press(1, 0, "LEFT")
+    mode.on_mouse_press(2, 0, "LEFT")
+    _run_walk(mode)
+    assert len(mode._gs.forced) == 1
+    assert mode._gs.eaten == [(1, 0)]
+    assert mode._pos == (1, 0)
+
+
+def test_replay_fires_click_walk_steps_at_their_recorded_times():
+    import replay
+    from types import SimpleNamespace as Event
+    log = Event(events=[
+        Event(code=20010, t=1.0, fields={"action": "click"}),
+        Event(code=20010, t=1.5, fields={"action": "click_step"}),
+        Event(code=20010, t=1.8, fields={"action": "click_bite"}),
+        Event(code=20010, t=2.0, fields={"action": "step"}),
+    ])
+    active = replay.ReplaySource(log)
+    active.now = 1.4
+    assert active.timing_gate("muncher_click_walk", True) is False
+    active.now = 1.5
+    assert active.timing_gate("muncher_click_walk", False) is True
+    assert active.timing_gate("muncher_click_walk", True) is False
+    active.now = 1.9
+    assert active.timing_gate("muncher_click_walk", False) is True

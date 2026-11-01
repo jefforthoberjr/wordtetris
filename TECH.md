@@ -223,8 +223,9 @@ grep '\[20005\]' sessions/<id>.log   omniswap OUTCOME: picked / swapped / cancel
                                       with the cell and swap source.
 grep '[20010]' sessions/<id>.log   muncher walk + bite stream (mode
                                       rule_mode_muncher): step / blocked /
-                                      off_board with the target cell, and
-                                      bite / bite_empty / bite_fossil /
+                                      off_board with the target cell, the
+                                      click-to-walk click_* actions (see
+                                      log_20010), and bite / bite_empty / bite_fossil /
                                       bite_wild with the gram eaten. A run of
                                       `blocked` means step_seconds is slower
                                       than the player's hands.

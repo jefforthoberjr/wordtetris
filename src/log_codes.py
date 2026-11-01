@@ -287,6 +287,17 @@ def log_20010(action, cell, target=None, gram=None):
                   step_seconds animation is slower than the player's hands.
       off_board   target is off the grid; he stayed put.
 
+    CLICK actions (game_screen.muncher_click) carry `target` too:
+      click       a click queued target to be walked to and bitten
+      click_step  he moved onto target, one step of a click route
+      click_bite  he arrived at target; the bite itself follows as an EATING action
+      click_unreachable   no route to target; it left the queue
+      click_submit_queued   a submit is waiting for the queue to finish
+      click_cancel   a key or a forced clear dropped the rest of the queue
+
+    click_step / click_bite / click_unreachable are replayed AT their recorded times
+    (see replay.ReplaySource), so they must stay the only queue-advancing actions.
+
     EATING actions carry `gram`, the letters the bitten cell held:
       bite        the gram left the board and was banked into the word
       bite_empty  he chewed a hole (an eaten cell, or one the formation left bare)

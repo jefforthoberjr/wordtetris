@@ -9,7 +9,7 @@ GAME NAMES
 
 Double letter forgiveness in the spell check?
 
-I could re-introduce some diagram, but only a few; consonant clusters, or true digraphs
+I could re-introduce some diagram, but only a few; consonant clusters, or true digraphs (SH, NK)
 
 
 The digrams are making make only 4 letter words; the trigrams induce longer words.

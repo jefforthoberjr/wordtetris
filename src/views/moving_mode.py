@@ -12,6 +12,7 @@ from views.shaders import get_shape_shader
 from views.rising_fill import clip_below, RisingFill
 from views.muncher_sprite import MuncherSprite, BELLY_IMAGES
 from views.muncher_glyph import MuncherGlyphOverlay
+from views.muncher_click_walk import MuncherClickWalkMixin
 import log_codes as L
 
 
@@ -1276,7 +1277,7 @@ class ShootingGalleryMode(MovingMode):
         self._since_shot = 0.0
 
 
-class MuncherMovingMode(MovingMode):
+class MuncherMovingMode(MuncherClickWalkMixin, MovingMode):
     """MOVING_MUNCHER -- a Word Muncher walks a pre-filled board and EATS grams.
 
     One character stands on one cell. An arrow press steps him to a neighboring
@@ -1306,7 +1307,10 @@ class MuncherMovingMode(MovingMode):
     muncher_dead_end_grace more grams and then the word is taken away and the life
     is spent. Eat F, then Z (the buffer is dead here -- one gram of grace left),
     then ING and it is forced. Set the rule to rule_muncher_dead_end_off for no cap
-    at all."""
+    at all.
+
+    game_screen.muncher_click optionally adds the mouse as a second way to walk and
+    eat: see views/muncher_click_walk."""
 
     is_muncher = True
 
@@ -1359,10 +1363,13 @@ class MuncherMovingMode(MovingMode):
             "game_screen.muncher_glyph_overlay",
             {"rule_muncher_glyph_overlay_off": self._rule_muncher_glyph_overlay_off,
              "rule_muncher_glyph_overlay_on": self._rule_muncher_glyph_overlay_on})()
+        # What a board click does (see views/muncher_click_walk).
+        self._init_click_walk()
 
     def start(self):
         gs = self._gs
         self._clear_buffer()
+        self._click_walk_reset()
         self._sprite = MuncherSprite(gs._cell_size)
         self._respawn_to = None
         self._pos = self._start_cell()
@@ -1392,6 +1399,8 @@ class MuncherMovingMode(MovingMode):
             self._sprite.place(*self._center(self._pos))
             self._sprite.fade_in()
             L.log_20010("respawn", self._pos, self._pos)
+        # Next step or bite of a click-to-walk route, if one is running.
+        self._click_walk_tick()
         # Re-read the cell under him every frame, not just on a step: a replenished
         # gram can appear beneath a character who never moved, which is exactly one
         # of the cases the overlay exists for.
@@ -1440,6 +1449,7 @@ class MuncherMovingMode(MovingMode):
             # that fires the instant he lands.
             return True
         if symbol in control_keys("game.muncher_eat"):
+            self._click_walk_cancel()
             self._eat()
             handled = True
         elif symbol in control_keys("game.muncher_submit"):
@@ -1449,6 +1459,7 @@ class MuncherMovingMode(MovingMode):
             target = gs._muncher_step_rule(symbol, modifiers, *self._pos)
             if target is not None:
                 handled = True
+                self._click_walk_cancel()
                 self._walk_to(target)
         return handled
 
@@ -1619,7 +1630,14 @@ class MuncherMovingMode(MovingMode):
         """Hand the eaten word to the engine (the submit key, or the pane's Submit
         button). The buffer empties either way: an accepted word has been banked
         and a rejected one has already cost a life, and in neither case can the
-        letters go back on the board."""
+        letters go back on the board.
+
+        A click-to-walk route still running holds the submit until its last bite, so
+        what gets submitted is the whole word the player clicked."""
+        if not self._click_walk_defer_submit():
+            self._submit_now()
+
+    def _submit_now(self):
         word = self.word()
         path = []
         segments = []
@@ -1655,6 +1673,7 @@ class MuncherMovingMode(MovingMode):
                     self._force_clear()
 
     def _force_clear(self):
+        self._click_walk_cancel()
         path = []
         segments = []
         for pos, text in self._buffer:

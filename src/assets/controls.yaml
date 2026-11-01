@@ -76,7 +76,9 @@ game:
   #   rule_mode_omniswap_vs_timer -> select_open, + mouse move_primary
   #                                  (pick-then-swap)
   #   rule_mode_muncher           -> move_* (walk the character one cell per
-  #                                  press), muncher_eat
+  #                                  press), muncher_eat, + mouse move_primary
+  #                                  (walk to a cell and eat it, under
+  #                                  game_screen.muncher_click)
 
   # Nudge / move the live piece. On the SQUARE grid (game_screen.grid:
   # rule_use_square_grid) these are the 4 cardinal nudges. On the HEX grid

@@ -237,6 +237,9 @@ rules:
   game_screen.muncher_life_loss: rule_muncher_life_loss_none
   # game_screen.muncher_life_loss: rule_muncher_life_loss_fade_in_place
   # game_screen.muncher_life_loss: rule_muncher_life_loss_respawn
+  # MUNCHER: what a board click does. [ref: game_screen.muncher_click]
+  game_screen.muncher_click: rule_muncher_click_off
+  # game_screen.muncher_click: rule_muncher_click_walk_and_eat
 
   # OMNISWAP countdown start seconds (per-phase budget, or whole-game clock in race).
   game_screen.omniswap_timer_seconds: 360

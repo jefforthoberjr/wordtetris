@@ -119,6 +119,8 @@ _TIMING_GATE_ACTIONS = {
     20010: ("muncher_step_blocked", ("step", "blocked", "off_board"),
             lambda action: action == "blocked"),
 }
+# The actions that each consumed one muncher_click_walk gate (see log_20010).
+_CLICK_WALK_ACTIONS = ("click_step", "click_bite", "click_unreachable")
 # How far after its key press a gate's outcome line may sit (they are logged in
 # the same handler, so in practice the same millisecond).
 _TIMING_GATE_WINDOW = 0.05
@@ -167,7 +169,8 @@ class ReplaySource(source.Source):
       * per key press -- dispatch() arms the gates recorded for each key just
         before handing it to the game (the muncher's step lockout);
       * per sim time -- a refill is due once replay time reaches the time the
-        recording placed it (advance_to keeps `now` current).
+        recording placed it, and a click-to-walk step or bite once it reaches the
+        time the recording took it (advance_to keeps `now` current).
     A gate with no recorded answer falls back to the live clock."""
 
     def __init__(self, log):
@@ -176,6 +179,9 @@ class ReplaySource(source.Source):
         self._fill_times = recorded_replenish_fills(log)
         self._fill_times["replenish_ramp_milestone"] = [
             ev.t for ev in log.events if ev.code == 6011]
+        self._fill_times["muncher_click_walk"] = [
+            ev.t for ev in log.events
+            if ev.code == 20010 and ev.fields.get("action") in _CLICK_WALK_ACTIONS]
         self.now = 0.0
 
     def arm(self, event):

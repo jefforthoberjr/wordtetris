@@ -386,7 +386,8 @@ mode-agnostic.
   board and EATS grams to spell. One arrow press steps him exactly one cell (the
   quarter-second glide is animation catching up — see `assets.muncher_animation`);
   the eat key bites the cell underfoot, taking that gram off the board and appending
-  it to a READ-ONLY word in the right pane. Nothing is typed, clicked or rearranged —
+  it to a READ-ONLY word in the right pane (`game_screen.muncher_click` adds the mouse
+  as a second way to walk and bite). Nothing is typed or rearranged —
   eating is the only verb — and the word cannot be edited or abandoned, only
   submitted (ENTER / the Submit button). The eaten letters are validated as a plain
   dictionary word, so a bad submit costs one of `muncher_lives`; `muncher_dead_end`
@@ -624,6 +625,21 @@ It covers three cases, only one of which `game_screen.muncher_spawn` touches: th
 spawn cell, a cell that REPLENISHES underneath a character who has not moved
 (`rule_constellation_replenish` with a delay — the common one, since eating and
 then standing still is the normal loop), and ordinary mid-game forgetfulness.
+
+### game_screen.muncher_click
+Muncher only: what a left-click on the board does.
+- `rule_muncher_click_off` — nothing; the keyboard is the only control. The original
+  behavior.
+- `rule_muncher_click_walk_and_eat` — he walks to the clicked cell along a shortest
+  route, one normal step at a time, and bites it on arrival. The bite is the eat key's
+  bite: an empty cell is a chew of thin air, and the arrow and eat keys still work.
+
+Clicks QUEUE: clicking C, A, T quickly eats all three in that order, so a mis-click
+cannot be taken back, the same as any other bite. Clicking the cell already last in the
+queue is ignored, so a double-click takes one bite. An arrow or the eat key cancels the
+rest of the queue. Submitting during a walk waits for the last bite, and clicks are
+ignored during that wait. A dead-end forced clear cancels the queue, and clicks are
+ignored while he is frozen by a fade.
 
 ### game_screen.muncher_life_loss
 Muncher only: what happens to the CHARACTER when a bad word spends a life. The
