@@ -2233,6 +2233,20 @@ In CELL render (`endgame.render`) how finely this is drawn is its own knob — w
 boxes filling in, or the individual letters inside them recoloring. See
 `endgame.highlight_grain`.
 
+### endgame.done_mark
+What a word gets once it has been typed, on top of turning green
+(`endgame.target_done_text`, or `endgame.cell_done_fill` in cell render).
+- `rule_endgame_done_mark_off` — nothing more. The original behavior.
+- `rule_endgame_done_mark_check` — a small green check (`endgame.done_mark` in the
+  colors file) just right of the word, in text and cell render and in every
+  `endgame.display`. The color change alone is easy to miss for a young player, and
+  a check reads as "done" at a glance.
+
+The page display reserves room for the check beside every word from the start, so
+the page does not reflow as words are typed, and the font can come out a little
+smaller with the rule on. The scrolling and belt displays center the word itself,
+with the check sticking out to its right.
+
 ### endgame.auto_submit
 Endgame typing bonus: whether a word that has been fully typed banks ITSELF, with
 no ENTER. `..._off` (the default) keeps the explicit submit; `..._exact` commits

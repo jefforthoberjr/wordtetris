@@ -304,7 +304,9 @@ class PageDisplay:
             # ~1.6x this wide, so words ran off the board into the right pane:
             #   width = len(target["word"]) * drawn * self.CHAR_WIDTH
             width = self._text_width(target["word"]) * drawn / self.MEASURE_FONT_SIZE
-        return width
+        # Room for the check a typed word gains (endgame.done_mark), reserved up
+        # front so the page never reflows, or runs into the pane, as words are typed.
+        return width + done_mark_width(drawn)
 
     def _text_width(self, word):
         """`word`'s real width at MEASURE_FONT_SIZE. Measured once per word and
@@ -416,6 +418,8 @@ class _WordView:
         # index in the word maps onto a cell to light up (a gram can hold several
         # letters, so the two are not the same list).
         self._gram_lengths = []
+        # The check beside a typed word (endgame.done_mark), or None when off.
+        self._mark = _DoneMark(font_size, batch) if done_mark_rule() else None
         if cells:
             # No backing rect: the cells ARE the word here, with nothing underneath
             # to hide (the dictionary screen's preview pops up over a text label).
@@ -506,6 +510,9 @@ class _WordView:
             self._apply_text_style()
         self._left = left_x
         self._center = center_y
+        if self._mark is not None:
+            done = self._word is not None and self._word[1]
+            self._mark.place(left_x + self.width(), center_y, done, alpha)
 
     def restyle(self, alpha=255):
         """Re-apply the current target's color where the word already sits -- what a
@@ -589,6 +596,54 @@ class _WordView:
         in the display's shared batch and draws with it."""
         if self._cells and self._active is not None:
             self._active.draw()
+
+
+class _DoneMark:
+    """A small green check drawn just right of a typed word (endgame.done_mark), on
+    top of the word turning green. Built from two lines rather than a check glyph,
+    since the default font is not guaranteed to have one and a missing glyph draws
+    as an empty box. A dot rounds off the elbow where the two lines meet.
+
+    Lives in the display's shared batch, so it draws in text and cell render alike,
+    and fades with the word on the moving displays."""
+
+    # Sizes as multiples of the word's font size.
+    HEIGHT = 0.8
+    GAP = 0.35
+    THICKNESS = 0.14
+    # The check's three points, as fractions of its (square) box from bottom-left:
+    # the top of the short stroke, the elbow, and the top of the long stroke.
+    SHAPE = ((0.0, 0.5), (0.36, 0.12), (1.0, 0.95))
+
+    def __init__(self, font_size, batch):
+        self._size = font_size * self.HEIGHT
+        self._gap = font_size * self.GAP
+        thickness = max(2.0, font_size * self.THICKNESS)
+        color = get_color("endgame.done_mark")
+        self._short = pyglet.shapes.Line(0, 0, 0, 0, thickness=thickness,
+                                         color=color, batch=batch)
+        self._long = pyglet.shapes.Line(0, 0, 0, 0, thickness=thickness,
+                                        color=color, batch=batch)
+        self._elbow = pyglet.shapes.Circle(0, 0, thickness / 2, color=color,
+                                           batch=batch)
+        self.place(0, 0, False, 255)
+
+    def place(self, word_right, center_y, shown, alpha):
+        """Sit the check just past `word_right`, centered on the word's row. Hidden
+        unless `shown` (the word has been typed)."""
+        left = word_right + self._gap
+        bottom = center_y - self._size / 2
+        points = []
+        for fx, fy in self.SHAPE:
+            points.append((left + fx * self._size, bottom + fy * self._size))
+        self._short.x, self._short.y = points[0]
+        self._short.x2, self._short.y2 = points[1]
+        self._long.x, self._long.y = points[1]
+        self._long.x2, self._long.y2 = points[2]
+        self._elbow.x, self._elbow.y = points[1]
+        for shape in (self._short, self._long, self._elbow):
+            shape.visible = shown
+            shape.opacity = alpha
 
 
 # A gap on the belt: a ring slot carrying no word. Drawn as empty text and never
@@ -855,6 +910,23 @@ def letter_grain_rule():
     return CONFIG.get("rules", {}).get(
         "endgame.highlight_grain",
         "rule_endgame_highlight_grain_cell") == "rule_endgame_highlight_grain_letter"
+
+
+def done_mark_rule():
+    """Whether a typed word gets a check drawn beside it (endgame.done_mark). Read
+    from the live config at call time, like every knob here. Unknown values fall
+    back to no check, the original behavior."""
+    return CONFIG.get("rules", {}).get(
+        "endgame.done_mark", "rule_endgame_done_mark_off") == "rule_endgame_done_mark_check"
+
+
+def done_mark_width(font_size):
+    """How far the check reaches past a word drawn at `font_size`: 0 when the rule
+    is off. The check is square, so its width is its height."""
+    width = 0
+    if done_mark_rule():
+        width = font_size * (_DoneMark.GAP + _DoneMark.HEIGHT)
+    return width
 
 
 def page_layout_rule():

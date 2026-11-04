@@ -7,9 +7,21 @@ GAME NAMES
 * catalyst cata LIST
 
 
+I still need some kind of game timer, maybe gets reset; at most 20 seconds between submissions
+
+I should add more prefix trigrams, even if they are frequency rarer, otherwise there is an end game build up of suffix trigrams.
+
+During a single letter replenish, if there is already 2x of the letter on the board, pick a rare letter to replace it.
+
+
+Specific trigram morpheme / wordform changers (IZE, ING) to be pull tabs cells, off to the size, rather than mixed into the main board, or like little single cells in the corners
+
+
 Double letter forgiveness in the spell check?
 
 I could re-introduce some diagram, but only a few; consonant clusters, or true digraphs (SH, NK)
+
+RY is better than ARY, ERY, ORY variant; for digraph options
 
 
 The digrams are making make only 4 letter words; the trigrams induce longer words.
